@@ -24,7 +24,8 @@ async function runMaxFileLinesRule(
 
     violations.push({
       rule: "max-file-lines",
-      severity: options.rules.maxFileLines.severity,
+      stop: options.rules.maxFileLines.stop,
+      fix: options.rules.maxFileLines.fix,
       filePath: file.relativeFromProjectRoot,
       message: `file has ${lineCount} lines and exceeds the limit of ${options.rules.maxFileLines.max}`,
       details: {

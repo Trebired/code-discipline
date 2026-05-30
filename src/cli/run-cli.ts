@@ -2,8 +2,8 @@
 
 import { pathToFileURL } from "node:url";
 
-import { checkCodeDiscipline } from "../checks/index.js";
-import type { CodeDisciplineConfig } from "../checks/types.js";
+import { checkCodeDiscipline, fixCodeDiscipline } from "../checks/index.js";
+import type { CodeDisciplineConfig, CodeDisciplineViolation } from "../checks/types.js";
 import { loadCodeDisciplineConfig } from "../config/index.js";
 import { syncImports } from "../imports/sync-imports.js";
 import type { SyncImportsOptions } from "../imports/types.js";
@@ -23,8 +23,9 @@ function renderHelp(): string {
     "Usage: code-discipline <command> [--config <path>]",
     "",
     "Commands:",
-    "  check         run configured discipline checks",
-    "  sync          sync tsconfig aliases and rewrite imports",
+    "  check         run read-only discipline validation",
+    "  sync          sync tsconfig aliases and import paths when syncImports.fix is true",
+    "  fix           apply folderization moves when folderizeCompoundFiles.fix is true",
     "",
   ].join("\n");
 }
@@ -54,7 +55,7 @@ function parseArgs(args: string[]): { configPath?: string; extra: string[] } {
 }
 
 function buildSyncImportsOptions(projectRoot: string, config: CodeDisciplineConfig): SyncImportsOptions {
-  const { enabled: _enabled, ...syncRule } = config.rules?.syncImports ?? {};
+  const syncRule = config.rules?.syncImports ?? {};
 
   return {
     projectRoot,
@@ -62,15 +63,30 @@ function buildSyncImportsOptions(projectRoot: string, config: CodeDisciplineConf
     tsconfigPath: syncRule.tsconfigPath,
     sourceExtensions: syncRule.sourceExtensions ?? config.sourceExtensions,
     excludeDirs: syncRule.excludeDirs ?? config.excludeDirs,
+    enabled: syncRule.enabled,
+    stop: syncRule.stop,
+    fix: syncRule.fix,
     alias: syncRule.alias,
-    imports: syncRule.imports,
-    logging: syncRule.logging,
+    allowRelative: syncRule.allowRelative,
+    logging: config.logging ?? syncRule.logging,
   };
 }
 
-function formatViolation(violation: Awaited<ReturnType<typeof checkCodeDiscipline>>["violations"][number]): string {
+function buildCheckOptions(projectRoot: string, config: CodeDisciplineConfig) {
+  return {
+    projectRoot,
+    sourceRoot: config.sourceRoot,
+    sourceExtensions: config.sourceExtensions,
+    excludeDirs: config.excludeDirs,
+    logging: config.logging,
+    rules: config.rules,
+  };
+}
+
+function formatViolation(violation: CodeDisciplineViolation): string {
+  const label = violation.stop ? "FAIL" : "WARN";
   const suggested = violation.suggestedPath ? ` suggested=${violation.suggestedPath}` : "";
-  return `${violation.severity.toUpperCase()} ${violation.rule} ${violation.filePath} ${violation.message}${suggested}`;
+  return `${label} ${violation.rule} ${violation.filePath} ${violation.message}${suggested}`;
 }
 
 async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliRunResult> {
@@ -94,13 +110,7 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
     const { config } = await loadCodeDisciplineConfig(cwd, parsed.configPath);
 
     if (command === "check") {
-      const result = await checkCodeDiscipline({
-        projectRoot: cwd,
-        sourceRoot: config.sourceRoot,
-        sourceExtensions: config.sourceExtensions,
-        excludeDirs: config.excludeDirs,
-        rules: config.rules,
-      });
+      const result = await checkCodeDiscipline(buildCheckOptions(cwd, config));
 
       if (result.violations.length === 0) {
         stdout("No discipline violations found.\n");
@@ -111,14 +121,32 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
         stdout(`${formatViolation(violation)}\n`);
       }
 
-      stdout(`Summary: ${result.errors} errors, ${result.warnings} warnings.\n`);
+      stdout(`Summary: ${result.failures} failures, ${result.warnings} warnings.\n`);
       return { exitCode: result.ok ? 0 : 1 };
     }
 
     if (command === "sync") {
       const result = await syncImports(buildSyncImportsOptions(cwd, config));
       stdout(`${JSON.stringify(result)}\n`);
-      return { exitCode: 0 };
+      return { exitCode: result.ok ? 0 : 1 };
+    }
+
+    if (command === "fix") {
+      const result = await fixCodeDiscipline(buildCheckOptions(cwd, config));
+
+      if (result.violations.length > 0) {
+        for (const violation of result.violations) {
+          stdout(`${formatViolation(violation)}\n`);
+        }
+      }
+
+      stdout(`${JSON.stringify({
+        ok: result.ok,
+        moved_files: result.moved_files,
+        rewritten_files: result.rewritten_files,
+        rewritten_imports: result.rewritten_imports,
+      })}\n`);
+      return { exitCode: result.ok ? 0 : 1 };
     }
 
     stderr(`Unknown command: ${command}\n`);

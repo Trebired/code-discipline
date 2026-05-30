@@ -29,6 +29,10 @@ function readJson(projectRoot: string, relativePath: string): any {
   return JSON.parse(readFile(projectRoot, relativePath));
 }
 
+function fileExists(projectRoot: string, relativePath: string): boolean {
+  return fs.existsSync(path.join(projectRoot, relativePath));
+}
+
 function captureTrebiredLogger() {
   const rows: TrebiredLogRow[] = [];
 
@@ -64,4 +68,4 @@ function captureCallbackLogger() {
   };
 }
 
-export { captureCallbackLogger, captureTrebiredLogger, readFile, readJson, tempProject, writeFile };
+export { captureCallbackLogger, captureTrebiredLogger, fileExists, readFile, readJson, tempProject, writeFile };

@@ -6,7 +6,9 @@ type SyncImportsErrorCode =
   | "alias_collision"
   | "invalid_alias"
   | "rewrite_failure"
-  | "parse_failure";
+  | "parse_failure"
+  | "file_conflict"
+  | "fix_failure";
 
 class SyncImportsError extends Error {
   code: SyncImportsErrorCode | string;
@@ -79,12 +81,28 @@ class ParseFailureError extends SyncImportsError {
   }
 }
 
+class FileConflictError extends SyncImportsError {
+  constructor(filePath: string, details: Record<string, unknown> = {}) {
+    super("file_conflict", `File conflict: ${filePath}`, { filePath, ...details });
+    this.name = "FileConflictError";
+  }
+}
+
+class FixFailureError extends SyncImportsError {
+  constructor(message: string, details: Record<string, unknown> = {}) {
+    super("fix_failure", message, details);
+    this.name = "FixFailureError";
+  }
+}
+
 function isSyncImportsError(value: unknown): value is SyncImportsError {
   return value instanceof SyncImportsError;
 }
 
 export {
   AliasCollisionError,
+  FileConflictError,
+  FixFailureError,
   InvalidCodeDisciplineConfigError,
   InvalidAliasError,
   InvalidProjectRootError,

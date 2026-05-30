@@ -1,28 +1,44 @@
 import {
-  DEFAULT_FOLDERIZE_COMPOUND_FILES_SEVERITY,
+  DEFAULT_ALLOW_RELATIVE,
   DEFAULT_FOLDERIZE_COMPOUND_FILE_SEPARATORS,
-  DEFAULT_FOLDERIZE_COMPOUND_FILE_SUFFIXES,
-  DEFAULT_MAX_FILE_LINES_SEVERITY,
+  DEFAULT_RULE_FIX,
+  DEFAULT_RULE_STOP,
 } from "../shared/constants.js";
 import { InvalidCodeDisciplineConfigError } from "../shared/errors.js";
 import type {
-  CodeDisciplineRuleSeverity,
   FolderizeCompoundFilesRuleOptions,
   MaxFileLinesRuleOptions,
+  NormalizedRuleControl,
 } from "../checks/types.js";
+import type { SyncImportsRuleOptions } from "../imports/types.js";
 
-function normalizeSeverity(value: CodeDisciplineRuleSeverity | undefined): CodeDisciplineRuleSeverity {
-  return value === "warn" ? "warn" : "error";
+function assertRemovedKeys(ruleName: string, source: Record<string, unknown>, keys: string[]) {
+  for (const key of keys) {
+    if (key in source) {
+      throw new InvalidCodeDisciplineConfigError(`${ruleName}.${key} is no longer supported`, {
+        rule: ruleName,
+        key,
+      });
+    }
+  }
+}
+
+function normalizeRuleControl(rule: Record<string, unknown> | undefined): NormalizedRuleControl {
+  return {
+    enabled: Boolean(rule?.enabled ?? false),
+    stop: Boolean(rule?.stop ?? DEFAULT_RULE_STOP),
+    fix: Boolean(rule?.fix ?? DEFAULT_RULE_FIX),
+  };
 }
 
 function normalizeMaxFileLinesRule(rule: MaxFileLinesRuleOptions | undefined) {
-  const enabled = rule?.enabled ?? false;
+  const control = normalizeRuleControl(rule as Record<string, unknown> | undefined);
+  assertRemovedKeys("maxFileLines", (rule ?? {}) as Record<string, unknown>, ["severity"]);
 
-  if (!enabled) {
+  if (!control.enabled) {
     return {
-      enabled: false,
+      ...control,
       max: 0,
-      severity: normalizeSeverity(rule?.severity ?? DEFAULT_MAX_FILE_LINES_SEVERITY),
     };
   }
 
@@ -34,15 +50,15 @@ function normalizeMaxFileLinesRule(rule: MaxFileLinesRuleOptions | undefined) {
   }
 
   return {
-    enabled: true,
+    ...control,
     max: Math.max(1, Math.floor(rule!.max as number)),
-    severity: normalizeSeverity(rule?.severity ?? DEFAULT_MAX_FILE_LINES_SEVERITY),
   };
 }
 
 function normalizeFolderizeCompoundFilesRule(rule: FolderizeCompoundFilesRuleOptions | undefined) {
+  const control = normalizeRuleControl(rule as Record<string, unknown> | undefined);
+  assertRemovedKeys("folderizeCompoundFiles", (rule ?? {}) as Record<string, unknown>, ["severity", "suffixes"]);
   const separators = uniqueStrings(rule?.separators ?? DEFAULT_FOLDERIZE_COMPOUND_FILE_SEPARATORS);
-  const suffixes = uniqueStrings(rule?.suffixes ?? DEFAULT_FOLDERIZE_COMPOUND_FILE_SUFFIXES);
 
   if (separators.length === 0) {
     throw new InvalidCodeDisciplineConfigError("folderizeCompoundFiles.separators must contain at least one separator", {
@@ -50,17 +66,30 @@ function normalizeFolderizeCompoundFilesRule(rule: FolderizeCompoundFilesRuleOpt
     });
   }
 
-  if (suffixes.length === 0) {
-    throw new InvalidCodeDisciplineConfigError("folderizeCompoundFiles.suffixes must contain at least one suffix", {
-      rule: "folderizeCompoundFiles",
+  return {
+    ...control,
+    separators,
+  };
+}
+
+function normalizeSyncImportsRule(rule: SyncImportsRuleOptions | undefined) {
+  const source = (rule ?? {}) as Record<string, unknown>;
+  assertRemovedKeys("syncImports", source, ["severity", "rewrite", "keepRelative"]);
+
+  if ("imports" in source) {
+    throw new InvalidCodeDisciplineConfigError("syncImports.imports is no longer supported; use allowRelative directly under syncImports", {
+      rule: "syncImports",
+      key: "imports",
     });
   }
 
   return {
-    enabled: rule?.enabled ?? false,
-    separators,
-    suffixes,
-    severity: normalizeSeverity(rule?.severity ?? DEFAULT_FOLDERIZE_COMPOUND_FILES_SEVERITY),
+    enabled: Boolean(rule?.enabled ?? false),
+    stop: Boolean(rule?.stop ?? DEFAULT_RULE_STOP),
+    fix: Boolean(rule?.fix ?? DEFAULT_RULE_FIX),
+    tsconfigPath: rule?.tsconfigPath,
+    alias: rule?.alias,
+    allowRelative: rule?.allowRelative ?? DEFAULT_ALLOW_RELATIVE,
   };
 }
 
@@ -68,4 +97,4 @@ function uniqueStrings(values: string[]): string[] {
   return Array.from(new Set(values));
 }
 
-export { normalizeFolderizeCompoundFilesRule, normalizeMaxFileLinesRule };
+export { normalizeFolderizeCompoundFilesRule, normalizeMaxFileLinesRule, normalizeSyncImportsRule };

@@ -126,6 +126,29 @@ async function syncTsconfigAliases(
   sourceFiles: ScannedSourceFile[],
   logger: NormalizedSyncImportsLogger,
 ): Promise<SyncAliasesResult> {
+  const result = await planTsconfigAliases(options, sourceFiles, logger);
+
+  if (result.aliasesChanged) {
+    await fs.writeFile(options.tsconfigPath, toStableJson(result.tsconfig));
+    logger.success("aliases-written", `aliases written count=${result.aliasesCount}`, {
+      tsconfigPath: options.tsconfigPath,
+      aliasesCount: result.aliasesCount,
+    });
+  } else {
+    logger.info("aliases-unchanged", `aliases unchanged count=${result.aliasesCount}`, {
+      tsconfigPath: options.tsconfigPath,
+      aliasesCount: result.aliasesCount,
+    });
+  }
+
+  return result;
+}
+
+async function planTsconfigAliases(
+  options: NormalizedSyncImportsOptions,
+  sourceFiles: ScannedSourceFile[],
+  logger?: NormalizedSyncImportsLogger,
+): Promise<SyncAliasesResult> {
   const { config, originalConfig } = await readTsconfig(options, logger);
   const sourceFilesByPath = new Map(sourceFiles.map((file) => [file.absolutePath, file]));
   const compilerOptions = { ...(config.compilerOptions ?? {}) };
@@ -172,19 +195,6 @@ async function syncTsconfigAliases(
 
   const aliasesChanged = stableSerialize(originalConfig) !== stableSerialize(nextConfig);
 
-  if (aliasesChanged) {
-    await fs.writeFile(options.tsconfigPath, toStableJson(nextConfig));
-    logger.success("aliases-written", `aliases written count=${aliasRecords.length}`, {
-      tsconfigPath: options.tsconfigPath,
-      aliasesCount: aliasRecords.length,
-    });
-  } else {
-    logger.info("aliases-unchanged", `aliases unchanged count=${aliasRecords.length}`, {
-      tsconfigPath: options.tsconfigPath,
-      aliasesCount: aliasRecords.length,
-    });
-  }
-
   return {
     aliasesChanged,
     aliasesCount: aliasRecords.length,
@@ -193,4 +203,4 @@ async function syncTsconfigAliases(
   };
 }
 
-export { readTsconfig, syncTsconfigAliases };
+export { planTsconfigAliases, readTsconfig, syncTsconfigAliases };

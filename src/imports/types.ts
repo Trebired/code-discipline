@@ -1,4 +1,4 @@
-import type { LogAdapterFn } from "../shared/logging-types.js";
+import type { LoggingOptions } from "../shared/logging-types.js";
 
 type AliasStrategyInput = {
   absolutePath: string;
@@ -10,14 +10,14 @@ type AliasStrategyInput = {
 
 type AliasStrategyFn = (input: AliasStrategyInput) => string;
 
-type KeepRelativeContext = {
+type AllowRelativeContext = {
   sourceFile: string;
   resolvedFile: string;
   projectRoot: string;
   sourceRoot: string;
 };
 
-type KeepRelativeFn = (specifier: string, context: KeepRelativeContext) => boolean;
+type AllowRelativeFn = (specifier: string, context: AllowRelativeContext) => boolean;
 
 type SyncImportsOptions = {
   projectRoot: string;
@@ -25,26 +25,26 @@ type SyncImportsOptions = {
   tsconfigPath?: string;
   sourceExtensions?: string[];
   excludeDirs?: string[];
+  enabled?: boolean;
+  stop?: boolean;
+  fix?: boolean;
   alias?: {
     prefix?: string;
     strategy?: "random" | "relative-path-hash" | "relative-path-slug" | AliasStrategyFn;
     randomLength?: number;
   };
-  imports?: {
-    rewrite?: boolean;
-    keepRelative?: string[] | KeepRelativeFn;
-  };
-  logging?: {
-    enabled?: boolean;
-    logger?: unknown;
-    adapter?: "trebired" | "generic" | "console" | LogAdapterFn;
-    quiet?: boolean;
-  };
+  allowRelative?: string[] | AllowRelativeFn;
+  logging?: LoggingOptions;
 };
 
+type SyncImportsRuleOptions = Omit<SyncImportsOptions, "projectRoot">;
+
 type SyncImportsResult = {
+  ok: boolean;
+  mutations_allowed: boolean;
   aliases_changed: boolean;
   aliases_count: number;
+  import_violations: number;
   rewritten_files: number;
   rewritten_imports: number;
 };
@@ -59,21 +59,16 @@ type SourceScanOptions = {
 type NormalizedSyncImportsOptions = SourceScanOptions & {
   sourceRootRelative: string;
   tsconfigPath: string;
+  enabled: boolean;
+  stop: boolean;
+  fix: boolean;
   alias: {
     prefix: string;
     strategy: "random" | "relative-path-hash" | "relative-path-slug" | AliasStrategyFn;
     randomLength: number;
   };
-  imports: {
-    rewrite: boolean;
-    keepRelative: string[] | KeepRelativeFn;
-  };
-  logging: {
-    enabled: boolean;
-    logger?: unknown;
-    adapter?: "trebired" | "generic" | "console" | LogAdapterFn;
-    quiet: boolean;
-  };
+  allowRelative: string[] | AllowRelativeFn;
+  logging: LoggingOptions;
 };
 
 type ScannedSourceFile = {
@@ -119,8 +114,8 @@ export type {
   AliasRecord,
   AliasStrategyFn,
   AliasStrategyInput,
-  KeepRelativeContext,
-  KeepRelativeFn,
+  AllowRelativeContext,
+  AllowRelativeFn,
   NormalizedSyncImportsOptions,
   RewriteFileResult,
   RewriteResult,
@@ -129,5 +124,6 @@ export type {
   SyncAliasesResult,
   SyncImportsOptions,
   SyncImportsResult,
+  SyncImportsRuleOptions,
   TsconfigJson,
 };

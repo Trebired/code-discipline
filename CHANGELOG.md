@@ -2,19 +2,23 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
-This project follows semantic versioning once published.
+## 1.0.0
 
-## Unreleased
-
-- established `@trebired/code-discipline` as the package identity
-- added `checkCodeDiscipline()` with `maxFileLines` and `folderizeCompoundFiles` rules
-- added the `code-discipline check` and `code-discipline sync` CLI commands
-- kept `syncImports()` as the package's mutating import-sync feature
-- changed the project license to `AGPL-3.0-only`
-- reorganized the source and test layout into smaller responsibility-focused modules
+- introduced the breaking `enabled` / `stop` / `fix` rule model across the package
+- removed `severity` from discipline and sync-import config
+- removed suffix-based folderization and replaced it with structural folder grouping
+- removed `suffixes` from `folderizeCompoundFiles`
+- removed nested `syncImports.imports`
+- removed `rewrite` as a sync config option in favor of `syncImports.fix`
+- replaced `keepRelative` with `allowRelative`
+- made `check` fully read-only
+- made `sync` mutate imports and `tsconfig.json` only when `syncImports.fix` is `true`
+- added explicit `fix` support for folderization moves and affected import rewrites
+- added `fixCodeDiscipline()` as the structural mutation API
+- added blocking-or-warning behavior through `stop` instead of severity levels
+- bumped the package to `1.0.0` for the config and API cleanup
 
 ## 0.1.0
 
 - initial public release
 - added source scanning, alias generation, tsconfig path syncing, and in-place import rewriting
-- added configurable alias strategies, keep-relative policies, and restrained logging adapters

@@ -1,10 +1,8 @@
 # @trebired/code-discipline
 
-Configurable codebase discipline checks and import syncing for Bun and Node.js projects.
+Configurable repository discipline checks, structural fixes, and import syncing for Bun and Node.js projects.
 
-`@trebired/code-discipline` scans a configured source tree, runs project-level discipline rules, and can also keep TypeScript path aliases plus source imports aligned in one package.
-
-The package is intentionally focused. It helps with repository structure rules, file-shape rules, and import hygiene. It does not try to be a full linter, formatter, or build system.
+`@trebired/code-discipline` is intentionally focused. It helps you keep a source tree disciplined without turning into a full linter, formatter, or build system.
 
 ## Install
 
@@ -14,59 +12,105 @@ Runtime support: Bun 1+ and Node.js 18+.
 npm install @trebired/code-discipline
 ```
 
-## Quick Start
+## Why This Package
 
-```ts
-import { checkCodeDiscipline } from "@trebired/code-discipline";
+Some repository rules are not really single-file lint rules. They are about the shape of the tree:
 
-const result = await checkCodeDiscipline({
-  projectRoot: "/repo",
-  sourceRoot: "src",
-  rules: {
-    maxFileLines: {
-      enabled: true,
-      max: 500,
-    },
-    folderizeCompoundFiles: {
-      enabled: true,
-      suffixes: ["start", "service"],
-      separators: ["_", "-"],
-    },
-  },
-});
+- files growing too large
+- compound filenames that want to become folders
+- alias drift between `tsconfig.json` and source imports
+- blocking or warning on repository policy in CI or startup flows
 
-if (!result.ok) {
-  console.error(result.violations);
-  process.exit(1);
-}
-```
+That is the lane of this package.
 
-The first public slice is intentionally small:
-
-- `checkCodeDiscipline()`
-- `syncImports()`
-- `defineCodeDisciplineConfig()`
-- `loadCodeDisciplineConfig()`
-
-If you want repo-driven usage instead of embedding the API directly, use the CLI with a top-level config file:
+## Commands
 
 ```sh
 code-discipline check
 code-discipline sync
+code-discipline fix
 ```
 
-## What This Package Checks
+Command responsibilities stay clean:
 
-The first discipline layer is intentionally narrow:
+- `check`: read-only validation and logging
+- `sync`: import and `tsconfig.json` synchronization only
+- `fix`: explicit folderization moves only
 
-- `maxFileLines`
-- `folderizeCompoundFiles`
+Both `sync` and `fix` are gated by rule config. They do not mutate anything unless their rule has `fix: true`.
 
-`maxFileLines` reports files whose physical line count exceeds a configured threshold.
+## Config
 
-`folderizeCompoundFiles` reports names such as `user_start.ts` or `user-start.ts` that could be grouped into a more structured path such as `user/start.ts`.
+Every rule uses the same control model:
 
-Example:
+```txt
+enabled
+= whether the rule runs
+
+stop
+= whether violations fail the result / exit non-zero
+
+fix
+= whether explicit mutation commands may change files
+```
+
+Example `code-discipline.config.json`:
+
+```json
+{
+  "sourceRoot": "src",
+  "sourceExtensions": [
+    ".ts",
+    ".tsx",
+    ".js",
+    ".jsx"
+  ],
+  "excludeDirs": [
+    "node_modules",
+    "dist",
+    ".vite"
+  ],
+  "rules": {
+    "maxFileLines": {
+      "enabled": true,
+      "stop": true,
+      "max": 500
+    },
+    "folderizeCompoundFiles": {
+      "enabled": true,
+      "stop": true,
+      "fix": false,
+      "separators": [
+        "_",
+        "-"
+      ]
+    },
+    "syncImports": {
+      "enabled": true,
+      "stop": true,
+      "fix": true,
+      "alias": {
+        "strategy": "relative-path-slug"
+      },
+      "allowRelative": [
+        "./"
+      ]
+    }
+  }
+}
+```
+
+Breaking cleanup in `1.0.0`:
+
+- `severity` was removed
+- `suffixes` was removed
+- `keepRelative` was replaced by `allowRelative`
+- nested `syncImports.imports` was removed
+- `rewrite` was removed as a config flag because `fix` controls mutation
+
+## Checks
+
+`checkCodeDiscipline()` is read-only. It never moves files, rewrites imports, or updates `tsconfig.json`.
 
 ```ts
 import { checkCodeDiscipline } from "@trebired/code-discipline";
@@ -76,29 +120,38 @@ const result = await checkCodeDiscipline({
   rules: {
     maxFileLines: {
       enabled: true,
+      stop: true,
       max: 500,
-      severity: "error",
     },
     folderizeCompoundFiles: {
       enabled: true,
-      suffixes: ["start"],
+      stop: false,
       separators: ["_", "-"],
-      severity: "warn",
+    },
+    syncImports: {
+      enabled: true,
+      stop: true,
+      fix: false,
+      alias: {
+        strategy: "relative-path-slug",
+      },
+      allowRelative: ["./"],
     },
   },
 });
 ```
 
-The result shape stays simple:
+Result shape:
 
 ```ts
 {
   ok: boolean;
   warnings: number;
-  errors: number;
+  failures: number;
   violations: Array<{
-    rule: "max-file-lines" | "folderize-compound-files";
-    severity: "warn" | "error";
+    rule: "max-file-lines" | "folderize-compound-files" | "sync-imports";
+    stop: boolean;
+    fix: boolean;
     filePath: string;
     message: string;
     details: Record<string, unknown>;
@@ -107,135 +160,76 @@ The result shape stays simple:
 }
 ```
 
-Checks are read-only. They report problems and let the caller decide whether to fail startup, fail CI, or only warn.
+## Folderization
 
-## CLI And Config
+`folderizeCompoundFiles` is structural. It no longer depends on configured suffix lists.
 
-The CLI is meant for repository-owned discipline rules:
+Same-directory groups:
 
-```sh
-code-discipline check
-code-discipline sync
+```txt
+src/api/user_route.ts
+src/api/user_schema.ts
+src/api/user_controller.ts
 ```
 
-Both commands accept `--config <path>`. When that flag is omitted, the CLI looks for `code-discipline.config.json` in the current working directory.
+suggest:
 
-Example config:
-
-```json
-{
-  "sourceRoot": "src",
-  "rules": {
-    "maxFileLines": {
-      "enabled": true,
-      "max": 500
-    },
-    "folderizeCompoundFiles": {
-      "enabled": true,
-      "suffixes": ["start", "service"],
-      "separators": ["_", "-"]
-    },
-    "syncImports": {
-      "alias": {
-        "strategy": "relative-path-slug"
-      }
-    }
-  }
-}
+```txt
+src/api/user/route.ts
+src/api/user/schema.ts
+src/api/user/controller.ts
 ```
 
-`check` is read-only. It reports violations and exits non-zero when any error-severity rule fails.
+Repeated folder-prefix files are also detected:
 
-`sync` is the mutating import-alignment command. It updates `compilerOptions.paths` and rewrites eligible source imports.
+```txt
+src/api/user/user_route.ts
+```
 
-In practice:
+suggests:
 
-- use JSON config plus the CLI when the rules belong to the repo
-- use the API when another tool wants to control configuration or reporting dynamically
+```txt
+src/api/user/route.ts
+```
+
+`check` only reports these candidates.
+
+`fix` may apply them only when `folderizeCompoundFiles.fix` is `true`, and it rewrites affected relative imports after the move.
 
 ## Import Sync
 
-`syncImports()` remains a first-class part of the package. It scans source files, generates aliases, preserves still-valid alias ids, writes stable `compilerOptions.paths` output, and rewrites eligible relative imports to those aliases.
+`syncImports()` and `code-discipline sync` use one flat `syncImports` config.
 
 ```ts
 import { syncImports } from "@trebired/code-discipline";
 
 const result = await syncImports({
   projectRoot: "/repo",
-  sourceRoot: "src",
-  tsconfigPath: "/repo/tsconfig.json",
-});
-```
-
-Default behavior:
-
-- `sourceRoot: "src"`
-- `tsconfigPath: "<projectRoot>/tsconfig.json"`
-- `sourceExtensions: [".ts", ".tsx", ".js", ".jsx"]`
-- `excludeDirs: ["node_modules", "dist", ".vite"]`
-- `imports.rewrite: true`
-- `imports.keepRelative: ["./"]`
-- `alias.prefix: "#"`
-- `alias.strategy: "random"`
-- `alias.randomLength: 12`
-
-By default, same-directory imports such as `./local` stay relative. Imports that walk upward, such as `../shared/util`, are eligible for rewrite when they resolve to a file under the configured source root.
-
-Alias strategies:
-
-- `"random"`
-- `"relative-path-slug"`
-- `"relative-path-hash"`
-- custom function
-
-Example custom strategy:
-
-```ts
-await syncImports({
-  projectRoot: "/repo",
+  fix: true,
   alias: {
-    strategy(input) {
-      return `@${input.relativeFromSourceRoot.replace(/\//g, "__")}`;
-    },
+    strategy: "relative-path-slug",
   },
+  allowRelative: ["./"],
 });
 ```
 
-If a custom strategy returns an invalid id or a duplicate id, the package fails clearly instead of guessing a fallback.
+Behavior:
 
-## Why This Package
+- `check` reports import-policy drift in read-only mode
+- `sync` rewrites imports and updates `tsconfig.json` only when `syncImports.fix` is `true`
+- `allowRelative: ["./"]` keeps same-folder relative imports
+- upward relative imports can be reported or rewritten through the configured alias policy
 
-Many repository rules are awkward in a single-file linter pass because they are really about the shape of a source tree, not only one file at a time.
+## Logging
 
-This package is a better fit when you want checks such as:
+When you provide a logger, discipline results are emitted through it. Trebired-style loggers are supported directly, and the package falls back safely when no logger is provided.
 
-- file-size limits across a configured source root
-- filename patterns that imply a cleaner folder layout
-- path alias synchronization across many files
-- startup, CI, or pre-build gates based on repository conventions
-
-It is intentionally repo-oriented. The package does one lane of work: codebase discipline plus import alignment.
-
-## Current API
+## Public API
 
 - `checkCodeDiscipline()`
+- `fixCodeDiscipline()`
+- `syncImports()`
 - `defineCodeDisciplineConfig()`
 - `loadCodeDisciplineConfig()`
-- `syncImports()`
-- `scanSourceFiles()`
-- `syncTsconfigAliases()`
-- `rewriteSourceImports()`
-- `resolveRelativeImport()`
-- `createRandomAlias()`
-- `createRelativePathHashAlias()`
-- `createRelativePathSlugAlias()`
 
-The package also exports the public TypeScript types for options, results, violations, alias strategies, keep-relative callbacks, log events, and source scan rows.
-
-## What This Package Does Not Do
-
-- it does not build or compile TypeScript
-- it does not move files automatically for folderization violations
-- it does not rewrite emitted build output
-- it does not depend on ESLint
-- it does not assume a framework-specific runtime layout
+The package also exports the public TypeScript types for rule config, results, violations, alias strategies, logging adapters, and source scan rows.

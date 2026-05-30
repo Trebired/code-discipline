@@ -36,8 +36,8 @@ describe("code-discipline tsconfig retries", () => {
 
       await syncImports({
         projectRoot,
+        fix: true,
         alias: { strategy: "relative-path-slug" },
-        imports: { rewrite: false },
         logging: {
           enabled: true,
           adapter,
@@ -80,8 +80,8 @@ describe("code-discipline tsconfig retries", () => {
 
       await expect(syncImports({
         projectRoot,
+        fix: true,
         alias: { strategy: "relative-path-slug" },
-        imports: { rewrite: false },
       })).rejects.toMatchObject({
         code: "parse_failure",
       });

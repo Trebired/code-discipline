@@ -1,11 +1,11 @@
 import { SYNC_IMPORTS_LOG_GROUP } from "./constants.js";
 import type {
   LogAdapterFn,
+  LoggingOptions,
   NormalizedSyncImportsLogger,
   SyncImportsLogEvent,
   SyncImportsLogLevel,
 } from "./logging-types.js";
-import type { SyncImportsOptions } from "../imports/types.js";
 
 type LogMethod = (...args: unknown[]) => unknown;
 
@@ -78,7 +78,7 @@ function writeToTrebiredLogger(source: unknown, level: SyncImportsLogLevel, even
   method.call(source, SYNC_IMPORTS_LOG_GROUP, message, buildMetadata(eventName, metadata));
 }
 
-function resolveWriter(options?: SyncImportsOptions["logging"]): (event: SyncImportsLogEvent) => void {
+function resolveWriter(options?: LoggingOptions): (event: SyncImportsLogEvent) => void {
   const adapter = options?.adapter;
   const logger = options?.logger;
 
@@ -109,7 +109,7 @@ function resolveWriter(options?: SyncImportsOptions["logging"]): (event: SyncImp
   return (event) => writeToConsole(event.level, event.event, event.message, event.metadata);
 }
 
-function resolveLogger(options?: SyncImportsOptions["logging"]): NormalizedSyncImportsLogger {
+function resolveLogger(options?: LoggingOptions): NormalizedSyncImportsLogger {
   const enabled = options?.enabled ?? Boolean(options?.logger || options?.adapter);
   const quiet = options?.quiet ?? false;
   const writer = resolveWriter(options);

@@ -1,22 +1,18 @@
-import type { SourceScanOptions, SyncImportsOptions } from "../imports/types.js";
+import type { LoggingOptions } from "../shared/logging-types.js";
+import type { SourceScanOptions, SyncImportsRuleOptions } from "../imports/types.js";
 
-type CodeDisciplineRuleSeverity = "warn" | "error";
-
-type SyncImportsRuleOptions = Omit<SyncImportsOptions, "projectRoot"> & {
+type RuleControlOptions = {
   enabled?: boolean;
+  stop?: boolean;
+  fix?: boolean;
 };
 
-type MaxFileLinesRuleOptions = {
-  enabled?: boolean;
+type MaxFileLinesRuleOptions = RuleControlOptions & {
   max?: number;
-  severity?: CodeDisciplineRuleSeverity;
 };
 
-type FolderizeCompoundFilesRuleOptions = {
-  enabled?: boolean;
+type FolderizeCompoundFilesRuleOptions = RuleControlOptions & {
   separators?: string[];
-  suffixes?: string[];
-  severity?: CodeDisciplineRuleSeverity;
 };
 
 type CodeDisciplineRules = {
@@ -30,37 +26,44 @@ type CheckCodeDisciplineOptions = {
   sourceRoot?: string;
   sourceExtensions?: string[];
   excludeDirs?: string[];
+  logging?: LoggingOptions;
   rules?: CodeDisciplineRules;
 };
 
+type FixCodeDisciplineOptions = CheckCodeDisciplineOptions;
+
 type CodeDisciplineConfig = Omit<CheckCodeDisciplineOptions, "projectRoot">;
 
-type NormalizedMaxFileLinesRule = {
+type NormalizedRuleControl = {
   enabled: boolean;
-  max: number;
-  severity: CodeDisciplineRuleSeverity;
+  stop: boolean;
+  fix: boolean;
 };
 
-type NormalizedFolderizeCompoundFilesRule = {
-  enabled: boolean;
+type NormalizedMaxFileLinesRule = NormalizedRuleControl & {
+  max: number;
+};
+
+type NormalizedFolderizeCompoundFilesRule = NormalizedRuleControl & {
   separators: string[];
-  suffixes: string[];
-  severity: CodeDisciplineRuleSeverity;
 };
 
 type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
   sourceRootRelative: string;
+  logging: LoggingOptions;
   rules: {
     maxFileLines: NormalizedMaxFileLinesRule;
     folderizeCompoundFiles: NormalizedFolderizeCompoundFilesRule;
+    syncImports: SyncImportsRuleOptions;
   };
 };
 
-type CodeDisciplineRuleName = "max-file-lines" | "folderize-compound-files";
+type CodeDisciplineRuleName = "max-file-lines" | "folderize-compound-files" | "sync-imports";
 
 type CodeDisciplineViolation = {
   rule: CodeDisciplineRuleName;
-  severity: CodeDisciplineRuleSeverity;
+  stop: boolean;
+  fix: boolean;
   filePath: string;
   message: string;
   details: Record<string, unknown>;
@@ -70,7 +73,17 @@ type CodeDisciplineViolation = {
 type CheckCodeDisciplineResult = {
   ok: boolean;
   warnings: number;
-  errors: number;
+  failures: number;
+  violations: CodeDisciplineViolation[];
+};
+
+type FixCodeDisciplineResult = {
+  ok: boolean;
+  moved_files: number;
+  rewritten_files: number;
+  rewritten_imports: number;
+  warnings: number;
+  failures: number;
   violations: CodeDisciplineViolation[];
 };
 
@@ -79,13 +92,15 @@ export type {
   CheckCodeDisciplineResult,
   CodeDisciplineConfig,
   CodeDisciplineRuleName,
-  CodeDisciplineRuleSeverity,
   CodeDisciplineRules,
   CodeDisciplineViolation,
+  FixCodeDisciplineOptions,
+  FixCodeDisciplineResult,
   FolderizeCompoundFilesRuleOptions,
   MaxFileLinesRuleOptions,
   NormalizedCheckCodeDisciplineOptions,
   NormalizedFolderizeCompoundFilesRule,
   NormalizedMaxFileLinesRule,
-  SyncImportsRuleOptions,
+  NormalizedRuleControl,
+  RuleControlOptions,
 };

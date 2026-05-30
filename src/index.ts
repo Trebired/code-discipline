@@ -2,21 +2,19 @@ export {
   DEFAULT_ALIAS_PREFIX,
   DEFAULT_ALIAS_RANDOM_LENGTH,
   DEFAULT_ALIAS_STRATEGY,
-  DEFAULT_FOLDERIZE_COMPOUND_FILES_SEVERITY,
-  DEFAULT_FOLDERIZE_COMPOUND_FILE_SEPARATORS,
-  DEFAULT_FOLDERIZE_COMPOUND_FILE_SUFFIXES,
+  DEFAULT_ALLOW_RELATIVE,
   DEFAULT_EXCLUDE_DIRS,
-  DEFAULT_IMPORTS_REWRITE,
-  DEFAULT_KEEP_RELATIVE,
-  DEFAULT_MAX_FILE_LINES_SEVERITY,
+  DEFAULT_FOLDERIZE_COMPOUND_FILE_SEPARATORS,
+  DEFAULT_RULE_FIX,
+  DEFAULT_RULE_STOP,
   DEFAULT_SOURCE_EXTENSIONS,
   DEFAULT_SOURCE_ROOT,
 } from "./shared/constants.js";
 
-export { checkCodeDiscipline } from "./checks/index.js";
+export { checkCodeDiscipline, fixCodeDiscipline } from "./checks/index.js";
 export { defineCodeDisciplineConfig, loadCodeDisciplineConfig } from "./config/index.js";
 export { normalizeSyncImportsOptions } from "./config/normalize-sync-imports-options.js";
-export { syncTsconfigAliases } from "./imports/aliases.js";
+export { planTsconfigAliases, syncTsconfigAliases } from "./imports/aliases.js";
 export { resolveRelativeImport } from "./imports/resolve.js";
 export { rewriteSourceImports } from "./imports/rewrite.js";
 export { scanSourceFiles } from "./imports/scan.js";
@@ -26,6 +24,8 @@ export { resolveLogger } from "./shared/logging.js";
 
 export {
   AliasCollisionError,
+  FileConflictError,
+  FixFailureError,
   InvalidCodeDisciplineConfigError,
   InvalidAliasError,
   InvalidProjectRootError,
@@ -39,6 +39,7 @@ export {
 
 export type {
   LogAdapterFn,
+  LoggingOptions,
   NormalizedSyncImportsLogger,
   SyncImportsLogEvent,
   SyncImportsLogLevel,
@@ -48,8 +49,8 @@ export type {
   AliasRecord,
   AliasStrategyFn,
   AliasStrategyInput,
-  KeepRelativeContext,
-  KeepRelativeFn,
+  AllowRelativeContext,
+  AllowRelativeFn,
   NormalizedSyncImportsOptions,
   RewriteFileResult,
   RewriteResult,
@@ -58,6 +59,7 @@ export type {
   SyncAliasesResult,
   SyncImportsOptions,
   SyncImportsResult,
+  SyncImportsRuleOptions,
   TsconfigJson,
 } from "./imports/types.js";
 
@@ -66,13 +68,15 @@ export type {
   CheckCodeDisciplineResult,
   CodeDisciplineConfig,
   CodeDisciplineRuleName,
-  CodeDisciplineRuleSeverity,
   CodeDisciplineRules,
   CodeDisciplineViolation,
+  FixCodeDisciplineOptions,
+  FixCodeDisciplineResult,
   FolderizeCompoundFilesRuleOptions,
   MaxFileLinesRuleOptions,
   NormalizedCheckCodeDisciplineOptions,
   NormalizedFolderizeCompoundFilesRule,
   NormalizedMaxFileLinesRule,
-  SyncImportsRuleOptions,
+  NormalizedRuleControl,
+  RuleControlOptions,
 } from "./checks/types.js";

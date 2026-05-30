@@ -9,6 +9,13 @@ type SyncImportsLogEvent = {
 
 type LogAdapterFn = (event: SyncImportsLogEvent) => void;
 
+type LoggingOptions = {
+  enabled?: boolean;
+  logger?: unknown;
+  adapter?: "trebired" | "generic" | "console" | LogAdapterFn;
+  quiet?: boolean;
+};
+
 type NormalizedSyncImportsLogger = {
   enabled: boolean;
   debug: (event: string, message: string, metadata?: Record<string, unknown>) => void;
@@ -20,6 +27,7 @@ type NormalizedSyncImportsLogger = {
 
 export type {
   LogAdapterFn,
+  LoggingOptions,
   NormalizedSyncImportsLogger,
   SyncImportsLogEvent,
   SyncImportsLogLevel,
