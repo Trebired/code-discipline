@@ -1,12 +1,12 @@
 # Changelog
 
-All notable changes to `code-discipline` will be documented here.
+All notable changes to `@trebired/code-discipline` will be documented here.
 
 This project follows semantic versioning once published.
 
 ## Unreleased
 
-- established `code-discipline` as the package identity
+- established `@trebired/code-discipline` as the package identity
 - added `checkCodeDiscipline()` with `maxFileLines` and `folderizeCompoundFiles` rules
 - added the `code-discipline check` and `code-discipline sync` CLI commands
 - kept `syncImports()` as the package's mutating import-sync feature

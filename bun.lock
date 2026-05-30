@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "code-discipline",
+      "name": "@trebired/code-discipline",
       "dependencies": {
         "typescript": "^6.0.2",
       },

@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve `code-discipline`.
+Thanks for helping improve `@trebired/code-discipline`.
 
 ## Development Setup
 
