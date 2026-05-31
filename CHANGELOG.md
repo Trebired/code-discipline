@@ -4,7 +4,7 @@ All notable changes to `@trebired/code-discipline` will be documented here.
 
 ## 1.2.0
 
-- Changed package logging to emit `@trebired/code-discipline initialized` on startup through the `logger.loader` group.
+- Changed package logging to emit `@trebired/code-discipline initialized` on startup through the `code-discipline.initialize` group.
 - Changed `syncImports()`, `checkCodeDiscipline()`, and `fixCodeDiscipline()` to emit one final aggregated report instead of spamming per-step runtime logs.
 - Added buffered diagnostic summaries to final logging metadata so unresolved rewrites, tsconfig retry events, and other internal steps are preserved in one report payload.
 - Renamed the public logging type surface to package-wide `CodeDiscipline...` names while keeping compatibility aliases for the older sync-import-focused type exports.

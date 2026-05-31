@@ -227,8 +227,8 @@ function resolveLogger(options?: LoggingOptions): NormalizedCodeDisciplineLogger
   let bufferedEvents = createBufferedEventStore();
 
   writer({
-    event: "logger-initialized",
-    group: "logger.loader",
+    event: "package-initialized",
+    group: `${CODE_DISCIPLINE_LOG_GROUP}.initialize`,
     level: "success",
     message: "@trebired/code-discipline initialized",
     metadata: {

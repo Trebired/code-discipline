@@ -168,8 +168,8 @@ describe("code-discipline syncImports", () => {
     expect(result.ok).toBe(true);
     expect(rows).toHaveLength(2);
     expect(rows[0]).toMatchObject({
-      event: "logger-initialized",
-      group: "logger.loader",
+      event: "package-initialized",
+      group: "code-discipline.initialize",
       level: "success",
     });
     expect(rows[1]).toMatchObject({

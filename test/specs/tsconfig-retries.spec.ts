@@ -55,8 +55,8 @@ describe("code-discipline tsconfig retries", () => {
       strict: true,
     });
     expect(rows[0]).toMatchObject({
-      event: "logger-initialized",
-      group: "logger.loader",
+      event: "package-initialized",
+      group: "code-discipline.initialize",
       level: "success",
       message: "@trebired/code-discipline initialized",
     });
