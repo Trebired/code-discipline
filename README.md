@@ -39,6 +39,70 @@ Command responsibilities stay clean:
 
 Both `sync` and `fix` are gated by rule config. They do not mutate anything unless their rule has `fix: true`.
 
+## Simple Runtime API
+
+For app startup or scripts, you can now use one package-owned entrypoint instead of hand-rolling mode dispatch in app code.
+
+```ts
+import { codeDiscipline } from "@trebired/code-discipline";
+
+const result = await codeDiscipline({
+  mode: "check",
+  projectRoot: process.cwd(),
+  rules: {
+    maxFileLines: {
+      severity: "warning",
+      max: 500,
+    },
+  },
+});
+```
+
+`mode: "startup"` is a convenience alias for sync-oriented startup flows:
+
+```ts
+import { codeDiscipline } from "@trebired/code-discipline";
+
+await codeDiscipline({
+  mode: "startup",
+  projectRoot: PROJECT_ROOT,
+  logger,
+  rules: {
+    syncImports: {
+      severity: "error",
+      fix: true,
+      alias: {
+        strategy: "relative-path-slug",
+      },
+      allowRelative: ["./"],
+    },
+  },
+});
+```
+
+If you want to define repo rules once and reuse them, create a bound helper:
+
+```ts
+import { createCodeDiscipline } from "@trebired/code-discipline";
+
+const discipline = createCodeDiscipline({
+  sourceRoot: "src",
+  rules: {
+    syncImports: {
+      severity: "error",
+      fix: true,
+      alias: {
+        strategy: "relative-path-slug",
+      },
+      allowRelative: ["./"],
+    },
+  },
+});
+
+await discipline.startup({ projectRoot: PROJECT_ROOT, logger });
+process.exitCode = (await discipline.check({ projectRoot: process.cwd() })).ok ? 0 : 1;
+```
+
 ## Config
 
 Rules are enabled by presence. If a rule object exists under `rules`, it runs. If the rule is omitted, it is disabled.
@@ -204,6 +268,8 @@ The default/common logger adaptation path is powered by `@trebired/logger-adapte
 
 ## Public API
 
+- `codeDiscipline()`
+- `createCodeDiscipline()`
 - `checkCodeDiscipline()`
 - `fixCodeDiscipline()`
 - `syncImports()`

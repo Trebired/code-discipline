@@ -20,6 +20,7 @@ export { rewriteSourceImports } from "./imports/rewrite.js";
 export { scanSourceFiles } from "./imports/scan.js";
 export { createRandomAlias, createRelativePathHashAlias, createRelativePathSlugAlias } from "./imports/strategies.js";
 export { syncImports } from "./imports/sync-imports.js";
+export { codeDiscipline, createCodeDiscipline } from "./run.js";
 export { resolveLogger } from "./shared/logging.js";
 
 export {
@@ -73,6 +74,19 @@ export type {
   SyncImportsRuleOptions,
   TsconfigJson,
 } from "./imports/types.js";
+
+export type {
+  CheckCodeDisciplineCommandOptions,
+  CodeDisciplineInvocationOptions,
+  CodeDisciplineMode,
+  CodeDisciplineOptions,
+  CodeDisciplineResult as RunCodeDisciplineResult,
+  CodeDisciplineRuntimeMode,
+  CreatedCodeDiscipline,
+  FixCodeDisciplineCommandOptions,
+  StartupCodeDisciplineCommandOptions,
+  SyncCodeDisciplineCommandOptions,
+} from "./run.js";
 
 export type {
   CheckCodeDisciplineOptions,

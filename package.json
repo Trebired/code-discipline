@@ -1,6 +1,6 @@
 {
   "name": "@trebired/code-discipline",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Configurable codebase discipline checks and import syncing for Bun and Node.js projects.",
   "license": "AGPL-3.0-only",
   "keywords": [

@@ -2,6 +2,13 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 1.4.0
+
+- Added `codeDiscipline({ mode, ... })` as the package-owned runtime dispatcher for `check`, `fix`, `sync`, and startup-style sync usage.
+- Added `createCodeDiscipline(config)` so consuming apps can bind repo config once and call `.check()`, `.fix()`, `.sync()`, or `.startup()`.
+- Refactored the package CLI to use the shared runtime dispatcher instead of maintaining separate command routing logic.
+- Updated the README and tests around the simpler logger-style consumption path.
+
 ## 1.3.0
 
 - Replaced rule-level `stop` with severity-based discipline results using `severity: "error" | "warning"`.

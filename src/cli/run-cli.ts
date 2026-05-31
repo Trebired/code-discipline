@@ -2,12 +2,9 @@
 
 import { pathToFileURL } from "node:url";
 
-import { checkCodeDiscipline, fixCodeDiscipline } from "../checks/index.js";
-import type { CodeDisciplineConfig } from "../checks/types.js";
+import { codeDiscipline } from "../run.js";
 import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
 import { loadCodeDisciplineConfigModule } from "../config/index.js";
-import { syncImports } from "../imports/sync-imports.js";
-import type { SyncImportsOptions } from "../imports/types.js";
 
 type CliRunOptions = {
   cwd?: string;
@@ -58,34 +55,6 @@ function parseArgs(args: string[]): { configPath?: string; extra: string[] } {
   return { configPath, extra };
 }
 
-function buildSyncImportsOptions(projectRoot: string, config: CodeDisciplineConfig): SyncImportsOptions {
-  const syncRule = config.rules?.syncImports ?? {};
-
-  return {
-    projectRoot,
-    sourceRoot: syncRule.sourceRoot ?? config.sourceRoot,
-    tsconfigPath: syncRule.tsconfigPath,
-    sourceExtensions: syncRule.sourceExtensions ?? config.sourceExtensions,
-    excludeDirs: syncRule.excludeDirs ?? config.excludeDirs,
-    severity: syncRule.severity,
-    fix: syncRule.fix,
-    alias: syncRule.alias,
-    allowRelative: syncRule.allowRelative,
-    logging: config.logging ?? syncRule.logging,
-  };
-}
-
-function buildCheckOptions(projectRoot: string, config: CodeDisciplineConfig) {
-  return {
-    projectRoot,
-    sourceRoot: config.sourceRoot,
-    sourceExtensions: config.sourceExtensions,
-    excludeDirs: config.excludeDirs,
-    logging: config.logging,
-    rules: config.rules,
-  };
-}
-
 function formatViolation(violation: CodeDisciplineViolation): string {
   const label = violation.severity === "error" ? "ERROR" : "WARNING";
   const suggested = violation.suggestedPath ? ` suggested=${violation.suggestedPath}` : "";
@@ -117,7 +86,11 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
     const { config } = await loadCodeDisciplineConfigModule(cwd, parsed.configPath);
 
     if (command === "check") {
-      const result = await checkCodeDiscipline(buildCheckOptions(cwd, config));
+      const result = await codeDiscipline({
+        ...config,
+        mode: "check",
+        projectRoot: cwd,
+      });
 
       if (result.violations.length === 0) {
         stdout("No discipline violations found.\n");
@@ -133,13 +106,21 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
     }
 
     if (command === "sync") {
-      const result = await syncImports(buildSyncImportsOptions(cwd, config));
+      const result = await codeDiscipline({
+        ...config,
+        mode: "sync",
+        projectRoot: cwd,
+      });
       stdout(`${JSON.stringify(result)}\n`);
       return { exitCode: result.ok ? 0 : 1 };
     }
 
     if (command === "fix") {
-      const result = await fixCodeDiscipline(buildCheckOptions(cwd, config));
+      const result = await codeDiscipline({
+        ...config,
+        mode: "fix",
+        projectRoot: cwd,
+      });
 
       if (result.violations.length > 0) {
         for (const violation of result.violations) {
