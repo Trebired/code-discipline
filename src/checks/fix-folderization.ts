@@ -2,12 +2,12 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import type {
-  CodeDisciplineViolation,
   FixCodeDisciplineResult,
   NormalizedCheckCodeDisciplineOptions,
 } from "./types.js";
 import type { ScannedSourceFile } from "../imports/types.js";
 import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
+import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
 import { applyTextReplacements, collectModuleSpecifiers } from "../imports/module-specifiers.js";
 import { isRelativeImportSpecifier } from "../imports/resolve.js";
 import { FileConflictError, FixFailureError, RewriteFailureError } from "../shared/errors.js";
@@ -29,8 +29,8 @@ function createFolderizationViolation(
 ): CodeDisciplineViolation {
   return {
     rule: "folderize-compound-files",
-    stop: options.rules.folderizeCompoundFiles.stop,
-    fix: options.rules.folderizeCompoundFiles.fix,
+    severity: options.rules.folderizeCompoundFiles?.severity ?? "error",
+    fix: options.rules.folderizeCompoundFiles?.fix ?? false,
     filePath,
     message: `file can be grouped under ${suggestedPath}`,
     suggestedPath,
@@ -234,35 +234,39 @@ async function fixFolderization(
   logger: NormalizedCodeDisciplineLogger,
 ): Promise<FixCodeDisciplineResult> {
   const { moves, violations } = buildMovePlan(sourceFiles, options);
-  const warnings = violations.filter((violation) => !violation.stop).length;
-  const failures = violations.length - warnings;
+  const warnings = violations.filter((violation) => violation.severity === "warning").length;
+  const errors = violations.length - warnings;
 
-  if (!options.rules.folderizeCompoundFiles.enabled || moves.length === 0) {
+  if (!options.rules.folderizeCompoundFiles || moves.length === 0) {
     logger.info("fix-folderization-unchanged", "no folderization moves required", {
       moves: 0,
     });
     return {
       ok: true,
+      errors: 0,
       moved_files: 0,
       rewritten_files: 0,
       rewritten_imports: 0,
       warnings,
-      failures,
-      violations,
+      violations: [],
     };
   }
 
   if (!options.rules.folderizeCompoundFiles.fix) {
     logger.warn("fix-folderization-disabled", "folderization fix is disabled", {
       candidates: moves.length,
+      discipline: {
+        errors,
+        warnings,
+      },
     });
     return {
-      ok: failures === 0,
+      ok: errors === 0,
+      errors,
       moved_files: 0,
       rewritten_files: 0,
       rewritten_imports: 0,
       warnings,
-      failures,
       violations,
     };
   }
@@ -289,12 +293,12 @@ async function fixFolderization(
 
     return {
       ok: true,
+      errors: 0,
       moved_files: movedFiles,
       rewritten_files: rewriteState.rewrittenFiles,
       rewritten_imports: rewriteState.rewrittenImports,
-      warnings,
-      failures: 0,
-      violations,
+      warnings: 0,
+      violations: [],
     };
   } catch (error) {
     if (error instanceof FileConflictError || error instanceof RewriteFailureError) {

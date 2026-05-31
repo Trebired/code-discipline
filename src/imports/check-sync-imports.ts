@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import type { CodeDisciplineViolation } from "../checks/types.js";
 import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
+import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
 import { planTsconfigAliases } from "./aliases.js";
 import { collectModuleSpecifiers } from "./module-specifiers.js";
 import { resolveRelativeImport } from "./resolve.js";
@@ -14,8 +14,6 @@ async function collectSyncImportViolations(
   options: NormalizedSyncImportsOptions,
   logger?: NormalizedCodeDisciplineLogger,
 ): Promise<CodeDisciplineViolation[]> {
-  if (!options.enabled) return [];
-
   const aliasPlan = await planTsconfigAliases(options, sourceFiles, logger);
   const aliasIdsByFilePath = new Map(aliasPlan.aliasRecords.map((record) => [record.absolutePath, record.id]));
   const violations: CodeDisciplineViolation[] = [];
@@ -23,7 +21,7 @@ async function collectSyncImportViolations(
   if (aliasPlan.aliasesChanged) {
     violations.push({
       rule: "sync-imports",
-      stop: options.stop,
+      severity: options.severity,
       fix: options.fix,
       filePath: path.relative(options.projectRoot, options.tsconfigPath) || "tsconfig.json",
       message: "tsconfig paths are out of sync with the current source tree",
@@ -49,7 +47,7 @@ async function collectSyncImportViolations(
 
       violations.push({
         rule: "sync-imports",
-        stop: options.stop,
+        severity: options.severity,
         fix: options.fix,
         filePath: file.relativeFromProjectRoot,
         message: `relative import ${occurrence.specifier} should be rewritten to ${aliasId}`,

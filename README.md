@@ -19,16 +19,16 @@ Some repository rules are not really single-file lint rules. They are about the 
 - files growing too large
 - compound filenames that want to become folders
 - alias drift between `tsconfig.json` and source imports
-- blocking or warning on repository policy in CI or startup flows
+- returning structured policy results that a caller can interpret
 
 That is the lane of this package.
 
 ## Commands
 
 ```sh
-code-discipline check
-code-discipline sync
-code-discipline fix
+code-discipline check --config ./discipline.config.mjs
+code-discipline sync --config ./discipline.config.mjs
+code-discipline fix --config ./discipline.config.mjs
 ```
 
 Command responsibilities stay clean:
@@ -41,72 +41,42 @@ Both `sync` and `fix` are gated by rule config. They do not mutate anything unle
 
 ## Config
 
-Every rule uses the same control model:
+Rules are enabled by presence. If a rule object exists under `rules`, it runs. If the rule is omitted, it is disabled.
 
-```txt
-enabled
-= whether the rule runs
+`severity` is discipline metadata, not a logger level and not process control. The library never calls `process.exit()` from core APIs. Callers decide what to do with `ok`, `errors`, and `warnings`.
 
-stop
-= whether violations fail the result / exit non-zero
+Example config module:
 
-fix
-= whether explicit mutation commands may change files
-```
-
-Example `code-discipline.config.json`:
-
-```json
-{
-  "sourceRoot": "src",
-  "sourceExtensions": [
-    ".ts",
-    ".tsx",
-    ".js",
-    ".jsx"
-  ],
-  "excludeDirs": [
-    "node_modules",
-    "dist",
-    ".vite"
-  ],
-  "rules": {
-    "maxFileLines": {
-      "enabled": true,
-      "stop": true,
-      "max": 500
+```js
+export default {
+  sourceRoot: "src",
+  sourceExtensions: [".ts", ".tsx", ".js", ".jsx"],
+  excludeDirs: ["node_modules", "dist", ".vite"],
+  logging: {
+    enabled: true,
+    quiet: false,
+  },
+  rules: {
+    maxFileLines: {
+      severity: "warning",
+      max: 500,
     },
-    "folderizeCompoundFiles": {
-      "enabled": true,
-      "stop": true,
-      "fix": false,
-      "separators": [
-        "_",
-        "-"
-      ]
+    folderizeCompoundFiles: {
+      severity: "error",
+      fix: true,
+      separators: ["_", "-"],
     },
-    "syncImports": {
-      "enabled": true,
-      "stop": true,
-      "fix": true,
-      "alias": {
-        "strategy": "relative-path-slug"
+    syncImports: {
+      severity: "error",
+      fix: true,
+      alias: {
+        strategy: "relative-path-slug",
       },
-      "allowRelative": [
-        "./"
-      ]
-    }
-  }
-}
+      allowRelative: ["./"],
+    },
+  },
+};
 ```
-
-Breaking cleanup in `1.0.0`:
-
-- `severity` was removed
-- `suffixes` was removed
-- `keepRelative` was replaced by `allowRelative`
-- nested `syncImports.imports` was removed
-- `rewrite` was removed as a config flag because `fix` controls mutation
 
 ## Checks
 
@@ -119,18 +89,15 @@ const result = await checkCodeDiscipline({
   projectRoot: "/repo",
   rules: {
     maxFileLines: {
-      enabled: true,
-      stop: true,
+      severity: "warning",
       max: 500,
     },
     folderizeCompoundFiles: {
-      enabled: true,
-      stop: false,
+      severity: "error",
       separators: ["_", "-"],
     },
     syncImports: {
-      enabled: true,
-      stop: true,
+      severity: "error",
       fix: false,
       alias: {
         strategy: "relative-path-slug",
@@ -144,25 +111,31 @@ const result = await checkCodeDiscipline({
 Result shape:
 
 ```ts
-{
+type CodeDisciplineSeverity = "error" | "warning";
+
+type CodeDisciplineViolation = {
+  rule: "max-file-lines" | "folderize-compound-files" | "sync-imports";
+  severity: CodeDisciplineSeverity;
+  fix: boolean;
+  filePath: string;
+  message: string;
+  details: Record<string, unknown>;
+  suggestedPath?: string;
+};
+
+type CodeDisciplineResult = {
   ok: boolean;
+  errors: number;
   warnings: number;
-  failures: number;
-  violations: Array<{
-    rule: "max-file-lines" | "folderize-compound-files" | "sync-imports";
-    stop: boolean;
-    fix: boolean;
-    filePath: string;
-    message: string;
-    details: Record<string, unknown>;
-    suggestedPath?: string;
-  }>;
-}
+  violations: CodeDisciplineViolation[];
+};
 ```
+
+`ok` becomes `false` only when at least one returned violation has `severity: "error"`.
 
 ## Folderization
 
-`folderizeCompoundFiles` is structural. It no longer depends on configured suffix lists.
+`folderizeCompoundFiles` is structural. It does not depend on configured suffix lists.
 
 Same-directory groups:
 
@@ -198,13 +171,14 @@ src/api/user/route.ts
 
 ## Import Sync
 
-`syncImports()` and `code-discipline sync` use one flat `syncImports` config.
+`syncImports()` and `code-discipline sync` use the same severity-aware config shape.
 
 ```ts
 import { syncImports } from "@trebired/code-discipline";
 
 const result = await syncImports({
   projectRoot: "/repo",
+  severity: "error",
   fix: true,
   alias: {
     strategy: "relative-path-slug",
@@ -215,10 +189,12 @@ const result = await syncImports({
 
 Behavior:
 
-- `check` reports import-policy drift in read-only mode
-- `sync` rewrites imports and updates `tsconfig.json` only when `syncImports.fix` is `true`
+- `fix: false` reports alias/import drift as violations
+- `fix: true` rewrites imports and updates `tsconfig.json`
 - `allowRelative: ["./"]` keeps same-folder relative imports
 - upward relative imports can be reported or rewritten through the configured alias policy
+
+`syncImports()` keeps its operational result fields and also returns `errors`, `warnings`, and `violations`.
 
 ## Logging
 
@@ -232,6 +208,5 @@ The default/common logger adaptation path is powered by `@trebired/logger-adapte
 - `fixCodeDiscipline()`
 - `syncImports()`
 - `defineCodeDisciplineConfig()`
-- `loadCodeDisciplineConfig()`
 
-The package also exports the public TypeScript types for rule config, results, violations, alias strategies, logging adapters, and source scan rows.
+The package also exports the public TypeScript types for severity, rule config, results, violations, alias strategies, logging adapters, and source scan rows.

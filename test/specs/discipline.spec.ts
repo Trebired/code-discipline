@@ -9,8 +9,7 @@ describe("code-discipline checks", () => {
       sourceRoot: "src",
       rules: {
         maxFileLines: {
-          enabled: true,
-          stop: true,
+          severity: "warning",
           max: 500,
         },
       },
@@ -20,15 +19,14 @@ describe("code-discipline checks", () => {
       sourceRoot: "src",
       rules: {
         maxFileLines: {
-          enabled: true,
-          stop: true,
+          severity: "warning",
           max: 500,
         },
       },
     });
   });
 
-  test("reports max-file-lines violations as failures when stop is true", async () => {
+  test("returns error violations as ok=false", async () => {
     const projectRoot = tempProject();
 
     writeFile(projectRoot, "src/too-long.ts", "one\n2\n3\n");
@@ -37,8 +35,6 @@ describe("code-discipline checks", () => {
       projectRoot,
       rules: {
         maxFileLines: {
-          enabled: true,
-          stop: true,
           max: 2,
         },
       },
@@ -46,12 +42,12 @@ describe("code-discipline checks", () => {
 
     expect(result).toEqual({
       ok: false,
+      errors: 1,
       warnings: 0,
-      failures: 1,
       violations: [
         {
           rule: "max-file-lines",
-          stop: true,
+          severity: "error",
           fix: false,
           filePath: "src/too-long.ts",
           message: "file has 4 lines and exceeds the limit of 2",
@@ -64,7 +60,7 @@ describe("code-discipline checks", () => {
     });
   });
 
-  test("logs warnings and keeps the check passing when stop is false", async () => {
+  test("returns warning violations as ok=true and logs a warning transport event", async () => {
     const projectRoot = tempProject();
     const { logger, rows } = captureTrebiredLogger();
 
@@ -78,20 +74,20 @@ describe("code-discipline checks", () => {
       },
       rules: {
         maxFileLines: {
-          enabled: true,
-          stop: false,
+          severity: "warning",
           max: 2,
         },
       },
     });
 
     expect(result.ok).toBe(true);
+    expect(result.errors).toBe(0);
     expect(result.warnings).toBe(1);
-    expect(result.failures).toBe(0);
+    expect(result.violations[0]?.severity).toBe("warning");
     expect(rows.map((row) => row.method)).toContain("warn");
   });
 
-  test("detects same-directory compound groups with underscore and dash separators", async () => {
+  test("detects same-directory compound groups with configured severity", async () => {
     const projectRoot = tempProject();
 
     writeFile(projectRoot, "src/api/user_route.ts", "export const route = true;\n");
@@ -102,8 +98,7 @@ describe("code-discipline checks", () => {
       projectRoot,
       rules: {
         folderizeCompoundFiles: {
-          enabled: true,
-          stop: true,
+          severity: "error",
           separators: ["_", "-"],
         },
       },
@@ -112,7 +107,7 @@ describe("code-discipline checks", () => {
     expect(result.violations).toEqual([
       {
         rule: "folderize-compound-files",
-        stop: true,
+        severity: "error",
         fix: false,
         filePath: "src/api/user_route.ts",
         message: "file can be grouped under src/api/user/route.ts",
@@ -126,7 +121,7 @@ describe("code-discipline checks", () => {
       },
       {
         rule: "folderize-compound-files",
-        stop: true,
+        severity: "error",
         fix: false,
         filePath: "src/api/user-schema.ts",
         message: "file can be grouped under src/api/user/schema.ts",
@@ -141,40 +136,7 @@ describe("code-discipline checks", () => {
     ]);
   });
 
-  test("detects repeated folder-prefix files even when only one file matches", async () => {
-    const projectRoot = tempProject();
-
-    writeFile(projectRoot, "src/api/user/user_route.ts", "export const route = true;\n");
-
-    const result = await checkCodeDiscipline({
-      projectRoot,
-      rules: {
-        folderizeCompoundFiles: {
-          enabled: true,
-          stop: true,
-        },
-      },
-    });
-
-    expect(result.violations).toEqual([
-      {
-        rule: "folderize-compound-files",
-        stop: true,
-        fix: false,
-        filePath: "src/api/user/user_route.ts",
-        message: "file can be grouped under src/api/user/route.ts",
-        suggestedPath: "src/api/user/route.ts",
-        details: {
-          mode: "repeated-folder-prefix",
-          prefix: "user",
-          remainder: "route",
-          separator: "_",
-        },
-      },
-    ]);
-  });
-
-  test("supports arbitrary suffix names without configured suffix lists", async () => {
+  test("treats rule presence as enablement", async () => {
     const projectRoot = tempProject();
 
     writeFile(projectRoot, "src/api/user_database.ts", "export const database = true;\n");
@@ -184,20 +146,21 @@ describe("code-discipline checks", () => {
       projectRoot,
       rules: {
         folderizeCompoundFiles: {
-          enabled: true,
-          stop: false,
+          severity: "warning",
         },
       },
     });
 
     expect(result.ok).toBe(true);
+    expect(result.errors).toBe(0);
+    expect(result.warnings).toBe(2);
     expect(result.violations.map((violation) => violation.suggestedPath)).toEqual([
       "src/api/user/database.ts",
       "src/api/user/presenter.ts",
     ]);
   });
 
-  test("check mode validates import policy without rewriting imports or tsconfig", async () => {
+  test("check mode validates sync import policy without mutating files", async () => {
     const projectRoot = tempProject();
 
     writeFile(projectRoot, "tsconfig.json", "{}\n");
@@ -211,8 +174,7 @@ describe("code-discipline checks", () => {
       projectRoot,
       rules: {
         syncImports: {
-          enabled: true,
-          stop: true,
+          severity: "error",
           fix: true,
           alias: {
             strategy: "relative-path-slug",
@@ -223,6 +185,8 @@ describe("code-discipline checks", () => {
     });
 
     expect(result.ok).toBe(false);
+    expect(result.errors).toBe(2);
+    expect(result.warnings).toBe(0);
     expect(result.violations.map((violation) => violation.rule)).toEqual([
       "sync-imports",
       "sync-imports",
@@ -247,8 +211,6 @@ describe("code-discipline checks", () => {
       projectRoot,
       rules: {
         syncImports: {
-          enabled: true,
-          stop: true,
           alias: {
             strategy: "relative-path-slug",
           },
@@ -261,7 +223,7 @@ describe("code-discipline checks", () => {
     expect(result.violations.some((violation) => JSON.stringify(violation.details).includes("../shared/util"))).toBe(true);
   });
 
-  test("rejects removed config keys for check rules", async () => {
+  test("rejects removed config keys for rules", async () => {
     const projectRoot = tempProject();
 
     writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
@@ -270,9 +232,8 @@ describe("code-discipline checks", () => {
       projectRoot,
       rules: {
         maxFileLines: {
-          enabled: true,
           // @ts-expect-error legacy config
-          severity: "error",
+          enabled: true,
           max: 5,
         },
       },
@@ -284,9 +245,23 @@ describe("code-discipline checks", () => {
       projectRoot,
       rules: {
         folderizeCompoundFiles: {
-          enabled: true,
           // @ts-expect-error legacy config
-          suffixes: ["route"],
+          stop: true,
+        },
+      },
+    })).rejects.toMatchObject({
+      code: "invalid_config",
+    });
+
+    await expect(checkCodeDiscipline({
+      projectRoot,
+      rules: {
+        syncImports: {
+          // @ts-expect-error legacy config
+          enabled: true,
+          alias: {
+            strategy: "relative-path-slug",
+          },
         },
       },
     })).rejects.toMatchObject({
@@ -294,19 +269,18 @@ describe("code-discipline checks", () => {
     });
   });
 
-  test("check mode can load sync config from JSON-style shape and leaves tsconfig untouched", async () => {
+  test("check mode leaves tsconfig untouched for warning-only sync drift", async () => {
     const projectRoot = tempProject();
 
     writeFile(projectRoot, "tsconfig.json", JSON.stringify({ compilerOptions: { strict: true } }, null, 2));
     writeFile(projectRoot, "src/feature/app.ts", 'import { util } from "../shared/util";\nexport { util };\n');
     writeFile(projectRoot, "src/shared/util.ts", "export const util = true;\n");
 
-    await checkCodeDiscipline({
+    const result = await checkCodeDiscipline({
       projectRoot,
       rules: {
         syncImports: {
-          enabled: true,
-          stop: false,
+          severity: "warning",
           fix: false,
           alias: {
             strategy: "relative-path-slug",
@@ -316,6 +290,7 @@ describe("code-discipline checks", () => {
       },
     });
 
+    expect(result.ok).toBe(true);
     expect(readJson(projectRoot, "tsconfig.json")).toEqual({
       compilerOptions: {
         strict: true,

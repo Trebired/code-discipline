@@ -2,19 +2,21 @@ import { normalizeCheckCodeDisciplineOptions } from "../config/normalize-check-o
 import { collectSyncImportViolations } from "../imports/check-sync-imports.js";
 import { scanSourceFiles } from "../imports/scan.js";
 import { resolveLogger } from "../shared/logging.js";
+import type { CodeDisciplineResult, CodeDisciplineViolation } from "../shared/discipline-types.js";
 import { fixFolderization } from "./fix-folderization.js";
 import { runFolderizeCompoundFilesRule } from "./rules/folderize-compound-files.js";
 import { runMaxFileLinesRule } from "./rules/max-file-lines.js";
 import type {
   CheckCodeDisciplineOptions,
   CheckCodeDisciplineResult,
-  CodeDisciplineViolation,
   FixCodeDisciplineOptions,
   FixCodeDisciplineResult,
   NormalizedCheckCodeDisciplineOptions,
 } from "./types.js";
 
 function buildNormalizedSyncOptions(options: NormalizedCheckCodeDisciplineOptions) {
+  if (!options.rules.syncImports) return null;
+
   return {
     projectRoot: options.projectRoot,
     sourceRoot: options.sourceRoot,
@@ -22,8 +24,7 @@ function buildNormalizedSyncOptions(options: NormalizedCheckCodeDisciplineOption
     sourceExtensions: options.sourceExtensions,
     excludeDirs: options.excludeDirs,
     tsconfigPath: options.rules.syncImports.tsconfigPath ?? `${options.projectRoot}/tsconfig.json`,
-    enabled: options.rules.syncImports.enabled ?? false,
-    stop: options.rules.syncImports.stop ?? true,
+    severity: options.rules.syncImports.severity ?? "error",
     fix: options.rules.syncImports.fix ?? false,
     alias: {
       prefix: options.rules.syncImports.alias?.prefix ?? "#",
@@ -39,14 +40,15 @@ function sortViolations(violations: CodeDisciplineViolation[]): CodeDisciplineVi
   return [...violations].sort((left, right) => left.filePath.localeCompare(right.filePath) || left.rule.localeCompare(right.rule));
 }
 
-function summarizeViolations(violations: CodeDisciplineViolation[]) {
-  const warnings = violations.filter((violation) => !violation.stop).length;
-  const failures = violations.length - warnings;
+function summarizeViolations(violations: CodeDisciplineViolation[]): CodeDisciplineResult {
+  const warnings = violations.filter((violation) => violation.severity === "warning").length;
+  const errors = violations.length - warnings;
 
   return {
-    ok: failures === 0,
+    ok: errors === 0,
+    errors,
     warnings,
-    failures,
+    violations,
   };
 }
 
@@ -55,36 +57,55 @@ function logSummary(
   result: CheckCodeDisciplineResult | FixCodeDisciplineResult,
   logger: ReturnType<typeof resolveLogger>,
 ) {
-  if (result.failures > 0) {
-    logger.flush(`error`, `discipline-${label}-failed`, `${label} found blocking violations`, {
+  if (result.errors > 0) {
+    logger.flush("error", `discipline-${label}-failed`, `${label} completed with error violations`, {
+      discipline: {
+        errors: result.errors,
+        warnings: result.warnings,
+      },
+      errors: result.errors,
       warnings: result.warnings,
-      failures: result.failures,
       violations: result.violations,
     });
     return;
   }
 
   if (result.warnings > 0) {
-    logger.flush(`warn`, `discipline-${label}-warning`, `${label} completed with warnings`, {
+    logger.flush("warn", `discipline-${label}-warning`, `${label} completed with warning violations`, {
+      discipline: {
+        errors: result.errors,
+        warnings: result.warnings,
+      },
+      errors: result.errors,
       warnings: result.warnings,
-      failures: result.failures,
       violations: result.violations,
     });
     return;
   }
 
   logger.flush(`success`, `discipline-${label}-ok`, `${label} completed`, {
+    discipline: {
+      errors: result.errors,
+      warnings: result.warnings,
+    },
+    errors: result.errors,
     warnings: result.warnings,
-    failures: result.failures,
     violations: result.violations,
   });
 }
 
 async function collectViolations(options: NormalizedCheckCodeDisciplineOptions): Promise<CodeDisciplineViolation[]> {
   const sourceFiles = await scanSourceFiles(options);
-  const maxFileViolations = await runMaxFileLinesRule(sourceFiles, options);
-  const folderizeViolations = runFolderizeCompoundFilesRule(sourceFiles, options);
-  const syncImportViolations = await collectSyncImportViolations(sourceFiles, buildNormalizedSyncOptions(options));
+  const maxFileViolations = options.rules.maxFileLines
+    ? await runMaxFileLinesRule(sourceFiles, options)
+    : [];
+  const folderizeViolations = options.rules.folderizeCompoundFiles
+    ? runFolderizeCompoundFilesRule(sourceFiles, options)
+    : [];
+  const normalizedSyncOptions = buildNormalizedSyncOptions(options);
+  const syncImportViolations = normalizedSyncOptions
+    ? await collectSyncImportViolations(sourceFiles, normalizedSyncOptions)
+    : [];
 
   return sortViolations([
     ...maxFileViolations,
@@ -97,11 +118,7 @@ async function checkCodeDiscipline(options: CheckCodeDisciplineOptions): Promise
   const normalized = await normalizeCheckCodeDisciplineOptions(options);
   const logger = resolveLogger(normalized.logging);
   const violations = await collectViolations(normalized);
-  const summary = summarizeViolations(violations);
-  const result: CheckCodeDisciplineResult = {
-    ...summary,
-    violations,
-  };
+  const result: CheckCodeDisciplineResult = summarizeViolations(violations);
 
   logSummary("check", result, logger);
   return result;
@@ -117,6 +134,12 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
     logSummary("fix", result, logger);
   } else {
     logger.flush("success", "discipline-fix-ok", "fix completed", {
+      discipline: {
+        errors: result.errors,
+        warnings: result.warnings,
+      },
+      errors: result.errors,
+      warnings: result.warnings,
       movedFiles: result.moved_files,
       rewrittenFiles: result.rewritten_files,
       rewrittenImports: result.rewritten_imports,

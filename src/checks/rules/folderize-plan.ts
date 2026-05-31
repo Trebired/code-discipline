@@ -68,7 +68,7 @@ function planFolderizeCompoundFiles(
   sourceFiles: ScannedSourceFile[],
   options: NormalizedCheckCodeDisciplineOptions,
 ): FolderizationCandidate[] {
-  if (!options.rules.folderizeCompoundFiles.enabled) return [];
+  if (!options.rules.folderizeCompoundFiles) return [];
 
   const separators = options.rules.folderizeCompoundFiles.separators;
   const byDirectoryAndPrefix = new Map<string, ScannedSourceFile[]>();

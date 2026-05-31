@@ -39,7 +39,6 @@ describe("code-discipline tsconfig retries", () => {
         fix: true,
         alias: { strategy: "relative-path-slug" },
         logging: {
-          enabled: true,
           adapter,
         },
       });

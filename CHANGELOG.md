@@ -2,6 +2,13 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 1.3.0
+
+- Replaced rule-level `stop` with severity-based discipline results using `severity: "error" | "warning"`.
+- Removed legacy `stop` and per-rule `enabled` config support; rule presence now enables the rule.
+- Removed JSON config auto-discovery and changed the CLI to require an explicit `--config` module path.
+- Changed `syncImports()` to return severity-aware `errors`, `warnings`, and `violations` alongside its operational mutation summary.
+
 ## 1.2.0
 
 - Changed package logging to emit `@trebired/code-discipline initialized` on startup through the `code-discipline.initialize` group.

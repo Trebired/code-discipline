@@ -56,7 +56,13 @@ describe("code-discipline syncImports", () => {
     await expect(syncImports({
       projectRoot,
       // @ts-expect-error legacy config
-      severity: "error",
+      enabled: true,
+    })).rejects.toMatchObject({ code: "invalid_config" });
+
+    await expect(syncImports({
+      projectRoot,
+      // @ts-expect-error legacy config
+      stop: true,
     })).rejects.toMatchObject({ code: "invalid_config" });
   });
 
@@ -77,6 +83,9 @@ describe("code-discipline syncImports", () => {
 
     expect(result).toEqual({
       ok: true,
+      errors: 0,
+      warnings: 0,
+      violations: [],
       mutations_allowed: true,
       aliases_changed: true,
       aliases_count: 3,
@@ -93,7 +102,7 @@ describe("code-discipline syncImports", () => {
     expect(readFile(projectRoot, "src/feature/app.ts")).toContain('from "./local"');
   });
 
-  test("reports drift without mutating when fix is false", async () => {
+  test("returns error drift without mutating when severity is error", async () => {
     const projectRoot = tempProject();
 
     writeFile(projectRoot, "tsconfig.json", "{}\n");
@@ -106,25 +115,21 @@ describe("code-discipline syncImports", () => {
     const result = await syncImports({
       projectRoot,
       fix: false,
-      stop: true,
+      severity: "error",
       alias: { strategy: "relative-path-slug" },
       allowRelative: ["./"],
     });
 
-    expect(result).toEqual({
-      ok: false,
-      mutations_allowed: false,
-      aliases_changed: true,
-      aliases_count: 2,
-      import_violations: 2,
-      rewritten_files: 0,
-      rewritten_imports: 0,
-    });
+    expect(result.ok).toBe(false);
+    expect(result.errors).toBe(2);
+    expect(result.warnings).toBe(0);
+    expect(result.import_violations).toBe(2);
+    expect(result.violations.every((violation) => violation.severity === "error")).toBe(true);
     expect(readFile(projectRoot, "tsconfig.json")).toBe(beforeTsconfig);
     expect(readFile(projectRoot, "src/feature/app.ts")).toBe(beforeSource);
   });
 
-  test("keeps passing and logs a warning when drift is allowed to continue", async () => {
+  test("returns warning drift and logs a warning when severity is warning", async () => {
     const projectRoot = tempProject();
     const { logger, rows } = captureTrebiredLogger();
 
@@ -135,7 +140,7 @@ describe("code-discipline syncImports", () => {
     const result = await syncImports({
       projectRoot,
       fix: false,
-      stop: false,
+      severity: "warning",
       alias: { strategy: "relative-path-slug" },
       logging: {
         enabled: true,
@@ -144,6 +149,8 @@ describe("code-discipline syncImports", () => {
     });
 
     expect(result.ok).toBe(true);
+    expect(result.errors).toBe(0);
+    expect(result.warnings).toBe(2);
     expect(rows.map((row) => row.method)).toContain("warn");
   });
 
@@ -166,6 +173,7 @@ describe("code-discipline syncImports", () => {
     });
 
     expect(result.ok).toBe(true);
+    expect(result.violations).toEqual([]);
     expect(rows).toHaveLength(2);
     expect(rows[0]).toMatchObject({
       event: "package-initialized",

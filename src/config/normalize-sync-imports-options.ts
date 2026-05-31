@@ -6,12 +6,25 @@ import {
   DEFAULT_ALIAS_STRATEGY,
   DEFAULT_ALLOW_RELATIVE,
   DEFAULT_RULE_FIX,
-  DEFAULT_RULE_STOP,
+  DEFAULT_RULE_SEVERITY,
 } from "../shared/constants.js";
 import { InvalidCodeDisciplineConfigError, InvalidTsconfigPathError } from "../shared/errors.js";
 import type { NormalizedSyncImportsOptions, SyncImportsOptions } from "../imports/types.js";
+import type { CodeDisciplineSeverity } from "../shared/discipline-types.js";
 import { isDirectory } from "../shared/utils.js";
 import { normalizeSourceOptions } from "./normalize-source-options.js";
+
+function normalizeSeverity(value: unknown): CodeDisciplineSeverity {
+  const severity = value ?? DEFAULT_RULE_SEVERITY;
+  if (severity !== "error" && severity !== "warning") {
+    throw new InvalidCodeDisciplineConfigError('syncImports.severity must be "error" or "warning"', {
+      key: "severity",
+      value: severity,
+    });
+  }
+
+  return severity;
+}
 
 async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise<NormalizedSyncImportsOptions> {
   if ("imports" in (options as Record<string, unknown>)) {
@@ -20,7 +33,7 @@ async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise
     });
   }
 
-  for (const key of ["rewrite", "keepRelative", "severity"] as const) {
+  for (const key of ["enabled", "stop", "rewrite", "keepRelative"] as const) {
     if (key in (options as Record<string, unknown>)) {
       throw new InvalidCodeDisciplineConfigError(`syncImports.${key} is no longer supported`, {
         key,
@@ -38,8 +51,7 @@ async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise
   return {
     ...source,
     tsconfigPath,
-    enabled: options.enabled ?? true,
-    stop: options.stop ?? DEFAULT_RULE_STOP,
+    severity: normalizeSeverity(options.severity),
     fix: options.fix ?? DEFAULT_RULE_FIX,
     alias: {
       prefix: options.alias?.prefix ?? DEFAULT_ALIAS_PREFIX,

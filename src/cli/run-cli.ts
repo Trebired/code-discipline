@@ -3,8 +3,9 @@
 import { pathToFileURL } from "node:url";
 
 import { checkCodeDiscipline, fixCodeDiscipline } from "../checks/index.js";
-import type { CodeDisciplineConfig, CodeDisciplineViolation } from "../checks/types.js";
-import { loadCodeDisciplineConfig } from "../config/index.js";
+import type { CodeDisciplineConfig } from "../checks/types.js";
+import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
+import { loadCodeDisciplineConfigModule } from "../config/index.js";
 import { syncImports } from "../imports/sync-imports.js";
 import type { SyncImportsOptions } from "../imports/types.js";
 
@@ -20,12 +21,15 @@ type CliRunResult = {
 
 function renderHelp(): string {
   return [
-    "Usage: code-discipline <command> [--config <path>]",
+    "Usage: code-discipline <command> --config <path>",
     "",
     "Commands:",
     "  check         run read-only discipline validation",
     "  sync          sync tsconfig aliases and import paths when syncImports.fix is true",
     "  fix           apply folderization moves when folderizeCompoundFiles.fix is true",
+    "",
+    "Config:",
+    "  --config <path> must point to a module that default-exports the config object.",
     "",
   ].join("\n");
 }
@@ -63,8 +67,7 @@ function buildSyncImportsOptions(projectRoot: string, config: CodeDisciplineConf
     tsconfigPath: syncRule.tsconfigPath,
     sourceExtensions: syncRule.sourceExtensions ?? config.sourceExtensions,
     excludeDirs: syncRule.excludeDirs ?? config.excludeDirs,
-    enabled: syncRule.enabled,
-    stop: syncRule.stop,
+    severity: syncRule.severity,
     fix: syncRule.fix,
     alias: syncRule.alias,
     allowRelative: syncRule.allowRelative,
@@ -84,7 +87,7 @@ function buildCheckOptions(projectRoot: string, config: CodeDisciplineConfig) {
 }
 
 function formatViolation(violation: CodeDisciplineViolation): string {
-  const label = violation.stop ? "FAIL" : "WARN";
+  const label = violation.severity === "error" ? "ERROR" : "WARNING";
   const suggested = violation.suggestedPath ? ` suggested=${violation.suggestedPath}` : "";
   return `${label} ${violation.rule} ${violation.filePath} ${violation.message}${suggested}`;
 }
@@ -107,7 +110,11 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
       throw new Error(`Unexpected arguments: ${parsed.extra.join(" ")}`);
     }
 
-    const { config } = await loadCodeDisciplineConfig(cwd, parsed.configPath);
+    if (!parsed.configPath) {
+      throw new Error("Missing required --config <path> option");
+    }
+
+    const { config } = await loadCodeDisciplineConfigModule(cwd, parsed.configPath);
 
     if (command === "check") {
       const result = await checkCodeDiscipline(buildCheckOptions(cwd, config));
@@ -121,7 +128,7 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
         stdout(`${formatViolation(violation)}\n`);
       }
 
-      stdout(`Summary: ${result.failures} failures, ${result.warnings} warnings.\n`);
+      stdout(`Summary: ${result.errors} errors, ${result.warnings} warnings.\n`);
       return { exitCode: result.ok ? 0 : 1 };
     }
 

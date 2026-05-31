@@ -1,7 +1,8 @@
 import fs from "node:fs/promises";
 
-import type { CodeDisciplineViolation, NormalizedCheckCodeDisciplineOptions } from "../types.js";
+import type { NormalizedCheckCodeDisciplineOptions } from "../types.js";
 import type { ScannedSourceFile } from "../../imports/types.js";
+import type { CodeDisciplineViolation } from "../../shared/discipline-types.js";
 
 function countLines(text: string): number {
   if (text.length === 0) return 0;
@@ -12,7 +13,7 @@ async function runMaxFileLinesRule(
   sourceFiles: ScannedSourceFile[],
   options: NormalizedCheckCodeDisciplineOptions,
 ): Promise<CodeDisciplineViolation[]> {
-  if (!options.rules.maxFileLines.enabled) return [];
+  if (!options.rules.maxFileLines) return [];
 
   const violations: CodeDisciplineViolation[] = [];
 
@@ -24,8 +25,8 @@ async function runMaxFileLinesRule(
 
     violations.push({
       rule: "max-file-lines",
-      stop: options.rules.maxFileLines.stop,
-      fix: options.rules.maxFileLines.fix,
+      severity: options.rules.maxFileLines.severity,
+      fix: false,
       filePath: file.relativeFromProjectRoot,
       message: `file has ${lineCount} lines and exceeds the limit of ${options.rules.maxFileLines.max}`,
       details: {

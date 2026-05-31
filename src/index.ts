@@ -6,13 +6,13 @@ export {
   DEFAULT_EXCLUDE_DIRS,
   DEFAULT_FOLDERIZE_COMPOUND_FILE_SEPARATORS,
   DEFAULT_RULE_FIX,
-  DEFAULT_RULE_STOP,
+  DEFAULT_RULE_SEVERITY,
   DEFAULT_SOURCE_EXTENSIONS,
   DEFAULT_SOURCE_ROOT,
 } from "./shared/constants.js";
 
 export { checkCodeDiscipline, fixCodeDiscipline } from "./checks/index.js";
-export { defineCodeDisciplineConfig, loadCodeDisciplineConfig } from "./config/index.js";
+export { defineCodeDisciplineConfig } from "./config/index.js";
 export { normalizeSyncImportsOptions } from "./config/normalize-sync-imports-options.js";
 export { planTsconfigAliases, syncTsconfigAliases } from "./imports/aliases.js";
 export { resolveRelativeImport } from "./imports/resolve.js";
@@ -36,6 +36,13 @@ export {
   SyncImportsError,
   isSyncImportsError,
 } from "./shared/errors.js";
+
+export type {
+  CodeDisciplineResult,
+  CodeDisciplineRuleName,
+  CodeDisciplineSeverity,
+  CodeDisciplineViolation,
+} from "./shared/discipline-types.js";
 
 export type {
   CodeDisciplineLogAdapterFn,
@@ -71,9 +78,7 @@ export type {
   CheckCodeDisciplineOptions,
   CheckCodeDisciplineResult,
   CodeDisciplineConfig,
-  CodeDisciplineRuleName,
   CodeDisciplineRules,
-  CodeDisciplineViolation,
   FixCodeDisciplineOptions,
   FixCodeDisciplineResult,
   FolderizeCompoundFilesRuleOptions,
@@ -81,6 +86,5 @@ export type {
   NormalizedCheckCodeDisciplineOptions,
   NormalizedFolderizeCompoundFilesRule,
   NormalizedMaxFileLinesRule,
-  NormalizedRuleControl,
-  RuleControlOptions,
+  SeverityRuleOptions,
 } from "./checks/types.js";

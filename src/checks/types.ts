@@ -1,17 +1,17 @@
 import type { LoggingOptions } from "../shared/logging-types.js";
 import type { SourceScanOptions, SyncImportsRuleOptions } from "../imports/types.js";
+import type { CodeDisciplineResult, CodeDisciplineSeverity } from "../shared/discipline-types.js";
 
-type RuleControlOptions = {
-  enabled?: boolean;
-  stop?: boolean;
-  fix?: boolean;
+type SeverityRuleOptions = {
+  severity?: CodeDisciplineSeverity;
 };
 
-type MaxFileLinesRuleOptions = RuleControlOptions & {
+type MaxFileLinesRuleOptions = SeverityRuleOptions & {
   max?: number;
 };
 
-type FolderizeCompoundFilesRuleOptions = RuleControlOptions & {
+type FolderizeCompoundFilesRuleOptions = SeverityRuleOptions & {
+  fix?: boolean;
   separators?: string[];
 };
 
@@ -34,17 +34,14 @@ type FixCodeDisciplineOptions = CheckCodeDisciplineOptions;
 
 type CodeDisciplineConfig = Omit<CheckCodeDisciplineOptions, "projectRoot">;
 
-type NormalizedRuleControl = {
-  enabled: boolean;
-  stop: boolean;
-  fix: boolean;
-};
-
-type NormalizedMaxFileLinesRule = NormalizedRuleControl & {
+type NormalizedMaxFileLinesRule = {
+  severity: CodeDisciplineSeverity;
   max: number;
 };
 
-type NormalizedFolderizeCompoundFilesRule = NormalizedRuleControl & {
+type NormalizedFolderizeCompoundFilesRule = {
+  severity: CodeDisciplineSeverity;
+  fix: boolean;
   separators: string[];
 };
 
@@ -52,48 +49,25 @@ type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
   sourceRootRelative: string;
   logging: LoggingOptions;
   rules: {
-    maxFileLines: NormalizedMaxFileLinesRule;
-    folderizeCompoundFiles: NormalizedFolderizeCompoundFilesRule;
-    syncImports: SyncImportsRuleOptions;
+    maxFileLines?: NormalizedMaxFileLinesRule;
+    folderizeCompoundFiles?: NormalizedFolderizeCompoundFilesRule;
+    syncImports?: SyncImportsRuleOptions;
   };
 };
 
-type CodeDisciplineRuleName = "max-file-lines" | "folderize-compound-files" | "sync-imports";
+type CheckCodeDisciplineResult = CodeDisciplineResult;
 
-type CodeDisciplineViolation = {
-  rule: CodeDisciplineRuleName;
-  stop: boolean;
-  fix: boolean;
-  filePath: string;
-  message: string;
-  details: Record<string, unknown>;
-  suggestedPath?: string;
-};
-
-type CheckCodeDisciplineResult = {
-  ok: boolean;
-  warnings: number;
-  failures: number;
-  violations: CodeDisciplineViolation[];
-};
-
-type FixCodeDisciplineResult = {
-  ok: boolean;
+type FixCodeDisciplineResult = CodeDisciplineResult & {
   moved_files: number;
   rewritten_files: number;
   rewritten_imports: number;
-  warnings: number;
-  failures: number;
-  violations: CodeDisciplineViolation[];
 };
 
 export type {
   CheckCodeDisciplineOptions,
   CheckCodeDisciplineResult,
   CodeDisciplineConfig,
-  CodeDisciplineRuleName,
   CodeDisciplineRules,
-  CodeDisciplineViolation,
   FixCodeDisciplineOptions,
   FixCodeDisciplineResult,
   FolderizeCompoundFilesRuleOptions,
@@ -101,6 +75,5 @@ export type {
   NormalizedCheckCodeDisciplineOptions,
   NormalizedFolderizeCompoundFilesRule,
   NormalizedMaxFileLinesRule,
-  NormalizedRuleControl,
-  RuleControlOptions,
+  SeverityRuleOptions,
 };

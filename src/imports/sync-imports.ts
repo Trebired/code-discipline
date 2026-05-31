@@ -1,10 +1,22 @@
 import { normalizeSyncImportsOptions } from "../config/normalize-sync-imports-options.js";
 import { resolveLogger } from "../shared/logging.js";
+import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
 import { planTsconfigAliases, syncTsconfigAliases } from "./aliases.js";
 import { collectSyncImportViolations } from "./check-sync-imports.js";
 import { rewriteSourceImports } from "./rewrite.js";
 import { scanSourceFiles } from "./scan.js";
 import type { SyncImportsOptions, SyncImportsResult } from "./types.js";
+
+function summarizeViolations(violations: CodeDisciplineViolation[]) {
+  const warnings = violations.filter((violation) => violation.severity === "warning").length;
+  const errors = violations.length - warnings;
+  return {
+    ok: errors === 0,
+    errors,
+    warnings,
+    violations,
+  };
+}
 
 async function syncImports(options: SyncImportsOptions): Promise<SyncImportsResult> {
   const normalized = await normalizeSyncImportsOptions(options);
@@ -22,24 +34,10 @@ async function syncImports(options: SyncImportsOptions): Promise<SyncImportsResu
     const plannedAliases = await planTsconfigAliases(normalized, sourceFiles, logger);
     const driftViolations = await collectSyncImportViolations(sourceFiles, normalized, logger);
 
-    if (!normalized.enabled) {
-      const result: SyncImportsResult = {
-        ok: true,
-        mutations_allowed: false,
-        aliases_changed: false,
-        aliases_count: plannedAliases.aliasesCount,
-        import_violations: 0,
-        rewritten_files: 0,
-        rewritten_imports: 0,
-      };
-      logger.flush("info", "sync-disabled", "sync completed", result);
-      return result;
-    }
-
     if (!normalized.fix) {
-      const failed = normalized.stop && driftViolations.length > 0;
+      const summary = summarizeViolations(driftViolations);
       const result: SyncImportsResult = {
-        ok: !failed,
+        ...summary,
         mutations_allowed: false,
         aliases_changed: plannedAliases.aliasesChanged,
         aliases_count: plannedAliases.aliasesCount,
@@ -48,14 +46,20 @@ async function syncImports(options: SyncImportsOptions): Promise<SyncImportsResu
         rewritten_imports: 0,
       };
       logger.flush(
-        failed ? "error" : driftViolations.length > 0 ? "warn" : "success",
-        failed ? "sync-drift-detected" : driftViolations.length > 0 ? "sync-drift-warning" : "sync-drift-clear",
-        failed
-          ? "sync found blocking drift"
-          : driftViolations.length > 0
-            ? "sync found drift"
+        result.errors > 0 ? "error" : result.warnings > 0 ? "warn" : "success",
+        result.errors > 0 ? "sync-drift-detected" : result.warnings > 0 ? "sync-drift-warning" : "sync-drift-clear",
+        result.errors > 0
+          ? "sync found error drift"
+          : result.warnings > 0
+            ? "sync found warning drift"
             : "sync policy already satisfied",
-        result,
+        {
+          ...result,
+          discipline: {
+            errors: result.errors,
+            warnings: result.warnings,
+          },
+        },
       );
       return result;
     }
@@ -67,6 +71,9 @@ async function syncImports(options: SyncImportsOptions): Promise<SyncImportsResu
 
     const result: SyncImportsResult = {
       ok: true,
+      errors: 0,
+      warnings: 0,
+      violations: [],
       mutations_allowed: true,
       aliases_changed: aliasState.aliasesChanged,
       aliases_count: aliasState.aliasesCount,
