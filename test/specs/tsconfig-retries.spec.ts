@@ -54,8 +54,22 @@ describe("code-discipline tsconfig retries", () => {
       },
       strict: true,
     });
-    expect(rows.map((row) => row.event)).toContain("tsconfig-read-retry");
-    expect(rows.map((row) => row.event)).toContain("tsconfig-read-recovered");
+    expect(rows[0]).toMatchObject({
+      event: "logger-initialized",
+      group: "logger.loader",
+      level: "success",
+      message: "@trebired/code-discipline initialized",
+    });
+    expect(rows[1]).toMatchObject({
+      event: "sync-finished",
+      level: "success",
+      message: "sync completed",
+    });
+    const diagnostics = rows[1].metadata?.diagnostics as {
+      events: Array<{ event: string }>;
+    };
+    expect(diagnostics.events.map((entry) => entry.event)).toContain("tsconfig-read-retry");
+    expect(diagnostics.events.map((entry) => entry.event)).toContain("tsconfig-read-recovered");
   });
 
   test("throws when tsconfig stays broken after retries", async () => {

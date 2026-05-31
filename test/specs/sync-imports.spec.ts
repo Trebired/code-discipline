@@ -8,7 +8,7 @@ import {
   createRelativePathSlugAlias,
   syncImports,
 } from "../../src/index.js";
-import { captureTrebiredLogger, readFile, readJson, tempProject, writeFile } from "./helpers.js";
+import { captureCallbackLogger, captureTrebiredLogger, readFile, readJson, tempProject, writeFile } from "./helpers.js";
 
 describe("code-discipline syncImports", () => {
   test("exports stable slug and hash strategies", () => {
@@ -145,6 +145,44 @@ describe("code-discipline syncImports", () => {
 
     expect(result.ok).toBe(true);
     expect(rows.map((row) => row.method)).toContain("warn");
+  });
+
+  test("buffers unresolved rewrite diagnostics into one final report", async () => {
+    const projectRoot = tempProject();
+    const { adapter, rows } = captureCallbackLogger();
+
+    writeFile(projectRoot, "tsconfig.json", "{}\n");
+    writeFile(projectRoot, "src/feature/app.ts", 'import { one } from "../missing/one";\nimport { two } from "../missing/two";\nexport { one, two };\n');
+    writeFile(projectRoot, "src/shared/util.ts", "export const util = true;\n");
+
+    const result = await syncImports({
+      projectRoot,
+      fix: true,
+      alias: { strategy: "relative-path-slug" },
+      logging: {
+        enabled: true,
+        adapter,
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({
+      event: "logger-initialized",
+      group: "logger.loader",
+      level: "success",
+    });
+    expect(rows[1]).toMatchObject({
+      event: "sync-finished",
+      level: "success",
+    });
+    const diagnostics = rows[1].metadata?.diagnostics as {
+      events: Array<{ count: number; event: string }>;
+    };
+    expect(diagnostics.events).toContainEqual(expect.objectContaining({
+      event: "rewrite-skipped-unresolved",
+      count: 2,
+    }));
   });
 
   test("supports custom alias strategies", async () => {

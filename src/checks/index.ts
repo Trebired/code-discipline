@@ -50,46 +50,33 @@ function summarizeViolations(violations: CodeDisciplineViolation[]) {
   };
 }
 
-function logViolation(violation: CodeDisciplineViolation, logger: ReturnType<typeof resolveLogger>) {
-  const metadata = {
-    rule: violation.rule,
-    filePath: violation.filePath,
-    suggestedPath: violation.suggestedPath,
-    details: violation.details,
-  };
-
-  if (violation.stop) {
-    logger.error("discipline-violation", violation.message, metadata);
-    return;
-  }
-
-  logger.warn("discipline-warning", violation.message, metadata);
-}
-
 function logSummary(
   label: "check" | "fix",
   result: CheckCodeDisciplineResult | FixCodeDisciplineResult,
   logger: ReturnType<typeof resolveLogger>,
 ) {
-  if (result.violations.length > 0) {
-    for (const violation of result.violations) {
-      logViolation(violation, logger);
-    }
-  }
-
-  if (result.ok) {
-    logger.success(`discipline-${label}-ok`, `${label} completed`, {
+  if (result.failures > 0) {
+    logger.flush(`error`, `discipline-${label}-failed`, `${label} found blocking violations`, {
       warnings: result.warnings,
       failures: result.failures,
-      violations: result.violations.length,
+      violations: result.violations,
     });
     return;
   }
 
-  logger.error(`discipline-${label}-failed`, `${label} found blocking violations`, {
+  if (result.warnings > 0) {
+    logger.flush(`warn`, `discipline-${label}-warning`, `${label} completed with warnings`, {
+      warnings: result.warnings,
+      failures: result.failures,
+      violations: result.violations,
+    });
+    return;
+  }
+
+  logger.flush(`success`, `discipline-${label}-ok`, `${label} completed`, {
     warnings: result.warnings,
     failures: result.failures,
-    violations: result.violations.length,
+    violations: result.violations,
   });
 }
 
@@ -129,7 +116,7 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
   if (!result.ok || result.violations.length > 0) {
     logSummary("fix", result, logger);
   } else {
-    logger.success("discipline-fix-ok", "fix completed", {
+    logger.flush("success", "discipline-fix-ok", "fix completed", {
       movedFiles: result.moved_files,
       rewrittenFiles: result.rewritten_files,
       rewrittenImports: result.rewritten_imports,

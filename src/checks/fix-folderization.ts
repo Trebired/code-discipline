@@ -7,7 +7,7 @@ import type {
   NormalizedCheckCodeDisciplineOptions,
 } from "./types.js";
 import type { ScannedSourceFile } from "../imports/types.js";
-import type { NormalizedSyncImportsLogger } from "../shared/logging-types.js";
+import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
 import { applyTextReplacements, collectModuleSpecifiers } from "../imports/module-specifiers.js";
 import { isRelativeImportSpecifier } from "../imports/resolve.js";
 import { FileConflictError, FixFailureError, RewriteFailureError } from "../shared/errors.js";
@@ -231,7 +231,7 @@ async function removeEmptyDirectories(directories: string[]): Promise<void> {
 async function fixFolderization(
   sourceFiles: ScannedSourceFile[],
   options: NormalizedCheckCodeDisciplineOptions,
-  logger: NormalizedSyncImportsLogger,
+  logger: NormalizedCodeDisciplineLogger,
 ): Promise<FixCodeDisciplineResult> {
   const { moves, violations } = buildMovePlan(sourceFiles, options);
   const warnings = violations.filter((violation) => !violation.stop).length;

@@ -8,7 +8,7 @@ import type {
   SyncAliasesResult,
   TsconfigJson,
 } from "./types.js";
-import type { NormalizedSyncImportsLogger } from "../shared/logging-types.js";
+import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
 import { resolveProjectPathTarget } from "./resolve.js";
 import { generateAliasId } from "./strategies.js";
 import { isInsideDirectory, parseTsconfigJson, pathExists, stableSerialize, toStableJson, wait } from "../shared/utils.js";
@@ -79,7 +79,7 @@ async function extractExistingPaths(
 
 async function readTsconfig(
   options: NormalizedSyncImportsOptions,
-  logger?: NormalizedSyncImportsLogger,
+  logger?: NormalizedCodeDisciplineLogger,
 ): Promise<{ config: TsconfigJson; originalConfig: TsconfigJson }> {
   if (!await pathExists(options.tsconfigPath)) {
     return {
@@ -124,7 +124,7 @@ async function readTsconfig(
 async function syncTsconfigAliases(
   options: NormalizedSyncImportsOptions,
   sourceFiles: ScannedSourceFile[],
-  logger: NormalizedSyncImportsLogger,
+  logger: NormalizedCodeDisciplineLogger,
 ): Promise<SyncAliasesResult> {
   const result = await planTsconfigAliases(options, sourceFiles, logger);
 
@@ -147,7 +147,7 @@ async function syncTsconfigAliases(
 async function planTsconfigAliases(
   options: NormalizedSyncImportsOptions,
   sourceFiles: ScannedSourceFile[],
-  logger?: NormalizedSyncImportsLogger,
+  logger?: NormalizedCodeDisciplineLogger,
 ): Promise<SyncAliasesResult> {
   const { config, originalConfig } = await readTsconfig(options, logger);
   const sourceFilesByPath = new Map(sourceFiles.map((file) => [file.absolutePath, file]));

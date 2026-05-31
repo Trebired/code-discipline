@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { CodeDisciplineViolation } from "../checks/types.js";
-import type { NormalizedSyncImportsLogger } from "../shared/logging-types.js";
+import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
 import { planTsconfigAliases } from "./aliases.js";
 import { collectModuleSpecifiers } from "./module-specifiers.js";
 import { resolveRelativeImport } from "./resolve.js";
@@ -12,7 +12,7 @@ import type { NormalizedSyncImportsOptions, ScannedSourceFile } from "./types.js
 async function collectSyncImportViolations(
   sourceFiles: ScannedSourceFile[],
   options: NormalizedSyncImportsOptions,
-  logger?: NormalizedSyncImportsLogger,
+  logger?: NormalizedCodeDisciplineLogger,
 ): Promise<CodeDisciplineViolation[]> {
   if (!options.enabled) return [];
 

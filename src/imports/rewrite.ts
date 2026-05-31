@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 
 import { RewriteFailureError } from "../shared/errors.js";
-import type { NormalizedSyncImportsLogger } from "../shared/logging-types.js";
+import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
 import { applyTextReplacements, collectModuleSpecifiers } from "./module-specifiers.js";
 import { resolveRelativeImport } from "./resolve.js";
 import type {
@@ -37,7 +37,7 @@ async function rewriteSourceFile(
   file: ScannedSourceFile,
   options: NormalizedSyncImportsOptions,
   aliasIdsByFilePath: Map<string, string>,
-  logger: NormalizedSyncImportsLogger,
+  logger: NormalizedCodeDisciplineLogger,
 ): Promise<RewriteFileResult> {
   try {
     const text = await fs.readFile(file.absolutePath, "utf8");
@@ -90,7 +90,7 @@ async function rewriteSourceImports(
   sourceFiles: ScannedSourceFile[],
   aliasRecords: AliasRecord[],
   options: NormalizedSyncImportsOptions,
-  logger: NormalizedSyncImportsLogger,
+  logger: NormalizedCodeDisciplineLogger,
 ): Promise<RewriteResult> {
   const aliasIdsByFilePath = new Map(aliasRecords.map((record) => [record.absolutePath, record.id]));
   let rewrittenFiles = 0;

@@ -1,15 +1,33 @@
 import { resolveLogger as resolveSharedLogger } from "@trebired/logger-adapter";
 
-import { SYNC_IMPORTS_LOG_GROUP } from "./constants.js";
+import { CODE_DISCIPLINE_LOG_GROUP } from "./constants.js";
 import type {
-  LogAdapterFn,
+  CodeDisciplineLogAdapterFn,
+  CodeDisciplineLogEvent,
+  CodeDisciplineLogLevel,
   LoggingOptions,
-  NormalizedSyncImportsLogger,
-  SyncImportsLogEvent,
-  SyncImportsLogLevel,
+  NormalizedCodeDisciplineLogger,
 } from "./logging-types.js";
 
 type LogMethod = (...args: unknown[]) => unknown;
+
+type BufferedEventAggregate = {
+  count: number;
+  event: string;
+  group: string;
+  levels: Set<CodeDisciplineLogLevel>;
+  messages: string[];
+  metadataSamples: Record<string, unknown>[];
+};
+
+type BufferedEventStore = {
+  aggregates: Map<string, BufferedEventAggregate>;
+  levelCounts: Record<CodeDisciplineLogLevel, number>;
+  totalEvents: number;
+};
+
+const MAX_BUFFERED_MESSAGES = 5;
+const MAX_BUFFERED_METADATA_SAMPLES = 5;
 
 function getMethod(source: unknown, name: string): LogMethod | null {
   if (!source || typeof source !== "object") return null;
@@ -30,24 +48,28 @@ function buildMetadata(eventName: string, metadata?: Record<string, unknown>): R
   return metadata ? { event: eventName, ...metadata } : { event: eventName };
 }
 
-function formatMessage(message: string): string {
-  return `[${SYNC_IMPORTS_LOG_GROUP}] ${message}`;
+function formatMessage(group: string, message: string): string {
+  return `[${group}] ${message}`;
 }
 
-function shouldSkipForQuiet(level: SyncImportsLogLevel, quiet: boolean): boolean {
+function eventGroup(event: CodeDisciplineLogEvent): string {
+  return String(event.group || CODE_DISCIPLINE_LOG_GROUP);
+}
+
+function shouldSkipForQuiet(level: CodeDisciplineLogLevel, quiet: boolean): boolean {
   return quiet && (level === "debug" || level === "info" || level === "success");
 }
 
-function writeToConsole(level: SyncImportsLogLevel, eventName: string, message: string, metadata?: Record<string, unknown>) {
-  const payload = buildMetadata(eventName, metadata);
-  const formatted = formatMessage(message);
+function writeToConsole(event: CodeDisciplineLogEvent) {
+  const payload = buildMetadata(event.event, event.metadata);
+  const formatted = formatMessage(eventGroup(event), event.message);
 
-  if (level === "error") {
+  if (event.level === "error") {
     console.error(formatted, payload);
     return;
   }
 
-  if (level === "warn") {
+  if (event.level === "warn") {
     console.warn(formatted, payload);
     return;
   }
@@ -55,98 +77,195 @@ function writeToConsole(level: SyncImportsLogLevel, eventName: string, message: 
   console.log(formatted, payload);
 }
 
-function writeToGenericLogger(source: unknown, level: SyncImportsLogLevel, eventName: string, message: string, metadata?: Record<string, unknown>) {
-  const methodName = level === "success" ? "info" : level;
+function writeToGenericLogger(source: unknown, event: CodeDisciplineLogEvent) {
+  const methodName = event.level === "success" ? "info" : event.level;
   const method = getMethod(source, methodName) || getMethod(source, "log") || getMethod(source, "write");
 
   if (!method) {
-    writeToConsole(level, eventName, message, metadata);
+    writeToConsole(event);
     return;
   }
 
-  const payload = buildMetadata(eventName, metadata);
-  method.call(source, formatMessage(message), payload);
+  const payload = buildMetadata(event.event, event.metadata);
+  method.call(source, formatMessage(eventGroup(event), event.message), payload);
 }
 
-function writeToTrebiredLogger(source: unknown, level: SyncImportsLogLevel, eventName: string, message: string, metadata?: Record<string, unknown>) {
-  const methodName = level === "error" ? "fail" : level;
-  const method = getMethod(source, methodName) || getMethod(source, level) || getMethod(source, "info");
+function writeToTrebiredLogger(source: unknown, event: CodeDisciplineLogEvent) {
+  const methodName = event.level === "error" ? "fail" : event.level;
+  const method = getMethod(source, methodName) || getMethod(source, event.level) || getMethod(source, "info");
 
   if (!method) {
-    writeToConsole(level, eventName, message, metadata);
+    writeToConsole(event);
     return;
   }
 
-  method.call(source, SYNC_IMPORTS_LOG_GROUP, message, buildMetadata(eventName, metadata));
+  method.call(source, eventGroup(event), event.message, buildMetadata(event.event, event.metadata));
 }
 
-function writeWithSharedAdapter(
-  logger: unknown,
-  level: SyncImportsLogLevel,
-  eventName: string,
-  message: string,
-  metadata?: Record<string, unknown>,
-) {
+function writeWithSharedAdapter(logger: unknown, event: CodeDisciplineLogEvent) {
   const shared = resolveSharedLogger({
     fallback: "console",
     logger: logger as any,
     source: "@trebired/code-discipline",
   });
-  const payload = buildMetadata(eventName, metadata);
+  const payload = buildMetadata(event.event, event.metadata);
+  const group = eventGroup(event);
 
-  if (level === "warn") {
-    shared.warn(SYNC_IMPORTS_LOG_GROUP, message, payload);
+  if (event.level === "warn") {
+    shared.warn(group, event.message, payload);
     return;
   }
 
-  if (level === "error") {
-    shared.fail(SYNC_IMPORTS_LOG_GROUP, message, payload);
+  if (event.level === "error") {
+    shared.fail(group, event.message, payload);
     return;
   }
 
-  shared.info(SYNC_IMPORTS_LOG_GROUP, message, payload);
+  shared.info(group, event.message, payload);
 }
 
-function resolveWriter(options?: LoggingOptions): (event: SyncImportsLogEvent) => void {
+function resolveWriter(options?: LoggingOptions): (event: CodeDisciplineLogEvent) => void {
   const adapter = options?.adapter;
   const logger = options?.logger;
 
   if (typeof adapter === "function") {
-    return adapter as LogAdapterFn;
+    return adapter as CodeDisciplineLogAdapterFn;
   }
 
   if (adapter === "console") {
-    return (event) => writeToConsole(event.level, event.event, event.message, event.metadata);
+    return writeToConsole;
   }
 
   if (adapter === "trebired") {
-    return (event) => writeToTrebiredLogger(logger, event.level, event.event, event.message, event.metadata);
+    return (event) => writeToTrebiredLogger(logger, event);
   }
 
   if (adapter === "generic") {
-    return (event) => writeToGenericLogger(logger, event.level, event.event, event.message, event.metadata);
+    return (event) => writeToGenericLogger(logger, event);
   }
 
   if (looksLikeTrebiredLogger(logger)) {
-    return (event) => writeToTrebiredLogger(logger, event.level, event.event, event.message, event.metadata);
+    return (event) => writeToTrebiredLogger(logger, event);
   }
 
   if (logger) {
-    return (event) => writeWithSharedAdapter(logger, event.level, event.event, event.message, event.metadata);
+    return (event) => writeWithSharedAdapter(logger, event);
   }
 
-  return (event) => writeWithSharedAdapter(undefined, event.level, event.event, event.message, event.metadata);
+  return (event) => writeWithSharedAdapter(undefined, event);
 }
 
-function resolveLogger(options?: LoggingOptions): NormalizedSyncImportsLogger {
+function createBufferedEventStore(): BufferedEventStore {
+  return {
+    aggregates: new Map(),
+    levelCounts: {
+      debug: 0,
+      error: 0,
+      info: 0,
+      success: 0,
+      warn: 0,
+    },
+    totalEvents: 0,
+  };
+}
+
+function pushUniqueMessage(target: string[], message: string) {
+  if (target.includes(message)) return;
+  if (target.length >= MAX_BUFFERED_MESSAGES) return;
+  target.push(message);
+}
+
+function pushMetadataSample(target: Record<string, unknown>[], metadata?: Record<string, unknown>) {
+  if (!metadata) return;
+  if (target.length >= MAX_BUFFERED_METADATA_SAMPLES) return;
+  target.push(metadata);
+}
+
+function bufferEvent(store: BufferedEventStore, event: CodeDisciplineLogEvent) {
+  const group = eventGroup(event);
+  const key = `${group}::${event.event}`;
+  const existing = store.aggregates.get(key) ?? {
+    count: 0,
+    event: event.event,
+    group,
+    levels: new Set<CodeDisciplineLogLevel>(),
+    messages: [],
+    metadataSamples: [],
+  };
+
+  existing.count += 1;
+  existing.levels.add(event.level);
+  pushUniqueMessage(existing.messages, event.message);
+  pushMetadataSample(existing.metadataSamples, event.metadata);
+
+  store.aggregates.set(key, existing);
+  store.levelCounts[event.level] += 1;
+  store.totalEvents += 1;
+}
+
+function summarizeBufferedEvents(store: BufferedEventStore): Record<string, unknown> {
+  return {
+    total_events: store.totalEvents,
+    level_counts: store.levelCounts,
+    events: Array.from(store.aggregates.values())
+      .sort((left, right) => left.group.localeCompare(right.group) || left.event.localeCompare(right.event))
+      .map((entry) => ({
+        count: entry.count,
+        event: entry.event,
+        group: entry.group,
+        levels: Array.from(entry.levels.values()).sort(),
+        messages: entry.messages,
+        metadata_samples: entry.metadataSamples,
+      })),
+  };
+}
+
+function resolveLogger(options?: LoggingOptions): NormalizedCodeDisciplineLogger {
   const enabled = options?.enabled ?? Boolean(options?.logger || options?.adapter);
   const quiet = options?.quiet ?? false;
   const writer = resolveWriter(options);
+  let bufferedEvents = createBufferedEventStore();
 
-  function emit(level: SyncImportsLogLevel, event: string, message: string, metadata?: Record<string, unknown>) {
+  writer({
+    event: "logger-initialized",
+    group: "logger.loader",
+    level: "success",
+    message: "@trebired/code-discipline initialized",
+    metadata: {
+      source: "@trebired/code-discipline",
+    },
+  });
+
+  function emit(level: CodeDisciplineLogLevel, event: string, message: string, metadata?: Record<string, unknown>) {
     if (!enabled) return;
     if (shouldSkipForQuiet(level, quiet)) return;
-    writer({ level, event, message, metadata });
+
+    bufferEvent(bufferedEvents, {
+      event,
+      level,
+      message,
+      metadata,
+    });
+  }
+
+  function flush(level: CodeDisciplineLogLevel, event: string, message: string, metadata?: Record<string, unknown>) {
+    if (!enabled) return;
+
+    const diagnostics = summarizeBufferedEvents(bufferedEvents);
+    const finalMetadata = bufferedEvents.totalEvents > 0
+      ? {
+          ...(metadata ?? {}),
+          diagnostics,
+        }
+      : metadata;
+
+    writer({
+      event,
+      level,
+      message,
+      metadata: finalMetadata,
+    });
+    bufferedEvents = createBufferedEventStore();
   }
 
   return {
@@ -156,6 +275,7 @@ function resolveLogger(options?: LoggingOptions): NormalizedSyncImportsLogger {
     warn: (event, message, metadata) => emit("warn", event, message, metadata),
     error: (event, message, metadata) => emit("error", event, message, metadata),
     success: (event, message, metadata) => emit("success", event, message, metadata),
+    flush,
   };
 }
 

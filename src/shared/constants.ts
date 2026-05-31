@@ -9,7 +9,7 @@ const DEFAULT_RULE_FIX = false;
 const DEFAULT_ALLOW_RELATIVE = ["./"];
 const DEFAULT_FOLDERIZE_COMPOUND_FILE_SEPARATORS = ["_", "-"];
 const CODE_DISCIPLINE_CONFIG_FILE = "code-discipline.config.json";
-const SYNC_IMPORTS_LOG_GROUP = "code-discipline";
+const CODE_DISCIPLINE_LOG_GROUP = "code-discipline";
 const RANDOM_ALIAS_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
 const HASH_ALIAS_LENGTH = 12;
 
@@ -27,5 +27,5 @@ export {
   DEFAULT_SOURCE_ROOT,
   HASH_ALIAS_LENGTH,
   RANDOM_ALIAS_ALPHABET,
-  SYNC_IMPORTS_LOG_GROUP,
+  CODE_DISCIPLINE_LOG_GROUP,
 };

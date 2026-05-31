@@ -38,8 +38,12 @@ export {
 } from "./shared/errors.js";
 
 export type {
+  CodeDisciplineLogAdapterFn,
+  CodeDisciplineLogEvent,
+  CodeDisciplineLogLevel,
   LogAdapterFn,
   LoggingOptions,
+  NormalizedCodeDisciplineLogger,
   NormalizedSyncImportsLogger,
   SyncImportsLogEvent,
   SyncImportsLogLevel,

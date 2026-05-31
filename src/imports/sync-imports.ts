@@ -23,11 +23,7 @@ async function syncImports(options: SyncImportsOptions): Promise<SyncImportsResu
     const driftViolations = await collectSyncImportViolations(sourceFiles, normalized, logger);
 
     if (!normalized.enabled) {
-      logger.info("sync-disabled", "syncImports is disabled", {
-        aliasesCount: plannedAliases.aliasesCount,
-      });
-
-      return {
+      const result: SyncImportsResult = {
         ok: true,
         mutations_allowed: false,
         aliases_changed: false,
@@ -36,24 +32,13 @@ async function syncImports(options: SyncImportsOptions): Promise<SyncImportsResu
         rewritten_files: 0,
         rewritten_imports: 0,
       };
+      logger.flush("info", "sync-disabled", "sync completed", result);
+      return result;
     }
 
     if (!normalized.fix) {
       const failed = normalized.stop && driftViolations.length > 0;
-
-      if (driftViolations.length > 0) {
-        const log = failed ? logger.error : logger.warn;
-        log("sync-drift-detected", `sync drift detected count=${driftViolations.length}`, {
-          aliasesChanged: plannedAliases.aliasesChanged,
-          importViolations: driftViolations.length,
-        });
-      } else {
-        logger.success("sync-drift-clear", "sync policy already satisfied", {
-          aliasesChanged: plannedAliases.aliasesChanged,
-        });
-      }
-
-      return {
+      const result: SyncImportsResult = {
         ok: !failed,
         mutations_allowed: false,
         aliases_changed: plannedAliases.aliasesChanged,
@@ -62,6 +47,17 @@ async function syncImports(options: SyncImportsOptions): Promise<SyncImportsResu
         rewritten_files: 0,
         rewritten_imports: 0,
       };
+      logger.flush(
+        failed ? "error" : driftViolations.length > 0 ? "warn" : "success",
+        failed ? "sync-drift-detected" : driftViolations.length > 0 ? "sync-drift-warning" : "sync-drift-clear",
+        failed
+          ? "sync found blocking drift"
+          : driftViolations.length > 0
+            ? "sync found drift"
+            : "sync policy already satisfied",
+        result,
+      );
+      return result;
     }
 
     const aliasState = plannedAliases.aliasesChanged
@@ -69,18 +65,7 @@ async function syncImports(options: SyncImportsOptions): Promise<SyncImportsResu
       : plannedAliases;
     const rewriteState = await rewriteSourceImports(sourceFiles, aliasState.aliasRecords, normalized, logger);
 
-    logger.success(
-      "sync-finished",
-      `rewritten files=${rewriteState.rewrittenFiles} imports=${rewriteState.rewrittenImports}`,
-      {
-        aliasesChanged: aliasState.aliasesChanged,
-        aliasesCount: aliasState.aliasesCount,
-        rewrittenFiles: rewriteState.rewrittenFiles,
-        rewrittenImports: rewriteState.rewrittenImports,
-      },
-    );
-
-    return {
+    const result: SyncImportsResult = {
       ok: true,
       mutations_allowed: true,
       aliases_changed: aliasState.aliasesChanged,
@@ -89,8 +74,10 @@ async function syncImports(options: SyncImportsOptions): Promise<SyncImportsResu
       rewritten_files: rewriteState.rewrittenFiles,
       rewritten_imports: rewriteState.rewrittenImports,
     };
+    logger.flush("success", "sync-finished", "sync completed", result);
+    return result;
   } catch (error) {
-    logger.error("sync-failed", error instanceof Error ? error.message : "sync failed", {
+    logger.flush("error", "sync-failed", error instanceof Error ? error.message : "sync failed", {
       cause: error instanceof Error ? error.name : typeof error,
     });
     throw error;
