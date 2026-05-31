@@ -1,6 +1,6 @@
 {
   "name": "@trebired/code-discipline",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Configurable codebase discipline checks and import syncing for Bun and Node.js projects.",
   "license": "AGPL-3.0-only",
   "keywords": [
@@ -45,6 +45,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@trebired/logger-adapter": "^0.1.0",
     "@trebired/code-discipline": ".",
     "typescript": "^6.0.2"
   },

@@ -2,6 +2,11 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 1.1.0
+
+- Routed the package's default/common logger adaptation path through `@trebired/logger-adapter`.
+- Kept the existing `logging.adapter(event)` callback API for event-level custom output control.
+
 ## 1.0.0
 
 - introduced the breaking `enabled` / `stop` / `fix` rule model across the package

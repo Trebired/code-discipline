@@ -1,3 +1,5 @@
+import { resolveLogger as resolveSharedLogger } from "@trebired/logger-adapter";
+
 import { SYNC_IMPORTS_LOG_GROUP } from "./constants.js";
 import type {
   LogAdapterFn,
@@ -78,6 +80,33 @@ function writeToTrebiredLogger(source: unknown, level: SyncImportsLogLevel, even
   method.call(source, SYNC_IMPORTS_LOG_GROUP, message, buildMetadata(eventName, metadata));
 }
 
+function writeWithSharedAdapter(
+  logger: unknown,
+  level: SyncImportsLogLevel,
+  eventName: string,
+  message: string,
+  metadata?: Record<string, unknown>,
+) {
+  const shared = resolveSharedLogger({
+    fallback: "console",
+    logger: logger as any,
+    source: "@trebired/code-discipline",
+  });
+  const payload = buildMetadata(eventName, metadata);
+
+  if (level === "warn") {
+    shared.warn(SYNC_IMPORTS_LOG_GROUP, message, payload);
+    return;
+  }
+
+  if (level === "error") {
+    shared.fail(SYNC_IMPORTS_LOG_GROUP, message, payload);
+    return;
+  }
+
+  shared.info(SYNC_IMPORTS_LOG_GROUP, message, payload);
+}
+
 function resolveWriter(options?: LoggingOptions): (event: SyncImportsLogEvent) => void {
   const adapter = options?.adapter;
   const logger = options?.logger;
@@ -103,10 +132,10 @@ function resolveWriter(options?: LoggingOptions): (event: SyncImportsLogEvent) =
   }
 
   if (logger) {
-    return (event) => writeToGenericLogger(logger, event.level, event.event, event.message, event.metadata);
+    return (event) => writeWithSharedAdapter(logger, event.level, event.event, event.message, event.metadata);
   }
 
-  return (event) => writeToConsole(event.level, event.event, event.message, event.metadata);
+  return (event) => writeWithSharedAdapter(undefined, event.level, event.event, event.message, event.metadata);
 }
 
 function resolveLogger(options?: LoggingOptions): NormalizedSyncImportsLogger {

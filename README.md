@@ -224,6 +224,8 @@ Behavior:
 
 When you provide a logger, discipline results are emitted through it. Trebired-style loggers are supported directly, and the package falls back safely when no logger is provided.
 
+The default/common logger adaptation path is powered by `@trebired/logger-adapter`, while `logging.adapter(event)` remains available when you want exact control over the emitted event shape.
+
 ## Public API
 
 - `checkCodeDiscipline()`
