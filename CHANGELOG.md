@@ -2,6 +2,10 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 1.4.1
+
+- Fixed relative import resolution for TypeScript ESM-style `.js` specifiers so imports like `./x.js` can resolve to source files such as `./x.ts` during sync checks and rewrites.
+
 ## 1.4.0
 
 - Added `codeDiscipline({ mode, ... })` as the package-owned runtime dispatcher for `check`, `fix`, `sync`, and startup-style sync usage.

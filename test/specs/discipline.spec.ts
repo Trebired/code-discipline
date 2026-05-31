@@ -223,6 +223,36 @@ describe("code-discipline checks", () => {
     expect(result.violations.some((violation) => JSON.stringify(violation.details).includes("../shared/util"))).toBe(true);
   });
 
+  test("check mode resolves .js specifiers to .ts source files for sync-import violations", async () => {
+    const projectRoot = tempProject();
+
+    writeFile(projectRoot, "tsconfig.json", "{}\n");
+    writeFile(projectRoot, "src/feature/auth.ts", 'import { credentials } from "../shared/credentials.js";\nexport { credentials };\n');
+    writeFile(projectRoot, "src/shared/credentials.ts", "export const credentials = true;\n");
+
+    const result = await checkCodeDiscipline({
+      projectRoot,
+      rules: {
+        syncImports: {
+          severity: "error",
+          alias: {
+            strategy: "relative-path-slug",
+          },
+          allowRelative: ["./"],
+        },
+      },
+    });
+
+    expect(result.violations).toContainEqual(expect.objectContaining({
+      filePath: "src/feature/auth.ts",
+      message: "relative import ../shared/credentials.js should be rewritten to #shared-credentials",
+      details: expect.objectContaining({
+        specifier: "../shared/credentials.js",
+        resolvedFile: "src/shared/credentials.ts",
+      }),
+    }));
+  });
+
   test("rejects removed config keys for rules", async () => {
     const projectRoot = tempProject();
 

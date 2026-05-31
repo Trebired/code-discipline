@@ -129,6 +129,46 @@ describe("code-discipline syncImports", () => {
     expect(readFile(projectRoot, "src/feature/app.ts")).toBe(beforeSource);
   });
 
+  test("resolves .js relative specifiers to .ts source files for drift detection and rewrites", async () => {
+    const projectRoot = tempProject();
+
+    writeFile(projectRoot, "tsconfig.json", "{}\n");
+    writeFile(projectRoot, "src/feature/auth.ts", 'import { credentials } from "../shared/credentials.js";\nexport { credentials };\n');
+    writeFile(projectRoot, "src/shared/credentials.ts", "export const credentials = true;\n");
+
+    const checkResult = await syncImports({
+      projectRoot,
+      fix: false,
+      severity: "error",
+      alias: { strategy: "relative-path-slug" },
+      allowRelative: ["./"],
+    });
+
+    expect(checkResult.ok).toBe(false);
+    expect(checkResult.import_violations).toBe(2);
+    expect(checkResult.violations).toContainEqual(expect.objectContaining({
+      filePath: "src/feature/auth.ts",
+      message: "relative import ../shared/credentials.js should be rewritten to #shared-credentials",
+      details: expect.objectContaining({
+        specifier: "../shared/credentials.js",
+        aliasId: "#shared-credentials",
+        resolvedFile: "src/shared/credentials.ts",
+      }),
+    }));
+
+    const fixResult = await syncImports({
+      projectRoot,
+      fix: true,
+      alias: { strategy: "relative-path-slug" },
+      allowRelative: ["./"],
+    });
+
+    expect(fixResult.ok).toBe(true);
+    expect(fixResult.rewritten_files).toBe(1);
+    expect(fixResult.rewritten_imports).toBe(1);
+    expect(readFile(projectRoot, "src/feature/auth.ts")).toContain('from "#shared-credentials"');
+  });
+
   test("returns warning drift and logs a warning when severity is warning", async () => {
     const projectRoot = tempProject();
     const { logger, rows } = captureTrebiredLogger();

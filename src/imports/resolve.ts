@@ -4,19 +4,39 @@ import path from "node:path";
 import type { NormalizedSyncImportsOptions } from "./types.js";
 import { isInsideDirectory } from "../shared/utils.js";
 
+const RUNTIME_SPECIFIER_EXTENSIONS = new Set([".js", ".jsx", ".mjs", ".cjs"]);
+
 function isRelativeImportSpecifier(specifier: string): boolean {
   return specifier.startsWith("./") || specifier.startsWith("../");
 }
 
-async function resolveFileCandidate(candidatePath: string, sourceExtensions: string[]): Promise<string | null> {
-  try {
-    const exactStat = await fs.stat(candidatePath);
-    if (exactStat.isFile()) return candidatePath;
-  } catch {}
+function pushUniqueCandidate(candidates: string[], candidatePath: string) {
+  if (!candidates.includes(candidatePath)) {
+    candidates.push(candidatePath);
+  }
+}
+
+function buildFileCandidates(candidatePath: string, sourceExtensions: string[]): string[] {
+  const candidates: string[] = [];
+  pushUniqueCandidate(candidates, candidatePath);
+
+  const specifierExtension = path.extname(candidatePath).toLowerCase();
+  if (RUNTIME_SPECIFIER_EXTENSIONS.has(specifierExtension)) {
+    const sourceStem = candidatePath.slice(0, -specifierExtension.length);
+    for (const extension of sourceExtensions) {
+      pushUniqueCandidate(candidates, `${sourceStem}${extension}`);
+    }
+  }
 
   for (const extension of sourceExtensions) {
-    const filePath = `${candidatePath}${extension}`;
+    pushUniqueCandidate(candidates, `${candidatePath}${extension}`);
+  }
 
+  return candidates;
+}
+
+async function resolveFileCandidate(candidatePath: string, sourceExtensions: string[]): Promise<string | null> {
+  for (const filePath of buildFileCandidates(candidatePath, sourceExtensions)) {
     try {
       const stat = await fs.stat(filePath);
       if (stat.isFile()) return filePath;
@@ -55,4 +75,4 @@ async function resolveRelativeImport(
   return resolved;
 }
 
-export { isRelativeImportSpecifier, resolveFileCandidate, resolveProjectPathTarget, resolveRelativeImport };
+export { buildFileCandidates, isRelativeImportSpecifier, resolveFileCandidate, resolveProjectPathTarget, resolveRelativeImport };
