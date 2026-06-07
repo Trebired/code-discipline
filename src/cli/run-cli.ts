@@ -11,6 +11,7 @@ import { isDirectExecution } from "../shared/utils.js";
 
 type CliRunOptions = {
   cwd?: string;
+  now?: Date;
   stdout?: (text: string) => void;
   stderr?: (text: string) => void;
 };
@@ -19,7 +20,19 @@ type CliRunResult = {
   exitCode: number;
 };
 
-const SAVED_REPORT_FILENAME = "code-discipline-report.txt";
+function padDatePart(value: number): string {
+  return String(value).padStart(2, "0");
+}
+
+function createSavedReportFilename(now: Date): string {
+  const year = now.getFullYear();
+  const month = padDatePart(now.getMonth() + 1);
+  const day = padDatePart(now.getDate());
+  const hours = padDatePart(now.getHours());
+  const minutes = padDatePart(now.getMinutes());
+  const seconds = padDatePart(now.getSeconds());
+  return `cd-report-${year}-${month}-${day}-${hours}-${minutes}${seconds}.txt`;
+}
 
 function renderHelp(): string {
   return [
@@ -28,7 +41,7 @@ function renderHelp(): string {
     "Commands:",
     "  check         run read-only discipline validation",
     "  fix           apply configured discipline fixes",
-    "  save          optional token that writes the run output to code-discipline-report.txt",
+    "  save          optional token that writes the run output to a timestamped cd-report-YYYY-MM-DD-HH-mmss.txt file",
     "",
     "Rule Selectors:",
     "  check <rule-slug>... narrows validation to the selected configured rules",
@@ -109,14 +122,16 @@ function renderFixOutput(args: {
   ].join("");
 }
 
-async function saveCliOutput(cwd: string, reportText: string): Promise<string> {
-  const reportPath = path.join(cwd, SAVED_REPORT_FILENAME);
+async function saveCliOutput(cwd: string, reportText: string, now: Date): Promise<string> {
+  const reportFilename = createSavedReportFilename(now);
+  const reportPath = path.join(cwd, reportFilename);
   await fs.writeFile(reportPath, reportText, "utf8");
-  return reportPath;
+  return reportFilename;
 }
 
 async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliRunResult> {
   const cwd = options.cwd ?? process.cwd();
+  const now = options.now ?? new Date();
   const stdout = options.stdout ?? ((text: string) => process.stdout.write(text));
   const stderr = options.stderr ?? ((text: string) => process.stderr.write(text));
   const [command, ...rest] = argv;
@@ -144,8 +159,8 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
       stdout(reportText);
 
       if (parsed.saveOutput) {
-        await saveCliOutput(cwd, reportText);
-        stdout(`Saved report to ${SAVED_REPORT_FILENAME}.\n`);
+        const reportFilename = await saveCliOutput(cwd, reportText, now);
+        stdout(`Saved report to ${reportFilename}.\n`);
       }
 
       return { exitCode: result.ok ? 0 : 1 };
@@ -170,8 +185,8 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
       stdout(reportText);
 
       if (parsed.saveOutput) {
-        await saveCliOutput(cwd, reportText);
-        stdout(`Saved report to ${SAVED_REPORT_FILENAME}.\n`);
+        const reportFilename = await saveCliOutput(cwd, reportText, now);
+        stdout(`Saved report to ${reportFilename}.\n`);
       }
 
       return { exitCode: result.ok ? 0 : 1 };

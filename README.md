@@ -46,7 +46,7 @@ If you want the terminal output written to a top-level file too, add `save`:
 code-discipline check save
 ```
 
-This writes a plain-text report to `code-discipline-report.txt`.
+This writes a plain-text report to a timestamped file such as `cd-report-2026-05-26-19-0000.txt`.
 
 Typical `package.json` scripts can stay simple:
 

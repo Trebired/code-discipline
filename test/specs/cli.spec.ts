@@ -183,6 +183,7 @@ describe("code-discipline cli", () => {
   test("saves check output to a top-level report file", async () => {
     const projectRoot = tempProject();
     const stdout: string[] = [];
+    const reportName = "cd-report-2026-05-26-19-0000.txt";
 
     writeFile(projectRoot, "src/too-long.ts", "one\n2\n3\n");
     writeFile(projectRoot, "tb.code-discipline.ts", [
@@ -196,13 +197,14 @@ describe("code-discipline cli", () => {
 
     const result = await runCli(["check", "save"], {
       cwd: projectRoot,
+      now: new Date("2026-05-26T19:00:00"),
       stdout: (text) => stdout.push(text),
     });
 
     expect(result.exitCode).toBe(1);
-    expect(fileExists(projectRoot, "code-discipline-report.txt")).toBe(true);
-    expect(readFile(projectRoot, "code-discipline-report.txt")).toContain("Found 1 discipline violation(s).");
-    expect(stdout.join("")).toContain("Saved report to code-discipline-report.txt.");
+    expect(fileExists(projectRoot, reportName)).toBe(true);
+    expect(readFile(projectRoot, reportName)).toContain("Found 1 discipline violation(s).");
+    expect(stdout.join("")).toContain(`Saved report to ${reportName}.`);
   });
 
   test("prints a clear error when no config module can be found", async () => {
