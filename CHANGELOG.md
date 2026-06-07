@@ -2,14 +2,18 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
-## 2.2.0
+## 2.1.1
+
+- Removed rule-level `fix` toggles from discipline config so mutation is decided by running `code-discipline fix`.
+- Added saved CLI reports through `save`.
+- Changed saved report filenames to explicit timestamped `cd-report-YYYY-MM-DD-HH-mm-ss.txt`.
+
+## 2.1.0
 
 - Removed severity from the public rule config, violation objects, and result summaries.
 - Changed discipline and sync results to report `violationCount` instead of separate `errors` and `warnings`.
 - Simplified CLI output to concise violation lines and short summaries instead of JSON-style payloads.
 - Reduced logger noise by dropping large violation metadata from summary events and only emitting initialization logs when logging is enabled.
-- Removed rule-level `fix` toggles from discipline config so mutation is decided by running `code-discipline fix`.
-- Added saved CLI reports through `save`, writing plain-text output to timestamped `cd-report-YYYY-MM-DD-HH-mm-ss.txt` files.
 
 ## 2.0.0
 
