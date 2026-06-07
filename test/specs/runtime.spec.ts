@@ -24,7 +24,7 @@ describe("code-discipline runtime api", () => {
     expect(result.violations[0]?.rule).toBe("max-file-lines");
   });
 
-  test("startup aliases sync and accepts logger shorthand", async () => {
+  test("fix runs sync-imports and accepts logger shorthand", async () => {
     const projectRoot = tempProject();
     const { logger, rows } = captureTrebiredLogger();
 
@@ -46,13 +46,14 @@ describe("code-discipline runtime api", () => {
       },
     });
 
-    const result = await discipline.startup({
+    const result = await discipline.fix({
       projectRoot,
       logger,
+      onlyRules: ["sync-imports"],
     });
 
     expect(result.ok).toBe(true);
-    expect(result.mutations_allowed).toBe(true);
+    expect(result.ruleResults["sync-imports"]?.ok).toBe(true);
     expect(readFile(projectRoot, "src/feature/app.ts")).toContain('from "#shared-util"');
     expect(rows.length).toBeGreaterThan(0);
   });
@@ -138,7 +139,7 @@ describe("code-discipline runtime api", () => {
     });
   });
 
-  test("syncs package.json imports from tsconfig paths and preserves unrelated imports", async () => {
+  test("fix syncs package.json imports from tsconfig paths and preserves unrelated imports", async () => {
     const projectRoot = tempProject();
 
     writeFile(projectRoot, "package.json", JSON.stringify({
@@ -161,16 +162,20 @@ describe("code-discipline runtime api", () => {
     writeFile(projectRoot, "src/other.ts", "export const other = true;\n");
 
     const result = await codeDiscipline({
-      mode: "sync",
+      mode: "fix",
       projectRoot,
-      runtimeImportsSync: {
-        enabled: true,
-        aliasPrefix: "#",
-      },
       rules: {
         syncImports: {
-          fix: false,
+          fix: true,
           severity: "warning",
+          alias: {
+            prefix: "#",
+            strategy: "relative-path-slug",
+          },
+          packageJsonImports: {
+            enabled: true,
+            aliasPrefix: "#",
+          },
         },
       },
     });
@@ -180,6 +185,7 @@ describe("code-discipline runtime api", () => {
       "#app": "./src/app.ts",
       "#external": "./vendor/external.js",
       "#pages/*": "./src/pages/*",
+      "#pages-home": "./src/pages/home.ts",
     });
   });
 });

@@ -358,6 +358,71 @@ describe("code-discipline checks", () => {
     });
   });
 
+  test("reports DRY duplicates despite renamed parameters and comments", async () => {
+    const projectRoot = tempProject();
+
+    writeFile(projectRoot, "src/shared/to-text.ts", [
+      "export function toText(value: unknown) {",
+      "  return String(value == null ? \"\" : value).trim();",
+      "}",
+      "",
+    ].join("\n"));
+    writeFile(projectRoot, "src/app.ts", [
+      "export function clean(input: unknown) {",
+      "  // normalize the text",
+      "  return String(input == null ? \"\" : input).trim();",
+      "}",
+      "",
+    ].join("\n"));
+
+    const result = await checkCodeDiscipline({
+      projectRoot,
+      rules: {
+        dry: {
+          fix: true,
+          helpers: [
+            {
+              from: "./src/shared/to-text.ts",
+              exportName: "toText",
+            },
+          ],
+        },
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.violations).toHaveLength(1);
+    expect(result.violations[0]).toMatchObject({
+      rule: "dry",
+      filePath: "src/app.ts",
+      details: {
+        fixable: true,
+        helper: "./src/shared/to-text.ts#toText",
+      },
+    });
+  });
+
+  test("fails clearly when a DRY helper export cannot be resolved", async () => {
+    const projectRoot = tempProject();
+
+    writeFile(projectRoot, "src/shared/to-text.ts", "export const value = 1;\n");
+    writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
+
+    await expect(checkCodeDiscipline({
+      projectRoot,
+      rules: {
+        dry: {
+          helpers: [
+            {
+              from: "./src/shared/to-text.ts",
+              exportName: "toText",
+            },
+          ],
+        },
+      },
+    })).rejects.toThrow("dry helper export is not a supported function");
+  });
+
   test("check mode leaves tsconfig untouched for warning-only sync drift", async () => {
     const projectRoot = tempProject();
 

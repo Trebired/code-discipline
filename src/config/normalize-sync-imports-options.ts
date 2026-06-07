@@ -50,6 +50,7 @@ async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise
 
   return {
     ...source,
+    configPath: options.configPath,
     tsconfigPath,
     severity: normalizeSeverity(options.severity),
     fix: options.fix ?? DEFAULT_RULE_FIX,
@@ -59,6 +60,7 @@ async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise
       randomLength: Math.max(1, Math.floor(options.alias?.randomLength ?? DEFAULT_ALIAS_RANDOM_LENGTH)),
     },
     allowRelative: options.allowRelative ?? DEFAULT_ALLOW_RELATIVE,
+    packageJsonImports: options.packageJsonImports,
     logging: {
       enabled: options.logging?.enabled ?? Boolean(options.logging?.logger || options.logging?.adapter),
       logger: options.logging?.logger,

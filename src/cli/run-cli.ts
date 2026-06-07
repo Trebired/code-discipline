@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-import { pathToFileURL } from "node:url";
-
 import { codeDiscipline } from "../run.js";
+import type { CodeDisciplineRuleSlug, FixableRuleSlug } from "../checks/types.js";
 import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
 import { loadResolvedCodeDisciplineConfig } from "../config/index.js";
+import { isDirectExecution } from "../shared/utils.js";
 
 type CliRunOptions = {
   cwd?: string;
@@ -18,12 +18,15 @@ type CliRunResult = {
 
 function renderHelp(): string {
   return [
-    "Usage: code-discipline <command> [--config <path>]",
+    "Usage: code-discipline <command> [rule-slug...] [--config <path>]",
     "",
     "Commands:",
     "  check         run read-only discipline validation",
-    "  sync          run package-owned sync operations from config",
     "  fix           apply configured discipline fixes",
+    "",
+    "Rule Selectors:",
+    "  check <rule-slug>... narrows validation to the selected configured rules",
+    "  fix <rule-slug>... narrows fixes to the selected configured fixable rules",
     "",
     "Config:",
     "  --config <path> optionally points to a module that default-exports the config object.",
@@ -32,9 +35,9 @@ function renderHelp(): string {
   ].join("\n");
 }
 
-function parseArgs(args: string[]): { configPath?: string; extra: string[] } {
+function parseArgs(args: string[]): { configPath?: string; selectors: string[] } {
   let configPath: string | undefined;
-  const extra: string[] = [];
+  const selectors: string[] = [];
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -50,10 +53,14 @@ function parseArgs(args: string[]): { configPath?: string; extra: string[] } {
       continue;
     }
 
-    extra.push(arg);
+    if (arg.startsWith("--")) {
+      throw new Error(`Unexpected argument: ${arg}`);
+    }
+
+    selectors.push(arg);
   }
 
-  return { configPath, extra };
+  return { configPath, selectors };
 }
 
 function formatViolation(violation: CodeDisciplineViolation): string {
@@ -76,10 +83,6 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
   try {
     const parsed = parseArgs(rest);
 
-    if (parsed.extra.length > 0) {
-      throw new Error(`Unexpected arguments: ${parsed.extra.join(" ")}`);
-    }
-
     const { config, configPath } = await loadResolvedCodeDisciplineConfig(cwd, parsed.configPath);
 
     if (command === "check") {
@@ -87,6 +90,7 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
         ...config,
         configPath,
         mode: "check",
+        onlyRules: parsed.selectors as CodeDisciplineRuleSlug[],
         projectRoot: cwd,
       });
 
@@ -99,22 +103,12 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
       return { exitCode: result.ok ? 0 : 1 };
     }
 
-    if (command === "sync") {
-      const result = await codeDiscipline({
-        ...config,
-        configPath,
-        mode: "sync",
-        projectRoot: cwd,
-      });
-      stdout(`${JSON.stringify(result)}\n`);
-      return { exitCode: result.ok ? 0 : 1 };
-    }
-
     if (command === "fix") {
       const result = await codeDiscipline({
         ...config,
         configPath,
         mode: "fix",
+        onlyRules: parsed.selectors as FixableRuleSlug[],
         projectRoot: cwd,
       });
 
@@ -142,8 +136,7 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
   }
 }
 
-const entryPath = process.argv[1] ? pathToFileURL(process.argv[1]).href : null;
-if (entryPath && import.meta.url === entryPath) {
+if (await isDirectExecution(import.meta.url, process.argv[1])) {
   const result = await runCli(process.argv.slice(2));
   process.exitCode = result.exitCode;
 }

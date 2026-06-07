@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { spawnSync } from "node:child_process";
 
 import type { SyncImportsLogEvent } from "../../src/index.js";
 
@@ -68,4 +69,18 @@ function captureCallbackLogger() {
   };
 }
 
-export { captureCallbackLogger, captureTrebiredLogger, fileExists, readFile, readJson, tempProject, writeFile };
+function runCommand(command: string, args: string[], options: {
+  cwd?: string;
+  env?: NodeJS.ProcessEnv;
+} = {}) {
+  return spawnSync(command, args, {
+    cwd: options.cwd,
+    env: {
+      ...process.env,
+      ...options.env,
+    },
+    encoding: "utf8",
+  });
+}
+
+export { captureCallbackLogger, captureTrebiredLogger, fileExists, readFile, readJson, runCommand, tempProject, writeFile };

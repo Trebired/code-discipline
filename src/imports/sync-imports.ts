@@ -1,4 +1,5 @@
 import { normalizeSyncImportsOptions } from "../config/normalize-sync-imports-options.js";
+import { syncPackageJsonImportsFromTsconfigPaths } from "../runtime/runtime-imports-sync.js";
 import { resolveLogger } from "../shared/logging.js";
 import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
 import { planTsconfigAliases, syncTsconfigAliases } from "./aliases.js";
@@ -68,6 +69,12 @@ async function syncImports(options: SyncImportsOptions): Promise<SyncImportsResu
       ? await syncTsconfigAliases(normalized, sourceFiles, logger)
       : plannedAliases;
     const rewriteState = await rewriteSourceImports(sourceFiles, aliasState.aliasRecords, normalized, logger);
+    const packageJsonImportsState = await syncPackageJsonImportsFromTsconfigPaths({
+      configPath: normalized.configPath,
+      options: normalized.packageJsonImports,
+      projectRoot: normalized.projectRoot,
+      tsconfigPath: normalized.tsconfigPath,
+    });
 
     const result: SyncImportsResult = {
       ok: true,
@@ -81,7 +88,10 @@ async function syncImports(options: SyncImportsOptions): Promise<SyncImportsResu
       rewritten_files: rewriteState.rewrittenFiles,
       rewritten_imports: rewriteState.rewrittenImports,
     };
-    logger.flush("success", "sync-finished", "sync completed", result);
+    logger.flush("success", "sync-finished", "sync completed", {
+      ...result,
+      packageJsonImportsChanged: packageJsonImportsState?.changed ?? false,
+    });
     return result;
   } catch (error) {
     logger.flush("error", "sync-failed", error instanceof Error ? error.message : "sync failed", {

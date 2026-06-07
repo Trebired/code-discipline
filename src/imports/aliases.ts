@@ -11,7 +11,7 @@ import type {
 import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
 import { resolveProjectPathTarget } from "./resolve.js";
 import { generateAliasId } from "./strategies.js";
-import { isInsideDirectory, parseTsconfigJson, pathExists, stableSerialize, toStableJson, wait } from "../shared/utils.js";
+import { isInsideDirectory, parseTsconfigJson, pathExists, stableSerialize, toPosixPath, toStableJson, wait } from "../shared/utils.js";
 
 const TSCONFIG_READ_RETRY_ATTEMPTS = 20;
 const TSCONFIG_READ_RETRY_DELAY_MS = 50;
@@ -20,6 +20,11 @@ type ExistingPathsState = {
   preservedAliasesByPath: Map<string, string>;
   passthroughPaths: Record<string, string[]>;
 };
+
+function toTsconfigPathTarget(relativeFromProjectRoot: string): string {
+  const normalized = toPosixPath(relativeFromProjectRoot).replace(/^\.\/+/, "");
+  return normalized.startsWith("./") ? normalized : `./${normalized}`;
+}
 
 function normalizeTargetPath(projectRoot: string, targetPath: string): string | null {
   if (targetPath.includes("*")) return null;
@@ -173,7 +178,7 @@ async function planTsconfigAliases(
 
   const managedPaths: Record<string, string[]> = {};
   for (const record of aliasRecords) {
-    managedPaths[record.id] = [record.relativeFromProjectRoot];
+    managedPaths[record.id] = [toTsconfigPathTarget(record.relativeFromProjectRoot)];
   }
 
   const nextPaths = sortPathsRecord({

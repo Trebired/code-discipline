@@ -1,6 +1,12 @@
 import type { LoggingOptions } from "../shared/logging-types.js";
 import type { CodeDisciplineSeverity, CodeDisciplineViolation } from "../shared/discipline-types.js";
 
+type PackageJsonImportsSyncOptions = {
+  enabled?: boolean;
+  aliasPrefix?: string | string[];
+  packageJsonPath?: string;
+};
+
 type AliasStrategyInput = {
   absolutePath: string;
   relativeFromProjectRoot: string;
@@ -22,6 +28,7 @@ type AllowRelativeFn = (specifier: string, context: AllowRelativeContext) => boo
 
 type SyncImportsOptions = {
   projectRoot: string;
+  configPath?: string;
   sourceRoot?: string;
   tsconfigPath?: string;
   sourceExtensions?: string[];
@@ -34,6 +41,7 @@ type SyncImportsOptions = {
     randomLength?: number;
   };
   allowRelative?: string[] | AllowRelativeFn;
+  packageJsonImports?: PackageJsonImportsSyncOptions;
   logging?: LoggingOptions;
 };
 
@@ -61,6 +69,7 @@ type SourceScanOptions = {
 
 type NormalizedSyncImportsOptions = SourceScanOptions & {
   sourceRootRelative: string;
+  configPath?: string;
   tsconfigPath: string;
   severity: CodeDisciplineSeverity;
   fix: boolean;
@@ -70,6 +79,7 @@ type NormalizedSyncImportsOptions = SourceScanOptions & {
     randomLength: number;
   };
   allowRelative: string[] | AllowRelativeFn;
+  packageJsonImports?: PackageJsonImportsSyncOptions;
   logging: LoggingOptions;
 };
 
@@ -123,6 +133,7 @@ export type {
   RewriteResult,
   ScannedSourceFile,
   SourceScanOptions,
+  PackageJsonImportsSyncOptions,
   SyncAliasesResult,
   SyncImportsOptions,
   SyncImportsResult,

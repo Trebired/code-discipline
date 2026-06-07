@@ -3,6 +3,7 @@ import path from "node:path";
 
 import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
 import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
+import { collectPackageJsonImportsSyncState } from "../runtime/runtime-imports-sync.js";
 import { planTsconfigAliases } from "./aliases.js";
 import { collectModuleSpecifiers } from "./module-specifiers.js";
 import { resolveRelativeImport } from "./resolve.js";
@@ -27,6 +28,26 @@ async function collectSyncImportViolations(
       message: "tsconfig paths are out of sync with the current source tree",
       details: {
         aliasesCount: aliasPlan.aliasesCount,
+      },
+    });
+  }
+
+  const packageJsonSyncState = await collectPackageJsonImportsSyncState({
+    configPath: options.configPath,
+    options: options.packageJsonImports,
+    projectRoot: options.projectRoot,
+    tsconfigPath: options.tsconfigPath,
+  });
+
+  if (packageJsonSyncState?.changed) {
+    violations.push({
+      rule: "sync-imports",
+      severity: options.severity,
+      fix: options.fix,
+      filePath: path.relative(options.projectRoot, packageJsonSyncState.packageJsonPath) || "package.json",
+      message: "package.json imports are out of sync with tsconfig paths",
+      details: {
+        importsCount: packageJsonSyncState.importsCount,
       },
     });
   }

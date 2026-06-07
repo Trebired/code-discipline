@@ -247,6 +247,7 @@ async function fixFolderization(
       moved_files: 0,
       rewritten_files: 0,
       rewritten_imports: 0,
+      ruleResults: {},
       warnings,
       violations: [],
     };
@@ -266,6 +267,7 @@ async function fixFolderization(
       moved_files: 0,
       rewritten_files: 0,
       rewritten_imports: 0,
+      ruleResults: {},
       warnings,
       violations,
     };
@@ -297,6 +299,7 @@ async function fixFolderization(
       moved_files: movedFiles,
       rewritten_files: rewriteState.rewrittenFiles,
       rewritten_imports: rewriteState.rewrittenImports,
+      ruleResults: {},
       warnings: 0,
       violations: [],
     };

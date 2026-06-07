@@ -3,12 +3,13 @@ import type {
   CheckCodeDisciplineOptions,
   CheckCodeDisciplineResult,
   CodeDisciplineConfig,
+  CodeDisciplineRuleSlug,
   CodeDisciplineMode,
   CodeDisciplineRuntimeMode,
+  FixableRuleSlug,
+  FixCodeDisciplineOptions,
   FixCodeDisciplineResult,
 } from "./checks/types.js";
-import { syncImports } from "./imports/sync-imports.js";
-import type { SyncImportsOptions, SyncImportsResult } from "./imports/types.js";
 import { orchestrateCodeDisciplineRun } from "./runtime/orchestrate.js";
 import type { LoggingOptions } from "./shared/logging-types.js";
 
@@ -22,7 +23,6 @@ type CodeDisciplineInvocationOptions = {
 
 type CodeDisciplineOptions = CheckCodeDisciplineOptions & {
   mode: CodeDisciplineRuntimeMode;
-  configPath?: string;
   logger?: unknown;
   quiet?: boolean;
 };
@@ -35,26 +35,25 @@ type FixCodeDisciplineCommandOptions = Omit<CodeDisciplineOptions, "mode"> & {
   mode: "fix";
 };
 
-type SyncCodeDisciplineCommandOptions = Omit<CodeDisciplineOptions, "mode"> & {
-  mode: "sync";
+type CodeDisciplineResult = CheckCodeDisciplineResult | FixCodeDisciplineResult;
+
+type CheckCodeDisciplineInvocationOptions = CodeDisciplineInvocationOptions & {
+  onlyRules?: CodeDisciplineRuleSlug[];
 };
 
-type StartupCodeDisciplineCommandOptions = Omit<CodeDisciplineOptions, "mode"> & {
-  mode: "startup";
+type FixCodeDisciplineInvocationOptions = CodeDisciplineInvocationOptions & {
+  onlyRules?: FixableRuleSlug[];
 };
 
-type CodeDisciplineResult =
-  | CheckCodeDisciplineResult
-  | FixCodeDisciplineResult
-  | SyncImportsResult;
+type CodeDisciplineRunInvocationOptions =
+  | (CheckCodeDisciplineInvocationOptions & { mode: "check" })
+  | (FixCodeDisciplineInvocationOptions & { mode: "fix" });
 
 type CreatedCodeDiscipline = {
   config: CodeDisciplineConfig;
-  run: (options: CodeDisciplineInvocationOptions & { mode: CodeDisciplineRuntimeMode }) => Promise<CodeDisciplineResult>;
-  check: (options: CodeDisciplineInvocationOptions) => Promise<CheckCodeDisciplineResult>;
-  fix: (options: CodeDisciplineInvocationOptions) => Promise<FixCodeDisciplineResult>;
-  sync: (options: CodeDisciplineInvocationOptions) => Promise<SyncImportsResult>;
-  startup: (options: CodeDisciplineInvocationOptions) => Promise<SyncImportsResult>;
+  run: (options: CodeDisciplineRunInvocationOptions) => Promise<CodeDisciplineResult>;
+  check: (options: CheckCodeDisciplineInvocationOptions) => Promise<CheckCodeDisciplineResult>;
+  fix: (options: FixCodeDisciplineInvocationOptions) => Promise<FixCodeDisciplineResult>;
 };
 
 function resolveLoggingOptions(options: {
@@ -101,50 +100,34 @@ function mergeLoggingOptions(
 
 function buildCheckOptions(options: Omit<CodeDisciplineOptions, "mode">): CheckCodeDisciplineOptions {
   return {
+    configPath: options.configPath,
     projectRoot: options.projectRoot,
     sourceRoot: options.sourceRoot,
     sourceExtensions: options.sourceExtensions,
     excludeDirs: options.excludeDirs,
     logging: resolveLoggingOptions(options),
+    onlyRules: options.onlyRules,
     rules: options.rules,
   };
 }
 
-function buildSyncOptions(options: Omit<CodeDisciplineOptions, "mode">): SyncImportsOptions {
-  const syncRule = options.rules?.syncImports ?? {};
-
+function buildFixOptions(options: Omit<CodeDisciplineOptions, "mode">): FixCodeDisciplineOptions {
   return {
-    projectRoot: options.projectRoot,
-    sourceRoot: syncRule.sourceRoot ?? options.sourceRoot,
-    tsconfigPath: syncRule.tsconfigPath,
-    sourceExtensions: syncRule.sourceExtensions ?? options.sourceExtensions,
-    excludeDirs: syncRule.excludeDirs ?? options.excludeDirs,
-    severity: syncRule.severity,
-    fix: syncRule.fix,
-    alias: syncRule.alias,
-    allowRelative: syncRule.allowRelative,
-    logging: resolveLoggingOptions({
-      logging: options.logging ?? syncRule.logging,
-      logger: options.logger,
-      quiet: options.quiet,
-    }),
+    ...buildCheckOptions(options),
+    onlyRules: options.onlyRules as FixableRuleSlug[] | undefined,
   };
 }
 
 function codeDiscipline(options: CheckCodeDisciplineCommandOptions): Promise<CheckCodeDisciplineResult>;
 function codeDiscipline(options: FixCodeDisciplineCommandOptions): Promise<FixCodeDisciplineResult>;
-function codeDiscipline(options: SyncCodeDisciplineCommandOptions): Promise<SyncImportsResult>;
-function codeDiscipline(options: StartupCodeDisciplineCommandOptions): Promise<SyncImportsResult>;
 function codeDiscipline(options: CodeDisciplineOptions): Promise<CodeDisciplineResult>;
 async function codeDiscipline(options: CodeDisciplineOptions): Promise<CodeDisciplineResult> {
-  const runtimeMode = options.mode;
-  const mode = runtimeMode === "startup" ? "sync" : runtimeMode;
   const baseConfig: CodeDisciplineConfig = {
     excludeDirs: options.excludeDirs,
     lifecycle: options.lifecycle,
     logging: options.logging,
+    onlyRules: options.onlyRules,
     rules: options.rules,
-    runtimeImportsSync: options.runtimeImportsSync,
     sourceExtensions: options.sourceExtensions,
     sourceRoot: options.sourceRoot,
     tsconfigPaths: options.tsconfigPaths,
@@ -153,18 +136,14 @@ async function codeDiscipline(options: CodeDisciplineOptions): Promise<CodeDisci
   return orchestrateCodeDisciplineRun({
     config: baseConfig,
     configPath: options.configPath,
-    mode: runtimeMode,
+    mode: options.mode,
     projectRoot: options.projectRoot,
     async execute() {
-      if (mode === "check") {
+      if (options.mode === "check") {
         return checkCodeDiscipline(buildCheckOptions(options));
       }
 
-      if (mode === "fix") {
-        return fixCodeDiscipline(buildCheckOptions(options));
-      }
-
-      return syncImports(buildSyncOptions(options));
+      return fixCodeDiscipline(buildFixOptions(options));
     },
   });
 }
@@ -190,18 +169,6 @@ function createCodeDiscipline(config: CodeDisciplineConfig): CreatedCodeDiscipli
       mode: "fix",
       logging: mergeLoggingOptions(config.logging, options),
     }) as Promise<FixCodeDisciplineResult>,
-    sync: (options) => codeDiscipline({
-      ...config,
-      ...options,
-      mode: "sync",
-      logging: mergeLoggingOptions(config.logging, options),
-    }) as Promise<SyncImportsResult>,
-    startup: (options) => codeDiscipline({
-      ...config,
-      ...options,
-      mode: "startup",
-      logging: mergeLoggingOptions(config.logging, options),
-    }) as Promise<SyncImportsResult>,
   };
 }
 
@@ -213,8 +180,9 @@ export type {
   CodeDisciplineOptions,
   CodeDisciplineResult,
   CodeDisciplineRuntimeMode,
+  CodeDisciplineRunInvocationOptions,
   CreatedCodeDiscipline,
+  CheckCodeDisciplineInvocationOptions,
+  FixCodeDisciplineInvocationOptions,
   FixCodeDisciplineCommandOptions,
-  StartupCodeDisciplineCommandOptions,
-  SyncCodeDisciplineCommandOptions,
 };

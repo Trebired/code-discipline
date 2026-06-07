@@ -1,7 +1,46 @@
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import { describe, expect, test } from "bun:test";
 
 import { runCli } from "../../src/cli.js";
-import { fileExists, readFile, tempProject, writeFile } from "./helpers.js";
+import { fileExists, readFile, runCommand, tempProject, writeFile } from "./helpers.js";
+
+const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const builtCliPath = path.join(packageRoot, "dist", "cli.js");
+let builtCliReady = false;
+
+function ensureBuiltCli() {
+  if (builtCliReady && fs.existsSync(builtCliPath)) {
+    return;
+  }
+
+  const result = runCommand("bun", ["run", "build"], {
+    cwd: packageRoot,
+  });
+
+  if (result.status !== 0) {
+    throw new Error(`build failed: ${result.stderr || result.stdout}`);
+  }
+
+  builtCliReady = true;
+}
+
+function writeErroringCliFixture(projectRoot: string) {
+  writeFile(projectRoot, "src/too-long.ts", "one\n2\n3\n");
+  writeFile(projectRoot, "tb.code-discipline.ts", [
+    "export default {",
+    "  rules: {",
+    "    maxFileLines: {",
+    "      severity: \"error\",",
+    "      max: 2,",
+    "    },",
+    "  },",
+    "};",
+    "",
+  ].join("\n"));
+}
 
 describe("code-discipline cli", () => {
   test("auto-discovers a config module for plain cli usage", async () => {
@@ -10,7 +49,7 @@ describe("code-discipline cli", () => {
     const stderr: string[] = [];
 
     writeFile(projectRoot, "src/too-long.ts", "one\n2\n3\n");
-    writeFile(projectRoot, "discipline.config.mjs", [
+    writeFile(projectRoot, "tb.code-discipline.ts", [
       "export default {",
       "  rules: {",
       "    maxFileLines: {",
@@ -88,7 +127,7 @@ describe("code-discipline cli", () => {
     expect(stdout.join("")).toBe("Summary: 1 errors, 0 warnings.\n");
   });
 
-  test("runs sync through an explicit config module and mutates only when syncImports.fix is true", async () => {
+  test("runs fix sync-imports through an explicit config module and mutates only when syncImports.fix is true", async () => {
     const projectRoot = tempProject();
     const stdout: string[] = [];
 
@@ -109,14 +148,14 @@ describe("code-discipline cli", () => {
       "",
     ].join("\n"));
 
-    const result = await runCli(["sync", "--config", "./discipline.config.mjs"], {
+    const result = await runCli(["fix", "sync-imports", "--config", "./discipline.config.mjs"], {
       cwd: projectRoot,
       stdout: (text) => stdout.push(text),
     });
 
     expect(result.exitCode).toBe(0);
     expect(readFile(projectRoot, "src/feature/app.ts")).toContain('from "#shared-util"');
-    expect(stdout.join("")).toContain("\"mutations_allowed\":true");
+    expect(stdout.join("")).toContain("\"rewritten_imports\":1");
   });
 
   test("runs fix through an explicit config module and applies folderization moves", async () => {
@@ -160,5 +199,127 @@ describe("code-discipline cli", () => {
 
     expect(result.exitCode).toBe(1);
     expect(stderr.join("")).toContain("No code-discipline config module was found");
+  });
+
+  test("executes correctly when the built cli file is invoked directly", () => {
+    const projectRoot = tempProject();
+    ensureBuiltCli();
+    writeErroringCliFixture(projectRoot);
+
+    const result = runCommand("node", [builtCliPath, "check"], {
+      cwd: projectRoot,
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("Summary: 1 errors, 0 warnings.");
+    expect(result.stdout.trim().length).toBeGreaterThan(0);
+  });
+
+  test("executes correctly through a symlinked bin path instead of silently no-oping", () => {
+    const projectRoot = tempProject();
+    ensureBuiltCli();
+    writeErroringCliFixture(projectRoot);
+
+    const binDir = path.join(projectRoot, "node_modules", ".bin");
+    const symlinkPath = path.join(binDir, "code-discipline");
+    fs.mkdirSync(binDir, { recursive: true });
+    fs.symlinkSync(builtCliPath, symlinkPath);
+
+    const result = runCommand("node", [symlinkPath, "check"], {
+      cwd: projectRoot,
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("Summary: 1 errors, 0 warnings.");
+    expect(result.stdout).not.toBe("");
+  });
+
+  test("executes correctly through bun with a symlinked bin path", () => {
+    const projectRoot = tempProject();
+    ensureBuiltCli();
+    writeErroringCliFixture(projectRoot);
+
+    const binDir = path.join(projectRoot, "node_modules", ".bin");
+    const symlinkPath = path.join(binDir, "code-discipline");
+    fs.mkdirSync(binDir, { recursive: true });
+    fs.symlinkSync(builtCliPath, symlinkPath);
+
+    const result = runCommand("bun", [symlinkPath, "check"], {
+      cwd: projectRoot,
+    });
+
+    expect(result.status).toBe(1);
+    expect(result.stdout).toContain("Summary: 1 errors, 0 warnings.");
+    expect(result.stdout).not.toBe("");
+  });
+
+  test("rejects the removed sync command", async () => {
+    const projectRoot = tempProject();
+    const stderr: string[] = [];
+
+    writeFile(projectRoot, "tb.code-discipline.ts", "export default { rules: {} };\n");
+
+    const result = await runCli(["sync"], {
+      cwd: projectRoot,
+      stderr: (text) => stderr.push(text),
+    });
+
+    expect(result.exitCode).toBe(1);
+    expect(stderr.join("")).toContain("Unknown command: sync");
+  });
+
+  test("narrows check to a selected rule slug", async () => {
+    const projectRoot = tempProject();
+    const stdout: string[] = [];
+
+    writeFile(projectRoot, "src/functions.ts", [
+      "export const longThing = () => {",
+      "  const a = 1;",
+      "  const b = 2;",
+      "  const c = 3;",
+      "  return a + b + c;",
+      "};",
+      "",
+    ].join("\n"));
+    writeFile(projectRoot, "tb.code-discipline.ts", [
+      "export default {",
+      "  rules: {",
+      "    maxFileLines: { max: 100 },",
+      "    maxFunctionLines: { max: 3 },",
+      "  },",
+      "};",
+      "",
+    ].join("\n"));
+
+    const result = await runCli(["check", "max-function-lines"], {
+      cwd: projectRoot,
+      stdout: (text) => stdout.push(text),
+    });
+
+    expect(result.exitCode).toBe(1);
+    expect(stdout.join("")).toBe("Summary: 1 errors, 0 warnings.\n");
+  });
+
+  test("fails clearly when fix targets a non-fixable rule", async () => {
+    const projectRoot = tempProject();
+    const stderr: string[] = [];
+
+    writeFile(projectRoot, "src/functions.ts", "export const longThing = () => {\n  return 1;\n};\n");
+    writeFile(projectRoot, "tb.code-discipline.ts", [
+      "export default {",
+      "  rules: {",
+      "    maxFunctionLines: { max: 1 },",
+      "  },",
+      "};",
+      "",
+    ].join("\n"));
+
+    const result = await runCli(["fix", "max-function-lines"], {
+      cwd: projectRoot,
+      stderr: (text) => stderr.push(text),
+    });
+
+    expect(result.exitCode).toBe(1);
+    expect(stderr.join("")).toContain("Selected rule is not fixable: max-function-lines");
   });
 });

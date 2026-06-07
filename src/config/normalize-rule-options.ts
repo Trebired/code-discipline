@@ -6,12 +6,14 @@ import {
 } from "../shared/constants.js";
 import { InvalidCodeDisciplineConfigError } from "../shared/errors.js";
 import type {
+  CodeDisciplineSyncImportsRuleOptions,
+  DryRuleOptions,
   FolderizeCompoundFilesRuleOptions,
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
+  NormalizedDryRule,
   SeverityRuleOptions,
 } from "../checks/types.js";
-import type { SyncImportsRuleOptions } from "../imports/types.js";
 import type { CodeDisciplineSeverity } from "../shared/discipline-types.js";
 
 function assertRemovedKeys(ruleName: string, source: Record<string, unknown>, keys: string[]) {
@@ -92,7 +94,7 @@ function normalizeFolderizeCompoundFilesRule(rule: FolderizeCompoundFilesRuleOpt
   };
 }
 
-function normalizeSyncImportsRule(rule: SyncImportsRuleOptions | undefined) {
+function normalizeSyncImportsRule(rule: CodeDisciplineSyncImportsRuleOptions | undefined) {
   if (!rule) return undefined;
   const source = (rule ?? {}) as Record<string, unknown>;
   assertRemovedKeys("syncImports", source, ["enabled", "stop", "rewrite", "keepRelative"]);
@@ -107,9 +109,56 @@ function normalizeSyncImportsRule(rule: SyncImportsRuleOptions | undefined) {
   return {
     severity: normalizeSeverity("syncImports", rule),
     fix: Boolean(rule?.fix ?? DEFAULT_RULE_FIX),
+    sourceRoot: rule?.sourceRoot,
     tsconfigPath: rule?.tsconfigPath,
+    sourceExtensions: rule?.sourceExtensions,
+    excludeDirs: rule?.excludeDirs,
     alias: rule?.alias,
     allowRelative: rule?.allowRelative ?? DEFAULT_ALLOW_RELATIVE,
+    packageJsonImports: rule?.packageJsonImports,
+    logging: rule?.logging,
+  };
+}
+
+function normalizeDryRule(rule: DryRuleOptions | undefined): NormalizedDryRule | undefined {
+  if (!rule) return undefined;
+  assertRemovedKeys("dry", rule as Record<string, unknown>, ["enabled", "stop"]);
+
+  if (!Array.isArray(rule.helpers) || rule.helpers.length === 0) {
+    throw new InvalidCodeDisciplineConfigError("dry.helpers must contain at least one helper", {
+      rule: "dry",
+    });
+  }
+
+  const helpers = rule.helpers.map((helper, index) => {
+    const from = String(helper?.from ?? "").trim();
+    const exportName = String(helper?.exportName ?? "").trim();
+
+    if (!from) {
+      throw new InvalidCodeDisciplineConfigError("dry.helpers[].from must be a non-empty string", {
+        rule: "dry",
+        index,
+      });
+    }
+
+    if (!exportName) {
+      throw new InvalidCodeDisciplineConfigError("dry.helpers[].exportName must be a non-empty string", {
+        rule: "dry",
+        index,
+      });
+    }
+
+    return {
+      from,
+      exportName,
+      key: helper?.key ? String(helper.key).trim() : undefined,
+    };
+  });
+
+  return {
+    severity: normalizeSeverity("dry", rule),
+    fix: Boolean(rule.fix ?? DEFAULT_RULE_FIX),
+    helpers,
   };
 }
 
@@ -117,4 +166,4 @@ function uniqueStrings(values: string[]): string[] {
   return Array.from(new Set(values));
 }
 
-export { normalizeFolderizeCompoundFilesRule, normalizeMaxFileLinesRule, normalizeMaxFunctionLinesRule, normalizeSyncImportsRule };
+export { normalizeDryRule, normalizeFolderizeCompoundFilesRule, normalizeMaxFileLinesRule, normalizeMaxFunctionLinesRule, normalizeSyncImportsRule };

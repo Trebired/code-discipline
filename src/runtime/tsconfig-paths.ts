@@ -81,7 +81,7 @@ function rewriteCompilerPaths(
 async function prepareTsconfigPaths(
   projectRoot: string,
   options: CodeDisciplineTsconfigPathsOptions | undefined,
-  mode: "check" | "fix" | "sync" | "startup",
+  mode: "check" | "fix",
 ): Promise<PreparedTsconfigPathsResult | null> {
   const normalize = options?.normalize || "none";
   if (normalize === "none") return null;
@@ -104,7 +104,7 @@ async function prepareTsconfigPaths(
     changed,
     originalText,
     restoreAfterRun: Boolean(options?.restoreAfterRun),
-    restoreOnExit: Boolean(options?.restoreAfterRun) && mode !== "sync" && mode !== "startup",
+    restoreOnExit: Boolean(options?.restoreAfterRun),
     tsconfigPath,
   };
 }

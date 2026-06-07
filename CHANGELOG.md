@@ -2,6 +2,15 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 2.0.0
+
+- Removed the top-level `code-discipline sync` command and the runtime `sync` / `startup` modes.
+- Changed the package-owned surface to `check` and `fix`, with positional rule selectors such as `code-discipline fix sync-imports`.
+- Changed config auto-discovery to the new `tb.code-discipline.*` filenames and added package-owned TypeScript config loading for Node and Bun.
+- Added the `dry` rule for canonical helper registration, duplicate detection, and full-removal standalone autofix.
+- Moved optional `package.json#imports` syncing under `rules.syncImports.packageJsonImports`.
+- Changed `fixCodeDiscipline()` from a folderization-only mutation path into a rule-ordered fix pipeline with `ruleResults`.
+
 ## 1.5.0
 
 - Added direct config auto-discovery so the CLI can be used as `code-discipline check`, `fix`, and `sync` without mandatory wrapper scripts or `--config` flags.

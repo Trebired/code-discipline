@@ -94,9 +94,9 @@ describe("code-discipline syncImports", () => {
       rewritten_imports: 1,
     });
     expect(readJson(projectRoot, "tsconfig.json").compilerOptions.paths).toEqual({
-      "#feature-app": ["src/feature/app.ts"],
-      "#feature-local": ["src/feature/local.ts"],
-      "#shared-util": ["src/shared/util.ts"],
+      "#feature-app": ["./src/feature/app.ts"],
+      "#feature-local": ["./src/feature/local.ts"],
+      "#shared-util": ["./src/shared/util.ts"],
     });
     expect(readFile(projectRoot, "src/feature/app.ts")).toContain('from "#shared-util"');
     expect(readFile(projectRoot, "src/feature/app.ts")).toContain('from "./local"');
@@ -251,8 +251,31 @@ describe("code-discipline syncImports", () => {
 
     const tsconfig = readJson(projectRoot, "tsconfig.json");
     expect(tsconfig.compilerOptions.paths).toEqual({
-      "@shared__util": ["src/shared/util.ts"],
+      "@shared__util": ["./src/shared/util.ts"],
     });
+  });
+
+  test("writes dot-prefixed tsconfig path targets so baseUrl is not required", async () => {
+    const projectRoot = tempProject();
+
+    writeFile(projectRoot, "tsconfig.json", JSON.stringify({
+      compilerOptions: {
+        baseUrl: ".",
+      },
+    }, null, 2));
+    writeFile(projectRoot, "src/feature/app.ts", "export const app = true;\n");
+
+    await syncImports({
+      projectRoot,
+      fix: true,
+      alias: { strategy: "relative-path-slug" },
+    });
+
+    const tsconfig = readJson(projectRoot, "tsconfig.json");
+    expect(tsconfig.compilerOptions.paths).toEqual({
+      "#feature-app": ["./src/feature/app.ts"],
+    });
+    expect(tsconfig.compilerOptions.baseUrl).toBeUndefined();
   });
 
   test("fails clearly on alias collisions", async () => {

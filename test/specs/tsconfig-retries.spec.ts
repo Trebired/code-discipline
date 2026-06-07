@@ -49,7 +49,7 @@ describe("code-discipline tsconfig retries", () => {
     const tsconfig = readJson(projectRoot, "tsconfig.json");
     expect(tsconfig.compilerOptions).toEqual({
       paths: {
-        "#app": ["src/app.ts"],
+        "#app": ["./src/app.ts"],
       },
       strict: true,
     });

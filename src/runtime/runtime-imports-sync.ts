@@ -1,13 +1,20 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import type { CodeDisciplineRuntimeImportsSyncOptions } from "../checks/types.js";
+import type { CodeDisciplinePackageJsonImportsOptions } from "../checks/types.js";
 import { InvalidCodeDisciplineConfigError } from "../shared/errors.js";
-import { parseTsconfigJson, pathExists, stableSerialize, toPosixPath, toStableJson } from "../shared/utils.js";
+import {
+  parseTsconfigJson,
+  pathExists,
+  stableSerialize,
+  toPosixPath,
+  toStableJson,
+} from "../shared/utils.js";
 
 type RuntimeImportsSyncResult = {
   changed: boolean;
   importsCount: number;
+  nextImports: Record<string, string>;
   packageJsonPath: string;
 };
 
@@ -16,17 +23,21 @@ type PackageJsonWithImports = {
   [key: string]: unknown;
 };
 
-function resolvePackageJsonPath(projectRoot: string, packageJsonPath?: string): string {
+function resolvePackageJsonPath(
+  projectRoot: string,
+  configPath: string | undefined,
+  packageJsonPath?: string,
+): string {
   const input = packageJsonPath || "package.json";
-  return path.isAbsolute(input) ? path.resolve(input) : path.resolve(projectRoot, input);
+  if (path.isAbsolute(input)) return path.resolve(input);
+  const baseDir = configPath ? path.dirname(configPath) : projectRoot;
+  return path.resolve(baseDir, input);
 }
 
 function normalizePackageImportTarget(target: string): string {
-  const normalized = toPosixPath(target);
-  if (normalized.startsWith("./") || normalized.startsWith("../") || normalized.startsWith("/")) {
-    return normalized.startsWith("./") ? normalized : `./${normalized.replace(/^\/+/g, "")}`;
-  }
-  return `./${normalized.replace(/^\/+/g, "")}`;
+  const normalized = toPosixPath(target).replace(/^\.\/+/, "");
+  if (normalized.startsWith("../")) return normalized;
+  return normalized.startsWith("./") ? normalized : `./${normalized.replace(/^\/+/g, "")}`;
 }
 
 function normalizeAliasPrefixes(value: string | string[] | undefined): string[] {
@@ -36,7 +47,7 @@ function normalizeAliasPrefixes(value: string | string[] | undefined): string[] 
 
 async function readPackageJson(packageJsonPath: string): Promise<PackageJsonWithImports> {
   if (!await pathExists(packageJsonPath)) {
-    throw new InvalidCodeDisciplineConfigError("runtimeImportsSync package.json was not found", {
+    throw new InvalidCodeDisciplineConfigError("packageJsonImports package.json was not found", {
       filePath: packageJsonPath,
     });
   }
@@ -45,7 +56,7 @@ async function readPackageJson(packageJsonPath: string): Promise<PackageJsonWith
   const parsed = JSON.parse(text) as unknown;
 
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new InvalidCodeDisciplineConfigError("runtimeImportsSync package.json must contain a JSON object", {
+    throw new InvalidCodeDisciplineConfigError("packageJsonImports package.json must contain a JSON object", {
       filePath: packageJsonPath,
     });
   }
@@ -53,32 +64,24 @@ async function readPackageJson(packageJsonPath: string): Promise<PackageJsonWith
   return parsed as PackageJsonWithImports;
 }
 
-async function syncPackageJsonImportsFromTsconfigPaths(args: {
+async function collectPackageJsonImportsSyncState(args: {
+  configPath?: string;
+  options: CodeDisciplinePackageJsonImportsOptions | undefined;
   projectRoot: string;
-  options: CodeDisciplineRuntimeImportsSyncOptions | undefined;
+  tsconfigPath: string;
 }): Promise<RuntimeImportsSyncResult | null> {
   const options = args.options;
   if (!options?.enabled) return null;
 
-  if ((options.source && options.source !== "tsconfig.paths") || (options.target && options.target !== "package.json.imports")) {
-    throw new InvalidCodeDisciplineConfigError("runtimeImportsSync only supports source=tsconfig.paths and target=package.json.imports", {
-      source: options.source,
-      target: options.target,
+  if (!await pathExists(args.tsconfigPath)) {
+    throw new InvalidCodeDisciplineConfigError("packageJsonImports tsconfig was not found", {
+      filePath: args.tsconfigPath,
     });
   }
 
-  const tsconfigPath = path.isAbsolute(options.tsconfigPath || "")
-    ? path.resolve(options.tsconfigPath!)
-    : path.resolve(args.projectRoot, options.tsconfigPath || "tsconfig.json");
-  if (!await pathExists(tsconfigPath)) {
-    throw new InvalidCodeDisciplineConfigError("runtimeImportsSync tsconfig was not found", {
-      filePath: tsconfigPath,
-    });
-  }
-
-  const packageJsonPath = resolvePackageJsonPath(args.projectRoot, options.packageJsonPath);
-  const tsconfigText = await fs.readFile(tsconfigPath, "utf8");
-  const tsconfig = parseTsconfigJson(tsconfigText, tsconfigPath);
+  const packageJsonPath = resolvePackageJsonPath(args.projectRoot, args.configPath, options.packageJsonPath);
+  const tsconfigText = await fs.readFile(args.tsconfigPath, "utf8");
+  const tsconfig = parseTsconfigJson(tsconfigText, args.tsconfigPath);
   const packageJson = await readPackageJson(packageJsonPath);
   const compilerPaths = tsconfig.compilerOptions?.paths || {};
   const aliasPrefixes = normalizeAliasPrefixes(options.aliasPrefix);
@@ -105,24 +108,39 @@ async function syncPackageJsonImportsFromTsconfigPaths(args: {
       ...preservedImports,
       ...managedImports,
     }).sort(([left], [right]) => left.localeCompare(right)),
-  );
+  ) as Record<string, string>;
 
   const nextPackageJson: PackageJsonWithImports = {
     ...packageJson,
     imports: nextImports,
   };
 
-  const changed = stableSerialize(packageJson) !== stableSerialize(nextPackageJson);
-  if (changed) {
-    await fs.writeFile(packageJsonPath, toStableJson(nextPackageJson));
-  }
-
   return {
-    changed,
+    changed: stableSerialize(packageJson) !== stableSerialize(nextPackageJson),
     importsCount: Object.keys(managedImports).length,
+    nextImports,
     packageJsonPath,
   };
 }
 
-export { syncPackageJsonImportsFromTsconfigPaths };
+async function syncPackageJsonImportsFromTsconfigPaths(args: {
+  configPath?: string;
+  options: CodeDisciplinePackageJsonImportsOptions | undefined;
+  projectRoot: string;
+  tsconfigPath: string;
+}): Promise<RuntimeImportsSyncResult | null> {
+  const state = await collectPackageJsonImportsSyncState(args);
+  if (!state || !state.changed) return state;
+
+  const packageJson = await readPackageJson(state.packageJsonPath);
+  const nextPackageJson: PackageJsonWithImports = {
+    ...packageJson,
+    imports: state.nextImports,
+  };
+
+  await fs.writeFile(state.packageJsonPath, toStableJson(nextPackageJson));
+  return state;
+}
+
+export { collectPackageJsonImportsSyncState, syncPackageJsonImportsFromTsconfigPaths };
 export type { RuntimeImportsSyncResult };

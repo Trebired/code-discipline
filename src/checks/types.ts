@@ -1,9 +1,20 @@
 import type { LoggingOptions } from "../shared/logging-types.js";
-import type { SourceScanOptions, SyncImportsRuleOptions } from "../imports/types.js";
-import type { CodeDisciplineResult, CodeDisciplineSeverity } from "../shared/discipline-types.js";
+import type {
+  PackageJsonImportsSyncOptions,
+  SourceScanOptions,
+  SyncImportsRuleOptions,
+} from "../imports/types.js";
+import type {
+  CodeDisciplineResult,
+  CodeDisciplineRuleName,
+  CodeDisciplineSeverity,
+  CodeDisciplineViolation,
+} from "../shared/discipline-types.js";
 
-type CodeDisciplineMode = "check" | "fix" | "sync";
-type CodeDisciplineRuntimeMode = CodeDisciplineMode | "startup";
+type CodeDisciplineRuleSlug = CodeDisciplineRuleName;
+type FixableRuleSlug = "folderize-compound-files" | "sync-imports" | "dry";
+type CodeDisciplineMode = "check" | "fix";
+type CodeDisciplineRuntimeMode = CodeDisciplineMode;
 
 type SeverityRuleOptions = {
   severity?: CodeDisciplineSeverity;
@@ -22,11 +33,29 @@ type FolderizeCompoundFilesRuleOptions = SeverityRuleOptions & {
   separators?: string[];
 };
 
+type DryHelperReference = {
+  from: string;
+  exportName: string;
+  key?: string;
+};
+
+type DryRuleOptions = SeverityRuleOptions & {
+  fix?: boolean;
+  helpers: DryHelperReference[];
+};
+
+type CodeDisciplinePackageJsonImportsOptions = PackageJsonImportsSyncOptions;
+
+type CodeDisciplineSyncImportsRuleOptions = SyncImportsRuleOptions & {
+  packageJsonImports?: CodeDisciplinePackageJsonImportsOptions;
+};
+
 type CodeDisciplineRules = {
   maxFileLines?: MaxFileLinesRuleOptions;
   maxFunctionLines?: MaxFunctionLinesRuleOptions;
   folderizeCompoundFiles?: FolderizeCompoundFilesRuleOptions;
-  syncImports?: SyncImportsRuleOptions;
+  syncImports?: CodeDisciplineSyncImportsRuleOptions;
+  dry?: DryRuleOptions;
 };
 
 type TsconfigPathsNormalizeMode = "relative-dot-prefix" | "strip-dot-prefix" | "none";
@@ -35,15 +64,6 @@ type CodeDisciplineTsconfigPathsOptions = {
   tsconfigPath?: string;
   normalize?: TsconfigPathsNormalizeMode;
   restoreAfterRun?: boolean;
-};
-
-type CodeDisciplineRuntimeImportsSyncOptions = {
-  enabled?: boolean;
-  source?: "tsconfig.paths";
-  target?: "package.json.imports";
-  aliasPrefix?: string | string[];
-  packageJsonPath?: string;
-  tsconfigPath?: string;
 };
 
 type CodeDisciplineLifecycleContext = {
@@ -65,6 +85,7 @@ type CodeDisciplineLifecycleHooks = {
 
 type CheckCodeDisciplineOptions = {
   projectRoot: string;
+  configPath?: string;
   sourceRoot?: string;
   sourceExtensions?: string[];
   excludeDirs?: string[];
@@ -72,10 +93,12 @@ type CheckCodeDisciplineOptions = {
   rules?: CodeDisciplineRules;
   lifecycle?: CodeDisciplineLifecycleHooks;
   tsconfigPaths?: CodeDisciplineTsconfigPathsOptions;
-  runtimeImportsSync?: CodeDisciplineRuntimeImportsSyncOptions;
+  onlyRules?: CodeDisciplineRuleSlug[];
 };
 
-type FixCodeDisciplineOptions = CheckCodeDisciplineOptions;
+type FixCodeDisciplineOptions = Omit<CheckCodeDisciplineOptions, "onlyRules"> & {
+  onlyRules?: FixableRuleSlug[];
+};
 
 type CodeDisciplineConfig = Omit<CheckCodeDisciplineOptions, "projectRoot">;
 
@@ -95,23 +118,45 @@ type NormalizedFolderizeCompoundFilesRule = {
   separators: string[];
 };
 
+type NormalizedDryRule = {
+  severity: CodeDisciplineSeverity;
+  fix: boolean;
+  helpers: DryHelperReference[];
+};
+
 type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
+  configPath?: string;
   sourceRootRelative: string;
   logging: LoggingOptions;
+  onlyRules?: CodeDisciplineRuleSlug[] | FixableRuleSlug[];
   rules: {
     maxFileLines?: NormalizedMaxFileLinesRule;
     maxFunctionLines?: NormalizedMaxFunctionLinesRule;
     folderizeCompoundFiles?: NormalizedFolderizeCompoundFilesRule;
-    syncImports?: SyncImportsRuleOptions;
+    syncImports?: CodeDisciplineSyncImportsRuleOptions;
+    dry?: NormalizedDryRule;
   };
 };
 
 type CheckCodeDisciplineResult = CodeDisciplineResult;
 
+type FixCodeDisciplineRuleResult = {
+  ok: boolean;
+  errors: number;
+  warnings: number;
+  violations: CodeDisciplineViolation[];
+  moved_files?: number;
+  rewritten_files?: number;
+  rewritten_imports?: number;
+  removed_duplicates?: number;
+  added_imports?: number;
+};
+
 type FixCodeDisciplineResult = CodeDisciplineResult & {
   moved_files: number;
   rewritten_files: number;
   rewritten_imports: number;
+  ruleResults: Partial<Record<FixableRuleSlug, FixCodeDisciplineRuleResult>>;
 };
 
 export type {
@@ -122,16 +167,23 @@ export type {
   CodeDisciplineLifecycleHookResult,
   CodeDisciplineLifecycleHooks,
   CodeDisciplineMode,
-  CodeDisciplineRuntimeImportsSyncOptions,
+  CodeDisciplinePackageJsonImportsOptions,
+  CodeDisciplineRuleSlug,
   CodeDisciplineRuntimeMode,
   CodeDisciplineRules,
+  CodeDisciplineSyncImportsRuleOptions,
   CodeDisciplineTsconfigPathsOptions,
+  DryHelperReference,
+  DryRuleOptions,
+  FixableRuleSlug,
   FixCodeDisciplineOptions,
   FixCodeDisciplineResult,
+  FixCodeDisciplineRuleResult,
   FolderizeCompoundFilesRuleOptions,
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
   NormalizedCheckCodeDisciplineOptions,
+  NormalizedDryRule,
   NormalizedFolderizeCompoundFilesRule,
   NormalizedMaxFileLinesRule,
   NormalizedMaxFunctionLinesRule,

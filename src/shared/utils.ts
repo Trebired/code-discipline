@@ -1,6 +1,7 @@
 import { randomBytes, createHash } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 import ts from "typescript";
 
@@ -124,6 +125,18 @@ async function wait(milliseconds: number): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
+async function isDirectExecution(importMetaUrl: string, argv1: string | undefined): Promise<boolean> {
+  if (!argv1) return false;
+
+  try {
+    const launchedPath = await fs.realpath(path.resolve(argv1));
+    const modulePath = await fs.realpath(fileURLToPath(importMetaUrl));
+    return launchedPath === modulePath;
+  } catch {
+    return false;
+  }
+}
+
 function parseTsconfigJson(text: string, filePath: string): TsconfigJson {
   const parsed = ts.parseConfigFileTextToJson(filePath, text);
   if (parsed.error) {
@@ -149,6 +162,7 @@ export {
   ensureDotExtension,
   flattenDiagnosticMessage,
   formatDiagnostics,
+  isDirectExecution,
   isAliasIdValid,
   isDirectory,
   isFile,

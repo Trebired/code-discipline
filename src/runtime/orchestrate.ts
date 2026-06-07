@@ -3,23 +3,20 @@ import type {
   CodeDisciplineConfig,
   CodeDisciplineLifecycleContext,
   CodeDisciplineLifecycleHooks,
-  CodeDisciplineMode,
   CodeDisciplineRuntimeMode,
   FixCodeDisciplineResult,
 } from "../checks/types.js";
-import { syncPackageJsonImportsFromTsconfigPaths } from "./runtime-imports-sync.js";
 import { prepareTsconfigPaths, restoreTsconfigPaths } from "./tsconfig-paths.js";
-import type { SyncImportsResult } from "../imports/types.js";
 
 type CodeDisciplineOrchestratorOptions = {
   config: CodeDisciplineConfig;
   configPath?: string;
   mode: CodeDisciplineRuntimeMode;
   projectRoot: string;
-  execute: () => Promise<CheckCodeDisciplineResult | FixCodeDisciplineResult | SyncImportsResult>;
+  execute: () => Promise<CheckCodeDisciplineResult | FixCodeDisciplineResult>;
 };
 
-type CodeDisciplineOrchestratorResult = CheckCodeDisciplineResult | FixCodeDisciplineResult | SyncImportsResult;
+type CodeDisciplineOrchestratorResult = CheckCodeDisciplineResult | FixCodeDisciplineResult;
 
 function createLifecycleContext(args: {
   config: CodeDisciplineConfig;
@@ -77,17 +74,6 @@ async function orchestrateCodeDisciplineRun(
     await runLifecycleHook(lifecycle?.beforeMode as any, context);
 
     result = await options.execute();
-
-    if (options.mode === "sync" || options.mode === "startup") {
-      const runtimeImportsSync = await syncPackageJsonImportsFromTsconfigPaths({
-        projectRoot: options.projectRoot,
-        options: options.config.runtimeImportsSync,
-      });
-
-      if (runtimeImportsSync) {
-        context.state.runtimeImportsSync = runtimeImportsSync;
-      }
-    }
 
     await runLifecycleHook(lifecycle?.afterMode as any, context, result);
     await runLifecycleHook(lifecycle?.afterRun as any, context, result);
