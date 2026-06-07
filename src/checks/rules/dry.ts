@@ -768,7 +768,7 @@ function createDryViolation(
 ): CodeDisciplineViolation {
   return {
     rule: "dry",
-    fix: options.rules.dry?.fix ?? false,
+    fix: true,
     filePath: candidate.filePath,
     message: `${candidate.localName ?? "anonymous function"} duplicates registered helper ${candidate.helper.helperKey}`,
     details: {
@@ -1019,16 +1019,6 @@ async function fixDryRule(
       ok: true,
       violationCount: 0,
       violations: [],
-      added_imports: 0,
-      removed_duplicates: 0,
-    };
-  }
-
-  if (!rule.fix) {
-    return {
-      ok: false,
-      violationCount: violations.length,
-      violations,
       added_imports: 0,
       removed_duplicates: 0,
     };

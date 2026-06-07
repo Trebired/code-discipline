@@ -143,7 +143,7 @@ describe("code-discipline checks", () => {
     expect(result.violations).toEqual([
       {
         rule: "folderize-compound-files",
-        fix: false,
+        fix: true,
         filePath: "src/api/user_route.ts",
         message: "file can be grouped under src/api/user/route.ts",
         suggestedPath: "src/api/user/route.ts",
@@ -156,7 +156,7 @@ describe("code-discipline checks", () => {
       },
       {
         rule: "folderize-compound-files",
-        fix: false,
+        fix: true,
         filePath: "src/api/user-schema.ts",
         message: "file can be grouped under src/api/user/schema.ts",
         suggestedPath: "src/api/user/schema.ts",
@@ -205,7 +205,6 @@ describe("code-discipline checks", () => {
       projectRoot,
       rules: {
         syncImports: {
-          fix: true,
           alias: {
             strategy: "relative-path-slug",
           },
@@ -327,12 +326,57 @@ describe("code-discipline checks", () => {
     await expect(checkCodeDiscipline({
       projectRoot,
       rules: {
+        folderizeCompoundFiles: {
+          // @ts-expect-error stale config
+          fix: true,
+        },
+      },
+    })).rejects.toMatchObject({
+      code: "invalid_config",
+    });
+
+    await expect(checkCodeDiscipline({
+      projectRoot,
+      rules: {
         syncImports: {
           // @ts-expect-error legacy config
           enabled: true,
           alias: {
             strategy: "relative-path-slug",
           },
+        },
+      },
+    })).rejects.toMatchObject({
+      code: "invalid_config",
+    });
+
+    await expect(checkCodeDiscipline({
+      projectRoot,
+      rules: {
+        syncImports: {
+          // @ts-expect-error stale config
+          fix: true,
+          alias: {
+            strategy: "relative-path-slug",
+          },
+        },
+      },
+    })).rejects.toMatchObject({
+      code: "invalid_config",
+    });
+
+    await expect(checkCodeDiscipline({
+      projectRoot,
+      rules: {
+        dry: {
+          // @ts-expect-error stale config
+          fix: true,
+          helpers: [
+            {
+              from: "./src/shared/to-text.ts",
+              exportName: "toText",
+            },
+          ],
         },
       },
     })).rejects.toMatchObject({
@@ -361,7 +405,6 @@ describe("code-discipline checks", () => {
       projectRoot,
       rules: {
         dry: {
-          fix: true,
           helpers: [
             {
               from: "./src/shared/to-text.ts",
@@ -416,7 +459,6 @@ describe("code-discipline checks", () => {
       projectRoot,
       rules: {
         syncImports: {
-          fix: false,
           alias: {
             strategy: "relative-path-slug",
           },

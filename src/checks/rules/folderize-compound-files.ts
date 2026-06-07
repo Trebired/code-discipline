@@ -11,7 +11,7 @@ function runFolderizeCompoundFilesRule(
 
   return planFolderizeCompoundFiles(sourceFiles, options).map((candidate) => ({
     rule: "folderize-compound-files",
-    fix: options.rules.folderizeCompoundFiles.fix,
+    fix: true,
     filePath: candidate.relativeFromProjectRoot,
     message: `file can be grouped under ${candidate.suggestedPath}`,
     suggestedPath: candidate.suggestedPath,

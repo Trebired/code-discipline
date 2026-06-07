@@ -1,7 +1,6 @@
 import {
   DEFAULT_ALLOW_RELATIVE,
   DEFAULT_FOLDERIZE_COMPOUND_FILE_SEPARATORS,
-  DEFAULT_RULE_FIX,
 } from "../shared/constants.js";
 import { InvalidCodeDisciplineConfigError } from "../shared/errors.js";
 import type {
@@ -72,7 +71,7 @@ function normalizeMaxFunctionLinesRule(rule: MaxFunctionLinesRuleOptions | undef
 function normalizeFolderizeCompoundFilesRule(rule: FolderizeCompoundFilesRuleOptions | undefined) {
   if (!rule) return undefined;
   const source = rule as Record<string, unknown>;
-  assertRemovedKeys("folderizeCompoundFiles", source, ["enabled", "stop", "suffixes"]);
+  assertRemovedKeys("folderizeCompoundFiles", source, ["enabled", "stop", "suffixes", "fix"]);
   assertSeverityRemoved("folderizeCompoundFiles", source);
   const separators = uniqueStrings(rule?.separators ?? DEFAULT_FOLDERIZE_COMPOUND_FILE_SEPARATORS);
 
@@ -83,7 +82,6 @@ function normalizeFolderizeCompoundFilesRule(rule: FolderizeCompoundFilesRuleOpt
   }
 
   return {
-    fix: Boolean(rule.fix ?? DEFAULT_RULE_FIX),
     separators,
   };
 }
@@ -101,8 +99,14 @@ function normalizeSyncImportsRule(rule: CodeDisciplineSyncImportsRuleOptions | u
     });
   }
 
+  if ("fix" in source) {
+    throw new InvalidCodeDisciplineConfigError("syncImports.fix is no longer supported in discipline config; use the fix command instead", {
+      rule: "syncImports",
+      key: "fix",
+    });
+  }
+
   return {
-    fix: Boolean(rule?.fix ?? DEFAULT_RULE_FIX),
     sourceRoot: rule?.sourceRoot,
     tsconfigPath: rule?.tsconfigPath,
     sourceExtensions: rule?.sourceExtensions,
@@ -117,7 +121,7 @@ function normalizeSyncImportsRule(rule: CodeDisciplineSyncImportsRuleOptions | u
 function normalizeDryRule(rule: DryRuleOptions | undefined): NormalizedDryRule | undefined {
   if (!rule) return undefined;
   const source = rule as Record<string, unknown>;
-  assertRemovedKeys("dry", source, ["enabled", "stop"]);
+  assertRemovedKeys("dry", source, ["enabled", "stop", "fix"]);
   assertSeverityRemoved("dry", source);
 
   if (!Array.isArray(rule.helpers) || rule.helpers.length === 0) {
@@ -152,7 +156,6 @@ function normalizeDryRule(rule: DryRuleOptions | undefined): NormalizedDryRule |
   });
 
   return {
-    fix: Boolean(rule.fix ?? DEFAULT_RULE_FIX),
     helpers,
   };
 }

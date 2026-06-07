@@ -26,6 +26,7 @@ npm install @trebired/code-discipline
 
 ```sh
 code-discipline check
+code-discipline check save
 code-discipline check max-function-lines dry
 code-discipline fix
 code-discipline fix sync-imports dry
@@ -38,6 +39,14 @@ Top-level `sync` is gone.
 ```sh
 code-discipline fix sync-imports
 ```
+
+If you want the terminal output written to a top-level file too, add `save`:
+
+```sh
+code-discipline check save
+```
+
+This writes a plain-text report to `code-discipline-report.txt`.
 
 Typical `package.json` scripts can stay simple:
 
@@ -99,11 +108,9 @@ export default defineCodeDisciplineConfig({
       max: 80,
     },
     folderizeCompoundFiles: {
-      fix: true,
       separators: ["_", "-"],
     },
     syncImports: {
-      fix: true,
       alias: {
         prefix: "#",
         strategy: "relative-path-slug",
@@ -115,7 +122,6 @@ export default defineCodeDisciplineConfig({
       },
     },
     dry: {
-      fix: true,
       helpers: [
         {
           from: "./src/shared/to-text.ts",
@@ -162,7 +168,6 @@ const result = await codeDiscipline({
   onlyRules: ["sync-imports"],
   rules: {
     syncImports: {
-      fix: true,
       alias: {
         strategy: "relative-path-slug",
       },
@@ -183,7 +188,6 @@ const discipline = createCodeDiscipline({
       max: 80,
     },
     syncImports: {
-      fix: true,
       alias: {
         strategy: "relative-path-slug",
       },
@@ -212,6 +216,8 @@ Reports function-like declarations whose total span exceeds `max`.
 ### `folderizeCompoundFiles`
 
 Detects flat compound names such as `user_route.ts` and can move them into structural folders such as `user/route.ts`.
+
+The rule config only describes separators now. Whether it mutates is decided by running `code-discipline fix`.
 
 ### `syncImports`
 
@@ -242,7 +248,6 @@ Canonical helpers are registered by module export reference:
 
 ```ts
 dry: {
-  fix: true,
   helpers: [
     {
       from: "./src/shared/to-text.ts",

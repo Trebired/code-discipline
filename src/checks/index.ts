@@ -23,6 +23,7 @@ import type {
 
 function buildNormalizedSyncOptions(
   options: NormalizedCheckCodeDisciplineOptions,
+  fix: boolean,
   rule: CodeDisciplineSyncImportsRuleOptions | undefined = options.rules.syncImports,
 ) {
   if (!rule) return null;
@@ -35,7 +36,7 @@ function buildNormalizedSyncOptions(
     sourceExtensions: rule.sourceExtensions ?? options.sourceExtensions,
     excludeDirs: rule.excludeDirs ?? options.excludeDirs,
     tsconfigPath: rule.tsconfigPath ?? `${options.projectRoot}/tsconfig.json`,
-    fix: rule.fix ?? false,
+    fix,
     alias: {
       prefix: rule.alias?.prefix ?? "#",
       strategy: rule.alias?.strategy ?? "random",
@@ -97,7 +98,7 @@ async function collectViolations(options: NormalizedCheckCodeDisciplineOptions):
   }
 
   if (options.rules.syncImports && shouldRunRule("sync-imports", options.onlyRules)) {
-    const normalizedSyncOptions = buildNormalizedSyncOptions(options);
+    const normalizedSyncOptions = buildNormalizedSyncOptions(options, false);
     if (normalizedSyncOptions) {
       violations.push(...await collectSyncImportViolations(sourceFiles, normalizedSyncOptions));
     }
@@ -177,7 +178,7 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
   }
 
   if (normalized.rules.syncImports && shouldRunFixRule("sync-imports", normalized)) {
-    const syncOptions = buildNormalizedSyncOptions(normalized);
+    const syncOptions = buildNormalizedSyncOptions(normalized, true);
     if (syncOptions) {
       const syncResult = await syncImports(syncOptions);
       ruleResults["sync-imports"] = mapFixRuleResult(syncResult);

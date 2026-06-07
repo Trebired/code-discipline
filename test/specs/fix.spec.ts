@@ -4,7 +4,7 @@ import { FileConflictError, fixCodeDiscipline } from "../../src/index.js";
 import { fileExists, readFile, tempProject, writeFile } from "./helpers.js";
 
 describe("code-discipline fix", () => {
-  test("moves same-directory compound groups and rewrites affected imports when fix is true", async () => {
+  test("moves same-directory compound groups and rewrites affected imports", async () => {
     const projectRoot = tempProject();
 
     writeFile(projectRoot, "src/api/user_route.ts", "export const route = true;\n");
@@ -18,9 +18,7 @@ describe("code-discipline fix", () => {
     const result = await fixCodeDiscipline({
       projectRoot,
       rules: {
-        folderizeCompoundFiles: {
-          fix: true,
-        },
+        folderizeCompoundFiles: {},
       },
     });
 
@@ -49,9 +47,7 @@ describe("code-discipline fix", () => {
     const result = await fixCodeDiscipline({
       projectRoot,
       rules: {
-        folderizeCompoundFiles: {
-          fix: true,
-        },
+        folderizeCompoundFiles: {},
       },
     });
 
@@ -61,26 +57,23 @@ describe("code-discipline fix", () => {
     expect(readFile(projectRoot, "src/api/index.ts")).toContain('from "./user/route"');
   });
 
-  test("does not move files when folderization fix is disabled and keeps violations", async () => {
+  test("rejects stale folderization fix config", async () => {
     const projectRoot = tempProject();
 
     writeFile(projectRoot, "src/api/user_route.ts", "export const route = true;\n");
     writeFile(projectRoot, "src/api/user_schema.ts", "export const schema = true;\n");
 
-    const result = await fixCodeDiscipline({
+    await expect(fixCodeDiscipline({
       projectRoot,
       rules: {
         folderizeCompoundFiles: {
+          // @ts-expect-error stale config
           fix: false,
         },
       },
+    })).rejects.toMatchObject({
+      code: "invalid_config",
     });
-
-    expect(result.ok).toBe(false);
-    expect(result.violationCount).toBe(2);
-    expect(result.moved_files).toBe(0);
-    expect(fileExists(projectRoot, "src/api/user_route.ts")).toBe(true);
-    expect(fileExists(projectRoot, "src/api/user/route.ts")).toBe(false);
   });
 
   test("fails safely on file conflicts", async () => {
@@ -93,9 +86,7 @@ describe("code-discipline fix", () => {
     await expect(fixCodeDiscipline({
       projectRoot,
       rules: {
-        folderizeCompoundFiles: {
-          fix: true,
-        },
+        folderizeCompoundFiles: {},
       },
     })).rejects.toBeInstanceOf(FileConflictError);
   });
@@ -122,7 +113,6 @@ describe("code-discipline fix", () => {
       projectRoot,
       rules: {
         dry: {
-          fix: true,
           helpers: [
             {
               from: "./src/shared/to-text.ts",
@@ -171,7 +161,6 @@ describe("code-discipline fix", () => {
       projectRoot,
       rules: {
         dry: {
-          fix: true,
           helpers: [
             {
               from: "./src/shared/to-text.ts",

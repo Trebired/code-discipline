@@ -23,7 +23,6 @@ type MaxFunctionLinesRuleOptions = {
 };
 
 type FolderizeCompoundFilesRuleOptions = {
-  fix?: boolean;
   separators?: string[];
 };
 
@@ -34,13 +33,12 @@ type DryHelperReference = {
 };
 
 type DryRuleOptions = {
-  fix?: boolean;
   helpers: DryHelperReference[];
 };
 
 type CodeDisciplinePackageJsonImportsOptions = PackageJsonImportsSyncOptions;
 
-type CodeDisciplineSyncImportsRuleOptions = SyncImportsRuleOptions & {
+type CodeDisciplineSyncImportsRuleOptions = Omit<SyncImportsRuleOptions, "fix"> & {
   packageJsonImports?: CodeDisciplinePackageJsonImportsOptions;
 };
 
@@ -105,12 +103,10 @@ type NormalizedMaxFunctionLinesRule = {
 };
 
 type NormalizedFolderizeCompoundFilesRule = {
-  fix: boolean;
   separators: string[];
 };
 
 type NormalizedDryRule = {
-  fix: boolean;
   helpers: DryHelperReference[];
 };
 

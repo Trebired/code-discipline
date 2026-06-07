@@ -36,7 +36,6 @@ describe("code-discipline runtime api", () => {
       sourceRoot: "src",
       rules: {
         syncImports: {
-          fix: true,
           alias: {
             strategy: "relative-path-slug",
           },
@@ -163,7 +162,6 @@ describe("code-discipline runtime api", () => {
       projectRoot,
       rules: {
         syncImports: {
-          fix: true,
           alias: {
             prefix: "#",
             strategy: "relative-path-slug",

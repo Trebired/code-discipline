@@ -22,7 +22,7 @@ async function collectSyncImportViolations(
   if (aliasPlan.aliasesChanged) {
     violations.push({
       rule: "sync-imports",
-      fix: options.fix,
+      fix: true,
       filePath: path.relative(options.projectRoot, options.tsconfigPath) || "tsconfig.json",
       message: "tsconfig paths are out of sync with the current source tree",
       details: {
@@ -41,7 +41,7 @@ async function collectSyncImportViolations(
   if (packageJsonSyncState?.changed) {
     violations.push({
       rule: "sync-imports",
-      fix: options.fix,
+      fix: true,
       filePath: path.relative(options.projectRoot, packageJsonSyncState.packageJsonPath) || "package.json",
       message: "package.json imports are out of sync with tsconfig paths",
       details: {
@@ -66,7 +66,7 @@ async function collectSyncImportViolations(
 
       violations.push({
         rule: "sync-imports",
-        fix: options.fix,
+        fix: true,
         filePath: file.relativeFromProjectRoot,
         message: `relative import ${occurrence.specifier} should be rewritten to ${aliasId}`,
         details: {

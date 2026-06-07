@@ -29,7 +29,7 @@ function createFolderizationViolation(
 ): CodeDisciplineViolation {
   return {
     rule: "folderize-compound-files",
-    fix: options.rules.folderizeCompoundFiles?.fix ?? false,
+    fix: true,
     filePath,
     message: `file can be grouped under ${suggestedPath}`,
     suggestedPath,
@@ -246,22 +246,6 @@ async function fixFolderization(
       rewritten_imports: 0,
       ruleResults: {},
       violations: [],
-    };
-  }
-
-  if (!options.rules.folderizeCompoundFiles.fix) {
-    logger.warn("fix-folderization-disabled", "folderization fix is disabled", {
-      candidates: moves.length,
-      violationCount: violations.length,
-    });
-    return {
-      ok: false,
-      violationCount: violations.length,
-      moved_files: 0,
-      rewritten_files: 0,
-      rewritten_imports: 0,
-      ruleResults: {},
-      violations,
     };
   }
 

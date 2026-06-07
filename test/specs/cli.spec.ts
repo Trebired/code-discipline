@@ -124,7 +124,7 @@ describe("code-discipline cli", () => {
     expect(stdout.join("")).toContain("Found 1 discipline violation(s).");
   });
 
-  test("runs fix sync-imports through an explicit config module and mutates only when syncImports.fix is true", async () => {
+  test("runs fix sync-imports through an explicit config module", async () => {
     const projectRoot = tempProject();
     const stdout: string[] = [];
 
@@ -135,7 +135,6 @@ describe("code-discipline cli", () => {
       "export default {",
       "  rules: {",
       "    syncImports: {",
-      "      fix: true,",
       "      alias: { strategy: \"relative-path-slug\" },",
       "      allowRelative: [\"./\"],",
       "    },",
@@ -164,9 +163,7 @@ describe("code-discipline cli", () => {
     writeFile(projectRoot, "discipline.config.mjs", [
       "export default {",
       "  rules: {",
-      "    folderizeCompoundFiles: {",
-      "      fix: true,",
-      "    },",
+      "    folderizeCompoundFiles: {},",
       "  },",
       "};",
       "",
@@ -181,6 +178,31 @@ describe("code-discipline cli", () => {
     expect(fileExists(projectRoot, "src/api/user/route.ts")).toBe(true);
     expect(readFile(projectRoot, "src/app.ts")).toContain('from "./api/user/route"');
     expect(stdout.join("")).toContain("Fix summary: moved 2, rewritten files 1, rewritten imports 2, remaining violations 0.");
+  });
+
+  test("saves check output to a top-level report file", async () => {
+    const projectRoot = tempProject();
+    const stdout: string[] = [];
+
+    writeFile(projectRoot, "src/too-long.ts", "one\n2\n3\n");
+    writeFile(projectRoot, "tb.code-discipline.ts", [
+      "export default {",
+      "  rules: {",
+      "    maxFileLines: { max: 2 },",
+      "  },",
+      "};",
+      "",
+    ].join("\n"));
+
+    const result = await runCli(["check", "save"], {
+      cwd: projectRoot,
+      stdout: (text) => stdout.push(text),
+    });
+
+    expect(result.exitCode).toBe(1);
+    expect(fileExists(projectRoot, "code-discipline-report.txt")).toBe(true);
+    expect(readFile(projectRoot, "code-discipline-report.txt")).toContain("Found 1 discipline violation(s).");
+    expect(stdout.join("")).toContain("Saved report to code-discipline-report.txt.");
   });
 
   test("prints a clear error when no config module can be found", async () => {
