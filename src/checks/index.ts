@@ -35,7 +35,6 @@ function buildNormalizedSyncOptions(
     sourceExtensions: rule.sourceExtensions ?? options.sourceExtensions,
     excludeDirs: rule.excludeDirs ?? options.excludeDirs,
     tsconfigPath: rule.tsconfigPath ?? `${options.projectRoot}/tsconfig.json`,
-    severity: rule.severity ?? "error",
     fix: rule.fix ?? false,
     alias: {
       prefix: rule.alias?.prefix ?? "#",
@@ -53,13 +52,9 @@ function sortViolations(violations: CodeDisciplineViolation[]): CodeDisciplineVi
 }
 
 function summarizeViolations(violations: CodeDisciplineViolation[]): CodeDisciplineResult {
-  const warnings = violations.filter((violation) => violation.severity === "warning").length;
-  const errors = violations.length - warnings;
-
   return {
-    ok: errors === 0,
-    errors,
-    warnings,
+    ok: violations.length === 0,
+    violationCount: violations.length,
     violations,
   };
 }
@@ -69,40 +64,15 @@ function logSummary(
   result: CheckCodeDisciplineResult | FixCodeDisciplineResult,
   logger: ReturnType<typeof resolveLogger>,
 ) {
-  if (result.errors > 0) {
-    logger.flush("error", `discipline-${label}-failed`, `${label} completed with error violations`, {
-      discipline: {
-        errors: result.errors,
-        warnings: result.warnings,
-      },
-      errors: result.errors,
-      warnings: result.warnings,
-      violations: result.violations,
-    });
-    return;
-  }
-
-  if (result.warnings > 0) {
-    logger.flush("warn", `discipline-${label}-warning`, `${label} completed with warning violations`, {
-      discipline: {
-        errors: result.errors,
-        warnings: result.warnings,
-      },
-      errors: result.errors,
-      warnings: result.warnings,
-      violations: result.violations,
+  if (result.violationCount > 0) {
+    logger.flush("warn", `discipline-${label}-violations`, `${label} found ${result.violationCount} violation(s)`, {
+      violationCount: result.violationCount,
     });
     return;
   }
 
   logger.flush("success", `discipline-${label}-ok`, `${label} completed`, {
-    discipline: {
-      errors: result.errors,
-      warnings: result.warnings,
-    },
-    errors: result.errors,
-    warnings: result.warnings,
-    violations: result.violations,
+    violationCount: 0,
   });
 }
 
@@ -138,8 +108,7 @@ async function collectViolations(options: NormalizedCheckCodeDisciplineOptions):
 
 function mapFixRuleResult(result: {
   ok: boolean;
-  errors: number;
-  warnings: number;
+  violationCount: number;
   violations: CodeDisciplineViolation[];
   moved_files?: number;
   rewritten_files?: number;
@@ -149,8 +118,7 @@ function mapFixRuleResult(result: {
 }): FixCodeDisciplineRuleResult {
   return {
     ok: result.ok,
-    errors: result.errors,
-    warnings: result.warnings,
+    violationCount: result.violationCount,
     violations: result.violations,
     moved_files: result.moved_files,
     rewritten_files: result.rewritten_files,
@@ -232,12 +200,7 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
     logSummary("fix", result, logger);
   } else {
     logger.flush("success", "discipline-fix-ok", "fix completed", {
-      discipline: {
-        errors: result.errors,
-        warnings: result.warnings,
-      },
-      errors: result.errors,
-      warnings: result.warnings,
+      violationCount: result.violationCount,
       movedFiles: result.moved_files,
       rewrittenFiles: result.rewritten_files,
       rewrittenImports: result.rewritten_imports,

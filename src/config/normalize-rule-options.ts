@@ -2,7 +2,6 @@ import {
   DEFAULT_ALLOW_RELATIVE,
   DEFAULT_FOLDERIZE_COMPOUND_FILE_SEPARATORS,
   DEFAULT_RULE_FIX,
-  DEFAULT_RULE_SEVERITY,
 } from "../shared/constants.js";
 import { InvalidCodeDisciplineConfigError } from "../shared/errors.js";
 import type {
@@ -12,9 +11,7 @@ import type {
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
   NormalizedDryRule,
-  SeverityRuleOptions,
 } from "../checks/types.js";
-import type { CodeDisciplineSeverity } from "../shared/discipline-types.js";
 
 function assertRemovedKeys(ruleName: string, source: Record<string, unknown>, keys: string[]) {
   for (const key of keys) {
@@ -27,24 +24,20 @@ function assertRemovedKeys(ruleName: string, source: Record<string, unknown>, ke
   }
 }
 
-function normalizeSeverity(
-  ruleName: string,
-  rule: SeverityRuleOptions | undefined,
-): CodeDisciplineSeverity {
-  const severity = rule?.severity ?? DEFAULT_RULE_SEVERITY;
-  if (severity !== "error" && severity !== "warning") {
-    throw new InvalidCodeDisciplineConfigError(`${ruleName}.severity must be "error" or "warning"`, {
+function assertSeverityRemoved(ruleName: string, rule: Record<string, unknown>) {
+  if ("severity" in rule) {
+    throw new InvalidCodeDisciplineConfigError(`${ruleName}.severity is no longer supported`, {
       rule: ruleName,
-      value: severity,
+      key: "severity",
     });
   }
-
-  return severity;
 }
 
 function normalizeMaxFileLinesRule(rule: MaxFileLinesRuleOptions | undefined) {
   if (!rule) return undefined;
-  assertRemovedKeys("maxFileLines", rule as Record<string, unknown>, ["enabled", "stop", "fix"]);
+  const source = rule as Record<string, unknown>;
+  assertRemovedKeys("maxFileLines", source, ["enabled", "stop", "fix"]);
+  assertSeverityRemoved("maxFileLines", source);
 
   if (!Number.isFinite(rule?.max)) {
     throw new InvalidCodeDisciplineConfigError("maxFileLines.max must be a finite number when the rule is configured", {
@@ -54,14 +47,15 @@ function normalizeMaxFileLinesRule(rule: MaxFileLinesRuleOptions | undefined) {
   }
 
   return {
-    severity: normalizeSeverity("maxFileLines", rule),
     max: Math.max(1, Math.floor(rule!.max as number)),
   };
 }
 
 function normalizeMaxFunctionLinesRule(rule: MaxFunctionLinesRuleOptions | undefined) {
   if (!rule) return undefined;
-  assertRemovedKeys("maxFunctionLines", rule as Record<string, unknown>, ["enabled", "stop", "fix"]);
+  const source = rule as Record<string, unknown>;
+  assertRemovedKeys("maxFunctionLines", source, ["enabled", "stop", "fix"]);
+  assertSeverityRemoved("maxFunctionLines", source);
 
   if (!Number.isFinite(rule?.max)) {
     throw new InvalidCodeDisciplineConfigError("maxFunctionLines.max must be a finite number when the rule is configured", {
@@ -71,14 +65,15 @@ function normalizeMaxFunctionLinesRule(rule: MaxFunctionLinesRuleOptions | undef
   }
 
   return {
-    severity: normalizeSeverity("maxFunctionLines", rule),
     max: Math.max(1, Math.floor(rule!.max as number)),
   };
 }
 
 function normalizeFolderizeCompoundFilesRule(rule: FolderizeCompoundFilesRuleOptions | undefined) {
   if (!rule) return undefined;
-  assertRemovedKeys("folderizeCompoundFiles", rule as Record<string, unknown>, ["enabled", "stop", "suffixes"]);
+  const source = rule as Record<string, unknown>;
+  assertRemovedKeys("folderizeCompoundFiles", source, ["enabled", "stop", "suffixes"]);
+  assertSeverityRemoved("folderizeCompoundFiles", source);
   const separators = uniqueStrings(rule?.separators ?? DEFAULT_FOLDERIZE_COMPOUND_FILE_SEPARATORS);
 
   if (separators.length === 0) {
@@ -88,7 +83,6 @@ function normalizeFolderizeCompoundFilesRule(rule: FolderizeCompoundFilesRuleOpt
   }
 
   return {
-    severity: normalizeSeverity("folderizeCompoundFiles", rule),
     fix: Boolean(rule.fix ?? DEFAULT_RULE_FIX),
     separators,
   };
@@ -98,6 +92,7 @@ function normalizeSyncImportsRule(rule: CodeDisciplineSyncImportsRuleOptions | u
   if (!rule) return undefined;
   const source = (rule ?? {}) as Record<string, unknown>;
   assertRemovedKeys("syncImports", source, ["enabled", "stop", "rewrite", "keepRelative"]);
+  assertSeverityRemoved("syncImports", source);
 
   if ("imports" in source) {
     throw new InvalidCodeDisciplineConfigError("syncImports.imports is no longer supported; use allowRelative directly under syncImports", {
@@ -107,7 +102,6 @@ function normalizeSyncImportsRule(rule: CodeDisciplineSyncImportsRuleOptions | u
   }
 
   return {
-    severity: normalizeSeverity("syncImports", rule),
     fix: Boolean(rule?.fix ?? DEFAULT_RULE_FIX),
     sourceRoot: rule?.sourceRoot,
     tsconfigPath: rule?.tsconfigPath,
@@ -122,7 +116,9 @@ function normalizeSyncImportsRule(rule: CodeDisciplineSyncImportsRuleOptions | u
 
 function normalizeDryRule(rule: DryRuleOptions | undefined): NormalizedDryRule | undefined {
   if (!rule) return undefined;
-  assertRemovedKeys("dry", rule as Record<string, unknown>, ["enabled", "stop"]);
+  const source = rule as Record<string, unknown>;
+  assertRemovedKeys("dry", source, ["enabled", "stop"]);
+  assertSeverityRemoved("dry", source);
 
   if (!Array.isArray(rule.helpers) || rule.helpers.length === 0) {
     throw new InvalidCodeDisciplineConfigError("dry.helpers must contain at least one helper", {
@@ -156,7 +152,6 @@ function normalizeDryRule(rule: DryRuleOptions | undefined): NormalizedDryRule |
   });
 
   return {
-    severity: normalizeSeverity("dry", rule),
     fix: Boolean(rule.fix ?? DEFAULT_RULE_FIX),
     helpers,
   };

@@ -93,20 +93,16 @@ export default defineCodeDisciplineConfig({
   },
   rules: {
     maxFileLines: {
-      severity: "warning",
       max: 500,
     },
     maxFunctionLines: {
-      severity: "warning",
       max: 80,
     },
     folderizeCompoundFiles: {
-      severity: "error",
       fix: true,
       separators: ["_", "-"],
     },
     syncImports: {
-      severity: "error",
       fix: true,
       alias: {
         prefix: "#",
@@ -119,7 +115,6 @@ export default defineCodeDisciplineConfig({
       },
     },
     dry: {
-      severity: "error",
       fix: true,
       helpers: [
         {
@@ -185,7 +180,6 @@ const discipline = createCodeDiscipline({
   sourceRoot: "src",
   rules: {
     maxFunctionLines: {
-      severity: "warning",
       max: 80,
     },
     syncImports: {
@@ -202,6 +196,8 @@ await discipline.fix({
   onlyRules: ["sync-imports"],
 });
 ```
+
+Every violation is treated uniformly now. Results expose `ok`, `violationCount`, and `violations`, and the CLI prints concise rule/file/message lines instead of large JSON-style payloads.
 
 ## Rules
 

@@ -64,9 +64,8 @@ function parseArgs(args: string[]): { configPath?: string; selectors: string[] }
 }
 
 function formatViolation(violation: CodeDisciplineViolation): string {
-  const label = violation.severity === "error" ? "ERROR" : "WARNING";
   const suggested = violation.suggestedPath ? ` suggested=${violation.suggestedPath}` : "";
-  return `${label} ${violation.rule} ${violation.filePath} ${violation.message}${suggested}`;
+  return `${violation.rule} ${violation.filePath} ${violation.message}${suggested}`;
 }
 
 async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliRunResult> {
@@ -99,8 +98,12 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
         return { exitCode: 0 };
       }
 
-      stdout(`Summary: ${result.errors} errors, ${result.warnings} warnings.\n`);
-      return { exitCode: result.ok ? 0 : 1 };
+      for (const violation of result.violations) {
+        stdout(`${formatViolation(violation)}\n`);
+      }
+
+      stdout(`Found ${result.violationCount} discipline violation(s).\n`);
+      return { exitCode: 1 };
     }
 
     if (command === "fix") {
@@ -118,12 +121,9 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
         }
       }
 
-      stdout(`${JSON.stringify({
-        ok: result.ok,
-        moved_files: result.moved_files,
-        rewritten_files: result.rewritten_files,
-        rewritten_imports: result.rewritten_imports,
-      })}\n`);
+      stdout(
+        `Fix summary: moved ${result.moved_files}, rewritten files ${result.rewritten_files}, rewritten imports ${result.rewritten_imports}, remaining violations ${result.violationCount}.\n`,
+      );
       return { exitCode: result.ok ? 0 : 1 };
     }
 

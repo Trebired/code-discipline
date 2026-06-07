@@ -9,12 +9,9 @@ import { scanSourceFiles } from "./scan.js";
 import type { SyncImportsOptions, SyncImportsResult } from "./types.js";
 
 function summarizeViolations(violations: CodeDisciplineViolation[]) {
-  const warnings = violations.filter((violation) => violation.severity === "warning").length;
-  const errors = violations.length - warnings;
   return {
-    ok: errors === 0,
-    errors,
-    warnings,
+    ok: violations.length === 0,
+    violationCount: violations.length,
     violations,
   };
 }
@@ -47,19 +44,15 @@ async function syncImports(options: SyncImportsOptions): Promise<SyncImportsResu
         rewritten_imports: 0,
       };
       logger.flush(
-        result.errors > 0 ? "error" : result.warnings > 0 ? "warn" : "success",
-        result.errors > 0 ? "sync-drift-detected" : result.warnings > 0 ? "sync-drift-warning" : "sync-drift-clear",
-        result.errors > 0
-          ? "sync found error drift"
-          : result.warnings > 0
-            ? "sync found warning drift"
-            : "sync policy already satisfied",
+        result.violationCount > 0 ? "warn" : "success",
+        result.violationCount > 0 ? "sync-drift-detected" : "sync-drift-clear",
+        result.violationCount > 0 ? `sync found ${result.violationCount} drift issue(s)` : "sync policy already satisfied",
         {
-          ...result,
-          discipline: {
-            errors: result.errors,
-            warnings: result.warnings,
-          },
+          aliasesChanged: result.aliases_changed,
+          aliasesCount: result.aliases_count,
+          importViolations: result.import_violations,
+          mutationAllowed: result.mutations_allowed,
+          violationCount: result.violationCount,
         },
       );
       return result;
@@ -78,8 +71,7 @@ async function syncImports(options: SyncImportsOptions): Promise<SyncImportsResu
 
     const result: SyncImportsResult = {
       ok: true,
-      errors: 0,
-      warnings: 0,
+      violationCount: 0,
       violations: [],
       mutations_allowed: true,
       aliases_changed: aliasState.aliasesChanged,
@@ -89,7 +81,10 @@ async function syncImports(options: SyncImportsOptions): Promise<SyncImportsResu
       rewritten_imports: rewriteState.rewrittenImports,
     };
     logger.flush("success", "sync-finished", "sync completed", {
-      ...result,
+      aliasesChanged: result.aliases_changed,
+      aliasesCount: result.aliases_count,
+      rewrittenFiles: result.rewritten_files,
+      rewrittenImports: result.rewritten_imports,
       packageJsonImportsChanged: packageJsonImportsState?.changed ?? false,
     });
     return result;

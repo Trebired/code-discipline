@@ -9,7 +9,6 @@ describe("code-discipline checks", () => {
       sourceRoot: "src",
       rules: {
         maxFileLines: {
-          severity: "warning",
           max: 500,
         },
       },
@@ -19,7 +18,6 @@ describe("code-discipline checks", () => {
       sourceRoot: "src",
       rules: {
         maxFileLines: {
-          severity: "warning",
           max: 500,
         },
       },
@@ -42,12 +40,10 @@ describe("code-discipline checks", () => {
 
     expect(result).toEqual({
       ok: false,
-      errors: 1,
-      warnings: 0,
+      violationCount: 1,
       violations: [
         {
           rule: "max-file-lines",
-          severity: "error",
           fix: false,
           filePath: "src/too-long.ts",
           message: "file has 4 lines and exceeds the limit of 2",
@@ -60,7 +56,7 @@ describe("code-discipline checks", () => {
     });
   });
 
-  test("returns warning violations as ok=true and logs a warning transport event", async () => {
+  test("returns violations as ok=false and logs a warning transport event", async () => {
     const projectRoot = tempProject();
     const { logger, rows } = captureTrebiredLogger();
 
@@ -74,16 +70,13 @@ describe("code-discipline checks", () => {
       },
       rules: {
         maxFileLines: {
-          severity: "warning",
           max: 2,
         },
       },
     });
 
-    expect(result.ok).toBe(true);
-    expect(result.errors).toBe(0);
-    expect(result.warnings).toBe(1);
-    expect(result.violations[0]?.severity).toBe("warning");
+    expect(result.ok).toBe(false);
+    expect(result.violationCount).toBe(1);
     expect(rows.map((row) => row.method)).toContain("warn");
   });
 
@@ -111,12 +104,10 @@ describe("code-discipline checks", () => {
 
     expect(result).toEqual({
       ok: false,
-      errors: 1,
-      warnings: 0,
+      violationCount: 1,
       violations: [
         {
           rule: "max-function-lines",
-          severity: "error",
           fix: false,
           filePath: "src/functions.ts",
           message: "arrow-function buildPayload has 6 lines and exceeds the limit of 5",
@@ -133,7 +124,7 @@ describe("code-discipline checks", () => {
     });
   });
 
-  test("detects same-directory compound groups with configured severity", async () => {
+  test("detects same-directory compound groups", async () => {
     const projectRoot = tempProject();
 
     writeFile(projectRoot, "src/api/user_route.ts", "export const route = true;\n");
@@ -144,7 +135,6 @@ describe("code-discipline checks", () => {
       projectRoot,
       rules: {
         folderizeCompoundFiles: {
-          severity: "error",
           separators: ["_", "-"],
         },
       },
@@ -153,7 +143,6 @@ describe("code-discipline checks", () => {
     expect(result.violations).toEqual([
       {
         rule: "folderize-compound-files",
-        severity: "error",
         fix: false,
         filePath: "src/api/user_route.ts",
         message: "file can be grouped under src/api/user/route.ts",
@@ -167,7 +156,6 @@ describe("code-discipline checks", () => {
       },
       {
         rule: "folderize-compound-files",
-        severity: "error",
         fix: false,
         filePath: "src/api/user-schema.ts",
         message: "file can be grouped under src/api/user/schema.ts",
@@ -191,15 +179,12 @@ describe("code-discipline checks", () => {
     const result = await checkCodeDiscipline({
       projectRoot,
       rules: {
-        folderizeCompoundFiles: {
-          severity: "warning",
-        },
+        folderizeCompoundFiles: {},
       },
     });
 
-    expect(result.ok).toBe(true);
-    expect(result.errors).toBe(0);
-    expect(result.warnings).toBe(2);
+    expect(result.ok).toBe(false);
+    expect(result.violationCount).toBe(2);
     expect(result.violations.map((violation) => violation.suggestedPath)).toEqual([
       "src/api/user/database.ts",
       "src/api/user/presenter.ts",
@@ -220,7 +205,6 @@ describe("code-discipline checks", () => {
       projectRoot,
       rules: {
         syncImports: {
-          severity: "error",
           fix: true,
           alias: {
             strategy: "relative-path-slug",
@@ -231,8 +215,7 @@ describe("code-discipline checks", () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(result.errors).toBe(2);
-    expect(result.warnings).toBe(0);
+    expect(result.violationCount).toBe(2);
     expect(result.violations.map((violation) => violation.rule)).toEqual([
       "sync-imports",
       "sync-imports",
@@ -280,7 +263,6 @@ describe("code-discipline checks", () => {
       projectRoot,
       rules: {
         syncImports: {
-          severity: "error",
           alias: {
             strategy: "relative-path-slug",
           },
@@ -423,7 +405,7 @@ describe("code-discipline checks", () => {
     })).rejects.toThrow("dry helper export is not a supported function");
   });
 
-  test("check mode leaves tsconfig untouched for warning-only sync drift", async () => {
+  test("check mode leaves tsconfig untouched for sync drift", async () => {
     const projectRoot = tempProject();
 
     writeFile(projectRoot, "tsconfig.json", JSON.stringify({ compilerOptions: { strict: true } }, null, 2));
@@ -434,7 +416,6 @@ describe("code-discipline checks", () => {
       projectRoot,
       rules: {
         syncImports: {
-          severity: "warning",
           fix: false,
           alias: {
             strategy: "relative-path-slug",
@@ -444,7 +425,7 @@ describe("code-discipline checks", () => {
       },
     });
 
-    expect(result.ok).toBe(true);
+    expect(result.ok).toBe(false);
     expect(readJson(projectRoot, "tsconfig.json")).toEqual({
       compilerOptions: {
         strict: true,

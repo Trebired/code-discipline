@@ -33,7 +33,6 @@ function writeErroringCliFixture(projectRoot: string) {
     "export default {",
     "  rules: {",
     "    maxFileLines: {",
-    "      severity: \"error\",",
     "      max: 2,",
     "    },",
     "  },",
@@ -53,7 +52,6 @@ describe("code-discipline cli", () => {
       "export default {",
       "  rules: {",
       "    maxFileLines: {",
-      "      severity: \"warning\",",
       "      max: 2,",
       "    },",
       "  },",
@@ -67,12 +65,12 @@ describe("code-discipline cli", () => {
       stderr: (text) => stderr.push(text),
     });
 
-    expect(result.exitCode).toBe(0);
+    expect(result.exitCode).toBe(1);
     expect(stderr).toEqual([]);
-    expect(stdout.join("")).toBe("Summary: 0 errors, 1 warnings.\n");
+    expect(stdout.join("")).toContain("Found 1 discipline violation(s).");
   });
 
-  test("runs check through an explicit config module and exits zero for warnings only", async () => {
+  test("runs check through an explicit config module and exits non-zero when violations exist", async () => {
     const projectRoot = tempProject();
     const stdout: string[] = [];
     const stderr: string[] = [];
@@ -82,7 +80,6 @@ describe("code-discipline cli", () => {
       "export default {",
       "  rules: {",
       "    maxFileLines: {",
-      "      severity: \"warning\",",
       "      max: 2,",
       "    },",
       "  },",
@@ -96,12 +93,12 @@ describe("code-discipline cli", () => {
       stderr: (text) => stderr.push(text),
     });
 
-    expect(result.exitCode).toBe(0);
+    expect(result.exitCode).toBe(1);
     expect(stderr).toEqual([]);
-    expect(stdout.join("")).toBe("Summary: 0 errors, 1 warnings.\n");
+    expect(stdout.join("")).toContain("Found 1 discipline violation(s).");
   });
 
-  test("runs check through an explicit config module and exits non-zero for errors", async () => {
+  test("runs check through an explicit config module and prints concise violations", async () => {
     const projectRoot = tempProject();
     const stdout: string[] = [];
 
@@ -110,7 +107,6 @@ describe("code-discipline cli", () => {
       "export default {",
       "  rules: {",
       "    maxFileLines: {",
-      "      severity: \"error\",",
       "      max: 2,",
       "    },",
       "  },",
@@ -124,7 +120,8 @@ describe("code-discipline cli", () => {
     });
 
     expect(result.exitCode).toBe(1);
-    expect(stdout.join("")).toBe("Summary: 1 errors, 0 warnings.\n");
+    expect(stdout.join("")).toContain("max-file-lines src/too-long.ts");
+    expect(stdout.join("")).toContain("Found 1 discipline violation(s).");
   });
 
   test("runs fix sync-imports through an explicit config module and mutates only when syncImports.fix is true", async () => {
@@ -138,7 +135,6 @@ describe("code-discipline cli", () => {
       "export default {",
       "  rules: {",
       "    syncImports: {",
-      "      severity: \"error\",",
       "      fix: true,",
       "      alias: { strategy: \"relative-path-slug\" },",
       "      allowRelative: [\"./\"],",
@@ -155,7 +151,7 @@ describe("code-discipline cli", () => {
 
     expect(result.exitCode).toBe(0);
     expect(readFile(projectRoot, "src/feature/app.ts")).toContain('from "#shared-util"');
-    expect(stdout.join("")).toContain("\"rewritten_imports\":1");
+    expect(stdout.join("")).toContain("Fix summary: moved 0, rewritten files 1, rewritten imports 1, remaining violations 0.");
   });
 
   test("runs fix through an explicit config module and applies folderization moves", async () => {
@@ -169,7 +165,6 @@ describe("code-discipline cli", () => {
       "export default {",
       "  rules: {",
       "    folderizeCompoundFiles: {",
-      "      severity: \"error\",",
       "      fix: true,",
       "    },",
       "  },",
@@ -185,7 +180,7 @@ describe("code-discipline cli", () => {
     expect(result.exitCode).toBe(0);
     expect(fileExists(projectRoot, "src/api/user/route.ts")).toBe(true);
     expect(readFile(projectRoot, "src/app.ts")).toContain('from "./api/user/route"');
-    expect(stdout.join("")).toContain("\"moved_files\":2");
+    expect(stdout.join("")).toContain("Fix summary: moved 2, rewritten files 1, rewritten imports 2, remaining violations 0.");
   });
 
   test("prints a clear error when no config module can be found", async () => {
@@ -211,7 +206,7 @@ describe("code-discipline cli", () => {
     });
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain("Summary: 1 errors, 0 warnings.");
+    expect(result.stdout).toContain("Found 1 discipline violation(s).");
     expect(result.stdout.trim().length).toBeGreaterThan(0);
   });
 
@@ -230,7 +225,7 @@ describe("code-discipline cli", () => {
     });
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain("Summary: 1 errors, 0 warnings.");
+    expect(result.stdout).toContain("Found 1 discipline violation(s).");
     expect(result.stdout).not.toBe("");
   });
 
@@ -249,7 +244,7 @@ describe("code-discipline cli", () => {
     });
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain("Summary: 1 errors, 0 warnings.");
+    expect(result.stdout).toContain("Found 1 discipline violation(s).");
     expect(result.stdout).not.toBe("");
   });
 
@@ -297,7 +292,7 @@ describe("code-discipline cli", () => {
     });
 
     expect(result.exitCode).toBe(1);
-    expect(stdout.join("")).toBe("Summary: 1 errors, 0 warnings.\n");
+    expect(stdout.join("")).toContain("Found 1 discipline violation(s).");
   });
 
   test("fails clearly when fix targets a non-fixable rule", async () => {

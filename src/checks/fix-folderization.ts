@@ -29,7 +29,6 @@ function createFolderizationViolation(
 ): CodeDisciplineViolation {
   return {
     rule: "folderize-compound-files",
-    severity: options.rules.folderizeCompoundFiles?.severity ?? "error",
     fix: options.rules.folderizeCompoundFiles?.fix ?? false,
     filePath,
     message: `file can be grouped under ${suggestedPath}`,
@@ -234,8 +233,6 @@ async function fixFolderization(
   logger: NormalizedCodeDisciplineLogger,
 ): Promise<FixCodeDisciplineResult> {
   const { moves, violations } = buildMovePlan(sourceFiles, options);
-  const warnings = violations.filter((violation) => violation.severity === "warning").length;
-  const errors = violations.length - warnings;
 
   if (!options.rules.folderizeCompoundFiles || moves.length === 0) {
     logger.info("fix-folderization-unchanged", "no folderization moves required", {
@@ -243,12 +240,11 @@ async function fixFolderization(
     });
     return {
       ok: true,
-      errors: 0,
+      violationCount: 0,
       moved_files: 0,
       rewritten_files: 0,
       rewritten_imports: 0,
       ruleResults: {},
-      warnings,
       violations: [],
     };
   }
@@ -256,19 +252,15 @@ async function fixFolderization(
   if (!options.rules.folderizeCompoundFiles.fix) {
     logger.warn("fix-folderization-disabled", "folderization fix is disabled", {
       candidates: moves.length,
-      discipline: {
-        errors,
-        warnings,
-      },
+      violationCount: violations.length,
     });
     return {
-      ok: errors === 0,
-      errors,
+      ok: false,
+      violationCount: violations.length,
       moved_files: 0,
       rewritten_files: 0,
       rewritten_imports: 0,
       ruleResults: {},
-      warnings,
       violations,
     };
   }
@@ -295,12 +287,11 @@ async function fixFolderization(
 
     return {
       ok: true,
-      errors: 0,
+      violationCount: 0,
       moved_files: movedFiles,
       rewritten_files: rewriteState.rewrittenFiles,
       rewritten_imports: rewriteState.rewrittenImports,
       ruleResults: {},
-      warnings: 0,
       violations: [],
     };
   } catch (error) {

@@ -2,6 +2,13 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 2.1.0
+
+- Removed severity from the public rule config, violation objects, and result summaries.
+- Changed discipline and sync results to report `violationCount` instead of separate `errors` and `warnings`.
+- Simplified CLI output to concise violation lines and short summaries instead of JSON-style payloads.
+- Reduced logger noise by dropping large violation metadata from summary events and only emitting initialization logs when logging is enabled.
+
 ## 2.0.0
 
 - Removed the top-level `code-discipline sync` command and the runtime `sync` / `startup` modes.

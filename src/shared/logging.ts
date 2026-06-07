@@ -15,9 +15,6 @@ type BufferedEventAggregate = {
   count: number;
   event: string;
   group: string;
-  levels: Set<CodeDisciplineLogLevel>;
-  messages: string[];
-  metadataSamples: Record<string, unknown>[];
 };
 
 type BufferedEventStore = {
@@ -25,9 +22,6 @@ type BufferedEventStore = {
   levelCounts: Record<CodeDisciplineLogLevel, number>;
   totalEvents: number;
 };
-
-const MAX_BUFFERED_MESSAGES = 5;
-const MAX_BUFFERED_METADATA_SAMPLES = 5;
 
 function getMethod(source: unknown, name: string): LogMethod | null {
   if (!source || typeof source !== "object") return null;
@@ -61,20 +55,35 @@ function shouldSkipForQuiet(level: CodeDisciplineLogLevel, quiet: boolean): bool
 }
 
 function writeToConsole(event: CodeDisciplineLogEvent) {
-  const payload = buildMetadata(event.event, event.metadata);
   const formatted = formatMessage(eventGroup(event), event.message);
+  const payload = event.metadata ? buildMetadata(event.event, event.metadata) : null;
 
   if (event.level === "error") {
-    console.error(formatted, payload);
+    if (payload) {
+      console.error(formatted, payload);
+      return;
+    }
+
+    console.error(formatted);
     return;
   }
 
   if (event.level === "warn") {
-    console.warn(formatted, payload);
+    if (payload) {
+      console.warn(formatted, payload);
+      return;
+    }
+
+    console.warn(formatted);
     return;
   }
 
-  console.log(formatted, payload);
+  if (payload) {
+    console.log(formatted, payload);
+    return;
+  }
+
+  console.log(formatted);
 }
 
 function writeToGenericLogger(source: unknown, event: CodeDisciplineLogEvent) {
@@ -152,7 +161,7 @@ function resolveWriter(options?: LoggingOptions): (event: CodeDisciplineLogEvent
     return (event) => writeWithSharedAdapter(logger, event);
   }
 
-  return (event) => writeWithSharedAdapter(undefined, event);
+  return () => {};
 }
 
 function createBufferedEventStore(): BufferedEventStore {
@@ -169,18 +178,6 @@ function createBufferedEventStore(): BufferedEventStore {
   };
 }
 
-function pushUniqueMessage(target: string[], message: string) {
-  if (target.includes(message)) return;
-  if (target.length >= MAX_BUFFERED_MESSAGES) return;
-  target.push(message);
-}
-
-function pushMetadataSample(target: Record<string, unknown>[], metadata?: Record<string, unknown>) {
-  if (!metadata) return;
-  if (target.length >= MAX_BUFFERED_METADATA_SAMPLES) return;
-  target.push(metadata);
-}
-
 function bufferEvent(store: BufferedEventStore, event: CodeDisciplineLogEvent) {
   const group = eventGroup(event);
   const key = `${group}::${event.event}`;
@@ -188,16 +185,9 @@ function bufferEvent(store: BufferedEventStore, event: CodeDisciplineLogEvent) {
     count: 0,
     event: event.event,
     group,
-    levels: new Set<CodeDisciplineLogLevel>(),
-    messages: [],
-    metadataSamples: [],
   };
 
   existing.count += 1;
-  existing.levels.add(event.level);
-  pushUniqueMessage(existing.messages, event.message);
-  pushMetadataSample(existing.metadataSamples, event.metadata);
-
   store.aggregates.set(key, existing);
   store.levelCounts[event.level] += 1;
   store.totalEvents += 1;
@@ -213,9 +203,6 @@ function summarizeBufferedEvents(store: BufferedEventStore): Record<string, unkn
         count: entry.count,
         event: entry.event,
         group: entry.group,
-        levels: Array.from(entry.levels.values()).sort(),
-        messages: entry.messages,
-        metadata_samples: entry.metadataSamples,
       })),
   };
 }
@@ -226,15 +213,14 @@ function resolveLogger(options?: LoggingOptions): NormalizedCodeDisciplineLogger
   const writer = resolveWriter(options);
   let bufferedEvents = createBufferedEventStore();
 
-  writer({
-    event: "package-initialized",
-    group: `${CODE_DISCIPLINE_LOG_GROUP}.initialize`,
-    level: "success",
-    message: "@trebired/code-discipline initialized",
-    metadata: {
-      source: "@trebired/code-discipline",
-    },
-  });
+  if (enabled) {
+    writer({
+      event: "package-initialized",
+      group: `${CODE_DISCIPLINE_LOG_GROUP}.initialize`,
+      level: "success",
+      message: "@trebired/code-discipline initialized",
+    });
+  }
 
   function emit(level: CodeDisciplineLogLevel, event: string, message: string, metadata?: Record<string, unknown>) {
     if (!enabled) return;

@@ -6,7 +6,6 @@ export {
   DEFAULT_EXCLUDE_DIRS,
   DEFAULT_FOLDERIZE_COMPOUND_FILE_SEPARATORS,
   DEFAULT_RULE_FIX,
-  DEFAULT_RULE_SEVERITY,
   DEFAULT_SOURCE_EXTENSIONS,
   DEFAULT_SOURCE_ROOT,
 } from "./shared/constants.js";
@@ -48,7 +47,6 @@ export {
 export type {
   CodeDisciplineResult,
   CodeDisciplineRuleName,
-  CodeDisciplineSeverity,
   CodeDisciplineViolation,
 } from "./shared/discipline-types.js";
 
@@ -124,6 +122,5 @@ export type {
   NormalizedFolderizeCompoundFilesRule,
   NormalizedMaxFileLinesRule,
   NormalizedMaxFunctionLinesRule,
-  SeverityRuleOptions,
   TsconfigPathsNormalizeMode,
 } from "./checks/types.js";

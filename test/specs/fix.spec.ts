@@ -19,7 +19,6 @@ describe("code-discipline fix", () => {
       projectRoot,
       rules: {
         folderizeCompoundFiles: {
-          severity: "error",
           fix: true,
         },
       },
@@ -27,8 +26,7 @@ describe("code-discipline fix", () => {
 
     expect(result).toMatchObject({
       ok: true,
-      errors: 0,
-      warnings: 0,
+      violationCount: 0,
       moved_files: 2,
       rewritten_files: 1,
       rewritten_imports: 2,
@@ -63,7 +61,7 @@ describe("code-discipline fix", () => {
     expect(readFile(projectRoot, "src/api/index.ts")).toContain('from "./user/route"');
   });
 
-  test("does not move files when folderization fix is disabled and preserves severity counts", async () => {
+  test("does not move files when folderization fix is disabled and keeps violations", async () => {
     const projectRoot = tempProject();
 
     writeFile(projectRoot, "src/api/user_route.ts", "export const route = true;\n");
@@ -73,17 +71,14 @@ describe("code-discipline fix", () => {
       projectRoot,
       rules: {
         folderizeCompoundFiles: {
-          severity: "warning",
           fix: false,
         },
       },
     });
 
-    expect(result.ok).toBe(true);
-    expect(result.errors).toBe(0);
-    expect(result.warnings).toBe(2);
+    expect(result.ok).toBe(false);
+    expect(result.violationCount).toBe(2);
     expect(result.moved_files).toBe(0);
-    expect(result.violations.every((violation) => violation.severity === "warning")).toBe(true);
     expect(fileExists(projectRoot, "src/api/user_route.ts")).toBe(true);
     expect(fileExists(projectRoot, "src/api/user/route.ts")).toBe(false);
   });
@@ -140,8 +135,7 @@ describe("code-discipline fix", () => {
 
     expect(result).toMatchObject({
       ok: true,
-      errors: 0,
-      warnings: 0,
+      violationCount: 0,
       violations: [],
       ruleResults: {
         dry: {

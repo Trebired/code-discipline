@@ -83,8 +83,7 @@ describe("code-discipline syncImports", () => {
 
     expect(result).toEqual({
       ok: true,
-      errors: 0,
-      warnings: 0,
+      violationCount: 0,
       violations: [],
       mutations_allowed: true,
       aliases_changed: true,
@@ -102,7 +101,7 @@ describe("code-discipline syncImports", () => {
     expect(readFile(projectRoot, "src/feature/app.ts")).toContain('from "./local"');
   });
 
-  test("returns error drift without mutating when severity is error", async () => {
+  test("returns drift without mutating when fix is disabled", async () => {
     const projectRoot = tempProject();
 
     writeFile(projectRoot, "tsconfig.json", "{}\n");
@@ -115,16 +114,13 @@ describe("code-discipline syncImports", () => {
     const result = await syncImports({
       projectRoot,
       fix: false,
-      severity: "error",
       alias: { strategy: "relative-path-slug" },
       allowRelative: ["./"],
     });
 
     expect(result.ok).toBe(false);
-    expect(result.errors).toBe(2);
-    expect(result.warnings).toBe(0);
+    expect(result.violationCount).toBe(2);
     expect(result.import_violations).toBe(2);
-    expect(result.violations.every((violation) => violation.severity === "error")).toBe(true);
     expect(readFile(projectRoot, "tsconfig.json")).toBe(beforeTsconfig);
     expect(readFile(projectRoot, "src/feature/app.ts")).toBe(beforeSource);
   });
@@ -139,7 +135,6 @@ describe("code-discipline syncImports", () => {
     const checkResult = await syncImports({
       projectRoot,
       fix: false,
-      severity: "error",
       alias: { strategy: "relative-path-slug" },
       allowRelative: ["./"],
     });
@@ -169,7 +164,7 @@ describe("code-discipline syncImports", () => {
     expect(readFile(projectRoot, "src/feature/auth.ts")).toContain('from "#shared-credentials"');
   });
 
-  test("returns warning drift and logs a warning when severity is warning", async () => {
+  test("returns drift and logs a warning when fix is disabled", async () => {
     const projectRoot = tempProject();
     const { logger, rows } = captureTrebiredLogger();
 
@@ -180,7 +175,6 @@ describe("code-discipline syncImports", () => {
     const result = await syncImports({
       projectRoot,
       fix: false,
-      severity: "warning",
       alias: { strategy: "relative-path-slug" },
       logging: {
         enabled: true,
@@ -188,9 +182,8 @@ describe("code-discipline syncImports", () => {
       },
     });
 
-    expect(result.ok).toBe(true);
-    expect(result.errors).toBe(0);
-    expect(result.warnings).toBe(2);
+    expect(result.ok).toBe(false);
+    expect(result.violationCount).toBe(2);
     expect(rows.map((row) => row.method)).toContain("warn");
   });
 

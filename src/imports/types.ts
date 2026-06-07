@@ -1,5 +1,5 @@
 import type { LoggingOptions } from "../shared/logging-types.js";
-import type { CodeDisciplineSeverity, CodeDisciplineViolation } from "../shared/discipline-types.js";
+import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
 
 type PackageJsonImportsSyncOptions = {
   enabled?: boolean;
@@ -33,7 +33,6 @@ type SyncImportsOptions = {
   tsconfigPath?: string;
   sourceExtensions?: string[];
   excludeDirs?: string[];
-  severity?: CodeDisciplineSeverity;
   fix?: boolean;
   alias?: {
     prefix?: string;
@@ -49,8 +48,7 @@ type SyncImportsRuleOptions = Omit<SyncImportsOptions, "projectRoot">;
 
 type SyncImportsResult = {
   ok: boolean;
-  errors: number;
-  warnings: number;
+  violationCount: number;
   violations: CodeDisciplineViolation[];
   mutations_allowed: boolean;
   aliases_changed: boolean;
@@ -71,7 +69,6 @@ type NormalizedSyncImportsOptions = SourceScanOptions & {
   sourceRootRelative: string;
   configPath?: string;
   tsconfigPath: string;
-  severity: CodeDisciplineSeverity;
   fix: boolean;
   alias: {
     prefix: string;

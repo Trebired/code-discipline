@@ -20,7 +20,7 @@ describe("code-discipline runtime api", () => {
     });
 
     expect(result.ok).toBe(false);
-    expect(result.errors).toBe(1);
+    expect(result.violationCount).toBe(1);
     expect(result.violations[0]?.rule).toBe("max-file-lines");
   });
 
@@ -36,7 +36,6 @@ describe("code-discipline runtime api", () => {
       sourceRoot: "src",
       rules: {
         syncImports: {
-          severity: "error",
           fix: true,
           alias: {
             strategy: "relative-path-slug",
@@ -75,25 +74,24 @@ describe("code-discipline runtime api", () => {
           seen.push(`beforeMode:${context.mode}`);
         },
         async afterMode(context, summary) {
-          seen.push(`afterMode:${context.mode}:${(summary as { errors: number }).errors}`);
+          seen.push(`afterMode:${context.mode}:${(summary as { violationCount: number }).violationCount}`);
         },
         async afterRun(context, summary) {
-          seen.push(`afterRun:${context.mode}:${(summary as { warnings: number }).warnings}`);
+          seen.push(`afterRun:${context.mode}:${(summary as { violationCount: number }).violationCount}`);
         },
       },
       rules: {
         maxFileLines: {
-          severity: "warning",
           max: 2,
         },
       },
     });
 
-    expect(result.ok).toBe(true);
+    expect(result.ok).toBe(false);
     expect(seen).toEqual([
       "beforeRun:check",
       "beforeMode:check",
-      "afterMode:check:0",
+      "afterMode:check:1",
       "afterRun:check:1",
     ]);
   });
@@ -125,7 +123,6 @@ describe("code-discipline runtime api", () => {
       },
       rules: {
         maxFileLines: {
-          severity: "warning",
           max: 50,
         },
       },
@@ -167,7 +164,6 @@ describe("code-discipline runtime api", () => {
       rules: {
         syncImports: {
           fix: true,
-          severity: "warning",
           alias: {
             prefix: "#",
             strategy: "relative-path-slug",

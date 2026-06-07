@@ -6,25 +6,11 @@ import {
   DEFAULT_ALIAS_STRATEGY,
   DEFAULT_ALLOW_RELATIVE,
   DEFAULT_RULE_FIX,
-  DEFAULT_RULE_SEVERITY,
 } from "../shared/constants.js";
 import { InvalidCodeDisciplineConfigError, InvalidTsconfigPathError } from "../shared/errors.js";
 import type { NormalizedSyncImportsOptions, SyncImportsOptions } from "../imports/types.js";
-import type { CodeDisciplineSeverity } from "../shared/discipline-types.js";
 import { isDirectory } from "../shared/utils.js";
 import { normalizeSourceOptions } from "./normalize-source-options.js";
-
-function normalizeSeverity(value: unknown): CodeDisciplineSeverity {
-  const severity = value ?? DEFAULT_RULE_SEVERITY;
-  if (severity !== "error" && severity !== "warning") {
-    throw new InvalidCodeDisciplineConfigError('syncImports.severity must be "error" or "warning"', {
-      key: "severity",
-      value: severity,
-    });
-  }
-
-  return severity;
-}
 
 async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise<NormalizedSyncImportsOptions> {
   if ("imports" in (options as Record<string, unknown>)) {
@@ -41,6 +27,12 @@ async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise
     }
   }
 
+  if ("severity" in (options as Record<string, unknown>)) {
+    throw new InvalidCodeDisciplineConfigError("syncImports.severity is no longer supported", {
+      key: "severity",
+    });
+  }
+
   const source = await normalizeSourceOptions(options);
   const tsconfigInput = options.tsconfigPath ?? path.join(source.projectRoot, "tsconfig.json");
   const tsconfigPath = path.isAbsolute(tsconfigInput) ? path.resolve(tsconfigInput) : path.resolve(source.projectRoot, tsconfigInput);
@@ -52,7 +44,6 @@ async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise
     ...source,
     configPath: options.configPath,
     tsconfigPath,
-    severity: normalizeSeverity(options.severity),
     fix: options.fix ?? DEFAULT_RULE_FIX,
     alias: {
       prefix: options.alias?.prefix ?? DEFAULT_ALIAS_PREFIX,

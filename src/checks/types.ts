@@ -7,7 +7,6 @@ import type {
 import type {
   CodeDisciplineResult,
   CodeDisciplineRuleName,
-  CodeDisciplineSeverity,
   CodeDisciplineViolation,
 } from "../shared/discipline-types.js";
 
@@ -15,20 +14,15 @@ type CodeDisciplineRuleSlug = CodeDisciplineRuleName;
 type FixableRuleSlug = "folderize-compound-files" | "sync-imports" | "dry";
 type CodeDisciplineMode = "check" | "fix";
 type CodeDisciplineRuntimeMode = CodeDisciplineMode;
-
-type SeverityRuleOptions = {
-  severity?: CodeDisciplineSeverity;
-};
-
-type MaxFileLinesRuleOptions = SeverityRuleOptions & {
+type MaxFileLinesRuleOptions = {
   max?: number;
 };
 
-type MaxFunctionLinesRuleOptions = SeverityRuleOptions & {
+type MaxFunctionLinesRuleOptions = {
   max?: number;
 };
 
-type FolderizeCompoundFilesRuleOptions = SeverityRuleOptions & {
+type FolderizeCompoundFilesRuleOptions = {
   fix?: boolean;
   separators?: string[];
 };
@@ -39,7 +33,7 @@ type DryHelperReference = {
   key?: string;
 };
 
-type DryRuleOptions = SeverityRuleOptions & {
+type DryRuleOptions = {
   fix?: boolean;
   helpers: DryHelperReference[];
 };
@@ -103,23 +97,19 @@ type FixCodeDisciplineOptions = Omit<CheckCodeDisciplineOptions, "onlyRules"> & 
 type CodeDisciplineConfig = Omit<CheckCodeDisciplineOptions, "projectRoot">;
 
 type NormalizedMaxFileLinesRule = {
-  severity: CodeDisciplineSeverity;
   max: number;
 };
 
 type NormalizedMaxFunctionLinesRule = {
-  severity: CodeDisciplineSeverity;
   max: number;
 };
 
 type NormalizedFolderizeCompoundFilesRule = {
-  severity: CodeDisciplineSeverity;
   fix: boolean;
   separators: string[];
 };
 
 type NormalizedDryRule = {
-  severity: CodeDisciplineSeverity;
   fix: boolean;
   helpers: DryHelperReference[];
 };
@@ -142,8 +132,7 @@ type CheckCodeDisciplineResult = CodeDisciplineResult;
 
 type FixCodeDisciplineRuleResult = {
   ok: boolean;
-  errors: number;
-  warnings: number;
+  violationCount: number;
   violations: CodeDisciplineViolation[];
   moved_files?: number;
   rewritten_files?: number;
@@ -187,6 +176,5 @@ export type {
   NormalizedFolderizeCompoundFilesRule,
   NormalizedMaxFileLinesRule,
   NormalizedMaxFunctionLinesRule,
-  SeverityRuleOptions,
   TsconfigPathsNormalizeMode,
 };

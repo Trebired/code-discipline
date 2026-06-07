@@ -768,7 +768,6 @@ function createDryViolation(
 ): CodeDisciplineViolation {
   return {
     rule: "dry",
-    severity: options.rules.dry?.severity ?? "error",
     fix: options.rules.dry?.fix ?? false,
     filePath: candidate.filePath,
     message: `${candidate.localName ?? "anonymous function"} duplicates registered helper ${candidate.helper.helperKey}`,
@@ -1006,8 +1005,7 @@ async function fixDryRule(
   if (!rule) {
     return {
       ok: true,
-      errors: 0,
-      warnings: 0,
+      violationCount: 0,
       violations: [],
     };
   }
@@ -1015,14 +1013,11 @@ async function fixDryRule(
   const helpers = await resolveDryHelpers(rule, options);
   const candidates = await collectDryCandidates(sourceFiles, helpers, options);
   const violations = candidates.map((candidate) => createDryViolation(candidate, options));
-  const warnings = violations.filter((violation) => violation.severity === "warning").length;
-  const errors = violations.length - warnings;
 
   if (violations.length === 0) {
     return {
       ok: true,
-      errors: 0,
-      warnings: 0,
+      violationCount: 0,
       violations: [],
       added_imports: 0,
       removed_duplicates: 0,
@@ -1031,9 +1026,8 @@ async function fixDryRule(
 
   if (!rule.fix) {
     return {
-      ok: errors === 0,
-      errors,
-      warnings,
+      ok: false,
+      violationCount: violations.length,
       violations,
       added_imports: 0,
       removed_duplicates: 0,
@@ -1157,13 +1151,10 @@ async function fixDryRule(
   const remainingViolations = candidates
     .filter((candidate) => !fixedCandidates.has(candidate))
     .map((candidate) => createDryViolation(candidate, options));
-  const remainingWarnings = remainingViolations.filter((violation) => violation.severity === "warning").length;
-  const remainingErrors = remainingViolations.length - remainingWarnings;
 
   return {
-    ok: remainingErrors === 0,
-    errors: remainingErrors,
-    warnings: remainingWarnings,
+    ok: remainingViolations.length === 0,
+    violationCount: remainingViolations.length,
     violations: remainingViolations,
     added_imports: addedImports,
     removed_duplicates: removedDuplicates,

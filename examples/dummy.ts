@@ -29,7 +29,6 @@ async function run(): Promise<void> {
 
   const result = await syncImports({
     projectRoot,
-    severity: "error",
     alias: {
       strategy: "relative-path-slug",
     },

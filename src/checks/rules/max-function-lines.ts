@@ -111,7 +111,6 @@ async function runMaxFunctionLinesRule(
 
       violations.push({
         rule: "max-function-lines",
-        severity: options.rules.maxFunctionLines.severity,
         fix: false,
         filePath: file.relativeFromProjectRoot,
         message: `${descriptor.kind} ${descriptor.name} has ${descriptor.lineCount} lines and exceeds the limit of ${options.rules.maxFunctionLines.max}`,

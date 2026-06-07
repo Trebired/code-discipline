@@ -1,5 +1,3 @@
-type CodeDisciplineSeverity = "error" | "warning";
-
 type CodeDisciplineRuleName =
   | "max-file-lines"
   | "max-function-lines"
@@ -9,7 +7,6 @@ type CodeDisciplineRuleName =
 
 type CodeDisciplineViolation = {
   rule: CodeDisciplineRuleName;
-  severity: CodeDisciplineSeverity;
   fix: boolean;
   filePath: string;
   message: string;
@@ -19,14 +16,12 @@ type CodeDisciplineViolation = {
 
 type CodeDisciplineResult = {
   ok: boolean;
-  errors: number;
-  warnings: number;
+  violationCount: number;
   violations: CodeDisciplineViolation[];
 };
 
 export type {
   CodeDisciplineResult,
   CodeDisciplineRuleName,
-  CodeDisciplineSeverity,
   CodeDisciplineViolation,
 };
