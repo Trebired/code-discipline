@@ -183,7 +183,7 @@ describe("code-discipline cli", () => {
   test("saves check output to a top-level report file", async () => {
     const projectRoot = tempProject();
     const stdout: string[] = [];
-    const reportName = "cd-report-2026-05-26-19-0000.txt";
+    const reportName = "cd-report-2026-05-26-19-00-00.txt";
 
     writeFile(projectRoot, "src/too-long.ts", "one\n2\n3\n");
     writeFile(projectRoot, "tb.code-discipline.ts", [

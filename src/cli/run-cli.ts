@@ -31,7 +31,7 @@ function createSavedReportFilename(now: Date): string {
   const hours = padDatePart(now.getHours());
   const minutes = padDatePart(now.getMinutes());
   const seconds = padDatePart(now.getSeconds());
-  return `cd-report-${year}-${month}-${day}-${hours}-${minutes}${seconds}.txt`;
+  return `cd-report-${year}-${month}-${day}-${hours}-${minutes}-${seconds}.txt`;
 }
 
 function renderHelp(): string {
@@ -41,7 +41,7 @@ function renderHelp(): string {
     "Commands:",
     "  check         run read-only discipline validation",
     "  fix           apply configured discipline fixes",
-    "  save          optional token that writes the run output to a timestamped cd-report-YYYY-MM-DD-HH-mmss.txt file",
+    "  save          optional token that writes the run output to a timestamped cd-report-YYYY-MM-DD-HH-mm-ss.txt file",
     "",
     "Rule Selectors:",
     "  check <rule-slug>... narrows validation to the selected configured rules",
