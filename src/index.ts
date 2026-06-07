@@ -12,7 +12,12 @@ export {
 } from "./shared/constants.js";
 
 export { checkCodeDiscipline, fixCodeDiscipline } from "./checks/index.js";
-export { defineCodeDisciplineConfig } from "./config/index.js";
+export {
+  DEFAULT_CONFIG_FILENAMES,
+  defineCodeDisciplineConfig,
+  findCodeDisciplineConfigModule,
+  loadResolvedCodeDisciplineConfig,
+} from "./config/index.js";
 export { normalizeSyncImportsOptions } from "./config/normalize-sync-imports-options.js";
 export { planTsconfigAliases, syncTsconfigAliases } from "./imports/aliases.js";
 export { resolveRelativeImport } from "./imports/resolve.js";
@@ -20,6 +25,8 @@ export { rewriteSourceImports } from "./imports/rewrite.js";
 export { scanSourceFiles } from "./imports/scan.js";
 export { createRandomAlias, createRelativePathHashAlias, createRelativePathSlugAlias } from "./imports/strategies.js";
 export { syncImports } from "./imports/sync-imports.js";
+export { syncPackageJsonImportsFromTsconfigPaths } from "./runtime/runtime-imports-sync.js";
+export { prepareTsconfigPaths, restoreTsconfigPaths } from "./runtime/tsconfig-paths.js";
 export { codeDiscipline, createCodeDiscipline } from "./run.js";
 export { resolveLogger } from "./shared/logging.js";
 
@@ -92,13 +99,22 @@ export type {
   CheckCodeDisciplineOptions,
   CheckCodeDisciplineResult,
   CodeDisciplineConfig,
+  CodeDisciplineLifecycleContext,
+  CodeDisciplineLifecycleHookResult,
+  CodeDisciplineLifecycleHooks,
+  CodeDisciplineRuntimeImportsSyncOptions,
+  CodeDisciplineRuntimeMode as SharedCodeDisciplineRuntimeMode,
   CodeDisciplineRules,
+  CodeDisciplineTsconfigPathsOptions,
   FixCodeDisciplineOptions,
   FixCodeDisciplineResult,
   FolderizeCompoundFilesRuleOptions,
   MaxFileLinesRuleOptions,
+  MaxFunctionLinesRuleOptions,
   NormalizedCheckCodeDisciplineOptions,
   NormalizedFolderizeCompoundFilesRule,
   NormalizedMaxFileLinesRule,
+  NormalizedMaxFunctionLinesRule,
   SeverityRuleOptions,
+  TsconfigPathsNormalizeMode,
 } from "./checks/types.js";

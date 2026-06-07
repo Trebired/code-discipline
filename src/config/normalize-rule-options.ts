@@ -8,6 +8,7 @@ import { InvalidCodeDisciplineConfigError } from "../shared/errors.js";
 import type {
   FolderizeCompoundFilesRuleOptions,
   MaxFileLinesRuleOptions,
+  MaxFunctionLinesRuleOptions,
   SeverityRuleOptions,
 } from "../checks/types.js";
 import type { SyncImportsRuleOptions } from "../imports/types.js";
@@ -56,6 +57,23 @@ function normalizeMaxFileLinesRule(rule: MaxFileLinesRuleOptions | undefined) {
   };
 }
 
+function normalizeMaxFunctionLinesRule(rule: MaxFunctionLinesRuleOptions | undefined) {
+  if (!rule) return undefined;
+  assertRemovedKeys("maxFunctionLines", rule as Record<string, unknown>, ["enabled", "stop", "fix"]);
+
+  if (!Number.isFinite(rule?.max)) {
+    throw new InvalidCodeDisciplineConfigError("maxFunctionLines.max must be a finite number when the rule is configured", {
+      rule: "maxFunctionLines",
+      value: rule?.max,
+    });
+  }
+
+  return {
+    severity: normalizeSeverity("maxFunctionLines", rule),
+    max: Math.max(1, Math.floor(rule!.max as number)),
+  };
+}
+
 function normalizeFolderizeCompoundFilesRule(rule: FolderizeCompoundFilesRuleOptions | undefined) {
   if (!rule) return undefined;
   assertRemovedKeys("folderizeCompoundFiles", rule as Record<string, unknown>, ["enabled", "stop", "suffixes"]);
@@ -99,4 +117,4 @@ function uniqueStrings(values: string[]): string[] {
   return Array.from(new Set(values));
 }
 
-export { normalizeFolderizeCompoundFilesRule, normalizeMaxFileLinesRule, normalizeSyncImportsRule };
+export { normalizeFolderizeCompoundFilesRule, normalizeMaxFileLinesRule, normalizeMaxFunctionLinesRule, normalizeSyncImportsRule };

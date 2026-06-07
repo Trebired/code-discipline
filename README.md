@@ -17,6 +17,7 @@ npm install @trebired/code-discipline
 Some repository rules are not really single-file lint rules. They are about the shape of the tree:
 
 - files growing too large
+- functions growing too large
 - compound filenames that want to become folders
 - alias drift between `tsconfig.json` and source imports
 - returning structured policy results that a caller can interpret
@@ -26,18 +27,49 @@ That is the lane of this package.
 ## Commands
 
 ```sh
+code-discipline check
+code-discipline sync
+code-discipline fix
+```
+
+The CLI auto-discovers a config module in the current project root. Supported default names:
+
+- `discipline.config.mjs`
+- `discipline.config.js`
+- `discipline.config.cjs`
+- `code-discipline.config.mjs`
+- `code-discipline.config.js`
+- `code-discipline.config.cjs`
+
+You can still override discovery explicitly:
+
+```sh
 code-discipline check --config ./discipline.config.mjs
-code-discipline sync --config ./discipline.config.mjs
-code-discipline fix --config ./discipline.config.mjs
+```
+
+Typical `package.json` scripts can now stay direct and generic:
+
+```json
+{
+  "scripts": {
+    "discipline:check": "code-discipline check",
+    "discipline:fix": "code-discipline fix",
+    "discipline:sync": "code-discipline sync"
+  }
+}
 ```
 
 Command responsibilities stay clean:
 
 - `check`: read-only validation and logging
-- `sync`: import and `tsconfig.json` synchronization only
-- `fix`: explicit folderization moves only
+- `sync`: package-owned synchronization work from config
+- `fix`: configured structural fixes only
 
-Both `sync` and `fix` are gated by rule config. They do not mutate anything unless their rule has `fix: true`.
+Mutations stay opt-in:
+
+- `syncImports` rewrites imports and `tsconfig.json` only when `syncImports.fix` is `true`
+- `runtimeImportsSync` updates `package.json#imports` only when that feature is enabled
+- `fix` applies folderization moves only when `folderizeCompoundFiles.fix` is `true`
 
 ## Simple Runtime API
 
@@ -53,6 +85,10 @@ const result = await codeDiscipline({
     maxFileLines: {
       severity: "warning",
       max: 500,
+    },
+    maxFunctionLines: {
+      severity: "warning",
+      max: 80,
     },
   },
 });
@@ -120,10 +156,32 @@ export default {
     enabled: true,
     quiet: false,
   },
+  tsconfigPaths: {
+    normalize: "relative-dot-prefix",
+    restoreAfterRun: true,
+  },
+  runtimeImportsSync: {
+    enabled: true,
+    source: "tsconfig.paths",
+    target: "package.json.imports",
+    aliasPrefix: "#",
+  },
+  lifecycle: {
+    async beforeRun(context) {
+      context.state.started = true;
+    },
+    async afterRun(context, result) {
+      context.state.finished = result.ok;
+    },
+  },
   rules: {
     maxFileLines: {
       severity: "warning",
       max: 500,
+    },
+    maxFunctionLines: {
+      severity: "warning",
+      max: 80,
     },
     folderizeCompoundFiles: {
       severity: "error",
@@ -142,6 +200,67 @@ export default {
 };
 ```
 
+## Generic Lifecycle Hooks
+
+If a project needs package-owned preprocessing or postprocessing around discipline commands, use config hooks instead of wrapper scripts.
+
+Available hooks:
+
+- `lifecycle.beforeRun(context)`
+- `lifecycle.afterRun(context, result)`
+- `lifecycle.beforeMode(context)`
+- `lifecycle.afterMode(context, result)`
+
+The hook context includes:
+
+- `mode`
+- `projectRoot`
+- `configPath`
+- `config`
+- mutable `state`
+
+## Optional Tsconfig Path Normalization
+
+Use `tsconfigPaths` when a project needs temporary normalization of `compilerOptions.paths` before discipline runs.
+
+```js
+export default {
+  tsconfigPaths: {
+    normalize: "relative-dot-prefix",
+    restoreAfterRun: true,
+  },
+};
+```
+
+Supported normalization modes:
+
+- `"relative-dot-prefix"`: turns `src/x.ts` into `./src/x.ts`
+- `"strip-dot-prefix"`: turns `./src/x.ts` into `src/x.ts`
+- `"none"`: disables the helper
+
+`restoreAfterRun: true` restores the original `tsconfig.json` after read-oriented runs so the normalization can stay package-owned instead of living in shell wrappers.
+
+## Optional Package Imports Sync
+
+Use `runtimeImportsSync` when a project wants `package.json#imports` mirrored from `tsconfig.compilerOptions.paths`.
+
+```js
+export default {
+  runtimeImportsSync: {
+    enabled: true,
+    source: "tsconfig.paths",
+    target: "package.json.imports",
+    aliasPrefix: "#",
+  },
+};
+```
+
+Behavior:
+
+- only aliases matching the configured prefix or prefixes are managed
+- unrelated existing `package.json#imports` entries are preserved
+- the feature runs through `code-discipline sync` and `mode: "sync"` / `mode: "startup"`
+
 ## Checks
 
 `checkCodeDiscipline()` is read-only. It never moves files, rewrites imports, or updates `tsconfig.json`.
@@ -155,6 +274,10 @@ const result = await checkCodeDiscipline({
     maxFileLines: {
       severity: "warning",
       max: 500,
+    },
+    maxFunctionLines: {
+      severity: "warning",
+      max: 80,
     },
     folderizeCompoundFiles: {
       severity: "error",
@@ -178,7 +301,7 @@ Result shape:
 type CodeDisciplineSeverity = "error" | "warning";
 
 type CodeDisciplineViolation = {
-  rule: "max-file-lines" | "folderize-compound-files" | "sync-imports";
+  rule: "max-file-lines" | "max-function-lines" | "folderize-compound-files" | "sync-imports";
   severity: CodeDisciplineSeverity;
   fix: boolean;
   filePath: string;
@@ -196,6 +319,19 @@ type CodeDisciplineResult = {
 ```
 
 `ok` becomes `false` only when at least one returned violation has `severity: "error"`.
+
+## Function Length
+
+`maxFunctionLines` reports function-like declarations whose total span exceeds a configured limit.
+
+- function declarations
+- function expressions
+- arrow functions
+- class methods
+- constructors
+- getters and setters
+
+Violations include the function name when available, plus `startLine` and `endLine` details.
 
 ## Folderization
 
@@ -274,5 +410,10 @@ The default/common logger adaptation path is powered by `@trebired/logger-adapte
 - `fixCodeDiscipline()`
 - `syncImports()`
 - `defineCodeDisciplineConfig()`
+- `findCodeDisciplineConfigModule()`
+- `loadResolvedCodeDisciplineConfig()`
+- `prepareTsconfigPaths()`
+- `restoreTsconfigPaths()`
+- `syncPackageJsonImportsFromTsconfigPaths()`
 
 The package also exports the public TypeScript types for severity, rule config, results, violations, alias strategies, logging adapters, and source scan rows.

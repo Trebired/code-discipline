@@ -1,5 +1,10 @@
 import type { CheckCodeDisciplineOptions, NormalizedCheckCodeDisciplineOptions } from "../checks/types.js";
-import { normalizeFolderizeCompoundFilesRule, normalizeMaxFileLinesRule, normalizeSyncImportsRule } from "./normalize-rule-options.js";
+import {
+  normalizeFolderizeCompoundFilesRule,
+  normalizeMaxFileLinesRule,
+  normalizeMaxFunctionLinesRule,
+  normalizeSyncImportsRule,
+} from "./normalize-rule-options.js";
 import { normalizeSourceOptions } from "./normalize-source-options.js";
 
 async function normalizeCheckCodeDisciplineOptions(
@@ -17,6 +22,7 @@ async function normalizeCheckCodeDisciplineOptions(
     },
     rules: {
       maxFileLines: normalizeMaxFileLinesRule(options.rules?.maxFileLines),
+      maxFunctionLines: normalizeMaxFunctionLinesRule(options.rules?.maxFunctionLines),
       folderizeCompoundFiles: normalizeFolderizeCompoundFilesRule(options.rules?.folderizeCompoundFiles),
       syncImports: normalizeSyncImportsRule(options.rules?.syncImports),
     },

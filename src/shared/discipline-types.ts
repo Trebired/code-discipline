@@ -1,6 +1,6 @@
 type CodeDisciplineSeverity = "error" | "warning";
 
-type CodeDisciplineRuleName = "max-file-lines" | "folderize-compound-files" | "sync-imports";
+type CodeDisciplineRuleName = "max-file-lines" | "max-function-lines" | "folderize-compound-files" | "sync-imports";
 
 type CodeDisciplineViolation = {
   rule: CodeDisciplineRuleName;

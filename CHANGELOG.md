@@ -2,6 +2,14 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 1.5.0
+
+- Added direct config auto-discovery so the CLI can be used as `code-discipline check`, `fix`, and `sync` without mandatory wrapper scripts or `--config` flags.
+- Added generic lifecycle hooks through config with `beforeRun`, `afterRun`, `beforeMode`, and `afterMode`.
+- Added optional `tsconfigPaths` normalization support with package-owned pre-run transforms and optional restoration after the run.
+- Added optional `runtimeImportsSync` so `package.json#imports` can be synced from `tsconfig.compilerOptions.paths` while preserving unrelated existing imports.
+- Added exports for config discovery and package-owned runtime helper utilities.
+
 ## 1.4.1
 
 - Fixed relative import resolution for TypeScript ESM-style `.js` specifiers so imports like `./x.js` can resolve to source files such as `./x.ts` during sync checks and rewrites.

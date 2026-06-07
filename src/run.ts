@@ -3,17 +3,18 @@ import type {
   CheckCodeDisciplineOptions,
   CheckCodeDisciplineResult,
   CodeDisciplineConfig,
+  CodeDisciplineMode,
+  CodeDisciplineRuntimeMode,
   FixCodeDisciplineResult,
 } from "./checks/types.js";
 import { syncImports } from "./imports/sync-imports.js";
 import type { SyncImportsOptions, SyncImportsResult } from "./imports/types.js";
+import { orchestrateCodeDisciplineRun } from "./runtime/orchestrate.js";
 import type { LoggingOptions } from "./shared/logging-types.js";
-
-type CodeDisciplineMode = "check" | "fix" | "sync";
-type CodeDisciplineRuntimeMode = CodeDisciplineMode | "startup";
 
 type CodeDisciplineInvocationOptions = {
   projectRoot: string;
+  configPath?: string;
   logging?: LoggingOptions;
   logger?: unknown;
   quiet?: boolean;
@@ -21,6 +22,7 @@ type CodeDisciplineInvocationOptions = {
 
 type CodeDisciplineOptions = CheckCodeDisciplineOptions & {
   mode: CodeDisciplineRuntimeMode;
+  configPath?: string;
   logger?: unknown;
   quiet?: boolean;
 };
@@ -135,17 +137,36 @@ function codeDiscipline(options: SyncCodeDisciplineCommandOptions): Promise<Sync
 function codeDiscipline(options: StartupCodeDisciplineCommandOptions): Promise<SyncImportsResult>;
 function codeDiscipline(options: CodeDisciplineOptions): Promise<CodeDisciplineResult>;
 async function codeDiscipline(options: CodeDisciplineOptions): Promise<CodeDisciplineResult> {
-  const mode = options.mode === "startup" ? "sync" : options.mode;
+  const runtimeMode = options.mode;
+  const mode = runtimeMode === "startup" ? "sync" : runtimeMode;
+  const baseConfig: CodeDisciplineConfig = {
+    excludeDirs: options.excludeDirs,
+    lifecycle: options.lifecycle,
+    logging: options.logging,
+    rules: options.rules,
+    runtimeImportsSync: options.runtimeImportsSync,
+    sourceExtensions: options.sourceExtensions,
+    sourceRoot: options.sourceRoot,
+    tsconfigPaths: options.tsconfigPaths,
+  };
 
-  if (mode === "check") {
-    return checkCodeDiscipline(buildCheckOptions(options));
-  }
+  return orchestrateCodeDisciplineRun({
+    config: baseConfig,
+    configPath: options.configPath,
+    mode: runtimeMode,
+    projectRoot: options.projectRoot,
+    async execute() {
+      if (mode === "check") {
+        return checkCodeDiscipline(buildCheckOptions(options));
+      }
 
-  if (mode === "fix") {
-    return fixCodeDiscipline(buildCheckOptions(options));
-  }
+      if (mode === "fix") {
+        return fixCodeDiscipline(buildCheckOptions(options));
+      }
 
-  return syncImports(buildSyncOptions(options));
+      return syncImports(buildSyncOptions(options));
+    },
+  });
 }
 
 function createCodeDiscipline(config: CodeDisciplineConfig): CreatedCodeDiscipline {

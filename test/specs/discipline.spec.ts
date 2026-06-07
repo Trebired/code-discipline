@@ -87,6 +87,52 @@ describe("code-discipline checks", () => {
     expect(rows.map((row) => row.method)).toContain("warn");
   });
 
+  test("reports oversized functions with name and line span details", async () => {
+    const projectRoot = tempProject();
+
+    writeFile(projectRoot, "src/functions.ts", [
+      "export const buildPayload = () => {",
+      "  const user = \"sam\";",
+      "  const role = \"admin\";",
+      "  const scope = \"global\";",
+      "  return { user, role, scope };",
+      "};",
+      "",
+    ].join("\n"));
+
+    const result = await checkCodeDiscipline({
+      projectRoot,
+      rules: {
+        maxFunctionLines: {
+          max: 5,
+        },
+      },
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      errors: 1,
+      warnings: 0,
+      violations: [
+        {
+          rule: "max-function-lines",
+          severity: "error",
+          fix: false,
+          filePath: "src/functions.ts",
+          message: "arrow-function buildPayload has 6 lines and exceeds the limit of 5",
+          details: {
+            functionKind: "arrow-function",
+            functionName: "buildPayload",
+            lineCount: 6,
+            max: 5,
+            startLine: 1,
+            endLine: 6,
+          },
+        },
+      ],
+    });
+  });
+
   test("detects same-directory compound groups with configured severity", async () => {
     const projectRoot = tempProject();
 
@@ -262,6 +308,19 @@ describe("code-discipline checks", () => {
       projectRoot,
       rules: {
         maxFileLines: {
+          // @ts-expect-error legacy config
+          enabled: true,
+          max: 5,
+        },
+      },
+    })).rejects.toMatchObject({
+      code: "invalid_config",
+    });
+
+    await expect(checkCodeDiscipline({
+      projectRoot,
+      rules: {
+        maxFunctionLines: {
           // @ts-expect-error legacy config
           enabled: true,
           max: 5,

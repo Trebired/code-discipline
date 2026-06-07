@@ -4,7 +4,7 @@ import { pathToFileURL } from "node:url";
 
 import { codeDiscipline } from "../run.js";
 import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
-import { loadCodeDisciplineConfigModule } from "../config/index.js";
+import { loadResolvedCodeDisciplineConfig } from "../config/index.js";
 
 type CliRunOptions = {
   cwd?: string;
@@ -18,15 +18,16 @@ type CliRunResult = {
 
 function renderHelp(): string {
   return [
-    "Usage: code-discipline <command> --config <path>",
+    "Usage: code-discipline <command> [--config <path>]",
     "",
     "Commands:",
     "  check         run read-only discipline validation",
-    "  sync          sync tsconfig aliases and import paths when syncImports.fix is true",
-    "  fix           apply folderization moves when folderizeCompoundFiles.fix is true",
+    "  sync          run package-owned sync operations from config",
+    "  fix           apply configured discipline fixes",
     "",
     "Config:",
-    "  --config <path> must point to a module that default-exports the config object.",
+    "  --config <path> optionally points to a module that default-exports the config object.",
+    "  If omitted, code-discipline will auto-discover a config module in the current project root.",
     "",
   ].join("\n");
 }
@@ -79,15 +80,12 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
       throw new Error(`Unexpected arguments: ${parsed.extra.join(" ")}`);
     }
 
-    if (!parsed.configPath) {
-      throw new Error("Missing required --config <path> option");
-    }
-
-    const { config } = await loadCodeDisciplineConfigModule(cwd, parsed.configPath);
+    const { config, configPath } = await loadResolvedCodeDisciplineConfig(cwd, parsed.configPath);
 
     if (command === "check") {
       const result = await codeDiscipline({
         ...config,
+        configPath,
         mode: "check",
         projectRoot: cwd,
       });
@@ -97,10 +95,6 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
         return { exitCode: 0 };
       }
 
-      for (const violation of result.violations) {
-        stdout(`${formatViolation(violation)}\n`);
-      }
-
       stdout(`Summary: ${result.errors} errors, ${result.warnings} warnings.\n`);
       return { exitCode: result.ok ? 0 : 1 };
     }
@@ -108,6 +102,7 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
     if (command === "sync") {
       const result = await codeDiscipline({
         ...config,
+        configPath,
         mode: "sync",
         projectRoot: cwd,
       });
@@ -118,6 +113,7 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
     if (command === "fix") {
       const result = await codeDiscipline({
         ...config,
+        configPath,
         mode: "fix",
         projectRoot: cwd,
       });

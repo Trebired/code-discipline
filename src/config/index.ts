@@ -5,6 +5,15 @@ import type { CodeDisciplineConfig } from "../checks/types.js";
 import { InvalidCodeDisciplineConfigError } from "../shared/errors.js";
 import { pathExists } from "../shared/utils.js";
 
+const DEFAULT_CONFIG_FILENAMES = [
+  "discipline.config.mjs",
+  "discipline.config.js",
+  "discipline.config.cjs",
+  "code-discipline.config.mjs",
+  "code-discipline.config.js",
+  "code-discipline.config.cjs",
+];
+
 type LoadedCodeDisciplineConfig = {
   config: CodeDisciplineConfig;
   configPath: string;
@@ -38,4 +47,29 @@ async function loadCodeDisciplineConfigModule(projectRoot: string, configPath: s
   };
 }
 
-export { defineCodeDisciplineConfig, loadCodeDisciplineConfigModule };
+async function findCodeDisciplineConfigModule(projectRoot: string): Promise<string | null> {
+  for (const filename of DEFAULT_CONFIG_FILENAMES) {
+    const resolvedPath = path.resolve(projectRoot, filename);
+    if (await pathExists(resolvedPath)) {
+      return resolvedPath;
+    }
+  }
+
+  return null;
+}
+
+async function loadResolvedCodeDisciplineConfig(projectRoot: string, configPath?: string): Promise<LoadedCodeDisciplineConfig> {
+  const resolvedPath = configPath
+    ? path.resolve(projectRoot, configPath)
+    : await findCodeDisciplineConfigModule(projectRoot);
+
+  if (!resolvedPath) {
+    throw new InvalidCodeDisciplineConfigError("No code-discipline config module was found", {
+      tried: DEFAULT_CONFIG_FILENAMES,
+    });
+  }
+
+  return loadCodeDisciplineConfigModule(projectRoot, resolvedPath);
+}
+
+export { DEFAULT_CONFIG_FILENAMES, defineCodeDisciplineConfig, findCodeDisciplineConfigModule, loadCodeDisciplineConfigModule, loadResolvedCodeDisciplineConfig };

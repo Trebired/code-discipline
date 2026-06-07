@@ -4,10 +4,23 @@ import { runCli } from "../../src/cli.js";
 import { fileExists, readFile, tempProject, writeFile } from "./helpers.js";
 
 describe("code-discipline cli", () => {
-  test("requires an explicit config module path", async () => {
+  test("auto-discovers a config module for plain cli usage", async () => {
     const projectRoot = tempProject();
     const stdout: string[] = [];
     const stderr: string[] = [];
+
+    writeFile(projectRoot, "src/too-long.ts", "one\n2\n3\n");
+    writeFile(projectRoot, "discipline.config.mjs", [
+      "export default {",
+      "  rules: {",
+      "    maxFileLines: {",
+      "      severity: \"warning\",",
+      "      max: 2,",
+      "    },",
+      "  },",
+      "};",
+      "",
+    ].join("\n"));
 
     const result = await runCli(["check"], {
       cwd: projectRoot,
@@ -15,9 +28,9 @@ describe("code-discipline cli", () => {
       stderr: (text) => stderr.push(text),
     });
 
-    expect(result.exitCode).toBe(1);
-    expect(stdout).toEqual([]);
-    expect(stderr.join("")).toContain("Missing required --config <path> option");
+    expect(result.exitCode).toBe(0);
+    expect(stderr).toEqual([]);
+    expect(stdout.join("")).toBe("Summary: 0 errors, 1 warnings.\n");
   });
 
   test("runs check through an explicit config module and exits zero for warnings only", async () => {
@@ -46,8 +59,7 @@ describe("code-discipline cli", () => {
 
     expect(result.exitCode).toBe(0);
     expect(stderr).toEqual([]);
-    expect(stdout.join("")).toContain("WARNING max-file-lines src/too-long.ts");
-    expect(stdout.join("")).toContain("Summary: 0 errors, 1 warnings.");
+    expect(stdout.join("")).toBe("Summary: 0 errors, 1 warnings.\n");
   });
 
   test("runs check through an explicit config module and exits non-zero for errors", async () => {
@@ -73,7 +85,7 @@ describe("code-discipline cli", () => {
     });
 
     expect(result.exitCode).toBe(1);
-    expect(stdout.join("")).toContain("ERROR max-file-lines src/too-long.ts");
+    expect(stdout.join("")).toBe("Summary: 1 errors, 0 warnings.\n");
   });
 
   test("runs sync through an explicit config module and mutates only when syncImports.fix is true", async () => {
@@ -135,5 +147,18 @@ describe("code-discipline cli", () => {
     expect(fileExists(projectRoot, "src/api/user/route.ts")).toBe(true);
     expect(readFile(projectRoot, "src/app.ts")).toContain('from "./api/user/route"');
     expect(stdout.join("")).toContain("\"moved_files\":2");
+  });
+
+  test("prints a clear error when no config module can be found", async () => {
+    const projectRoot = tempProject();
+    const stderr: string[] = [];
+
+    const result = await runCli(["check"], {
+      cwd: projectRoot,
+      stderr: (text) => stderr.push(text),
+    });
+
+    expect(result.exitCode).toBe(1);
+    expect(stderr.join("")).toContain("No code-discipline config module was found");
   });
 });

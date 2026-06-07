@@ -6,6 +6,7 @@ import type { CodeDisciplineResult, CodeDisciplineViolation } from "../shared/di
 import { fixFolderization } from "./fix-folderization.js";
 import { runFolderizeCompoundFilesRule } from "./rules/folderize-compound-files.js";
 import { runMaxFileLinesRule } from "./rules/max-file-lines.js";
+import { runMaxFunctionLinesRule } from "./rules/max-function-lines.js";
 import type {
   CheckCodeDisciplineOptions,
   CheckCodeDisciplineResult,
@@ -99,6 +100,9 @@ async function collectViolations(options: NormalizedCheckCodeDisciplineOptions):
   const maxFileViolations = options.rules.maxFileLines
     ? await runMaxFileLinesRule(sourceFiles, options)
     : [];
+  const maxFunctionViolations = options.rules.maxFunctionLines
+    ? await runMaxFunctionLinesRule(sourceFiles, options)
+    : [];
   const folderizeViolations = options.rules.folderizeCompoundFiles
     ? runFolderizeCompoundFilesRule(sourceFiles, options)
     : [];
@@ -109,6 +113,7 @@ async function collectViolations(options: NormalizedCheckCodeDisciplineOptions):
 
   return sortViolations([
     ...maxFileViolations,
+    ...maxFunctionViolations,
     ...folderizeViolations,
     ...syncImportViolations,
   ]);

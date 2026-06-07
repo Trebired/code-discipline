@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 
 import { codeDiscipline, createCodeDiscipline } from "../../src/index.js";
-import { captureTrebiredLogger, readFile, tempProject, writeFile } from "./helpers.js";
+import { captureTrebiredLogger, readFile, readJson, tempProject, writeFile } from "./helpers.js";
 
 describe("code-discipline runtime api", () => {
   test("dispatches check through one package-owned entrypoint", async () => {
@@ -55,5 +55,131 @@ describe("code-discipline runtime api", () => {
     expect(result.mutations_allowed).toBe(true);
     expect(readFile(projectRoot, "src/feature/app.ts")).toContain('from "#shared-util"');
     expect(rows.length).toBeGreaterThan(0);
+  });
+
+  test("runs lifecycle hooks around a direct package-owned command", async () => {
+    const projectRoot = tempProject();
+    const seen: string[] = [];
+
+    writeFile(projectRoot, "src/too-long.ts", "one\n2\n3\n");
+
+    const result = await codeDiscipline({
+      mode: "check",
+      projectRoot,
+      lifecycle: {
+        async beforeRun(context) {
+          seen.push(`beforeRun:${context.mode}`);
+        },
+        async beforeMode(context) {
+          seen.push(`beforeMode:${context.mode}`);
+        },
+        async afterMode(context, summary) {
+          seen.push(`afterMode:${context.mode}:${(summary as { errors: number }).errors}`);
+        },
+        async afterRun(context, summary) {
+          seen.push(`afterRun:${context.mode}:${(summary as { warnings: number }).warnings}`);
+        },
+      },
+      rules: {
+        maxFileLines: {
+          severity: "warning",
+          max: 2,
+        },
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(seen).toEqual([
+      "beforeRun:check",
+      "beforeMode:check",
+      "afterMode:check:0",
+      "afterRun:check:1",
+    ]);
+  });
+
+  test("temporarily normalizes tsconfig compilerOptions.paths for a run and restores afterwards", async () => {
+    const projectRoot = tempProject();
+    let capturedPaths: Record<string, string[]> | undefined;
+
+    writeFile(projectRoot, "tsconfig.json", JSON.stringify({
+      compilerOptions: {
+        paths: {
+          "#shared/*": ["src/shared/*"],
+        },
+      },
+    }, null, 2));
+    writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
+
+    await codeDiscipline({
+      mode: "check",
+      projectRoot,
+      tsconfigPaths: {
+        normalize: "relative-dot-prefix",
+        restoreAfterRun: true,
+      },
+      lifecycle: {
+        beforeMode() {
+          capturedPaths = readJson(projectRoot, "tsconfig.json").compilerOptions.paths;
+        },
+      },
+      rules: {
+        maxFileLines: {
+          severity: "warning",
+          max: 50,
+        },
+      },
+    });
+
+    expect(capturedPaths).toEqual({
+      "#shared/*": ["./src/shared/*"],
+    });
+    expect(readJson(projectRoot, "tsconfig.json").compilerOptions.paths).toEqual({
+      "#shared/*": ["src/shared/*"],
+    });
+  });
+
+  test("syncs package.json imports from tsconfig paths and preserves unrelated imports", async () => {
+    const projectRoot = tempProject();
+
+    writeFile(projectRoot, "package.json", JSON.stringify({
+      name: "example-package",
+      imports: {
+        "#external": "./vendor/external.js",
+      },
+    }, null, 2));
+    writeFile(projectRoot, "tsconfig.json", JSON.stringify({
+      compilerOptions: {
+        paths: {
+          "#app": ["src/app.ts"],
+          "#pages/*": ["src/pages/*"],
+          "@other": ["src/other.ts"],
+        },
+      },
+    }, null, 2));
+    writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
+    writeFile(projectRoot, "src/pages/home.ts", "export const home = true;\n");
+    writeFile(projectRoot, "src/other.ts", "export const other = true;\n");
+
+    const result = await codeDiscipline({
+      mode: "sync",
+      projectRoot,
+      runtimeImportsSync: {
+        enabled: true,
+        aliasPrefix: "#",
+      },
+      rules: {
+        syncImports: {
+          fix: false,
+          severity: "warning",
+        },
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(readJson(projectRoot, "package.json").imports).toEqual({
+      "#app": "./src/app.ts",
+      "#external": "./vendor/external.js",
+      "#pages/*": "./src/pages/*",
+    });
   });
 });
