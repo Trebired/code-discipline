@@ -104,7 +104,9 @@ function buildCheckOptions(options: Omit<CodeDisciplineOptions, "mode">): CheckC
     projectRoot: options.projectRoot,
     sourceRoot: options.sourceRoot,
     sourceExtensions: options.sourceExtensions,
+    includeDefaultSourceExtensions: options.includeDefaultSourceExtensions,
     excludeDirs: options.excludeDirs,
+    gitignorePath: options.gitignorePath,
     logging: resolveLoggingOptions(options),
     onlyRules: options.onlyRules,
     rules: options.rules,
@@ -124,11 +126,13 @@ function codeDiscipline(options: CodeDisciplineOptions): Promise<CodeDisciplineR
 async function codeDiscipline(options: CodeDisciplineOptions): Promise<CodeDisciplineResult> {
   const baseConfig: CodeDisciplineConfig = {
     excludeDirs: options.excludeDirs,
+    gitignorePath: options.gitignorePath,
     lifecycle: options.lifecycle,
     logging: options.logging,
     onlyRules: options.onlyRules,
     rules: options.rules,
     sourceExtensions: options.sourceExtensions,
+    includeDefaultSourceExtensions: options.includeDefaultSourceExtensions,
     sourceRoot: options.sourceRoot,
     tsconfigPaths: options.tsconfigPaths,
   };

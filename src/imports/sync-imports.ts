@@ -7,7 +7,7 @@ import { planTsconfigAliases, syncTsconfigAliases } from "./aliases.js";
 import { collectSyncImportViolations } from "./check-sync-imports.js";
 import { rewriteSourceImports } from "./rewrite.js";
 import { scanSourceFiles } from "./scan.js";
-import type { SyncImportsOptions, SyncImportsResult } from "./types.js";
+import type { NormalizedSyncImportsOptions, SyncImportsOptions, SyncImportsResult } from "./types.js";
 
 function summarizeViolations(violations: CodeDisciplineViolation[]) {
   return {
@@ -17,8 +17,14 @@ function summarizeViolations(violations: CodeDisciplineViolation[]) {
   };
 }
 
-async function syncImports(options: SyncImportsOptions): Promise<SyncImportsResult> {
-  const normalized = await normalizeSyncImportsOptions(options);
+function isNormalizedSyncImportsOptions(options: SyncImportsOptions | NormalizedSyncImportsOptions): options is NormalizedSyncImportsOptions {
+  return Array.isArray((options as NormalizedSyncImportsOptions).excludeDirs);
+}
+
+async function syncImports(options: SyncImportsOptions | NormalizedSyncImportsOptions): Promise<SyncImportsResult> {
+  const normalized = isNormalizedSyncImportsOptions(options)
+    ? options
+    : await normalizeSyncImportsOptions(options);
   const logger = resolveLogger(normalized.logging);
 
   logger.info("sync-started", "sync started", {

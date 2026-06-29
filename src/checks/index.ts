@@ -1,9 +1,14 @@
+import path from "node:path";
+
 import { normalizeCheckCodeDisciplineOptions } from "../config/normalize-check-options.js";
 import { collectSyncImportViolations } from "../imports/check-sync-imports.js";
 import { scanSourceFiles } from "../imports/scan.js";
 import { syncImports } from "../imports/sync-imports.js";
+import { DEFAULT_EXCLUDE_DIRS, DEFAULT_SOURCE_EXTENSIONS } from "../shared/constants.js";
+import { readGitignoreExcludedDirs } from "../shared/gitignore.js";
 import { resolveLogger } from "../shared/logging.js";
 import type { CodeDisciplineResult, CodeDisciplineViolation } from "../shared/discipline-types.js";
+import { ensureDotExtension, normalizeRelativePath, uniqueStrings } from "../shared/utils.js";
 import { shouldRunRule } from "./rule-slugs.js";
 import { fixFolderization } from "./fix-folderization.js";
 import { runFolderizeCompoundFilesRule } from "./rules/folderize-compound-files.js";
@@ -21,22 +26,45 @@ import type {
   NormalizedCheckCodeDisciplineOptions,
 } from "./types.js";
 
-function buildNormalizedSyncOptions(
+async function buildNormalizedSyncOptions(
   options: NormalizedCheckCodeDisciplineOptions,
   fix: boolean,
   rule: CodeDisciplineSyncImportsRuleOptions | undefined = options.rules.syncImports,
 ) {
   if (!rule) return null;
 
+  const sourceRootInput = rule.sourceRoot ?? options.sourceRoot;
+  const sourceRoot = path.isAbsolute(sourceRootInput)
+    ? path.resolve(sourceRootInput)
+    : path.resolve(options.projectRoot, sourceRootInput);
+  const sourceRootRelative = normalizeRelativePath(path.relative(options.projectRoot, sourceRoot));
+  const sourceExtensions = rule.sourceExtensions
+    ? uniqueStrings([
+      ...(rule.includeDefaultSourceExtensions === false ? [] : DEFAULT_SOURCE_EXTENSIONS),
+      ...rule.sourceExtensions.map(ensureDotExtension),
+    ])
+    : options.sourceExtensions;
+  const gitignorePath = rule.gitignorePath ?? options.gitignorePath;
+  const gitignoreDirs = rule.excludeDirs?.gitignore === true
+    ? await readGitignoreExcludedDirs(options.projectRoot, gitignorePath)
+    : [];
+  const excludeDirs = rule.excludeDirs
+    ? uniqueStrings([
+      ...DEFAULT_EXCLUDE_DIRS,
+      ...(rule.excludeDirs.dirs ?? []),
+      ...gitignoreDirs,
+    ])
+    : options.excludeDirs;
+
   return {
     configPath: options.configPath,
     projectRoot: options.projectRoot,
-    sourceRoot: rule.sourceRoot ?? options.sourceRoot,
-    sourceRootRelative: options.sourceRootRelative,
-    sourceExtensions: rule.sourceExtensions ?? options.sourceExtensions,
-    excludeDirs: rule.excludeDirs ?? options.excludeDirs,
-    excludeGitIgnoredDirs: rule.excludeGitIgnoredDirs ?? options.excludeGitIgnoredDirs,
-    gitignorePath: rule.gitignorePath ?? options.gitignorePath,
+    sourceRoot,
+    sourceRootRelative,
+    sourceExtensions,
+    excludeDirs,
+    excludeGitignoreDirs: rule.excludeDirs?.gitignore ?? options.excludeGitignoreDirs,
+    gitignorePath,
     tsconfigPath: rule.tsconfigPath ?? `${options.projectRoot}/tsconfig.json`,
     fix,
     alias: {
@@ -100,7 +128,7 @@ async function collectViolations(options: NormalizedCheckCodeDisciplineOptions):
   }
 
   if (options.rules.syncImports && shouldRunRule("sync-imports", options.onlyRules)) {
-    const normalizedSyncOptions = buildNormalizedSyncOptions(options, false);
+    const normalizedSyncOptions = await buildNormalizedSyncOptions(options, false);
     if (normalizedSyncOptions) {
       violations.push(...await collectSyncImportViolations(sourceFiles, normalizedSyncOptions));
     }
@@ -180,7 +208,7 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
   }
 
   if (normalized.rules.syncImports && shouldRunFixRule("sync-imports", normalized)) {
-    const syncOptions = buildNormalizedSyncOptions(normalized, true);
+    const syncOptions = await buildNormalizedSyncOptions(normalized, true);
     if (syncOptions) {
       const syncResult = await syncImports(syncOptions);
       ruleResults["sync-imports"] = mapFixRuleResult(syncResult);

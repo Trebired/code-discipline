@@ -26,6 +26,11 @@ type AllowRelativeContext = {
 
 type AllowRelativeFn = (specifier: string, context: AllowRelativeContext) => boolean;
 
+type ExcludeDirsOptions = {
+  dirs?: string[];
+  gitignore?: boolean;
+};
+
 type SyncImportsOptions = {
   projectRoot: string;
   configPath?: string;
@@ -33,9 +38,7 @@ type SyncImportsOptions = {
   tsconfigPath?: string;
   sourceExtensions?: string[];
   includeDefaultSourceExtensions?: boolean;
-  excludeDirs?: string[];
-  includeDefaultExcludeDirs?: boolean;
-  excludeGitIgnoredDirs?: boolean;
+  excludeDirs?: ExcludeDirsOptions;
   gitignorePath?: string;
   fix?: boolean;
   alias?: {
@@ -67,7 +70,7 @@ type SourceScanOptions = {
   sourceRoot: string;
   sourceExtensions: string[];
   excludeDirs: string[];
-  excludeGitIgnoredDirs: boolean;
+  excludeGitignoreDirs: boolean;
   gitignorePath: string;
 };
 
@@ -131,6 +134,7 @@ export type {
   AliasStrategyInput,
   AllowRelativeContext,
   AllowRelativeFn,
+  ExcludeDirsOptions,
   NormalizedSyncImportsOptions,
   RewriteFileResult,
   RewriteResult,

@@ -90,8 +90,10 @@ import { defineCodeDisciplineConfig } from "@trebired/code-discipline";
 export default defineCodeDisciplineConfig({
   sourceRoot: "src",
   sourceExtensions: [".go", ".rs"],
-  excludeDirs: ["coverage"],
-  excludeGitIgnoredDirs: true,
+  excludeDirs: {
+    dirs: ["coverage"],
+    gitignore: true,
+  },
   tsconfigPaths: {
     normalize: "relative-dot-prefix",
     restoreAfterRun: true,
@@ -134,13 +136,13 @@ export default defineCodeDisciplineConfig({
 });
 ```
 
-`sourceExtensions`, `excludeDirs`, and `.gitignore` are additive by default:
+Source scanning stays additive by default:
 
 - built-in source extensions are included unless `includeDefaultSourceExtensions: false`
-- built-in excluded directories are included unless `includeDefaultExcludeDirs: false`
-- root `.gitignore` directory entries are included only when `excludeGitIgnoredDirs: true`
+- built-in excluded directories are always included
+- root `.gitignore` directory entries are included only when `excludeDirs.gitignore: true`
 
-So you can either extend the defaults or opt out and fully take control.
+So you can extend the defaults without having to repeat the generated-folder list inline.
 
 Example scan configuration:
 
@@ -152,14 +154,12 @@ export default defineCodeDisciplineConfig({
   sourceExtensions: [".go", ".rs"],
 
   // Add extra ignored directories on top of the built-in set.
-  excludeDirs: ["coverage"],
+  excludeDirs: {
+    dirs: ["coverage"],
 
-  // Opt into reusing root .gitignore directory entries.
-  excludeGitIgnoredDirs: true,
-
-  // Turn either default set off if you want full control instead.
-  includeDefaultSourceExtensions: true,
-  includeDefaultExcludeDirs: true,
+    // Opt into reusing root .gitignore directory entries.
+    gitignore: true,
+  },
 
   rules: {
     maxFunctionLines: {
@@ -267,14 +267,15 @@ Validates and optionally fixes:
 
 `syncImports` only rewrites JavaScript and TypeScript module files. Mixed-language repositories can still include Go and Rust under the same `sourceRoot`; those files are ignored by alias syncing instead of causing parser failures.
 
-`excludeDirs` can stay explicit, and you can also opt into root `.gitignore` directory entries through `excludeGitIgnoredDirs: true` when you want to reuse the same generated-folder list for discipline scans.
+`excludeDirs` now groups scan exclusions in one place, so you can add explicit directories through `excludeDirs.dirs` and opt into root `.gitignore` directory entries through `excludeDirs.gitignore`.
 
-If you want full manual control instead of additive defaults, set:
+Example:
 
 ```ts
-includeDefaultSourceExtensions: false,
-includeDefaultExcludeDirs: false,
-excludeGitIgnoredDirs: false,
+excludeDirs: {
+  dirs: ["coverage", "tmp"],
+  gitignore: true,
+},
 ```
 
 Example targeted CLI usage:

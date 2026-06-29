@@ -207,7 +207,9 @@ describe("code-discipline checks", () => {
 
     const enabled = await checkCodeDiscipline({
       projectRoot,
-      excludeGitIgnoredDirs: true,
+      excludeDirs: {
+        gitignore: true,
+      },
       rules: {
         maxFileLines: {
           max: 2,
@@ -281,8 +283,10 @@ describe("code-discipline checks", () => {
 
     const additive = await checkCodeDiscipline({
       projectRoot,
-      excludeDirs: ["tmp"],
-      excludeGitIgnoredDirs: true,
+      excludeDirs: {
+        dirs: ["tmp"],
+        gitignore: true,
+      },
       rules: {
         maxFileLines: {
           max: 2,
@@ -293,10 +297,11 @@ describe("code-discipline checks", () => {
     expect(additive.violationCount).toBe(1);
     expect(additive.violations[0]?.filePath).toBe("src/app.ts");
 
-    const overrideOnlyTmp = await checkCodeDiscipline({
+    const explicitOnly = await checkCodeDiscipline({
       projectRoot,
-      excludeDirs: ["tmp"],
-      includeDefaultExcludeDirs: false,
+      excludeDirs: {
+        dirs: ["tmp"],
+      },
       rules: {
         maxFileLines: {
           max: 2,
@@ -304,8 +309,8 @@ describe("code-discipline checks", () => {
       },
     });
 
-    expect(overrideOnlyTmp.violationCount).toBe(2);
-    expect(overrideOnlyTmp.violations.map((entry) => entry.filePath)).toEqual([
+    expect(explicitOnly.violationCount).toBe(2);
+    expect(explicitOnly.violations.map((entry) => entry.filePath)).toEqual([
       "src/app.ts",
       "src/generated/out.ts",
     ]);

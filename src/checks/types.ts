@@ -1,5 +1,6 @@
 import type { LoggingOptions } from "../shared/logging-types.js";
 import type {
+  ExcludeDirsOptions,
   PackageJsonImportsSyncOptions,
   SourceScanOptions,
   SyncImportsRuleOptions,
@@ -81,9 +82,7 @@ type CheckCodeDisciplineOptions = {
   sourceRoot?: string;
   sourceExtensions?: string[];
   includeDefaultSourceExtensions?: boolean;
-  excludeDirs?: string[];
-  includeDefaultExcludeDirs?: boolean;
-  excludeGitIgnoredDirs?: boolean;
+  excludeDirs?: ExcludeDirsOptions;
   gitignorePath?: string;
   logging?: LoggingOptions;
   rules?: CodeDisciplineRules;
