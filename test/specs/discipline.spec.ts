@@ -183,7 +183,7 @@ describe("code-discipline checks", () => {
     ]));
   });
 
-  test("merges directory excludes from .gitignore without requiring inline excludeDirs", async () => {
+  test("merges directory excludes from .gitignore only when explicitly enabled", async () => {
     const projectRoot = tempProject();
 
     writeFile(projectRoot, ".gitignore", "src/generated/\n");
@@ -199,7 +199,23 @@ describe("code-discipline checks", () => {
       },
     });
 
-    expect(result).toEqual({
+    expect(result.violationCount).toBe(2);
+    expect(result.violations.map((entry) => entry.filePath)).toEqual([
+      "src/app.ts",
+      "src/generated/big.ts",
+    ]);
+
+    const enabled = await checkCodeDiscipline({
+      projectRoot,
+      excludeGitIgnoredDirs: true,
+      rules: {
+        maxFileLines: {
+          max: 2,
+        },
+      },
+    });
+
+    expect(enabled).toEqual({
       ok: false,
       violationCount: 1,
       violations: [
@@ -215,6 +231,84 @@ describe("code-discipline checks", () => {
         },
       ],
     });
+  });
+
+  test("combines default and custom source extensions unless explicitly disabled", async () => {
+    const projectRoot = tempProject();
+
+    writeFile(projectRoot, "src/app.ts", "one\n2\n3\n");
+    writeFile(projectRoot, "src/lib.rs", "one\n2\n3\n");
+
+    const additive = await checkCodeDiscipline({
+      projectRoot,
+      sourceExtensions: [".rs"],
+      rules: {
+        maxFileLines: {
+          max: 2,
+        },
+      },
+    });
+
+    expect(additive.violationCount).toBe(2);
+    expect(additive.violations.map((entry) => entry.filePath)).toEqual([
+      "src/app.ts",
+      "src/lib.rs",
+    ]);
+
+    const overrideOnlyRust = await checkCodeDiscipline({
+      projectRoot,
+      sourceExtensions: [".rs"],
+      includeDefaultSourceExtensions: false,
+      rules: {
+        maxFileLines: {
+          max: 2,
+        },
+      },
+    });
+
+    expect(overrideOnlyRust.violationCount).toBe(1);
+    expect(overrideOnlyRust.violations[0]?.filePath).toBe("src/lib.rs");
+  });
+
+  test("combines default excludeDirs, explicit excludeDirs, and opt-in .gitignore excludes", async () => {
+    const projectRoot = tempProject();
+
+    writeFile(projectRoot, ".gitignore", "src/generated/\n");
+    writeFile(projectRoot, "dist/out.ts", "one\n2\n3\n");
+    writeFile(projectRoot, "tmp/out.ts", "one\n2\n3\n");
+    writeFile(projectRoot, "src/generated/out.ts", "one\n2\n3\n");
+    writeFile(projectRoot, "src/app.ts", "one\n2\n3\n");
+
+    const additive = await checkCodeDiscipline({
+      projectRoot,
+      excludeDirs: ["tmp"],
+      excludeGitIgnoredDirs: true,
+      rules: {
+        maxFileLines: {
+          max: 2,
+        },
+      },
+    });
+
+    expect(additive.violationCount).toBe(1);
+    expect(additive.violations[0]?.filePath).toBe("src/app.ts");
+
+    const overrideOnlyTmp = await checkCodeDiscipline({
+      projectRoot,
+      excludeDirs: ["tmp"],
+      includeDefaultExcludeDirs: false,
+      rules: {
+        maxFileLines: {
+          max: 2,
+        },
+      },
+    });
+
+    expect(overrideOnlyTmp.violationCount).toBe(2);
+    expect(overrideOnlyTmp.violations.map((entry) => entry.filePath)).toEqual([
+      "src/app.ts",
+      "src/generated/out.ts",
+    ]);
   });
 
   test("detects same-directory compound groups", async () => {

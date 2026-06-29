@@ -80,7 +80,9 @@ type CheckCodeDisciplineOptions = {
   configPath?: string;
   sourceRoot?: string;
   sourceExtensions?: string[];
+  includeDefaultSourceExtensions?: boolean;
   excludeDirs?: string[];
+  includeDefaultExcludeDirs?: boolean;
   excludeGitIgnoredDirs?: boolean;
   gitignorePath?: string;
   logging?: LoggingOptions;

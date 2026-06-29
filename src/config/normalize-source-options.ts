@@ -19,7 +19,9 @@ async function normalizeSourceOptions(options: {
   projectRoot: string;
   sourceRoot?: string;
   sourceExtensions?: string[];
+  includeDefaultSourceExtensions?: boolean;
   excludeDirs?: string[];
+  includeDefaultExcludeDirs?: boolean;
   excludeGitIgnoredDirs?: boolean;
   gitignorePath?: string;
 }): Promise<NormalizedSourceOptions> {
@@ -34,19 +36,28 @@ async function normalizeSourceOptions(options: {
     throw new InvalidSourceRootError(sourceRoot);
   }
 
-  const excludeGitIgnoredDirs = options.excludeGitIgnoredDirs !== false;
+  const excludeGitIgnoredDirs = options.excludeGitIgnoredDirs === true;
   const gitignoreInput = options.gitignorePath ?? path.join(projectRoot, ".gitignore");
   const gitignorePath = path.isAbsolute(gitignoreInput) ? path.resolve(gitignoreInput) : path.resolve(projectRoot, gitignoreInput);
   const gitignoreDirs = excludeGitIgnoredDirs
     ? await readGitignoreExcludedDirs(projectRoot, gitignorePath)
     : [];
+  const sourceExtensions = uniqueStrings([
+    ...(options.includeDefaultSourceExtensions === false ? [] : DEFAULT_SOURCE_EXTENSIONS),
+    ...((options.sourceExtensions ?? []).map(ensureDotExtension)),
+  ]);
+  const excludeDirs = uniqueStrings([
+    ...(options.includeDefaultExcludeDirs === false ? [] : DEFAULT_EXCLUDE_DIRS),
+    ...(options.excludeDirs ?? []),
+    ...gitignoreDirs,
+  ]);
 
   return {
     projectRoot,
     sourceRoot,
     sourceRootRelative: normalizeRelativePath(path.relative(projectRoot, sourceRoot)),
-    sourceExtensions: uniqueStrings((options.sourceExtensions ?? DEFAULT_SOURCE_EXTENSIONS).map(ensureDotExtension)),
-    excludeDirs: uniqueStrings([...(options.excludeDirs ?? DEFAULT_EXCLUDE_DIRS), ...gitignoreDirs]),
+    sourceExtensions,
+    excludeDirs,
     excludeGitIgnoredDirs,
     gitignorePath,
   };

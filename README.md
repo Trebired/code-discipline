@@ -132,6 +132,14 @@ export default defineCodeDisciplineConfig({
 });
 ```
 
+`sourceExtensions`, `excludeDirs`, and `.gitignore` are additive by default:
+
+- built-in source extensions are included unless `includeDefaultSourceExtensions: false`
+- built-in excluded directories are included unless `includeDefaultExcludeDirs: false`
+- root `.gitignore` directory entries are included only when `excludeGitIgnoredDirs: true`
+
+So you can either extend the defaults or opt out and fully take control.
+
 ## Rule Selectors
 
 `check` and `fix` both accept positional rule selectors:
@@ -230,7 +238,15 @@ Validates and optionally fixes:
 
 `syncImports` only rewrites JavaScript and TypeScript module files. Mixed-language repositories can still include Go and Rust under the same `sourceRoot`; those files are ignored by alias syncing instead of causing parser failures.
 
-`excludeDirs` can stay explicit, but it no longer has to duplicate the obvious generated folders already listed in your root `.gitignore`. Directory-style `.gitignore` entries are merged into the scan excludes automatically unless you turn that off with `excludeGitIgnoredDirs: false`.
+`excludeDirs` can stay explicit, and you can also opt into root `.gitignore` directory entries through `excludeGitIgnoredDirs: true` when you want to reuse the same generated-folder list for discipline scans.
+
+If you want full manual control instead of additive defaults, set:
+
+```ts
+includeDefaultSourceExtensions: false,
+includeDefaultExcludeDirs: false,
+excludeGitIgnoredDirs: false,
+```
 
 Example targeted CLI usage:
 
