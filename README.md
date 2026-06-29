@@ -89,7 +89,9 @@ import { defineCodeDisciplineConfig } from "@trebired/code-discipline";
 
 export default defineCodeDisciplineConfig({
   sourceRoot: "src",
-  sourceExtensions: [".ts", ".tsx", ".js", ".jsx", ".go", ".rs"],
+  sourceExtensions: [".go", ".rs"],
+  excludeDirs: ["coverage"],
+  excludeGitIgnoredDirs: true,
   tsconfigPaths: {
     normalize: "relative-dot-prefix",
     restoreAfterRun: true,
@@ -139,6 +141,33 @@ export default defineCodeDisciplineConfig({
 - root `.gitignore` directory entries are included only when `excludeGitIgnoredDirs: true`
 
 So you can either extend the defaults or opt out and fully take control.
+
+Example scan configuration:
+
+```ts
+export default defineCodeDisciplineConfig({
+  sourceRoot: "src",
+
+  // Add extra file types on top of the built-in JS/TS set.
+  sourceExtensions: [".go", ".rs"],
+
+  // Add extra ignored directories on top of the built-in set.
+  excludeDirs: ["coverage"],
+
+  // Opt into reusing root .gitignore directory entries.
+  excludeGitIgnoredDirs: true,
+
+  // Turn either default set off if you want full control instead.
+  includeDefaultSourceExtensions: true,
+  includeDefaultExcludeDirs: true,
+
+  rules: {
+    maxFunctionLines: {
+      max: 80,
+    },
+  },
+});
+```
 
 ## Rule Selectors
 
