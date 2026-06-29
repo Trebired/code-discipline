@@ -2,6 +2,7 @@ import path from "node:path";
 
 import type { NormalizedCheckCodeDisciplineOptions } from "../types.js";
 import type { ScannedSourceFile } from "../../imports/types.js";
+import { supportsFolderizationFix } from "../../shared/languages.js";
 
 type FolderizationCandidate = {
   absolutePath: string;
@@ -75,6 +76,7 @@ function planFolderizeCompoundFiles(
   const matchesByPath = new Map<string, PrefixMatch>();
 
   for (const file of sourceFiles) {
+    if (!supportsFolderizationFix(file.extension)) continue;
     const match = findPrefixMatch(file, separators);
     if (!match) continue;
 

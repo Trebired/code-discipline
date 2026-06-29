@@ -4,13 +4,18 @@ import path from "node:path";
 import type { ScannedSourceFile, SourceScanOptions } from "./types.js";
 import { normalizeRelativePath, toPosixPath } from "../shared/utils.js";
 
-function shouldExcludeDirectory(relativeDir: string, directoryName: string, excludeDirs: string[]): boolean {
+function shouldExcludeDirectory(relativeDir: string, projectRelativeDir: string, directoryName: string, excludeDirs: string[]): boolean {
   const normalizedRelativeDir = normalizeRelativePath(relativeDir);
+  const normalizedProjectRelativeDir = normalizeRelativePath(projectRelativeDir);
   return excludeDirs.some((entry) => {
     const normalizedEntry = normalizeRelativePath(entry);
     return directoryName === normalizedEntry
       || normalizedRelativeDir === normalizedEntry
       || normalizedRelativeDir.startsWith(`${normalizedEntry}/`);
+  }) || excludeDirs.some((entry) => {
+    const normalizedEntry = normalizeRelativePath(entry);
+    return normalizedProjectRelativeDir === normalizedEntry
+      || normalizedProjectRelativeDir.startsWith(`${normalizedEntry}/`);
   });
 }
 
@@ -26,9 +31,10 @@ async function walkDirectory(
   for (const entry of sortedEntries) {
     const absolutePath = path.join(directoryPath, entry.name);
     const relativePath = normalizeRelativePath(path.join(relativeDir, entry.name));
+    const projectRelativePath = normalizeRelativePath(path.relative(options.projectRoot, absolutePath));
 
     if (entry.isDirectory()) {
-      if (shouldExcludeDirectory(relativePath, entry.name, options.excludeDirs)) continue;
+      if (shouldExcludeDirectory(relativePath, projectRelativePath, entry.name, options.excludeDirs)) continue;
       await walkDirectory(absolutePath, relativePath, options, rows);
       continue;
     }

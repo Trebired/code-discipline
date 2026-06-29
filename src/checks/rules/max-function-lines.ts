@@ -1,10 +1,12 @@
 import fs from "node:fs/promises";
+import path from "node:path";
 
 import ts from "typescript";
 
 import type { NormalizedCheckCodeDisciplineOptions } from "../types.js";
 import type { ScannedSourceFile } from "../../imports/types.js";
 import { parseSource } from "../../imports/module-specifiers.js";
+import { isGoExtension, isRustExtension, isTypeScriptFamilyExtension, supportsMaxFunctionLines } from "../../shared/languages.js";
 import type { CodeDisciplineViolation } from "../../shared/discipline-types.js";
 
 type FunctionDescriptor = {
@@ -75,7 +77,7 @@ function describeFunction(node: ts.FunctionLikeDeclaration, sourceFile: ts.Sourc
   };
 }
 
-function collectFunctionDescriptors(sourceFile: ts.SourceFile): FunctionDescriptor[] {
+function collectTypeScriptFunctionDescriptors(sourceFile: ts.SourceFile): FunctionDescriptor[] {
   const descriptors: FunctionDescriptor[] = [];
 
   function visit(node: ts.Node) {
@@ -93,6 +95,133 @@ function collectFunctionDescriptors(sourceFile: ts.SourceFile): FunctionDescript
   return descriptors;
 }
 
+function stripCommentsAndStrings(value: string): string {
+  let result = "";
+  let inSingle = false;
+  let inDouble = false;
+  let inTemplate = false;
+  let escaped = false;
+
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index];
+    const nextCharacter = value[index + 1];
+
+    if (!inSingle && !inDouble && !inTemplate && character === "/" && nextCharacter === "/") {
+      break;
+    }
+
+    if (!inSingle && !inDouble && !inTemplate && character === "/" && nextCharacter === "*") {
+      const closingIndex = value.indexOf("*/", index + 2);
+      if (closingIndex < 0) break;
+      index = closingIndex + 1;
+      continue;
+    }
+
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+
+    if ((inSingle || inDouble || inTemplate) && character === "\\") {
+      escaped = true;
+      continue;
+    }
+
+    if (!inDouble && !inTemplate && character === "'") {
+      inSingle = !inSingle;
+      continue;
+    }
+
+    if (!inSingle && !inTemplate && character === "\"") {
+      inDouble = !inDouble;
+      continue;
+    }
+
+    if (!inSingle && !inDouble && character === "`") {
+      inTemplate = !inTemplate;
+      continue;
+    }
+
+    if (!inSingle && !inDouble && !inTemplate) {
+      result += character;
+    }
+  }
+
+  return result;
+}
+
+function countBraceDelta(value: string): number {
+  const normalized = stripCommentsAndStrings(value);
+  let delta = 0;
+
+  for (const character of normalized) {
+    if (character === "{") delta += 1;
+    if (character === "}") delta -= 1;
+  }
+
+  return delta;
+}
+
+function collectBlockFunctionDescriptors(text: string, extension: string): FunctionDescriptor[] {
+  const descriptors: FunctionDescriptor[] = [];
+  const lines = text.split(/\r?\n/);
+  const isGo = isGoExtension(extension);
+  const headerStartPattern = isGo
+    ? /^\s*func(?:\s*\([^)]*\))?\s+/u
+    : /^\s*(?:pub(?:\([^)]*\))?\s+)?(?:async\s+)?(?:const\s+)?(?:unsafe\s+)?fn\s+/u;
+  const headerNamePattern = isGo
+    ? /^\s*func(?:\s*\([^)]*\))?\s+([A-Za-z_]\w*)/u
+    : /\bfn\s+([A-Za-z_]\w*)/u;
+  let pendingHeader = "";
+  let pendingStartLine = 0;
+  let pendingBraceDepth = 0;
+  let pendingName = "";
+  let pendingKind = "function";
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index] ?? "";
+
+    if (!pendingHeader) {
+      if (!headerStartPattern.test(line)) continue;
+      pendingHeader = line;
+      pendingStartLine = index + 1;
+      pendingKind = isGo && /\bfunc\s*\(/u.test(line) ? "method" : "function";
+      pendingName = headerNamePattern.exec(line)?.[1] ?? "anonymous";
+    } else {
+      pendingHeader = `${pendingHeader}\n${line}`;
+      if (!pendingName || pendingName === "anonymous") {
+        pendingName = headerNamePattern.exec(pendingHeader)?.[1] ?? pendingName;
+      }
+    }
+
+    if (pendingBraceDepth === 0 && !stripCommentsAndStrings(pendingHeader).includes("{")) {
+      continue;
+    }
+
+    pendingBraceDepth += countBraceDelta(line);
+
+    if (pendingBraceDepth > 0) {
+      continue;
+    }
+
+    descriptors.push({
+      kind: pendingKind,
+      lineCount: Math.max(1, (index + 1) - pendingStartLine + 1),
+      name: pendingName || "anonymous",
+      startLine: pendingStartLine,
+      endLine: index + 1,
+    });
+
+    pendingHeader = "";
+    pendingStartLine = 0;
+    pendingBraceDepth = 0;
+    pendingName = "";
+    pendingKind = "function";
+  }
+
+  return descriptors;
+}
+
 async function runMaxFunctionLinesRule(
   sourceFiles: ScannedSourceFile[],
   options: NormalizedCheckCodeDisciplineOptions,
@@ -102,9 +231,15 @@ async function runMaxFunctionLinesRule(
   const violations: CodeDisciplineViolation[] = [];
 
   for (const file of sourceFiles) {
+    if (!supportsMaxFunctionLines(file.extension)) continue;
+
     const text = await fs.readFile(file.absolutePath, "utf8");
-    const sourceFile = parseSource(text, file.absolutePath);
-    const functions = collectFunctionDescriptors(sourceFile);
+    const extension = path.extname(file.absolutePath).toLowerCase();
+    const functions = isTypeScriptFamilyExtension(extension)
+      ? collectTypeScriptFunctionDescriptors(parseSource(text, file.absolutePath))
+      : (isGoExtension(extension) || isRustExtension(extension))
+        ? collectBlockFunctionDescriptors(text, extension)
+        : [];
 
     for (const descriptor of functions) {
       if (descriptor.lineCount <= options.rules.maxFunctionLines.max) continue;

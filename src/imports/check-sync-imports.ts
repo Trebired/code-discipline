@@ -4,6 +4,7 @@ import path from "node:path";
 import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
 import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
 import { collectPackageJsonImportsSyncState } from "../runtime/runtime-imports-sync.js";
+import { supportsSyncImports } from "../shared/languages.js";
 import { planTsconfigAliases } from "./aliases.js";
 import { collectModuleSpecifiers } from "./module-specifiers.js";
 import { resolveRelativeImport } from "./resolve.js";
@@ -15,7 +16,8 @@ async function collectSyncImportViolations(
   options: NormalizedSyncImportsOptions,
   logger?: NormalizedCodeDisciplineLogger,
 ): Promise<CodeDisciplineViolation[]> {
-  const aliasPlan = await planTsconfigAliases(options, sourceFiles, logger);
+  const supportedSourceFiles = sourceFiles.filter((file) => supportsSyncImports(file.extension));
+  const aliasPlan = await planTsconfigAliases(options, supportedSourceFiles, logger);
   const aliasIdsByFilePath = new Map(aliasPlan.aliasRecords.map((record) => [record.absolutePath, record.id]));
   const violations: CodeDisciplineViolation[] = [];
 
@@ -50,7 +52,7 @@ async function collectSyncImportViolations(
     });
   }
 
-  for (const file of sourceFiles) {
+  for (const file of supportedSourceFiles) {
     const text = await fs.readFile(file.absolutePath, "utf8");
 
     for (const occurrence of collectModuleSpecifiers(text, file.absolutePath)) {

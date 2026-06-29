@@ -12,6 +12,7 @@ import type {
 import type { ScannedSourceFile } from "../../imports/types.js";
 import { parseSource } from "../../imports/module-specifiers.js";
 import { resolveRelativeImport } from "../../imports/resolve.js";
+import { isTypeScriptFamilyExtension } from "../../shared/languages.js";
 import type { CodeDisciplineViolation } from "../../shared/discipline-types.js";
 import {
   FixFailureError,
@@ -34,6 +35,10 @@ const DRY_RESOLUTION_EXTENSIONS = [
   ".cts",
   ".cjs",
 ];
+
+function filterDrySourceFiles(sourceFiles: ScannedSourceFile[]): ScannedSourceFile[] {
+  return sourceFiles.filter((file) => isTypeScriptFamilyExtension(file.extension));
+}
 
 const SAFE_GLOBAL_IDENTIFIERS = new Set([
   "Array",
@@ -883,12 +888,9 @@ async function collectExistingImports(
     }
 
     const resolved = await resolveRelativeImport(statement.moduleSpecifier.text, filePath, {
-      projectRoot: options.projectRoot,
       sourceRoot: options.sourceRoot,
-      sourceRootRelative: options.sourceRootRelative,
       sourceExtensions: options.sourceExtensions,
-      excludeDirs: options.excludeDirs,
-    } as any);
+    });
     if (!resolved) continue;
 
     const bindings = bindingsByTarget.get(resolved) ?? [];
@@ -1011,7 +1013,7 @@ async function fixDryRule(
   }
 
   const helpers = await resolveDryHelpers(rule, options);
-  const candidates = await collectDryCandidates(sourceFiles, helpers, options);
+  const candidates = await collectDryCandidates(filterDrySourceFiles(sourceFiles), helpers, options);
   const violations = candidates.map((candidate) => createDryViolation(candidate, options));
 
   if (violations.length === 0) {
@@ -1160,7 +1162,7 @@ async function collectDryViolations(
   if (!rule) return [];
 
   const helpers = await resolveDryHelpers(rule, options);
-  const candidates = await collectDryCandidates(sourceFiles, helpers, options);
+  const candidates = await collectDryCandidates(filterDrySourceFiles(sourceFiles), helpers, options);
   return candidates.map((candidate) => createDryViolation(candidate, options));
 }
 

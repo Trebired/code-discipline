@@ -101,6 +101,31 @@ describe("code-discipline syncImports", () => {
     expect(readFile(projectRoot, "src/feature/app.ts")).toContain('from "./local"');
   });
 
+  test("ignores Go and Rust files while syncing JavaScript and TypeScript imports", async () => {
+    const projectRoot = tempProject();
+
+    writeFile(projectRoot, "tsconfig.json", "{}\n");
+    writeFile(projectRoot, "src/feature/app.ts", 'import { util } from "../shared/util";\nexport { util };\n');
+    writeFile(projectRoot, "src/shared/util.ts", "export const util = true;\n");
+    writeFile(projectRoot, "src/backend/service.go", "package backend\n");
+    writeFile(projectRoot, "src/backend/lib.rs", "pub fn ready() {}\n");
+
+    const result = await syncImports({
+      projectRoot,
+      fix: true,
+      alias: { strategy: "relative-path-slug" },
+      allowRelative: ["./"],
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.aliases_count).toBe(2);
+    expect(readJson(projectRoot, "tsconfig.json").compilerOptions.paths).toEqual({
+      "#feature-app": ["./src/feature/app.ts"],
+      "#shared-util": ["./src/shared/util.ts"],
+    });
+    expect(readFile(projectRoot, "src/feature/app.ts")).toContain('from "#shared-util"');
+  });
+
   test("returns drift without mutating when fix is disabled", async () => {
     const projectRoot = tempProject();
 

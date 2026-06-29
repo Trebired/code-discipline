@@ -81,6 +81,8 @@ type CheckCodeDisciplineOptions = {
   sourceRoot?: string;
   sourceExtensions?: string[];
   excludeDirs?: string[];
+  excludeGitIgnoredDirs?: boolean;
+  gitignorePath?: string;
   logging?: LoggingOptions;
   rules?: CodeDisciplineRules;
   lifecycle?: CodeDisciplineLifecycleHooks;

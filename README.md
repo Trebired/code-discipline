@@ -89,8 +89,7 @@ import { defineCodeDisciplineConfig } from "@trebired/code-discipline";
 
 export default defineCodeDisciplineConfig({
   sourceRoot: "src",
-  sourceExtensions: [".ts", ".tsx", ".js", ".jsx"],
-  excludeDirs: ["node_modules", "dist", ".vite"],
+  sourceExtensions: [".ts", ".tsx", ".js", ".jsx", ".go", ".rs"],
   tsconfigPaths: {
     normalize: "relative-dot-prefix",
     restoreAfterRun: true,
@@ -219,6 +218,8 @@ Detects flat compound names such as `user_route.ts` and can move them into struc
 
 The rule config only describes separators now. Whether it mutates is decided by running `code-discipline fix`.
 
+Folderization autofix stays intentionally conservative: move-aware relative import repair is implemented for the JavaScript and TypeScript module family, while Go and Rust files are scanned safely for other rules but are not folderized automatically.
+
 ### `syncImports`
 
 Validates and optionally fixes:
@@ -226,6 +227,10 @@ Validates and optionally fixes:
 - `tsconfig.compilerOptions.paths`
 - relative source imports that should become aliases
 - optional `package.json#imports` drift through `packageJsonImports`
+
+`syncImports` only rewrites JavaScript and TypeScript module files. Mixed-language repositories can still include Go and Rust under the same `sourceRoot`; those files are ignored by alias syncing instead of causing parser failures.
+
+`excludeDirs` can stay explicit, but it no longer has to duplicate the obvious generated folders already listed in your root `.gitignore`. Directory-style `.gitignore` entries are merged into the scan excludes automatically unless you turn that off with `excludeGitIgnoredDirs: false`.
 
 Example targeted CLI usage:
 

@@ -4,6 +4,8 @@ import path from "node:path";
 import type { NormalizedSyncImportsOptions } from "./types.js";
 import { isInsideDirectory } from "../shared/utils.js";
 
+type ResolveRelativeImportOptions = Pick<NormalizedSyncImportsOptions, "sourceExtensions" | "sourceRoot">;
+
 const RUNTIME_SPECIFIER_EXTENSIONS = new Set([".js", ".jsx", ".mjs", ".cjs"]);
 
 function isRelativeImportSpecifier(specifier: string): boolean {
@@ -62,7 +64,7 @@ async function resolveProjectPathTarget(targetPath: string, sourceExtensions: st
 async function resolveRelativeImport(
   specifier: string,
   sourceFile: string,
-  options: NormalizedSyncImportsOptions,
+  options: ResolveRelativeImportOptions,
 ): Promise<string | null> {
   if (!isRelativeImportSpecifier(specifier)) return null;
 

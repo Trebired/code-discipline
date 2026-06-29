@@ -21,7 +21,9 @@ function resolveScriptKind(filePath: string): ts.ScriptKind {
   const extension = path.extname(filePath).toLowerCase();
   if (extension === ".tsx") return ts.ScriptKind.TSX;
   if (extension === ".jsx") return ts.ScriptKind.JSX;
-  if (extension === ".js") return ts.ScriptKind.JS;
+  if (extension === ".js" || extension === ".mjs" || extension === ".cjs") return ts.ScriptKind.JS;
+  if (extension === ".mts") return ts.ScriptKind.TS;
+  if (extension === ".cts") return ts.ScriptKind.TS;
   return ts.ScriptKind.TS;
 }
 

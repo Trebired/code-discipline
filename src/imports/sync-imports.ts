@@ -1,6 +1,7 @@
 import { normalizeSyncImportsOptions } from "../config/normalize-sync-imports-options.js";
 import { syncPackageJsonImportsFromTsconfigPaths } from "../runtime/runtime-imports-sync.js";
 import { resolveLogger } from "../shared/logging.js";
+import { supportsSyncImports } from "../shared/languages.js";
 import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
 import { planTsconfigAliases, syncTsconfigAliases } from "./aliases.js";
 import { collectSyncImportViolations } from "./check-sync-imports.js";
@@ -28,7 +29,7 @@ async function syncImports(options: SyncImportsOptions): Promise<SyncImportsResu
   });
 
   try {
-    const sourceFiles = await scanSourceFiles(normalized);
+    const sourceFiles = (await scanSourceFiles(normalized)).filter((file) => supportsSyncImports(file.extension));
     const plannedAliases = await planTsconfigAliases(normalized, sourceFiles, logger);
     const driftViolations = await collectSyncImportViolations(sourceFiles, normalized, logger);
 

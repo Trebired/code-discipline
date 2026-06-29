@@ -2,6 +2,14 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 2.2.0
+
+- Added mixed-language source-tree support so repositories can include Go and Rust files alongside JavaScript and TypeScript without breaking scan-based discipline runs.
+- Added Go and Rust function-length detection to `maxFunctionLines`.
+- Added automatic directory excludes from root `.gitignore` entries so `excludeDirs` no longer has to duplicate obvious generated folders by hand.
+- Kept folderization import repair limited to move-aware relative rewrites, while leaving alias rewriting under `sync-imports`.
+- Made `sync-imports` and `dry` explicitly ignore non-JS/TS module files instead of trying to parse or rewrite them.
+
 ## 2.1.1
 
 - Removed rule-level `fix` toggles from discipline config so mutation is decided by running `code-discipline fix`.

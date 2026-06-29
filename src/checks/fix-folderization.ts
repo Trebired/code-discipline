@@ -10,6 +10,7 @@ import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js"
 import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
 import { applyTextReplacements, collectModuleSpecifiers } from "../imports/module-specifiers.js";
 import { isRelativeImportSpecifier } from "../imports/resolve.js";
+import { supportsFolderizationFix } from "../shared/languages.js";
 import { FileConflictError, FixFailureError, RewriteFailureError } from "../shared/errors.js";
 import { ensureDotExtension, pathExists, stripKnownExtension, toPosixPath } from "../shared/utils.js";
 import { planFolderizeCompoundFiles } from "./rules/folderize-plan.js";
@@ -135,6 +136,7 @@ async function planImportRewritesForFolderizationMoves(
   let rewrittenImports = 0;
 
   for (const file of sourceFiles) {
+    if (!supportsFolderizationFix(file.extension)) continue;
     const originalText = await fs.readFile(file.absolutePath, "utf8");
     const futureFilePath = movedPaths.get(file.absolutePath) ?? file.absolutePath;
     const replacements = [];

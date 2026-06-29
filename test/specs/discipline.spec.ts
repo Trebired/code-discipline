@@ -124,6 +124,99 @@ describe("code-discipline checks", () => {
     });
   });
 
+  test("reports oversized Go and Rust functions when those source files are present", async () => {
+    const projectRoot = tempProject();
+
+    writeFile(projectRoot, "src/service.go", [
+      "package demo",
+      "",
+      "func buildPayload() string {",
+      "  one := \"sam\"",
+      "  two := \"admin\"",
+      "  three := \"global\"",
+      "  return one + two + three",
+      "}",
+      "",
+    ].join("\n"));
+    writeFile(projectRoot, "src/lib.rs", [
+      "pub fn build_payload() -> String {",
+      "    let one = \"sam\";",
+      "    let two = \"admin\";",
+      "    let three = \"global\";",
+      "    format!(\"{one}{two}{three}\")",
+      "}",
+      "",
+    ].join("\n"));
+
+    const result = await checkCodeDiscipline({
+      projectRoot,
+      rules: {
+        maxFunctionLines: {
+          max: 5,
+        },
+      },
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.violationCount).toBe(2);
+    expect(result.violations).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        filePath: "src/service.go",
+        details: expect.objectContaining({
+          functionKind: "function",
+          functionName: "buildPayload",
+          lineCount: 6,
+          startLine: 3,
+          endLine: 8,
+        }),
+      }),
+      expect.objectContaining({
+        filePath: "src/lib.rs",
+        details: expect.objectContaining({
+          functionKind: "function",
+          functionName: "build_payload",
+          lineCount: 6,
+          startLine: 1,
+          endLine: 6,
+        }),
+      }),
+    ]));
+  });
+
+  test("merges directory excludes from .gitignore without requiring inline excludeDirs", async () => {
+    const projectRoot = tempProject();
+
+    writeFile(projectRoot, ".gitignore", "src/generated/\n");
+    writeFile(projectRoot, "src/app.ts", "one\n2\n3\n");
+    writeFile(projectRoot, "src/generated/big.ts", "one\n2\n3\n4\n");
+
+    const result = await checkCodeDiscipline({
+      projectRoot,
+      rules: {
+        maxFileLines: {
+          max: 2,
+        },
+      },
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      violationCount: 1,
+      violations: [
+        {
+          rule: "max-file-lines",
+          fix: false,
+          filePath: "src/app.ts",
+          message: "file has 4 lines and exceeds the limit of 2",
+          details: {
+            lineCount: 4,
+            max: 2,
+          },
+        },
+      ],
+    });
+  });
+
   test("detects same-directory compound groups", async () => {
     const projectRoot = tempProject();
 
@@ -168,6 +261,23 @@ describe("code-discipline checks", () => {
         },
       },
     ]);
+  });
+
+  test("does not try to folderize Go compound files without module-aware rewrite support", async () => {
+    const projectRoot = tempProject();
+
+    writeFile(projectRoot, "src/api/user_route.go", "package api\n");
+    writeFile(projectRoot, "src/api/user_schema.go", "package api\n");
+
+    const result = await checkCodeDiscipline({
+      projectRoot,
+      rules: {
+        folderizeCompoundFiles: {},
+      },
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.violations).toEqual([]);
   });
 
   test("treats rule presence as enablement", async () => {

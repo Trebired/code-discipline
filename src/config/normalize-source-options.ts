@@ -1,6 +1,7 @@
 import path from "node:path";
 
 import { DEFAULT_EXCLUDE_DIRS, DEFAULT_SOURCE_EXTENSIONS, DEFAULT_SOURCE_ROOT } from "../shared/constants.js";
+import { readGitignoreExcludedDirs } from "../shared/gitignore.js";
 import { InvalidProjectRootError, InvalidSourceRootError } from "../shared/errors.js";
 import { ensureDotExtension, isDirectory, isInsideDirectory, normalizeRelativePath, uniqueStrings } from "../shared/utils.js";
 
@@ -10,6 +11,8 @@ type NormalizedSourceOptions = {
   sourceRootRelative: string;
   sourceExtensions: string[];
   excludeDirs: string[];
+  excludeGitIgnoredDirs: boolean;
+  gitignorePath: string;
 };
 
 async function normalizeSourceOptions(options: {
@@ -17,6 +20,8 @@ async function normalizeSourceOptions(options: {
   sourceRoot?: string;
   sourceExtensions?: string[];
   excludeDirs?: string[];
+  excludeGitIgnoredDirs?: boolean;
+  gitignorePath?: string;
 }): Promise<NormalizedSourceOptions> {
   const projectRoot = path.resolve(options.projectRoot);
   if (!await isDirectory(projectRoot)) {
@@ -29,12 +34,21 @@ async function normalizeSourceOptions(options: {
     throw new InvalidSourceRootError(sourceRoot);
   }
 
+  const excludeGitIgnoredDirs = options.excludeGitIgnoredDirs !== false;
+  const gitignoreInput = options.gitignorePath ?? path.join(projectRoot, ".gitignore");
+  const gitignorePath = path.isAbsolute(gitignoreInput) ? path.resolve(gitignoreInput) : path.resolve(projectRoot, gitignoreInput);
+  const gitignoreDirs = excludeGitIgnoredDirs
+    ? await readGitignoreExcludedDirs(projectRoot, gitignorePath)
+    : [];
+
   return {
     projectRoot,
     sourceRoot,
     sourceRootRelative: normalizeRelativePath(path.relative(projectRoot, sourceRoot)),
     sourceExtensions: uniqueStrings((options.sourceExtensions ?? DEFAULT_SOURCE_EXTENSIONS).map(ensureDotExtension)),
-    excludeDirs: uniqueStrings(options.excludeDirs ?? DEFAULT_EXCLUDE_DIRS),
+    excludeDirs: uniqueStrings([...(options.excludeDirs ?? DEFAULT_EXCLUDE_DIRS), ...gitignoreDirs]),
+    excludeGitIgnoredDirs,
+    gitignorePath,
   };
 }
 

@@ -35,6 +35,8 @@ function buildNormalizedSyncOptions(
     sourceRootRelative: options.sourceRootRelative,
     sourceExtensions: rule.sourceExtensions ?? options.sourceExtensions,
     excludeDirs: rule.excludeDirs ?? options.excludeDirs,
+    excludeGitIgnoredDirs: rule.excludeGitIgnoredDirs ?? options.excludeGitIgnoredDirs,
+    gitignorePath: rule.gitignorePath ?? options.gitignorePath,
     tsconfigPath: rule.tsconfigPath ?? `${options.projectRoot}/tsconfig.json`,
     fix,
     alias: {

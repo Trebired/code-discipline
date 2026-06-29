@@ -33,6 +33,8 @@ type SyncImportsOptions = {
   tsconfigPath?: string;
   sourceExtensions?: string[];
   excludeDirs?: string[];
+  excludeGitIgnoredDirs?: boolean;
+  gitignorePath?: string;
   fix?: boolean;
   alias?: {
     prefix?: string;
@@ -63,6 +65,8 @@ type SourceScanOptions = {
   sourceRoot: string;
   sourceExtensions: string[];
   excludeDirs: string[];
+  excludeGitIgnoredDirs: boolean;
+  gitignorePath: string;
 };
 
 type NormalizedSyncImportsOptions = SourceScanOptions & {
