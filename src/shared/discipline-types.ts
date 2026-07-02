@@ -4,7 +4,8 @@ type CodeDisciplineRuleName =
   | "folderize-compound-files"
   | "sync-imports"
   | "remove-comments"
-  | "dry";
+  | "dry"
+  | "evasion-guards";
 
 type CodeDisciplineViolation = {
   rule: CodeDisciplineRuleName;

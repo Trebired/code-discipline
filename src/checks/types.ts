@@ -23,6 +23,23 @@ type MaxFunctionLinesRuleOptions = {
   max?: number;
 };
 
+type PackedCodeGuardOptions = {
+  minPackedLineColumns?: number;
+  maxSemicolonsPerLine?: number;
+  maxStructuralTokensPerLine?: number;
+  maxPackedFunctionLines?: number;
+  maxPackedFunctionStatements?: number;
+  minPackedFunctionCharacters?: number;
+  maxPackedFileNonEmptyLines?: number;
+  minPackedFileCharacters?: number;
+  minPackedFileStructuralTokens?: number;
+};
+
+type EvasionGuardsOptions = boolean | {
+  packedCode?: boolean | PackedCodeGuardOptions;
+  runtimeCodeHiding?: boolean;
+};
+
 type FolderizeCompoundFilesRuleOptions = {
   separators?: string[];
 };
@@ -89,6 +106,7 @@ type CheckCodeDisciplineOptions = {
   gitignorePath?: string;
   logging?: LoggingOptions;
   rules?: CodeDisciplineRules;
+  evasionGuards?: EvasionGuardsOptions;
   lifecycle?: CodeDisciplineLifecycleHooks;
   tsconfigPaths?: CodeDisciplineTsconfigPathsOptions;
   onlyRules?: CodeDisciplineRuleSlug[];
@@ -118,6 +136,13 @@ type NormalizedDryRule = {
 
 type NormalizedRemoveCommentsRule = Record<string, never>;
 
+type NormalizedPackedCodeGuardOptions = Required<PackedCodeGuardOptions>;
+
+type NormalizedEvasionGuardsOptions = {
+  packedCode?: NormalizedPackedCodeGuardOptions;
+  runtimeCodeHiding: boolean;
+};
+
 type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
   configPath?: string;
   sourceRootRelative: string;
@@ -131,6 +156,7 @@ type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
     removeComments?: NormalizedRemoveCommentsRule;
     dry?: NormalizedDryRule;
   };
+  evasionGuards?: NormalizedEvasionGuardsOptions;
 };
 
 type CheckCodeDisciplineResult = CodeDisciplineResult;
@@ -171,6 +197,7 @@ export type {
   CodeDisciplineTsconfigPathsOptions,
   DryHelperReference,
   DryRuleOptions,
+  EvasionGuardsOptions,
   FixableRuleSlug,
   FixCodeDisciplineOptions,
   FixCodeDisciplineResult,
@@ -181,9 +208,12 @@ export type {
   RemoveCommentsRuleOptions,
   NormalizedCheckCodeDisciplineOptions,
   NormalizedDryRule,
+  NormalizedEvasionGuardsOptions,
   NormalizedFolderizeCompoundFilesRule,
   NormalizedMaxFileLinesRule,
   NormalizedMaxFunctionLinesRule,
+  NormalizedPackedCodeGuardOptions,
   NormalizedRemoveCommentsRule,
+  PackedCodeGuardOptions,
   TsconfigPathsNormalizeMode,
 };

@@ -88,6 +88,8 @@ Legacy config filenames are no longer auto-discovered, but they still work when 
 
 Rules are enabled by presence. If a rule object exists under `rules`, it runs.
 
+`evasionGuards` is a top-level opt-in system because it checks suspicious compliance patterns across rules instead of being a normal style rule.
+
 Example `tb.code-discipline.ts`:
 
 ```ts
@@ -104,6 +106,7 @@ export default defineCodeDisciplineConfig({
     normalize: "relative-dot-prefix",
     restoreAfterRun: true,
   },
+  evasionGuards: true,
   lifecycle: {
     async beforeRun(context) {
       context.state.started = true;
@@ -193,8 +196,9 @@ Rules use kebab-case public slugs:
 - `sync-imports`
 - `remove-comments`
 - `dry`
+- `evasion-guards`
 
-`fix` only accepts fixable rules. Trying to run `code-discipline fix max-function-lines` fails clearly.
+`fix` only accepts fixable rules. Trying to run `code-discipline fix max-function-lines` or `code-discipline fix evasion-guards` fails clearly.
 
 ## Runtime API
 
@@ -256,6 +260,35 @@ Reports files whose total line count exceeds `max`.
 ### `maxFunctionLines`
 
 Reports function-like declarations whose total span exceeds `max`.
+
+### `evasionGuards`
+
+Reports suspicious attempts to satisfy discipline rules without actually improving the code. This is mainly for AI agents because they commonly produce this type of shady slop: compressing long files or large functions into one-line/few-line code so max-line checks stop complaining.
+
+Enable it at the top level:
+
+```ts
+export default defineCodeDisciplineConfig({
+  evasionGuards: true,
+  rules: {
+    maxFileLines: {
+      max: 500,
+    },
+    maxFunctionLines: {
+      max: 80,
+    },
+  },
+});
+```
+
+It detects:
+
+- packed files with very few physical lines but lots of code structure
+- packed lines with excessive statement or structural density
+- packed JavaScript/TypeScript functions that dodge line-count limits
+- runtime code hiding through string execution such as `eval`, `new Function`, or `setTimeout("code")`
+
+`evasionGuards` is check-only and disabled unless explicitly configured.
 
 ### `folderizeCompoundFiles`
 

@@ -3,6 +3,7 @@ import type {
   CodeDisciplineMode,
   CodeDisciplineRuleSlug,
   CodeDisciplineRules,
+  EvasionGuardsOptions,
   FixableRuleSlug,
 } from "./types.js";
 
@@ -13,6 +14,7 @@ const ALL_RULE_SLUGS: CodeDisciplineRuleSlug[] = [
   "sync-imports",
   "remove-comments",
   "dry",
+  "evasion-guards",
 ];
 
 const FIXABLE_RULE_SLUGS: FixableRuleSlug[] = [
@@ -31,14 +33,22 @@ const RULE_SLUG_BY_CONFIG_KEY = {
   syncImports: "sync-imports",
 } as const;
 
-function resolveEnabledRuleSlugs(rules: CodeDisciplineRules | undefined): Set<CodeDisciplineRuleSlug> {
+function resolveEnabledRuleSlugs(
+  rules: CodeDisciplineRules | undefined,
+  evasionGuards?: EvasionGuardsOptions,
+): Set<CodeDisciplineRuleSlug> {
   const enabled = new Set<CodeDisciplineRuleSlug>();
-  if (!rules) return enabled;
 
-  for (const [key, slug] of Object.entries(RULE_SLUG_BY_CONFIG_KEY) as Array<[keyof typeof RULE_SLUG_BY_CONFIG_KEY, CodeDisciplineRuleSlug]>) {
-    if (rules[key]) {
-      enabled.add(slug);
+  if (rules) {
+    for (const [key, slug] of Object.entries(RULE_SLUG_BY_CONFIG_KEY) as Array<[keyof typeof RULE_SLUG_BY_CONFIG_KEY, CodeDisciplineRuleSlug]>) {
+      if (rules[key]) {
+        enabled.add(slug);
+      }
     }
+  }
+
+  if (evasionGuards) {
+    enabled.add("evasion-guards");
   }
 
   return enabled;
@@ -48,11 +58,12 @@ function normalizeOnlyRules(
   mode: CodeDisciplineMode,
   onlyRules: readonly string[] | undefined,
   rules: CodeDisciplineRules | undefined,
+  evasionGuards?: EvasionGuardsOptions,
 ): CodeDisciplineRuleSlug[] | FixableRuleSlug[] | undefined {
   if (!onlyRules || onlyRules.length === 0) return undefined;
 
   const allowedRules = new Set<string>(mode === "fix" ? FIXABLE_RULE_SLUGS : ALL_RULE_SLUGS);
-  const enabledRules = resolveEnabledRuleSlugs(rules);
+  const enabledRules = resolveEnabledRuleSlugs(rules, evasionGuards);
   const normalized: CodeDisciplineRuleSlug[] = [];
 
   for (const rule of onlyRules) {

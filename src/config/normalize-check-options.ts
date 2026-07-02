@@ -7,6 +7,7 @@ import type {
 import { normalizeOnlyRules } from "../checks/rule-slugs.js";
 import {
   normalizeDryRule,
+  normalizeEvasionGuardsOptions,
   normalizeFolderizeCompoundFilesRule,
   normalizeMaxFileLinesRule,
   normalizeMaxFunctionLinesRule,
@@ -30,7 +31,7 @@ async function normalizeCheckCodeDisciplineOptions(
       adapter: options.logging?.adapter,
       quiet: options.logging?.quiet ?? false,
     },
-    onlyRules: normalizeOnlyRules(mode, options.onlyRules, options.rules),
+    onlyRules: normalizeOnlyRules(mode, options.onlyRules, options.rules, options.evasionGuards),
     rules: {
       dry: normalizeDryRule(options.rules?.dry),
       maxFileLines: normalizeMaxFileLinesRule(options.rules?.maxFileLines),
@@ -39,6 +40,7 @@ async function normalizeCheckCodeDisciplineOptions(
       syncImports: normalizeSyncImportsRule(options.rules?.syncImports),
       removeComments: normalizeRemoveCommentsRule(options.rules?.removeComments),
     },
+    evasionGuards: normalizeEvasionGuardsOptions(options.evasionGuards),
   };
 }
 

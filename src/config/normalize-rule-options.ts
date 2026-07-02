@@ -6,10 +6,12 @@ import { InvalidCodeDisciplineConfigError } from "../shared/errors.js";
 import type {
   CodeDisciplineSyncImportsRuleOptions,
   DryRuleOptions,
+  EvasionGuardsOptions,
   FolderizeCompoundFilesRuleOptions,
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
   NormalizedDryRule,
+  NormalizedEvasionGuardsOptions,
   RemoveCommentsRuleOptions,
 } from "../checks/types.js";
 
@@ -179,12 +181,50 @@ function normalizeRemoveCommentsRule(rule: RemoveCommentsRuleOptions | undefined
   return {};
 }
 
+function normalizeThreshold(value: unknown, fallback: number, label: string): number {
+  if (value === undefined) return fallback;
+
+  if (!Number.isFinite(value)) {
+    throw new InvalidCodeDisciplineConfigError(`${label} must be a finite number`, {
+      value,
+    });
+  }
+
+  return Math.max(1, Math.floor(value as number));
+}
+
+function normalizeEvasionGuardsOptions(options: EvasionGuardsOptions | undefined): NormalizedEvasionGuardsOptions | undefined {
+  if (!options) return undefined;
+
+  const source = typeof options === "object" ? options : {};
+  const packedSource = typeof source.packedCode === "object" ? source.packedCode : {};
+  const packedCode = source.packedCode === false
+    ? undefined
+    : {
+      minPackedLineColumns: normalizeThreshold(packedSource.minPackedLineColumns, 120, "evasionGuards.packedCode.minPackedLineColumns"),
+      maxSemicolonsPerLine: normalizeThreshold(packedSource.maxSemicolonsPerLine, 3, "evasionGuards.packedCode.maxSemicolonsPerLine"),
+      maxStructuralTokensPerLine: normalizeThreshold(packedSource.maxStructuralTokensPerLine, 10, "evasionGuards.packedCode.maxStructuralTokensPerLine"),
+      maxPackedFunctionLines: normalizeThreshold(packedSource.maxPackedFunctionLines, 2, "evasionGuards.packedCode.maxPackedFunctionLines"),
+      maxPackedFunctionStatements: normalizeThreshold(packedSource.maxPackedFunctionStatements, 3, "evasionGuards.packedCode.maxPackedFunctionStatements"),
+      minPackedFunctionCharacters: normalizeThreshold(packedSource.minPackedFunctionCharacters, 100, "evasionGuards.packedCode.minPackedFunctionCharacters"),
+      maxPackedFileNonEmptyLines: normalizeThreshold(packedSource.maxPackedFileNonEmptyLines, 8, "evasionGuards.packedCode.maxPackedFileNonEmptyLines"),
+      minPackedFileCharacters: normalizeThreshold(packedSource.minPackedFileCharacters, 1200, "evasionGuards.packedCode.minPackedFileCharacters"),
+      minPackedFileStructuralTokens: normalizeThreshold(packedSource.minPackedFileStructuralTokens, 25, "evasionGuards.packedCode.minPackedFileStructuralTokens"),
+    };
+
+  return {
+    packedCode,
+    runtimeCodeHiding: source.runtimeCodeHiding ?? true,
+  };
+}
+
 function uniqueStrings(values: string[]): string[] {
   return Array.from(new Set(values));
 }
 
 export {
   normalizeDryRule,
+  normalizeEvasionGuardsOptions,
   normalizeFolderizeCompoundFilesRule,
   normalizeMaxFileLinesRule,
   normalizeMaxFunctionLinesRule,

@@ -2,6 +2,11 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 2.4.0
+
+- Added top-level `evasionGuards` checks for packed files, packed lines, packed JavaScript/TypeScript functions, and runtime code hiding through string execution.
+- Added the check-only `evasion-guards` selector so opt-in anti-evasion scans can be targeted from the CLI/runtime.
+
 ## 2.3.0
 
 - Added the package-owned `code-discipline gate -- <command> [args...]` startup wrapper so apps can refuse startup on discipline violations without importing the package into their own source code.

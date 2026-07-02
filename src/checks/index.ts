@@ -13,6 +13,7 @@ import { shouldRunRule } from "./rule-slugs.js";
 import { fixFolderization } from "./fix-folderization.js";
 import { runFolderizeCompoundFilesRule } from "./rules/folderize-compound-files.js";
 import { collectDryViolations, fixDryRule } from "./rules/dry.js";
+import { runEvasionGuardsRule } from "./rules/evasion-guards.js";
 import { runMaxFileLinesRule } from "./rules/max-file-lines.js";
 import { runMaxFunctionLinesRule } from "./rules/max-function-lines.js";
 import { collectRemoveCommentsViolations, fixRemoveCommentsRule } from "./rules/remove-comments.js";
@@ -137,6 +138,10 @@ async function collectViolations(options: NormalizedCheckCodeDisciplineOptions):
 
   if (options.rules.removeComments && shouldRunRule("remove-comments", options.onlyRules)) {
     violations.push(...await collectRemoveCommentsViolations(sourceFiles));
+  }
+
+  if (options.evasionGuards && shouldRunRule("evasion-guards", options.onlyRules)) {
+    violations.push(...await runEvasionGuardsRule(sourceFiles, options));
   }
 
   return sortViolations(violations);
