@@ -3,6 +3,7 @@ type CodeDisciplineRuleName =
   | "max-function-lines"
   | "folderize-compound-files"
   | "sync-imports"
+  | "remove-comments"
   | "dry";
 
 type CodeDisciplineViolation = {

@@ -131,12 +131,13 @@ function renderFixOutput(args: {
   movedFiles: number;
   rewrittenFiles: number;
   rewrittenImports: number;
+  removedComments: number;
   violationCount: number;
   violations: CodeDisciplineViolation[];
 }): string {
   return [
     ...args.violations.map((violation) => `${formatViolation(violation)}\n`),
-    `Fix summary: moved ${args.movedFiles}, rewritten files ${args.rewrittenFiles}, rewritten imports ${args.rewrittenImports}, remaining violations ${args.violationCount}.\n`,
+    `Fix summary: moved ${args.movedFiles}, rewritten files ${args.rewrittenFiles}, rewritten imports ${args.rewrittenImports}, removed comments ${args.removedComments}, remaining violations ${args.violationCount}.\n`,
   ].join("");
 }
 
@@ -205,6 +206,7 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
         movedFiles: result.moved_files,
         rewrittenFiles: result.rewritten_files,
         rewrittenImports: result.rewritten_imports,
+        removedComments: result.removed_comments ?? 0,
         violationCount: result.violationCount,
         violations: result.violations,
       });

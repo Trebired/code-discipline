@@ -2,6 +2,12 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 2.3.0
+
+- Added the package-owned `code-discipline gate -- <command> [args...]` startup wrapper so apps can refuse startup on discipline violations without importing the package into their own source code.
+- Added the fixable `removeComments` / `remove-comments` rule so `check` can report comment-bearing files and `fix` can strip comments across the currently supported JavaScript, TypeScript, Go, and Rust source families.
+- Extended fix summaries with removed-comment counts so comment-stripping runs are visible in CLI output and runtime results.
+
 ## 2.2.0
 
 - Added mixed-language source-tree support so repositories can include Go and Rust files alongside JavaScript and TypeScript without breaking scan-based discipline runs.

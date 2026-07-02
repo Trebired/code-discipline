@@ -12,7 +12,7 @@ import type {
 } from "../shared/discipline-types.js";
 
 type CodeDisciplineRuleSlug = CodeDisciplineRuleName;
-type FixableRuleSlug = "folderize-compound-files" | "sync-imports" | "dry";
+type FixableRuleSlug = "folderize-compound-files" | "sync-imports" | "remove-comments" | "dry";
 type CodeDisciplineMode = "check" | "fix";
 type CodeDisciplineRuntimeMode = CodeDisciplineMode;
 type MaxFileLinesRuleOptions = {
@@ -26,6 +26,8 @@ type MaxFunctionLinesRuleOptions = {
 type FolderizeCompoundFilesRuleOptions = {
   separators?: string[];
 };
+
+type RemoveCommentsRuleOptions = Record<string, never>;
 
 type DryHelperReference = {
   from: string;
@@ -48,6 +50,7 @@ type CodeDisciplineRules = {
   maxFunctionLines?: MaxFunctionLinesRuleOptions;
   folderizeCompoundFiles?: FolderizeCompoundFilesRuleOptions;
   syncImports?: CodeDisciplineSyncImportsRuleOptions;
+  removeComments?: RemoveCommentsRuleOptions;
   dry?: DryRuleOptions;
 };
 
@@ -113,6 +116,8 @@ type NormalizedDryRule = {
   helpers: DryHelperReference[];
 };
 
+type NormalizedRemoveCommentsRule = Record<string, never>;
+
 type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
   configPath?: string;
   sourceRootRelative: string;
@@ -123,6 +128,7 @@ type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
     maxFunctionLines?: NormalizedMaxFunctionLinesRule;
     folderizeCompoundFiles?: NormalizedFolderizeCompoundFilesRule;
     syncImports?: CodeDisciplineSyncImportsRuleOptions;
+    removeComments?: NormalizedRemoveCommentsRule;
     dry?: NormalizedDryRule;
   };
 };
@@ -136,6 +142,7 @@ type FixCodeDisciplineRuleResult = {
   moved_files?: number;
   rewritten_files?: number;
   rewritten_imports?: number;
+  removed_comments?: number;
   removed_duplicates?: number;
   added_imports?: number;
 };
@@ -144,6 +151,7 @@ type FixCodeDisciplineResult = CodeDisciplineResult & {
   moved_files: number;
   rewritten_files: number;
   rewritten_imports: number;
+  removed_comments: number;
   ruleResults: Partial<Record<FixableRuleSlug, FixCodeDisciplineRuleResult>>;
 };
 
@@ -170,10 +178,12 @@ export type {
   FolderizeCompoundFilesRuleOptions,
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
+  RemoveCommentsRuleOptions,
   NormalizedCheckCodeDisciplineOptions,
   NormalizedDryRule,
   NormalizedFolderizeCompoundFilesRule,
   NormalizedMaxFileLinesRule,
   NormalizedMaxFunctionLinesRule,
+  NormalizedRemoveCommentsRule,
   TsconfigPathsNormalizeMode,
 };

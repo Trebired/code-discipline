@@ -10,6 +10,7 @@ import type {
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
   NormalizedDryRule,
+  RemoveCommentsRuleOptions,
 } from "../checks/types.js";
 
 function assertRemovedKeys(ruleName: string, source: Record<string, unknown>, keys: string[]) {
@@ -162,8 +163,31 @@ function normalizeDryRule(rule: DryRuleOptions | undefined): NormalizedDryRule |
   };
 }
 
+function normalizeRemoveCommentsRule(rule: RemoveCommentsRuleOptions | undefined) {
+  if (!rule) return undefined;
+  const source = rule as Record<string, unknown>;
+  assertRemovedKeys("removeComments", source, ["enabled", "stop", "fix"]);
+  assertSeverityRemoved("removeComments", source);
+
+  if (Object.keys(source).length > 0) {
+    throw new InvalidCodeDisciplineConfigError("removeComments does not accept rule options", {
+      rule: "removeComments",
+      keys: Object.keys(source),
+    });
+  }
+
+  return {};
+}
+
 function uniqueStrings(values: string[]): string[] {
   return Array.from(new Set(values));
 }
 
-export { normalizeDryRule, normalizeFolderizeCompoundFilesRule, normalizeMaxFileLinesRule, normalizeMaxFunctionLinesRule, normalizeSyncImportsRule };
+export {
+  normalizeDryRule,
+  normalizeFolderizeCompoundFilesRule,
+  normalizeMaxFileLinesRule,
+  normalizeMaxFunctionLinesRule,
+  normalizeRemoveCommentsRule,
+  normalizeSyncImportsRule,
+};

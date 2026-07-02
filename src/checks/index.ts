@@ -15,6 +15,7 @@ import { runFolderizeCompoundFilesRule } from "./rules/folderize-compound-files.
 import { collectDryViolations, fixDryRule } from "./rules/dry.js";
 import { runMaxFileLinesRule } from "./rules/max-file-lines.js";
 import { runMaxFunctionLinesRule } from "./rules/max-function-lines.js";
+import { collectRemoveCommentsViolations, fixRemoveCommentsRule } from "./rules/remove-comments.js";
 import type {
   CheckCodeDisciplineOptions,
   CheckCodeDisciplineResult,
@@ -134,6 +135,10 @@ async function collectViolations(options: NormalizedCheckCodeDisciplineOptions):
     }
   }
 
+  if (options.rules.removeComments && shouldRunRule("remove-comments", options.onlyRules)) {
+    violations.push(...await collectRemoveCommentsViolations(sourceFiles));
+  }
+
   return sortViolations(violations);
 }
 
@@ -142,10 +147,11 @@ function mapFixRuleResult(result: {
   violationCount: number;
   violations: CodeDisciplineViolation[];
   moved_files?: number;
-  rewritten_files?: number;
-  rewritten_imports?: number;
-  removed_duplicates?: number;
-  added_imports?: number;
+    rewritten_files?: number;
+    rewritten_imports?: number;
+    removed_comments?: number;
+    removed_duplicates?: number;
+    added_imports?: number;
 }): FixCodeDisciplineRuleResult {
   return {
     ok: result.ok,
@@ -154,6 +160,7 @@ function mapFixRuleResult(result: {
     moved_files: result.moved_files,
     rewritten_files: result.rewritten_files,
     rewritten_imports: result.rewritten_imports,
+    removed_comments: result.removed_comments,
     removed_duplicates: result.removed_duplicates,
     added_imports: result.added_imports,
   };
@@ -181,6 +188,7 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
   let movedFiles = 0;
   let rewrittenFiles = 0;
   let rewrittenImports = 0;
+  let removedComments = 0;
   let sourceFiles = await scanSourceFiles(normalized);
 
   if (normalized.rules.folderizeCompoundFiles && shouldRunFixRule("folderize-compound-files", normalized)) {
@@ -218,12 +226,21 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
     }
   }
 
+  if (normalized.rules.removeComments && shouldRunFixRule("remove-comments", normalized)) {
+    const removeCommentsResult = await fixRemoveCommentsRule(sourceFiles, normalized);
+    ruleResults["remove-comments"] = mapFixRuleResult(removeCommentsResult);
+    violations.push(...removeCommentsResult.violations);
+    rewrittenFiles += removeCommentsResult.rewritten_files ?? 0;
+    removedComments += removeCommentsResult.removed_comments ?? 0;
+  }
+
   const summary = summarizeViolations(sortViolations(violations));
   const result: FixCodeDisciplineResult = {
     ...summary,
     moved_files: movedFiles,
     rewritten_files: rewrittenFiles,
     rewritten_imports: rewrittenImports,
+    removed_comments: removedComments,
     ruleResults,
   };
 
@@ -235,6 +252,7 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
       movedFiles: result.moved_files,
       rewrittenFiles: result.rewritten_files,
       rewrittenImports: result.rewritten_imports,
+      removedComments: result.removed_comments,
       ruleResults: result.ruleResults,
     });
   }

@@ -183,6 +183,44 @@ describe("code-discipline checks", () => {
     ]));
   });
 
+  test("reports removable comments without mistaking literal contents for comments", async () => {
+    const projectRoot = tempProject();
+
+    writeFile(projectRoot, "src/app.ts", [
+      'const url = "https://example.com";',
+      'const regex = /https?:\\/\\/example\\.com/;',
+      "// remove this",
+      "/* and this */",
+      "export const app = { url, regex };",
+      "",
+    ].join("\n"));
+
+    const result = await checkCodeDiscipline({
+      projectRoot,
+      rules: {
+        removeComments: {},
+      },
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      violationCount: 1,
+      violations: [
+        {
+          rule: "remove-comments",
+          fix: true,
+          filePath: "src/app.ts",
+          message: "file contains 2 removable comment(s)",
+          details: {
+            commentCount: 2,
+            lineComments: 1,
+            blockComments: 1,
+          },
+        },
+      ],
+    });
+  });
+
   test("merges directory excludes from .gitignore only when explicitly enabled", async () => {
     const projectRoot = tempProject();
 

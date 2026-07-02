@@ -122,5 +122,7 @@ export type {
   NormalizedFolderizeCompoundFilesRule,
   NormalizedMaxFileLinesRule,
   NormalizedMaxFunctionLinesRule,
+  NormalizedRemoveCommentsRule,
+  RemoveCommentsRuleOptions,
   TsconfigPathsNormalizeMode,
 } from "./checks/types.js";

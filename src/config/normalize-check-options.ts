@@ -10,6 +10,7 @@ import {
   normalizeFolderizeCompoundFilesRule,
   normalizeMaxFileLinesRule,
   normalizeMaxFunctionLinesRule,
+  normalizeRemoveCommentsRule,
   normalizeSyncImportsRule,
 } from "./normalize-rule-options.js";
 import { normalizeSourceOptions } from "./normalize-source-options.js";
@@ -36,6 +37,7 @@ async function normalizeCheckCodeDisciplineOptions(
       maxFunctionLines: normalizeMaxFunctionLinesRule(options.rules?.maxFunctionLines),
       folderizeCompoundFiles: normalizeFolderizeCompoundFilesRule(options.rules?.folderizeCompoundFiles),
       syncImports: normalizeSyncImportsRule(options.rules?.syncImports),
+      removeComments: normalizeRemoveCommentsRule(options.rules?.removeComments),
     },
   };
 }

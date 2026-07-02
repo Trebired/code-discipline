@@ -42,11 +42,16 @@ function supportsMaxFunctionLines(value: string): boolean {
   return isTypeScriptFamilyExtension(value) || isGoExtension(value) || isRustExtension(value);
 }
 
+function supportsRemoveComments(value: string): boolean {
+  return isTypeScriptFamilyExtension(value) || isGoExtension(value) || isRustExtension(value);
+}
+
 export {
   isGoExtension,
   isRustExtension,
   isTypeScriptFamilyExtension,
   supportsFolderizationFix,
   supportsMaxFunctionLines,
+  supportsRemoveComments,
   supportsSyncImports,
 };

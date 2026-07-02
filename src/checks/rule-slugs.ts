@@ -11,12 +11,14 @@ const ALL_RULE_SLUGS: CodeDisciplineRuleSlug[] = [
   "max-function-lines",
   "folderize-compound-files",
   "sync-imports",
+  "remove-comments",
   "dry",
 ];
 
 const FIXABLE_RULE_SLUGS: FixableRuleSlug[] = [
   "folderize-compound-files",
   "sync-imports",
+  "remove-comments",
   "dry",
 ];
 
@@ -25,6 +27,7 @@ const RULE_SLUG_BY_CONFIG_KEY = {
   folderizeCompoundFiles: "folderize-compound-files",
   maxFileLines: "max-file-lines",
   maxFunctionLines: "max-function-lines",
+  removeComments: "remove-comments",
   syncImports: "sync-imports",
 } as const;
 

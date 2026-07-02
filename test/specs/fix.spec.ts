@@ -182,4 +182,78 @@ describe("code-discipline fix", () => {
     });
     expect(readFile(projectRoot, "src/app.ts")).toContain("clean(input: unknown)");
   });
+
+  test("removes comments across TypeScript, Go, and Rust while preserving literal contents", async () => {
+    const projectRoot = tempProject();
+
+    writeFile(projectRoot, "src/app.ts", [
+      'const url = "https://example.com";',
+      'const regex = /https?:\\/\\/example\\.com/;',
+      "// remove this",
+      "/* and this */",
+      "export const app = { url, regex };",
+      "",
+    ].join("\n"));
+    writeFile(projectRoot, "src/service.go", [
+      "package demo",
+      "",
+      "var raw = `// keep /* here */`",
+      'var url = "https://example.com"',
+      "// remove this",
+      "/* and this */",
+      "func build() string {",
+      "  return raw + url",
+      "}",
+      "",
+    ].join("\n"));
+    writeFile(projectRoot, "src/lib.rs", [
+      "pub fn build<'a>() -> &'a str {",
+      "    let raw = r#\"// keep /* here */\"#;",
+      "    // remove this",
+      "    /* outer /* inner */ and this */",
+      "    raw",
+      "}",
+      "",
+    ].join("\n"));
+
+    const result = await fixCodeDiscipline({
+      projectRoot,
+      rules: {
+        removeComments: {},
+      },
+    });
+
+    expect(result).toMatchObject({
+      ok: true,
+      violationCount: 0,
+      moved_files: 0,
+      rewritten_files: 3,
+      rewritten_imports: 0,
+      removed_comments: 6,
+      violations: [],
+      ruleResults: {
+        "remove-comments": {
+          ok: true,
+          rewritten_files: 3,
+          removed_comments: 6,
+        },
+      },
+    });
+
+    expect(readFile(projectRoot, "src/app.ts")).toContain('const url = "https://example.com";');
+    expect(readFile(projectRoot, "src/app.ts")).toContain('const regex = /https?:\\/\\/example\\.com/;');
+    expect(readFile(projectRoot, "src/app.ts")).not.toContain("remove this");
+    expect(readFile(projectRoot, "src/app.ts")).not.toContain("and this");
+
+    expect(readFile(projectRoot, "src/service.go")).toContain("var raw = `// keep /* here */`");
+    expect(readFile(projectRoot, "src/service.go")).toContain('var url = "https://example.com"');
+    expect(readFile(projectRoot, "src/service.go")).not.toContain("remove this");
+    expect(readFile(projectRoot, "src/service.go")).not.toContain("and this");
+
+    expect(readFile(projectRoot, "src/lib.rs")).toContain("pub fn build<'a>() -> &'a str {");
+    expect(readFile(projectRoot, "src/lib.rs")).toContain("let raw = r#\"// keep /* here */\"#;");
+    expect(readFile(projectRoot, "src/lib.rs")).not.toContain("remove this");
+    expect(readFile(projectRoot, "src/lib.rs")).not.toContain("outer");
+    expect(readFile(projectRoot, "src/lib.rs")).not.toContain("inner");
+  });
 });

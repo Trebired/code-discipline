@@ -7,6 +7,7 @@ Configurable repository discipline checks and rule-driven fixes for Bun and Node
 - code shape rules such as max lines per file or function
 - structural rules such as folderizing compound files
 - sync rules such as keeping source imports, `tsconfig.json`, and optional `package.json#imports` aligned
+- source cleanup rules such as removing comments across supported languages
 - DRY enforcement against registered canonical helper functions
 
 It is not a formatter, linter replacement, or build system.
@@ -29,7 +30,7 @@ code-discipline check
 code-discipline check save
 code-discipline check max-function-lines dry
 code-discipline fix
-code-discipline fix sync-imports dry
+code-discipline fix sync-imports dry remove-comments
 code-discipline gate -- bun run dev
 ```
 
@@ -55,16 +56,7 @@ Typical `package.json` scripts can stay simple:
 {
   "scripts": {
     "discipline:check": "code-discipline check",
-    "discipline:fix": "code-discipline fix"
-  }
-}
-```
-
-If you want the app to refuse startup when violations exist, route startup through the package-owned gate:
-
-```json
-{
-  "scripts": {
+    "discipline:fix": "code-discipline fix",
     "start:app": "node dist/server.js",
     "start": "code-discipline gate -- npm run start:app"
   }
@@ -127,6 +119,7 @@ export default defineCodeDisciplineConfig({
     folderizeCompoundFiles: {
       separators: ["_", "-"],
     },
+    removeComments: {},
     syncImports: {
       alias: {
         prefix: "#",
@@ -189,7 +182,7 @@ export default defineCodeDisciplineConfig({
 
 ```sh
 code-discipline check max-file-lines max-function-lines
-code-discipline fix sync-imports dry
+code-discipline fix sync-imports dry remove-comments
 ```
 
 Rules use kebab-case public slugs:
@@ -198,6 +191,7 @@ Rules use kebab-case public slugs:
 - `max-function-lines`
 - `folderize-compound-files`
 - `sync-imports`
+- `remove-comments`
 - `dry`
 
 `fix` only accepts fixable rules. Trying to run `code-discipline fix max-function-lines` fails clearly.
@@ -296,6 +290,24 @@ Example targeted CLI usage:
 
 ```sh
 code-discipline fix sync-imports
+```
+
+### `removeComments`
+
+Reports files that still contain removable comments and strips them when you run `code-discipline fix`.
+
+The rule supports the same language families this package currently scans for discipline work:
+
+- JavaScript and TypeScript
+- Go
+- Rust
+
+It keeps string, regex, rune, char, byte-string, and raw-string content intact while removing actual source comments.
+
+Example targeted CLI usage:
+
+```sh
+code-discipline fix remove-comments
 ```
 
 ### `dry`
