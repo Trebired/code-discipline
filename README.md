@@ -30,6 +30,7 @@ code-discipline check save
 code-discipline check max-function-lines dry
 code-discipline fix
 code-discipline fix sync-imports dry
+code-discipline gate -- bun run dev
 ```
 
 Top-level `sync` is gone.
@@ -58,6 +59,19 @@ Typical `package.json` scripts can stay simple:
   }
 }
 ```
+
+If you want the app to refuse startup when violations exist, route startup through the package-owned gate:
+
+```json
+{
+  "scripts": {
+    "start:app": "node dist/server.js",
+    "start": "code-discipline gate -- npm run start:app"
+  }
+}
+```
+
+`gate` runs the same repo config discovery as `check`. If violations are found, it exits non-zero and does not launch the child command. If the repo is clean, it starts the child command and forwards its exit status.
 
 ## Config
 

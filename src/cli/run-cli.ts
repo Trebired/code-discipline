@@ -7,6 +7,7 @@ import { codeDiscipline } from "../run.js";
 import type { CodeDisciplineRuleSlug, FixableRuleSlug } from "../checks/types.js";
 import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
 import { loadResolvedCodeDisciplineConfig } from "../config/index.js";
+import { runGatedCommand } from "../runtime/gate-command.js";
 import { isDirectExecution } from "../shared/utils.js";
 
 type CliRunOptions = {
@@ -37,30 +38,47 @@ function createSavedReportFilename(now: Date): string {
 function renderHelp(): string {
   return [
     "Usage: code-discipline <command> [rule-slug...] [save] [--config <path>]",
+    "       code-discipline gate [rule-slug...] [save] [--config <path>] -- <command> [args...]",
     "",
     "Commands:",
     "  check         run read-only discipline validation",
     "  fix           apply configured discipline fixes",
+    "  gate          block a child command when discipline violations exist",
     "  save          optional token that writes the run output to a timestamped cd-report-YYYY-MM-DD-HH-mm-ss.txt file",
     "",
     "Rule Selectors:",
     "  check <rule-slug>... narrows validation to the selected configured rules",
     "  fix <rule-slug>... narrows fixes to the selected configured fixable rules",
+    "  gate <rule-slug>... narrows the pre-start validation before the child command runs",
     "",
     "Config:",
     "  --config <path> optionally points to a module that default-exports the config object.",
     "  If omitted, code-discipline will auto-discover a config module in the current project root.",
     "",
+    "Gate:",
+    "  gate requires -- before the child command so code-discipline can separate its own arguments.",
+    "",
   ].join("\n");
 }
 
-function parseArgs(args: string[]): { configPath?: string; saveOutput: boolean; selectors: string[] } {
+function parseArgs(args: string[]): {
+  configPath?: string;
+  saveOutput: boolean;
+  selectors: string[];
+  commandArgs: string[];
+} {
   let configPath: string | undefined;
   let saveOutput = false;
   const selectors: string[] = [];
+  let commandArgs: string[] = [];
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
+
+    if (arg === "--") {
+      commandArgs = args.slice(index + 1);
+      break;
+    }
 
     if (arg === "--config") {
       const value = args[index + 1];
@@ -90,7 +108,7 @@ function parseArgs(args: string[]): { configPath?: string; saveOutput: boolean; 
     selectors.push(arg);
   }
 
-  return { configPath, saveOutput, selectors };
+  return { configPath, saveOutput, selectors, commandArgs };
 }
 
 function formatViolation(violation: CodeDisciplineViolation): string {
@@ -147,6 +165,10 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
     const { config, configPath } = await loadResolvedCodeDisciplineConfig(cwd, parsed.configPath);
 
     if (command === "check") {
+      if (parsed.commandArgs.length > 0) {
+        throw new Error("Command separator -- is only supported with gate");
+      }
+
       const result = await codeDiscipline({
         ...config,
         configPath,
@@ -167,6 +189,10 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
     }
 
     if (command === "fix") {
+      if (parsed.commandArgs.length > 0) {
+        throw new Error("Command separator -- is only supported with gate");
+      }
+
       const result = await codeDiscipline({
         ...config,
         configPath,
@@ -190,6 +216,39 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
       }
 
       return { exitCode: result.ok ? 0 : 1 };
+    }
+
+    if (command === "gate") {
+      if (parsed.commandArgs.length === 0) {
+        throw new Error("Missing child command after --");
+      }
+
+      const result = await codeDiscipline({
+        ...config,
+        configPath,
+        mode: "check",
+        onlyRules: parsed.selectors as CodeDisciplineRuleSlug[],
+        projectRoot: cwd,
+      });
+
+      if (!result.ok) {
+        const reportText = renderCheckOutput(result.violations, result.violationCount);
+        stdout(reportText);
+
+        if (parsed.saveOutput) {
+          const reportFilename = await saveCliOutput(cwd, reportText, now);
+          stdout(`Saved report to ${reportFilename}.\n`);
+        }
+
+        return { exitCode: 1 };
+      }
+
+      const [childCommand, ...childArgs] = parsed.commandArgs;
+      return runGatedCommand({
+        args: childArgs,
+        command: childCommand,
+        cwd,
+      });
     }
 
     stderr(`Unknown command: ${command}\n`);
