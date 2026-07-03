@@ -3,8 +3,8 @@ import type {
   CodeDisciplineMode,
   FixCodeDisciplineOptions,
   NormalizedCheckCodeDisciplineOptions,
-} from "../checks/types.js";
-import { normalizeOnlyRules } from "../checks/rule-slugs.js";
+} from "../../checks/types.js";
+import { normalizeOnlyRules } from "../../checks/rule-slugs.js";
 import {
   normalizeDryRule,
   normalizeEvasionGuardsOptions,
@@ -13,8 +13,8 @@ import {
   normalizeMaxFunctionLinesRule,
   normalizeRemoveCommentsRule,
   normalizeSyncImportsRule,
-} from "./normalize-rule-options.js";
-import { normalizeSourceOptions } from "./normalize-source-options.js";
+} from "./rule-options.js";
+import { normalizeSourceOptions } from "./source-options.js";
 
 async function normalizeCheckCodeDisciplineOptions(
   options: CheckCodeDisciplineOptions | FixCodeDisciplineOptions,

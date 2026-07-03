@@ -3,12 +3,12 @@ import path from "node:path";
 
 import ts from "typescript";
 
-import type { NormalizedCheckCodeDisciplineOptions } from "../types.js";
-import type { ScannedSourceFile } from "../../imports/types.js";
-import { loadNativeBinding } from "../../native/native.js";
-import { parseSource } from "../../imports/module-specifiers.js";
-import { isGoExtension, isRustExtension, isTypeScriptFamilyExtension, supportsMaxFunctionLines } from "../../shared/languages.js";
-import type { CodeDisciplineViolation } from "../../shared/discipline-types.js";
+import type { NormalizedCheckCodeDisciplineOptions } from "../../types.js";
+import type { ScannedSourceFile } from "../../../imports/types.js";
+import { loadNativeBinding } from "../../../native/native.js";
+import { parseSource } from "../../../imports/module-specifiers.js";
+import { isGoExtension, isRustExtension, isTypeScriptFamilyExtension, supportsMaxFunctionLines } from "../../../shared/languages.js";
+import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
 
 type FunctionDescriptor = {
   kind: string;
@@ -21,6 +21,21 @@ type FunctionDescriptor = {
 type NativeMaxFunctionLinesResult = {
   violations: CodeDisciplineViolation[];
   handledPaths: string[];
+};
+
+type StripState = {
+  escaped: boolean;
+  inDouble: boolean;
+  inSingle: boolean;
+  inTemplate: boolean;
+};
+
+type PendingBlockFunction = {
+  braceDepth: number;
+  header: string;
+  kind: string;
+  name: string;
+  startLine: number;
 };
 
 function isFunctionLikeWithBody(node: ts.Node): node is ts.FunctionLikeDeclaration {
@@ -101,54 +116,50 @@ function collectTypeScriptFunctionDescriptors(sourceFile: ts.SourceFile): Functi
   return descriptors;
 }
 
+function updateStripState(state: StripState, character: string): void {
+  if (state.escaped) {
+    state.escaped = false;
+    return;
+  }
+
+  if ((state.inSingle || state.inDouble || state.inTemplate) && character === "\\") {
+    state.escaped = true;
+    return;
+  }
+
+  if (!state.inDouble && !state.inTemplate && character === "'") state.inSingle = !state.inSingle;
+  if (!state.inSingle && !state.inTemplate && character === "\"") state.inDouble = !state.inDouble;
+  if (!state.inSingle && !state.inDouble && character === "`") state.inTemplate = !state.inTemplate;
+}
+
+function isInString(state: StripState): boolean {
+  return state.inSingle || state.inDouble || state.inTemplate;
+}
+
 function stripCommentsAndStrings(value: string): string {
   let result = "";
-  let inSingle = false;
-  let inDouble = false;
-  let inTemplate = false;
-  let escaped = false;
+  const state: StripState = {
+    escaped: false,
+    inDouble: false,
+    inSingle: false,
+    inTemplate: false,
+  };
 
   for (let index = 0; index < value.length; index += 1) {
-    const character = value[index];
+    const character = value[index] ?? "";
     const nextCharacter = value[index + 1];
 
-    if (!inSingle && !inDouble && !inTemplate && character === "/" && nextCharacter === "/") {
-      break;
-    }
+    if (!isInString(state) && character === "/" && nextCharacter === "/") break;
 
-    if (!inSingle && !inDouble && !inTemplate && character === "/" && nextCharacter === "*") {
+    if (!isInString(state) && character === "/" && nextCharacter === "*") {
       const closingIndex = value.indexOf("*/", index + 2);
       if (closingIndex < 0) break;
       index = closingIndex + 1;
       continue;
     }
 
-    if (escaped) {
-      escaped = false;
-      continue;
-    }
-
-    if ((inSingle || inDouble || inTemplate) && character === "\\") {
-      escaped = true;
-      continue;
-    }
-
-    if (!inDouble && !inTemplate && character === "'") {
-      inSingle = !inSingle;
-      continue;
-    }
-
-    if (!inSingle && !inTemplate && character === "\"") {
-      inDouble = !inDouble;
-      continue;
-    }
-
-    if (!inSingle && !inDouble && character === "`") {
-      inTemplate = !inTemplate;
-      continue;
-    }
-
-    if (!inSingle && !inDouble && !inTemplate) {
+    updateStripState(state, character);
+    if (!isInString(state) && !state.escaped) {
       result += character;
     }
   }
@@ -168,6 +179,26 @@ function countBraceDelta(value: string): number {
   return delta;
 }
 
+function createPendingBlockFunction(): PendingBlockFunction {
+  return {
+    braceDepth: 0,
+    header: "",
+    kind: "function",
+    name: "",
+    startLine: 0,
+  };
+}
+
+function createBlockFunctionDescriptor(pending: PendingBlockFunction, endLine: number): FunctionDescriptor {
+  return {
+    kind: pending.kind,
+    lineCount: Math.max(1, endLine - pending.startLine + 1),
+    name: pending.name || "anonymous",
+    startLine: pending.startLine,
+    endLine,
+  };
+}
+
 function collectBlockFunctionDescriptors(text: string, extension: string): FunctionDescriptor[] {
   const descriptors: FunctionDescriptor[] = [];
   const lines = text.split(/\r?\n/);
@@ -178,51 +209,33 @@ function collectBlockFunctionDescriptors(text: string, extension: string): Funct
   const headerNamePattern = isGo
     ? /^\s*func(?:\s*\([^)]*\))?\s+([A-Za-z_]\w*)/u
     : /\bfn\s+([A-Za-z_]\w*)/u;
-  let pendingHeader = "";
-  let pendingStartLine = 0;
-  let pendingBraceDepth = 0;
-  let pendingName = "";
-  let pendingKind = "function";
+  let pending = createPendingBlockFunction();
 
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index] ?? "";
 
-    if (!pendingHeader) {
+    if (!pending.header) {
       if (!headerStartPattern.test(line)) continue;
-      pendingHeader = line;
-      pendingStartLine = index + 1;
-      pendingKind = isGo && /\bfunc\s*\(/u.test(line) ? "method" : "function";
-      pendingName = headerNamePattern.exec(line)?.[1] ?? "anonymous";
+      pending.header = line;
+      pending.startLine = index + 1;
+      pending.kind = isGo && /\bfunc\s*\(/u.test(line) ? "method" : "function";
+      pending.name = headerNamePattern.exec(line)?.[1] ?? "anonymous";
     } else {
-      pendingHeader = `${pendingHeader}\n${line}`;
-      if (!pendingName || pendingName === "anonymous") {
-        pendingName = headerNamePattern.exec(pendingHeader)?.[1] ?? pendingName;
+      pending.header = `${pending.header}\n${line}`;
+      if (!pending.name || pending.name === "anonymous") {
+        pending.name = headerNamePattern.exec(pending.header)?.[1] ?? pending.name;
       }
     }
 
-    if (pendingBraceDepth === 0 && !stripCommentsAndStrings(pendingHeader).includes("{")) {
+    if (pending.braceDepth === 0 && !stripCommentsAndStrings(pending.header).includes("{")) {
       continue;
     }
 
-    pendingBraceDepth += countBraceDelta(line);
+    pending.braceDepth += countBraceDelta(line);
+    if (pending.braceDepth > 0) continue;
 
-    if (pendingBraceDepth > 0) {
-      continue;
-    }
-
-    descriptors.push({
-      kind: pendingKind,
-      lineCount: Math.max(1, (index + 1) - pendingStartLine + 1),
-      name: pendingName || "anonymous",
-      startLine: pendingStartLine,
-      endLine: index + 1,
-    });
-
-    pendingHeader = "";
-    pendingStartLine = 0;
-    pendingBraceDepth = 0;
-    pendingName = "";
-    pendingKind = "function";
+    descriptors.push(createBlockFunctionDescriptor(pending, index + 1));
+    pending = createPendingBlockFunction();
   }
 
   return descriptors;

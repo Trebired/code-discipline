@@ -5,11 +5,11 @@
     "": {
       "name": "@trebired/code-discipline",
       "dependencies": {
-        "@trebired/code-discipline": ".",
         "@trebired/logger-adapter": "^0.2.0",
         "typescript": "^6.0.2",
       },
       "devDependencies": {
+        "@trebired/code-discipline": "file:.",
         "@types/bun": "^1.3.4",
         "@types/node": "^24.10.1",
       },

@@ -186,6 +186,108 @@ async function saveCliOutput(cwd: string, reportText: string, now: Date): Promis
   return reportFilename;
 }
 
+async function writeSavedReport(
+  args: { cwd: string; now: Date; reportText: string; saveOutput: boolean; stdout: (text: string) => void },
+): Promise<void> {
+  if (!args.saveOutput) return;
+
+  const reportFilename = await saveCliOutput(args.cwd, args.reportText, args.now);
+  args.stdout(`Saved report to ${reportFilename}.\n`);
+}
+
+async function runCheckCommand(args: {
+  config: Record<string, unknown>;
+  configPath: string | undefined;
+  cwd: string;
+  now: Date;
+  parsed: ReturnType<typeof parseArgs>;
+  showLoadingAnimation: boolean;
+  stdout: (text: string) => void;
+}): Promise<CliRunResult> {
+  if (args.parsed.commandArgs.length > 0) {
+    throw new Error("Command separator -- is only supported with gate");
+  }
+
+  const result = await withLoadingAnimation("Scanning codebase", args.showLoadingAnimation, () => codeDiscipline({
+    ...args.config,
+    configPath: args.configPath,
+    mode: "check",
+    onlyRules: args.parsed.selectors as CodeDisciplineRuleSlug[],
+    projectRoot: args.cwd,
+  }));
+  const reportText = renderCheckOutput(result.violations, result.violationCount);
+
+  args.stdout(reportText);
+  await writeSavedReport({ ...args, reportText, saveOutput: args.parsed.saveOutput });
+  return { exitCode: result.ok ? 0 : 1 };
+}
+
+async function runFixCommand(args: {
+  config: Record<string, unknown>;
+  configPath: string | undefined;
+  cwd: string;
+  now: Date;
+  parsed: ReturnType<typeof parseArgs>;
+  showLoadingAnimation: boolean;
+  stdout: (text: string) => void;
+}): Promise<CliRunResult> {
+  if (args.parsed.commandArgs.length > 0) {
+    throw new Error("Command separator -- is only supported with gate");
+  }
+
+  const result = await withLoadingAnimation("Fixing codebase", args.showLoadingAnimation, () => codeDiscipline({
+    ...args.config,
+    configPath: args.configPath,
+    mode: "fix",
+    onlyRules: args.parsed.selectors as FixableRuleSlug[],
+    projectRoot: args.cwd,
+  }));
+  const reportText = renderFixOutput({
+    movedFiles: result.moved_files,
+    rewrittenFiles: result.rewritten_files,
+    rewrittenImports: result.rewritten_imports,
+    removedComments: result.removed_comments ?? 0,
+    violationCount: result.violationCount,
+    violations: result.violations,
+  });
+
+  args.stdout(reportText);
+  await writeSavedReport({ ...args, reportText, saveOutput: args.parsed.saveOutput });
+  return { exitCode: result.ok ? 0 : 1 };
+}
+
+async function runGateCommand(args: {
+  config: Record<string, unknown>;
+  configPath: string | undefined;
+  cwd: string;
+  now: Date;
+  parsed: ReturnType<typeof parseArgs>;
+  showLoadingAnimation: boolean;
+  stdout: (text: string) => void;
+}): Promise<CliRunResult> {
+  if (args.parsed.commandArgs.length === 0) {
+    throw new Error("Missing child command after --");
+  }
+
+  const result = await withLoadingAnimation("Scanning codebase", args.showLoadingAnimation, () => codeDiscipline({
+    ...args.config,
+    configPath: args.configPath,
+    mode: "check",
+    onlyRules: args.parsed.selectors as CodeDisciplineRuleSlug[],
+    projectRoot: args.cwd,
+  }));
+
+  if (!result.ok) {
+    const reportText = renderCheckOutput(result.violations, result.violationCount);
+    args.stdout(reportText);
+    await writeSavedReport({ ...args, reportText, saveOutput: args.parsed.saveOutput });
+    return { exitCode: 1 };
+  }
+
+  const [childCommand, ...childArgs] = args.parsed.commandArgs;
+  return runGatedCommand({ args: childArgs, command: childCommand, cwd: args.cwd });
+}
+
 async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliRunResult> {
   const cwd = options.cwd ?? process.cwd();
   const now = options.now ?? new Date();
@@ -203,93 +305,26 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
     const parsed = parseArgs(rest);
 
     const { config, configPath } = await loadResolvedCodeDisciplineConfig(cwd, parsed.configPath);
+    const commandArgs = {
+      config,
+      configPath,
+      cwd,
+      now,
+      parsed,
+      showLoadingAnimation,
+      stdout,
+    };
 
     if (command === "check") {
-      if (parsed.commandArgs.length > 0) {
-        throw new Error("Command separator -- is only supported with gate");
-      }
-
-      const result = await withLoadingAnimation("Scanning codebase", showLoadingAnimation, () => codeDiscipline({
-        ...config,
-        configPath,
-        mode: "check",
-        onlyRules: parsed.selectors as CodeDisciplineRuleSlug[],
-        projectRoot: cwd,
-      }));
-
-      const reportText = renderCheckOutput(result.violations, result.violationCount);
-      stdout(reportText);
-
-      if (parsed.saveOutput) {
-        const reportFilename = await saveCliOutput(cwd, reportText, now);
-        stdout(`Saved report to ${reportFilename}.\n`);
-      }
-
-      return { exitCode: result.ok ? 0 : 1 };
+      return await runCheckCommand(commandArgs);
     }
 
     if (command === "fix") {
-      if (parsed.commandArgs.length > 0) {
-        throw new Error("Command separator -- is only supported with gate");
-      }
-
-      const result = await withLoadingAnimation("Fixing codebase", showLoadingAnimation, () => codeDiscipline({
-        ...config,
-        configPath,
-        mode: "fix",
-        onlyRules: parsed.selectors as FixableRuleSlug[],
-        projectRoot: cwd,
-      }));
-
-      const reportText = renderFixOutput({
-        movedFiles: result.moved_files,
-        rewrittenFiles: result.rewritten_files,
-        rewrittenImports: result.rewritten_imports,
-        removedComments: result.removed_comments ?? 0,
-        violationCount: result.violationCount,
-        violations: result.violations,
-      });
-      stdout(reportText);
-
-      if (parsed.saveOutput) {
-        const reportFilename = await saveCliOutput(cwd, reportText, now);
-        stdout(`Saved report to ${reportFilename}.\n`);
-      }
-
-      return { exitCode: result.ok ? 0 : 1 };
+      return await runFixCommand(commandArgs);
     }
 
     if (command === "gate") {
-      if (parsed.commandArgs.length === 0) {
-        throw new Error("Missing child command after --");
-      }
-
-      const result = await withLoadingAnimation("Scanning codebase", showLoadingAnimation, () => codeDiscipline({
-        ...config,
-        configPath,
-        mode: "check",
-        onlyRules: parsed.selectors as CodeDisciplineRuleSlug[],
-        projectRoot: cwd,
-      }));
-
-      if (!result.ok) {
-        const reportText = renderCheckOutput(result.violations, result.violationCount);
-        stdout(reportText);
-
-        if (parsed.saveOutput) {
-          const reportFilename = await saveCliOutput(cwd, reportText, now);
-          stdout(`Saved report to ${reportFilename}.\n`);
-        }
-
-        return { exitCode: 1 };
-      }
-
-      const [childCommand, ...childArgs] = parsed.commandArgs;
-      return runGatedCommand({
-        args: childArgs,
-        command: childCommand,
-        cwd,
-      });
+      return await runGateCommand(commandArgs);
     }
 
     stderr(`Unknown command: ${command}\n`);

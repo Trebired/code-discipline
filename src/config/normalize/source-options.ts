@@ -1,10 +1,10 @@
 import path from "node:path";
 
-import { DEFAULT_EXCLUDE_DIRS, DEFAULT_SOURCE_EXTENSIONS, DEFAULT_SOURCE_ROOT } from "../shared/constants.js";
-import { readGitignoreExcludedDirs } from "../shared/gitignore.js";
-import { InvalidProjectRootError, InvalidSourceRootError } from "../shared/errors.js";
-import { ensureDotExtension, isDirectory, isInsideDirectory, normalizeRelativePath, uniqueStrings } from "../shared/utils.js";
-import type { ExcludeDirsOptions } from "../imports/types.js";
+import { DEFAULT_EXCLUDE_DIRS, DEFAULT_SOURCE_EXTENSIONS, DEFAULT_SOURCE_ROOT } from "../../shared/constants.js";
+import { readGitignoreExcludedDirs } from "../../shared/gitignore.js";
+import { InvalidProjectRootError, InvalidSourceRootError } from "../../shared/errors.js";
+import { ensureDotExtension, isDirectory, isInsideDirectory, normalizeRelativePath, uniqueStrings } from "../../shared/utils.js";
+import type { ExcludeDirsOptions } from "../../imports/types.js";
 
 type NormalizedSourceOptions = {
   projectRoot: string;

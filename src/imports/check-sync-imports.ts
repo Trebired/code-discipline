@@ -3,7 +3,7 @@ import path from "node:path";
 
 import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
 import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
-import { collectPackageJsonImportsSyncState } from "../runtime/runtime-imports-sync.js";
+import { collectPackageJsonImportsSyncState } from "../runtime/imports-sync.js";
 import { supportsSyncImports } from "../shared/languages.js";
 import { planTsconfigAliases } from "./aliases.js";
 import { collectModuleSpecifiers } from "./module-specifiers.js";

@@ -9,7 +9,7 @@ import { RANDOM_ALIAS_ALPHABET } from "./constants.js";
 import { ParseFailureError } from "./errors.js";
 import type { TsconfigJson } from "../imports/types.js";
 
-function toPosixPath(value: string): string {
+export function toPosixPath(value: string): string {
   return value.split(path.sep).join("/");
 }
 
@@ -30,7 +30,7 @@ function sortStrings(values: string[]): string[] {
   return [...values].sort((left, right) => left.localeCompare(right));
 }
 
-function stripKnownExtension(filePath: string, extensions: string[]): string {
+export function stripKnownExtension(filePath: string, extensions: string[]): string {
   const match = extensions.find((extension) => filePath.toLowerCase().endsWith(extension.toLowerCase()));
   return match ? filePath.slice(0, filePath.length - match.length) : filePath;
 }
@@ -102,7 +102,7 @@ function isAliasIdValid(value: unknown): value is string {
   return true;
 }
 
-function stableSerialize(value: unknown): string {
+export function stableSerialize(value: unknown): string {
   return JSON.stringify(sortObject(value));
 }
 
@@ -171,9 +171,6 @@ export {
   parseTsconfigJson,
   pathExists,
   sortStrings,
-  stableSerialize,
-  stripKnownExtension,
-  toPosixPath,
   toStableJson,
   uniqueStrings,
   wait,

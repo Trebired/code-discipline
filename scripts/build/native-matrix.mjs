@@ -17,7 +17,7 @@ const requestedTargets = cliTargets.length
 const targets = requestedTargets.length ? requestedTargets : RELEASE_NATIVE_TARGETS;
 
 for (const target of targets) {
-  const result = spawnSync("node", ["./scripts/build-native.mjs", "--target", target], {
+  const result = spawnSync("node", ["./scripts/build/native.mjs", "--target", target], {
     cwd: repoRoot,
     stdio: "inherit",
     env: process.env,

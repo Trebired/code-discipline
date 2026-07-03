@@ -1,7 +1,8 @@
 import path from "node:path";
 
-import { normalizeCheckCodeDisciplineOptions } from "../config/normalize-check-options.js";
+import { normalizeCheckCodeDisciplineOptions } from "../config/normalize/check-options.js";
 import { collectSyncImportViolations } from "../imports/check-sync-imports.js";
+import type { ScannedSourceFile } from "../imports/types.js";
 import { scanSourceFiles } from "../imports/scan.js";
 import { syncImports } from "../imports/sync-imports.js";
 import { DEFAULT_EXCLUDE_DIRS, DEFAULT_SOURCE_EXTENSIONS } from "../shared/constants.js";
@@ -11,11 +12,11 @@ import type { CodeDisciplineResult, CodeDisciplineViolation } from "../shared/di
 import { ensureDotExtension, normalizeRelativePath, uniqueStrings } from "../shared/utils.js";
 import { shouldRunRule } from "./rule-slugs.js";
 import { fixFolderization } from "./fix-folderization.js";
-import { runFolderizeCompoundFilesRule } from "./rules/folderize-compound-files.js";
-import { collectDryViolations, fixDryRule } from "./rules/dry.js";
-import { runEvasionGuardsRule } from "./rules/evasion-guards.js";
-import { runMaxFileLinesRule } from "./rules/max-file-lines.js";
-import { runMaxFunctionLinesRule } from "./rules/max-function-lines.js";
+import { runFolderizeCompoundFilesRule } from "./rules/folderize/compound-files.js";
+import { collectDryViolations, fixDryRule } from "./rules/dry/index.js";
+import { runEvasionGuardsRule } from "./rules/evasion-guards/index.js";
+import { runMaxFileLinesRule } from "./rules/max/file-lines.js";
+import { runMaxFunctionLinesRule } from "./rules/max/function-lines.js";
 import { collectRemoveCommentsViolations, fixRemoveCommentsRule } from "./rules/remove-comments.js";
 import type {
   CheckCodeDisciplineOptions,
@@ -27,6 +28,16 @@ import type {
   FixableRuleSlug,
   NormalizedCheckCodeDisciplineOptions,
 } from "./types.js";
+
+type FixState = {
+  movedFiles: number;
+  removedComments: number;
+  rewrittenFiles: number;
+  rewrittenImports: number;
+  ruleResults: Partial<Record<FixableRuleSlug, FixCodeDisciplineRuleResult>>;
+  sourceFiles: ScannedSourceFile[];
+  violations: CodeDisciplineViolation[];
+};
 
 async function buildNormalizedSyncOptions(
   options: NormalizedCheckCodeDisciplineOptions,
@@ -175,6 +186,88 @@ function shouldRunFixRule(rule: FixableRuleSlug, options: NormalizedCheckCodeDis
   return shouldRunRule(rule, options.onlyRules);
 }
 
+async function applyFolderizeFix(
+  state: FixState,
+  normalized: NormalizedCheckCodeDisciplineOptions,
+  logger: ReturnType<typeof resolveLogger>,
+): Promise<void> {
+  if (!normalized.rules.folderizeCompoundFiles || !shouldRunFixRule("folderize-compound-files", normalized)) return;
+
+  const result = await fixFolderization(state.sourceFiles, normalized, logger);
+  state.ruleResults["folderize-compound-files"] = mapFixRuleResult(result);
+  state.violations.push(...result.violations);
+  state.movedFiles += result.moved_files;
+  state.rewrittenFiles += result.rewritten_files;
+  state.rewrittenImports += result.rewritten_imports;
+
+  if (result.moved_files > 0 || result.rewritten_files > 0) {
+    state.sourceFiles = await scanSourceFiles(normalized);
+  }
+}
+
+async function applyDryFix(state: FixState, normalized: NormalizedCheckCodeDisciplineOptions): Promise<void> {
+  if (!normalized.rules.dry || !shouldRunFixRule("dry", normalized)) return;
+
+  const result = await fixDryRule(state.sourceFiles, normalized);
+  state.ruleResults.dry = mapFixRuleResult(result);
+  state.violations.push(...result.violations);
+  state.rewrittenFiles += result.rewritten_files ?? 0;
+
+  if ((result.rewritten_files ?? 0) > 0) {
+    state.sourceFiles = await scanSourceFiles(normalized);
+  }
+}
+
+async function applySyncImportsFix(state: FixState, normalized: NormalizedCheckCodeDisciplineOptions): Promise<void> {
+  if (!normalized.rules.syncImports || !shouldRunFixRule("sync-imports", normalized)) return;
+
+  const syncOptions = await buildNormalizedSyncOptions(normalized, true);
+  if (!syncOptions) return;
+
+  const result = await syncImports(syncOptions);
+  state.ruleResults["sync-imports"] = mapFixRuleResult(result);
+  state.violations.push(...result.violations);
+  state.rewrittenFiles += result.rewritten_files;
+  state.rewrittenImports += result.rewritten_imports;
+}
+
+async function applyRemoveCommentsFix(state: FixState, normalized: NormalizedCheckCodeDisciplineOptions): Promise<void> {
+  if (!normalized.rules.removeComments || !shouldRunFixRule("remove-comments", normalized)) return;
+
+  const result = await fixRemoveCommentsRule(state.sourceFiles, normalized);
+  state.ruleResults["remove-comments"] = mapFixRuleResult(result);
+  state.violations.push(...result.violations);
+  state.rewrittenFiles += result.rewritten_files ?? 0;
+  state.removedComments += result.removed_comments ?? 0;
+}
+
+function createFixResult(state: FixState): FixCodeDisciplineResult {
+  return {
+    ...summarizeViolations(sortViolations(state.violations)),
+    moved_files: state.movedFiles,
+    rewritten_files: state.rewrittenFiles,
+    rewritten_imports: state.rewrittenImports,
+    removed_comments: state.removedComments,
+    ruleResults: state.ruleResults,
+  };
+}
+
+function logFixResult(result: FixCodeDisciplineResult, logger: ReturnType<typeof resolveLogger>): void {
+  if (!result.ok || result.violations.length > 0) {
+    logSummary("fix", result, logger);
+    return;
+  }
+
+  logger.flush("success", "discipline-fix-ok", "fix completed", {
+    violationCount: result.violationCount,
+    movedFiles: result.moved_files,
+    rewrittenFiles: result.rewritten_files,
+    rewrittenImports: result.rewritten_imports,
+    removedComments: result.removed_comments,
+    ruleResults: result.ruleResults,
+  });
+}
+
 async function checkCodeDiscipline(options: CheckCodeDisciplineOptions): Promise<CheckCodeDisciplineResult> {
   const normalized = await normalizeCheckCodeDisciplineOptions(options, "check");
   const logger = resolveLogger(normalized.logging);
@@ -188,80 +281,23 @@ async function checkCodeDiscipline(options: CheckCodeDisciplineOptions): Promise
 async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<FixCodeDisciplineResult> {
   const normalized = await normalizeCheckCodeDisciplineOptions(options, "fix");
   const logger = resolveLogger(normalized.logging);
-  const ruleResults: Partial<Record<FixableRuleSlug, FixCodeDisciplineRuleResult>> = {};
-  const violations: CodeDisciplineViolation[] = [];
-  let movedFiles = 0;
-  let rewrittenFiles = 0;
-  let rewrittenImports = 0;
-  let removedComments = 0;
-  let sourceFiles = await scanSourceFiles(normalized);
-
-  if (normalized.rules.folderizeCompoundFiles && shouldRunFixRule("folderize-compound-files", normalized)) {
-    const folderizeResult = await fixFolderization(sourceFiles, normalized, logger);
-    ruleResults["folderize-compound-files"] = mapFixRuleResult(folderizeResult);
-    violations.push(...folderizeResult.violations);
-    movedFiles += folderizeResult.moved_files;
-    rewrittenFiles += folderizeResult.rewritten_files;
-    rewrittenImports += folderizeResult.rewritten_imports;
-
-    if (folderizeResult.moved_files > 0 || folderizeResult.rewritten_files > 0) {
-      sourceFiles = await scanSourceFiles(normalized);
-    }
-  }
-
-  if (normalized.rules.dry && shouldRunFixRule("dry", normalized)) {
-    const dryResult = await fixDryRule(sourceFiles, normalized);
-    ruleResults.dry = mapFixRuleResult(dryResult);
-    violations.push(...dryResult.violations);
-    rewrittenFiles += dryResult.rewritten_files ?? 0;
-
-    if ((dryResult.rewritten_files ?? 0) > 0) {
-      sourceFiles = await scanSourceFiles(normalized);
-    }
-  }
-
-  if (normalized.rules.syncImports && shouldRunFixRule("sync-imports", normalized)) {
-    const syncOptions = await buildNormalizedSyncOptions(normalized, true);
-    if (syncOptions) {
-      const syncResult = await syncImports(syncOptions);
-      ruleResults["sync-imports"] = mapFixRuleResult(syncResult);
-      violations.push(...syncResult.violations);
-      rewrittenFiles += syncResult.rewritten_files;
-      rewrittenImports += syncResult.rewritten_imports;
-    }
-  }
-
-  if (normalized.rules.removeComments && shouldRunFixRule("remove-comments", normalized)) {
-    const removeCommentsResult = await fixRemoveCommentsRule(sourceFiles, normalized);
-    ruleResults["remove-comments"] = mapFixRuleResult(removeCommentsResult);
-    violations.push(...removeCommentsResult.violations);
-    rewrittenFiles += removeCommentsResult.rewritten_files ?? 0;
-    removedComments += removeCommentsResult.removed_comments ?? 0;
-  }
-
-  const summary = summarizeViolations(sortViolations(violations));
-  const result: FixCodeDisciplineResult = {
-    ...summary,
-    moved_files: movedFiles,
-    rewritten_files: rewrittenFiles,
-    rewritten_imports: rewrittenImports,
-    removed_comments: removedComments,
-    ruleResults,
+  const state: FixState = {
+    movedFiles: 0,
+    removedComments: 0,
+    rewrittenFiles: 0,
+    rewrittenImports: 0,
+    ruleResults: {},
+    sourceFiles: await scanSourceFiles(normalized),
+    violations: [],
   };
 
-  if (!result.ok || result.violations.length > 0) {
-    logSummary("fix", result, logger);
-  } else {
-    logger.flush("success", "discipline-fix-ok", "fix completed", {
-      violationCount: result.violationCount,
-      movedFiles: result.moved_files,
-      rewrittenFiles: result.rewritten_files,
-      rewrittenImports: result.rewritten_imports,
-      removedComments: result.removed_comments,
-      ruleResults: result.ruleResults,
-    });
-  }
+  await applyFolderizeFix(state, normalized, logger);
+  await applyDryFix(state, normalized);
+  await applySyncImportsFix(state, normalized);
+  await applyRemoveCommentsFix(state, normalized);
 
+  const result = createFixResult(state);
+  logFixResult(result, logger);
   return result;
 }
 

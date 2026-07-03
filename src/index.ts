@@ -17,14 +17,14 @@ export {
   findCodeDisciplineConfigModule,
   loadResolvedCodeDisciplineConfig,
 } from "./config/index.js";
-export { normalizeSyncImportsOptions } from "./config/normalize-sync-imports-options.js";
+export { normalizeSyncImportsOptions } from "./config/normalize/sync-imports-options.js";
 export { planTsconfigAliases, syncTsconfigAliases } from "./imports/aliases.js";
 export { resolveRelativeImport } from "./imports/resolve.js";
 export { rewriteSourceImports } from "./imports/rewrite.js";
 export { scanSourceFiles } from "./imports/scan.js";
 export { createRandomAlias, createRelativePathHashAlias, createRelativePathSlugAlias } from "./imports/strategies.js";
 export { syncImports } from "./imports/sync-imports.js";
-export { syncPackageJsonImportsFromTsconfigPaths } from "./runtime/runtime-imports-sync.js";
+export { syncPackageJsonImportsFromTsconfigPaths } from "./runtime/imports-sync.js";
 export { prepareTsconfigPaths, restoreTsconfigPaths } from "./runtime/tsconfig-paths.js";
 export { codeDiscipline, createCodeDiscipline } from "./run.js";
 export { resolveLogger } from "./shared/logging.js";

@@ -23,6 +23,13 @@ type PackageJsonWithImports = {
   [key: string]: unknown;
 };
 
+type PackageJsonImportsContext = {
+  aliasPrefixes: string[];
+  compilerPaths: Record<string, unknown>;
+  packageJson: PackageJsonWithImports;
+  packageJsonPath: string;
+};
+
 function resolvePackageJsonPath(
   projectRoot: string,
   configPath: string | undefined,
@@ -64,6 +71,59 @@ async function readPackageJson(packageJsonPath: string): Promise<PackageJsonWith
   return parsed as PackageJsonWithImports;
 }
 
+async function readPackageJsonImportsContext(args: {
+  configPath?: string;
+  options: CodeDisciplinePackageJsonImportsOptions;
+  projectRoot: string;
+  tsconfigPath: string;
+}): Promise<PackageJsonImportsContext> {
+  if (!await pathExists(args.tsconfigPath)) {
+    throw new InvalidCodeDisciplineConfigError("packageJsonImports tsconfig was not found", {
+      filePath: args.tsconfigPath,
+    });
+  }
+
+  const packageJsonPath = resolvePackageJsonPath(args.projectRoot, args.configPath, args.options.packageJsonPath);
+  const tsconfigText = await fs.readFile(args.tsconfigPath, "utf8");
+  const tsconfig = parseTsconfigJson(tsconfigText, args.tsconfigPath);
+
+  return {
+    aliasPrefixes: normalizeAliasPrefixes(args.options.aliasPrefix),
+    compilerPaths: tsconfig.compilerOptions?.paths || {},
+    packageJson: await readPackageJson(packageJsonPath),
+    packageJsonPath,
+  };
+}
+
+function buildPackageJsonImports(context: PackageJsonImportsContext): {
+  managedImports: Record<string, string>;
+  nextImports: Record<string, string>;
+} {
+  const shouldManageAlias = (aliasId: string) => context.aliasPrefixes.some((prefix) => aliasId.startsWith(prefix));
+  const managedAliasIds = new Set(Object.keys(context.compilerPaths).filter((aliasId) => shouldManageAlias(aliasId)));
+  const existingImports = context.packageJson.imports
+    && typeof context.packageJson.imports === "object"
+    && !Array.isArray(context.packageJson.imports)
+    ? context.packageJson.imports
+    : {};
+  const preservedImports = Object.fromEntries(
+    Object.entries(existingImports).filter(([aliasId]) => !managedAliasIds.has(aliasId)),
+  );
+  const managedImports = Object.fromEntries(
+    Object.entries(context.compilerPaths)
+      .filter(([aliasId, targets]) => shouldManageAlias(aliasId) && Array.isArray(targets) && targets.length > 0)
+      .map(([aliasId, targets]) => [aliasId, normalizePackageImportTarget(String(targets[0]))]),
+  );
+
+  return {
+    managedImports,
+    nextImports: Object.fromEntries(
+      Object.entries({ ...preservedImports, ...managedImports })
+        .sort(([left], [right]) => left.localeCompare(right)),
+    ) as Record<string, string>,
+  };
+}
+
 async function collectPackageJsonImportsSyncState(args: {
   configPath?: string;
   options: CodeDisciplinePackageJsonImportsOptions | undefined;
@@ -73,53 +133,18 @@ async function collectPackageJsonImportsSyncState(args: {
   const options = args.options;
   if (!options?.enabled) return null;
 
-  if (!await pathExists(args.tsconfigPath)) {
-    throw new InvalidCodeDisciplineConfigError("packageJsonImports tsconfig was not found", {
-      filePath: args.tsconfigPath,
-    });
-  }
-
-  const packageJsonPath = resolvePackageJsonPath(args.projectRoot, args.configPath, options.packageJsonPath);
-  const tsconfigText = await fs.readFile(args.tsconfigPath, "utf8");
-  const tsconfig = parseTsconfigJson(tsconfigText, args.tsconfigPath);
-  const packageJson = await readPackageJson(packageJsonPath);
-  const compilerPaths = tsconfig.compilerOptions?.paths || {};
-  const aliasPrefixes = normalizeAliasPrefixes(options.aliasPrefix);
-  const shouldManageAlias = (aliasId: string) => aliasPrefixes.some((prefix) => aliasId.startsWith(prefix));
-  const managedAliasIds = new Set(
-    Object.keys(compilerPaths).filter((aliasId) => shouldManageAlias(aliasId)),
-  );
-
-  const existingImports = packageJson.imports && typeof packageJson.imports === "object" && !Array.isArray(packageJson.imports)
-    ? packageJson.imports
-    : {};
-  const preservedImports = Object.fromEntries(
-    Object.entries(existingImports).filter(([aliasId]) => !managedAliasIds.has(aliasId)),
-  );
-
-  const managedImports = Object.fromEntries(
-    Object.entries(compilerPaths)
-      .filter(([aliasId, targets]) => shouldManageAlias(aliasId) && Array.isArray(targets) && targets.length > 0)
-      .map(([aliasId, targets]) => [aliasId, normalizePackageImportTarget(String(targets[0]))]),
-  );
-
-  const nextImports = Object.fromEntries(
-    Object.entries({
-      ...preservedImports,
-      ...managedImports,
-    }).sort(([left], [right]) => left.localeCompare(right)),
-  ) as Record<string, string>;
-
+  const context = await readPackageJsonImportsContext({ ...args, options });
+  const { managedImports, nextImports } = buildPackageJsonImports(context);
   const nextPackageJson: PackageJsonWithImports = {
-    ...packageJson,
+    ...context.packageJson,
     imports: nextImports,
   };
 
   return {
-    changed: stableSerialize(packageJson) !== stableSerialize(nextPackageJson),
+    changed: stableSerialize(context.packageJson) !== stableSerialize(nextPackageJson),
     importsCount: Object.keys(managedImports).length,
     nextImports,
-    packageJsonPath,
+    packageJsonPath: context.packageJsonPath,
   };
 }
 

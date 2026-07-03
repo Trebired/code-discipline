@@ -1,0 +1,108 @@
+import { loadNativeBinding } from "../../../native/native.js";
+import { collectCommentRanges } from "./ranges.js";
+import type { CommentRange } from "./ranges.js";
+
+type CommentStripResult = {
+  changed: boolean;
+  text: string;
+  commentCount: number;
+  lineComments: number;
+  blockComments: number;
+};
+
+function createBlockCommentReplacement(commentText: string): string {
+  const newlineOnly = commentText.replace(/[^\r\n]/g, "");
+  return newlineOnly.length > 0 ? newlineOnly : " ";
+}
+
+function findLineStart(text: string, index: number): number {
+  const previousNewline = text.lastIndexOf("\n", Math.max(0, index - 1));
+  return previousNewline < 0 ? 0 : previousNewline + 1;
+}
+
+function findLineEnd(text: string, index: number): { contentEnd: number; breakEnd: number } {
+  const newline = text.indexOf("\n", index);
+  const breakEnd = newline < 0 ? text.length : newline + 1;
+  const contentEnd = newline > 0 && text[newline - 1] === "\r"
+    ? newline - 1
+    : newline < 0
+      ? text.length
+      : newline;
+
+  return { contentEnd, breakEnd };
+}
+
+function resolveCommentReplacement(text: string, range: CommentRange, previousEnd: number): {
+  start: number;
+  end: number;
+  value: string;
+} {
+  const lineStart = findLineStart(text, range.start);
+  const { contentEnd, breakEnd } = findLineEnd(text, range.end);
+  const prefix = text.slice(lineStart, range.start);
+  const suffix = text.slice(range.end, contentEnd);
+
+  if (lineStart >= previousEnd && prefix.trim() === "" && suffix.trim() === "") {
+    return { start: lineStart, end: breakEnd, value: "" };
+  }
+
+  return {
+    start: range.start,
+    end: range.end,
+    value: range.kind === "line"
+      ? ""
+      : createBlockCommentReplacement(text.slice(range.start, range.end)),
+  };
+}
+
+function createEmptyStripResult(text: string): CommentStripResult {
+  return {
+    changed: false,
+    text,
+    commentCount: 0,
+    lineComments: 0,
+    blockComments: 0,
+  };
+}
+
+function stripCommentsJs(text: string, extension: string): CommentStripResult {
+  const ranges = collectCommentRanges(text, extension);
+  if (ranges.length === 0) return createEmptyStripResult(text);
+
+  let rewritten = "";
+  let previousEnd = 0;
+  let lineComments = 0;
+  let blockComments = 0;
+
+  for (const range of ranges) {
+    const replacement = resolveCommentReplacement(text, range, previousEnd);
+    rewritten += text.slice(previousEnd, replacement.start);
+    rewritten += replacement.value;
+    previousEnd = replacement.end;
+
+    if (range.kind === "line") lineComments += 1;
+    else blockComments += 1;
+  }
+
+  rewritten += text.slice(previousEnd);
+
+  return {
+    changed: rewritten !== text,
+    text: rewritten,
+    commentCount: ranges.length,
+    lineComments,
+    blockComments,
+  };
+}
+
+function stripComments(text: string, extension: string): CommentStripResult {
+  const native = loadNativeBinding();
+  if (native) {
+    return JSON.parse(native.stripComments(text, extension)) as CommentStripResult;
+  }
+
+  return stripCommentsJs(text, extension);
+}
+
+export { stripComments, stripCommentsJs };
+export type { CommentStripResult };

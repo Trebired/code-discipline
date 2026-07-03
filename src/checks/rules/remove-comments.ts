@@ -5,7 +5,7 @@ import type { CodeDisciplineViolation } from "../../shared/discipline-types.js";
 import { loadNativeBinding } from "../../native/native.js";
 import { supportsRemoveComments } from "../../shared/languages.js";
 import type { FixCodeDisciplineRuleResult, NormalizedCheckCodeDisciplineOptions } from "../types.js";
-import { stripComments } from "./comment-stripping.js";
+import { stripComments } from "./comments/stripping.js";
 
 function createRemoveCommentsViolation(args: {
   filePath: string;

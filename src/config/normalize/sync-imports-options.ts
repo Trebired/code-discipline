@@ -6,11 +6,11 @@ import {
   DEFAULT_ALIAS_STRATEGY,
   DEFAULT_ALLOW_RELATIVE,
   DEFAULT_RULE_FIX,
-} from "../shared/constants.js";
-import { InvalidCodeDisciplineConfigError, InvalidTsconfigPathError } from "../shared/errors.js";
-import type { NormalizedSyncImportsOptions, SyncImportsOptions } from "../imports/types.js";
-import { isDirectory } from "../shared/utils.js";
-import { normalizeSourceOptions } from "./normalize-source-options.js";
+} from "../../shared/constants.js";
+import { InvalidCodeDisciplineConfigError, InvalidTsconfigPathError } from "../../shared/errors.js";
+import type { NormalizedSyncImportsOptions, SyncImportsOptions } from "../../imports/types.js";
+import { isDirectory } from "../../shared/utils.js";
+import { normalizeSourceOptions } from "./source-options.js";
 
 async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise<NormalizedSyncImportsOptions> {
   if ("imports" in (options as Record<string, unknown>)) {

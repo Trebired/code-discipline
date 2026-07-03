@@ -1,9 +1,9 @@
 import fs from "node:fs/promises";
 
-import type { NormalizedCheckCodeDisciplineOptions } from "../types.js";
-import type { ScannedSourceFile } from "../../imports/types.js";
-import type { CodeDisciplineViolation } from "../../shared/discipline-types.js";
-import { loadNativeBinding } from "../../native/native.js";
+import type { NormalizedCheckCodeDisciplineOptions } from "../../types.js";
+import type { ScannedSourceFile } from "../../../imports/types.js";
+import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
+import { loadNativeBinding } from "../../../native/native.js";
 
 function countLines(text: string): number {
   if (text.length === 0) return 0;

@@ -1,8 +1,8 @@
 import path from "node:path";
 
-import type { NormalizedCheckCodeDisciplineOptions } from "../types.js";
-import type { ScannedSourceFile } from "../../imports/types.js";
-import { supportsFolderizationFix } from "../../shared/languages.js";
+import type { NormalizedCheckCodeDisciplineOptions } from "../../types.js";
+import type { ScannedSourceFile } from "../../../imports/types.js";
+import { supportsFolderizationFix } from "../../../shared/languages.js";
 
 type FolderizationCandidate = {
   absolutePath: string;

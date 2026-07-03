@@ -207,12 +207,7 @@ function summarizeBufferedEvents(store: BufferedEventStore): Record<string, unkn
   };
 }
 
-function resolveLogger(options?: LoggingOptions): NormalizedCodeDisciplineLogger {
-  const enabled = options?.enabled ?? Boolean(options?.logger || options?.adapter);
-  const quiet = options?.quiet ?? false;
-  const writer = resolveWriter(options);
-  let bufferedEvents = createBufferedEventStore();
-
+function writeInitializedEvent(enabled: boolean, writer: (event: CodeDisciplineLogEvent) => void): void {
   if (enabled) {
     writer({
       event: "package-initialized",
@@ -221,10 +216,17 @@ function resolveLogger(options?: LoggingOptions): NormalizedCodeDisciplineLogger
       message: "@trebired/code-discipline initialized",
     });
   }
+}
 
-  function emit(level: CodeDisciplineLogLevel, event: string, message: string, metadata?: Record<string, unknown>) {
-    if (!enabled) return;
-    if (shouldSkipForQuiet(level, quiet)) return;
+function createEmitter(args: {
+  enabled: boolean;
+  getStore: () => BufferedEventStore;
+  quiet: boolean;
+}) {
+  return (level: CodeDisciplineLogLevel, event: string, message: string, metadata?: Record<string, unknown>) => {
+    const bufferedEvents = args.getStore();
+    if (!args.enabled) return;
+    if (shouldSkipForQuiet(level, args.quiet)) return;
 
     bufferEvent(bufferedEvents, {
       event,
@@ -232,27 +234,50 @@ function resolveLogger(options?: LoggingOptions): NormalizedCodeDisciplineLogger
       message,
       metadata,
     });
-  }
+  };
+}
 
-  function flush(level: CodeDisciplineLogLevel, event: string, message: string, metadata?: Record<string, unknown>) {
-    if (!enabled) return;
+function createFlusher(args: {
+  enabled: boolean;
+  getStore: () => BufferedEventStore;
+  resetStore: () => void;
+  writer: (event: CodeDisciplineLogEvent) => void;
+}) {
+  return (level: CodeDisciplineLogLevel, event: string, message: string, metadata?: Record<string, unknown>) => {
+    if (!args.enabled) return;
 
+    const bufferedEvents = args.getStore();
     const diagnostics = summarizeBufferedEvents(bufferedEvents);
     const finalMetadata = bufferedEvents.totalEvents > 0
       ? {
           ...(metadata ?? {}),
           diagnostics,
-        }
+      }
       : metadata;
 
-    writer({
+    args.writer({
       event,
       level,
       message,
       metadata: finalMetadata,
     });
+    args.resetStore();
+  };
+}
+
+function resolveLogger(options?: LoggingOptions): NormalizedCodeDisciplineLogger {
+  const enabled = options?.enabled ?? Boolean(options?.logger || options?.adapter);
+  const quiet = options?.quiet ?? false;
+  const writer = resolveWriter(options);
+  let bufferedEvents = createBufferedEventStore();
+  const getStore = () => bufferedEvents;
+  const resetStore = () => {
     bufferedEvents = createBufferedEventStore();
-  }
+  };
+  const emit = createEmitter({ enabled, getStore, quiet });
+  const flush = createFlusher({ enabled, getStore, resetStore, writer });
+
+  writeInitializedEvent(enabled, writer);
 
   return {
     enabled,

@@ -13,7 +13,7 @@ import { isRelativeImportSpecifier } from "../imports/resolve.js";
 import { supportsFolderizationFix } from "../shared/languages.js";
 import { FileConflictError, FixFailureError, RewriteFailureError } from "../shared/errors.js";
 import { ensureDotExtension, pathExists, stripKnownExtension, toPosixPath } from "../shared/utils.js";
-import { planFolderizeCompoundFiles } from "./rules/folderize-plan.js";
+import { planFolderizeCompoundFiles } from "./rules/folderize/plan.js";
 
 type PlannedMove = {
   fromAbsolutePath: string;

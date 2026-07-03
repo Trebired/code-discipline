@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -6,8 +7,9 @@ import ts from "typescript";
 
 import type { CodeDisciplineConfig } from "../checks/types.js";
 import { applyTextReplacements, collectModuleSpecifiers } from "../imports/module-specifiers.js";
+import { resolveFileCandidate } from "../imports/resolve.js";
 import { InvalidCodeDisciplineConfigError } from "../shared/errors.js";
-import { isFile, pathExists } from "../shared/utils.js";
+import { pathExists } from "../shared/utils.js";
 
 const DEFAULT_CONFIG_FILENAMES = [
   "tb.code-discipline.ts",
@@ -73,73 +75,81 @@ async function resolveLocalConfigImport(
   const basePath = path.isAbsolute(specifier)
     ? path.resolve(specifier)
     : path.resolve(path.dirname(importerPath), specifier);
-  const candidates = [basePath];
 
-  if (!path.extname(basePath)) {
-    for (const extension of CONFIG_RESOLUTION_EXTENSIONS) {
-      candidates.push(`${basePath}${extension}`);
-    }
+  return resolveFileCandidate(basePath, CONFIG_RESOLUTION_EXTENSIONS);
+}
 
-    for (const extension of CONFIG_RESOLUTION_EXTENSIONS) {
-      candidates.push(path.join(basePath, `index${extension}`));
-    }
+type NodeConfigCompileState = {
+  cacheDir: string;
+  urls: Map<string, string>;
+  pending: Array<Promise<void>>;
+};
+
+function createCompiledConfigFilename(resolvedPath: string, mtimeMs: number): string {
+  const digest = crypto.createHash("sha256")
+    .update(`${resolvedPath}:${Math.floor(mtimeMs)}`)
+    .digest("hex")
+    .slice(0, 16);
+  const basename = path.basename(resolvedPath).replace(/[^\w.-]/gu, "_");
+  return `${basename}.${digest}.mjs`;
+}
+
+async function transpileNodeConfigModule(
+  resolvedPath: string,
+  targetPath: string,
+  state: NodeConfigCompileState,
+): Promise<void> {
+  const sourceText = await fs.readFile(resolvedPath, "utf8");
+  const transpiled = ts.transpileModule(sourceText, {
+    fileName: resolvedPath,
+    compilerOptions: {
+      allowJs: true,
+      esModuleInterop: true,
+      jsx: ts.JsxEmit.ReactJSX,
+      module: ts.ModuleKind.ESNext,
+      target: ts.ScriptTarget.ES2022,
+      verbatimModuleSyntax: false,
+    },
+  });
+
+  const replacements = [];
+
+  for (const occurrence of collectModuleSpecifiers(transpiled.outputText, resolvedPath)) {
+    const localImportPath = await resolveLocalConfigImport(resolvedPath, occurrence.specifier);
+    if (!localImportPath) continue;
+
+    const extension = path.extname(localImportPath).toLowerCase();
+    const importUrl = shouldTranspileConfigForNode(localImportPath) && extension !== ".cjs"
+      ? await compileNodeConfigModuleToUrl(localImportPath, state)
+      : await createNativeImportUrl(localImportPath);
+
+    replacements.push({
+      start: occurrence.start,
+      end: occurrence.end,
+      value: importUrl,
+    });
   }
 
-  for (const candidate of candidates) {
-    if (await isFile(candidate)) {
-      return candidate;
-    }
-  }
-
-  return null;
+  const rewritten = applyTextReplacements(transpiled.outputText, replacements).text;
+  await fs.writeFile(targetPath, rewritten, "utf8");
 }
 
 async function compileNodeConfigModuleToUrl(
   filePath: string,
-  cache: Map<string, Promise<string>>,
+  state: NodeConfigCompileState,
 ): Promise<string> {
   const resolvedPath = await fs.realpath(filePath);
-  const cached = cache.get(resolvedPath);
-  if (cached) return cached;
+  const known = state.urls.get(resolvedPath);
+  if (known) return known;
 
-  const pending = (async () => {
-    const sourceText = await fs.readFile(resolvedPath, "utf8");
-    const transpiled = ts.transpileModule(sourceText, {
-      fileName: resolvedPath,
-      compilerOptions: {
-        allowJs: true,
-        esModuleInterop: true,
-        jsx: ts.JsxEmit.ReactJSX,
-        module: ts.ModuleKind.ESNext,
-        target: ts.ScriptTarget.ES2022,
-        verbatimModuleSyntax: false,
-      },
-    });
+  const stat = await fs.stat(resolvedPath);
+  const targetPath = path.join(state.cacheDir, createCompiledConfigFilename(resolvedPath, stat.mtimeMs));
+  const targetUrl = pathToFileURL(targetPath).href;
 
-    const replacements = [];
+  state.urls.set(resolvedPath, targetUrl);
+  state.pending.push(transpileNodeConfigModule(resolvedPath, targetPath, state));
 
-    for (const occurrence of collectModuleSpecifiers(transpiled.outputText, resolvedPath)) {
-      const localImportPath = await resolveLocalConfigImport(resolvedPath, occurrence.specifier);
-      if (!localImportPath) continue;
-
-      const extension = path.extname(localImportPath).toLowerCase();
-      const importUrl = shouldTranspileConfigForNode(localImportPath) && extension !== ".cjs"
-        ? await compileNodeConfigModuleToUrl(localImportPath, cache)
-        : await createNativeImportUrl(localImportPath);
-
-      replacements.push({
-        start: occurrence.start,
-        end: occurrence.end,
-        value: importUrl,
-      });
-    }
-
-    const rewritten = applyTextReplacements(transpiled.outputText, replacements).text;
-    return `data:text/javascript;base64,${Buffer.from(rewritten, "utf8").toString("base64")}`;
-  })();
-
-  cache.set(resolvedPath, pending);
-  return pending;
+  return targetUrl;
 }
 
 function validateLoadedConfig(
@@ -158,14 +168,26 @@ function validateLoadedConfig(
   };
 }
 
-async function importCodeDisciplineConfigModule(resolvedPath: string): Promise<unknown> {
+async function importCodeDisciplineConfigModule(projectRoot: string, resolvedPath: string): Promise<unknown> {
   if (!shouldTranspileConfigForNode(resolvedPath)) {
     const imported = await import(await createNativeImportUrl(resolvedPath));
     return imported.default;
   }
 
-  const cache = new Map<string, Promise<string>>();
-  const moduleUrl = await compileNodeConfigModuleToUrl(resolvedPath, cache);
+  const cacheDir = path.join(projectRoot, "node_modules", ".cache", "code-discipline");
+  await fs.mkdir(cacheDir, { recursive: true });
+
+  const state: NodeConfigCompileState = {
+    cacheDir,
+    urls: new Map(),
+    pending: [],
+  };
+  const moduleUrl = await compileNodeConfigModuleToUrl(resolvedPath, state);
+
+  while (state.pending.length > 0) {
+    await Promise.all(state.pending.splice(0));
+  }
+
   const imported = await import(moduleUrl);
   return imported.default;
 }
@@ -180,7 +202,7 @@ async function loadCodeDisciplineConfigModule(projectRoot: string, configPath: s
   }
 
   return validateLoadedConfig(
-    await importCodeDisciplineConfigModule(resolvedPath),
+    await importCodeDisciplineConfigModule(projectRoot, resolvedPath),
     resolvedPath,
   );
 }

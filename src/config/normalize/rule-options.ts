@@ -1,8 +1,8 @@
 import {
   DEFAULT_ALLOW_RELATIVE,
   DEFAULT_FOLDERIZE_COMPOUND_FILE_SEPARATORS,
-} from "../shared/constants.js";
-import { InvalidCodeDisciplineConfigError } from "../shared/errors.js";
+} from "../../shared/constants.js";
+import { InvalidCodeDisciplineConfigError } from "../../shared/errors.js";
 import type {
   CodeDisciplineSyncImportsRuleOptions,
   DryRuleOptions,
@@ -13,7 +13,7 @@ import type {
   NormalizedDryRule,
   NormalizedEvasionGuardsOptions,
   RemoveCommentsRuleOptions,
-} from "../checks/types.js";
+} from "../../checks/types.js";
 
 function assertRemovedKeys(ruleName: string, source: Record<string, unknown>, keys: string[]) {
   for (const key of keys) {

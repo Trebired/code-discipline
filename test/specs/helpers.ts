@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 import type { SyncImportsLogEvent } from "../../src/index.js";
 
@@ -83,4 +84,51 @@ function runCommand(command: string, args: string[], options: {
   });
 }
 
-export { captureCallbackLogger, captureTrebiredLogger, fileExists, readFile, readJson, runCommand, tempProject, writeFile };
+const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const builtCliPath = path.join(packageRoot, "dist", "cli.js");
+let builtCliReady = false;
+
+function ensureBuiltCli() {
+  if (builtCliReady && fs.existsSync(builtCliPath)) {
+    return;
+  }
+
+  const result = runCommand("bun", ["run", "build"], {
+    cwd: packageRoot,
+  });
+
+  if (result.status !== 0) {
+    throw new Error(`build failed: ${result.stderr || result.stdout}`);
+  }
+
+  builtCliReady = true;
+}
+
+function writeErroringCliFixture(projectRoot: string) {
+  writeFile(projectRoot, "src/too-long.ts", "one\n2\n3\n");
+  writeFile(projectRoot, "tb.code-discipline.ts", [
+    "export default {",
+    "  rules: {",
+    "    maxFileLines: {",
+    "      max: 2,",
+    "    },",
+    "  },",
+    "};",
+    "",
+  ].join("\n"));
+}
+
+export {
+  builtCliPath,
+  captureCallbackLogger,
+  captureTrebiredLogger,
+  ensureBuiltCli,
+  fileExists,
+  packageRoot,
+  readFile,
+  readJson,
+  runCommand,
+  tempProject,
+  writeErroringCliFixture,
+  writeFile,
+};
