@@ -6,6 +6,8 @@ All notable changes to `@trebired/code-discipline` will be documented here.
 
 - Added top-level `evasionGuards` checks for packed files, packed lines, packed JavaScript/TypeScript functions, and runtime code hiding through string execution.
 - Added the check-only `evasion-guards` selector so opt-in anti-evasion scans can be targeted from the CLI/runtime.
+- Added a TTY loading animation for long CLI check/fix/gate scans.
+- Changed `remove-comments` fixes to remove comment-only lines during the same per-file rewrite.
 
 ## 2.3.0
 

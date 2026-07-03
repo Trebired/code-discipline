@@ -295,6 +295,50 @@ function createBlockCommentReplacement(commentText: string): string {
   return newlineOnly.length > 0 ? newlineOnly : " ";
 }
 
+function findLineStart(text: string, index: number): number {
+  const previousNewline = text.lastIndexOf("\n", Math.max(0, index - 1));
+  return previousNewline < 0 ? 0 : previousNewline + 1;
+}
+
+function findLineEnd(text: string, index: number): { contentEnd: number; breakEnd: number } {
+  const newline = text.indexOf("\n", index);
+  const breakEnd = newline < 0 ? text.length : newline + 1;
+  const contentEnd = newline > 0 && text[newline - 1] === "\r"
+    ? newline - 1
+    : newline < 0
+      ? text.length
+      : newline;
+
+  return { contentEnd, breakEnd };
+}
+
+function resolveCommentReplacement(text: string, range: CommentRange, previousEnd: number): {
+  start: number;
+  end: number;
+  value: string;
+} {
+  const lineStart = findLineStart(text, range.start);
+  const { contentEnd, breakEnd } = findLineEnd(text, range.end);
+  const prefix = text.slice(lineStart, range.start);
+  const suffix = text.slice(range.end, contentEnd);
+
+  if (lineStart >= previousEnd && prefix.trim() === "" && suffix.trim() === "") {
+    return {
+      start: lineStart,
+      end: breakEnd,
+      value: "",
+    };
+  }
+
+  return {
+    start: range.start,
+    end: range.end,
+    value: range.kind === "line"
+      ? ""
+      : createBlockCommentReplacement(text.slice(range.start, range.end)),
+  };
+}
+
 function stripComments(text: string, extension: string): CommentStripResult {
   const ranges = collectCommentRanges(text, extension);
 
@@ -314,11 +358,10 @@ function stripComments(text: string, extension: string): CommentStripResult {
   let blockComments = 0;
 
   for (const range of ranges) {
-    rewritten += text.slice(previousEnd, range.start);
-    rewritten += range.kind === "line"
-      ? ""
-      : createBlockCommentReplacement(text.slice(range.start, range.end));
-    previousEnd = range.end;
+    const replacement = resolveCommentReplacement(text, range, previousEnd);
+    rewritten += text.slice(previousEnd, replacement.start);
+    rewritten += replacement.value;
+    previousEnd = replacement.end;
 
     if (range.kind === "line") {
       lineComments += 1;

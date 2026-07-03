@@ -244,16 +244,39 @@ describe("code-discipline fix", () => {
     expect(readFile(projectRoot, "src/app.ts")).toContain('const regex = /https?:\\/\\/example\\.com/;');
     expect(readFile(projectRoot, "src/app.ts")).not.toContain("remove this");
     expect(readFile(projectRoot, "src/app.ts")).not.toContain("and this");
+    expect(readFile(projectRoot, "src/app.ts")).toBe([
+      'const url = "https://example.com";',
+      'const regex = /https?:\\/\\/example\\.com/;',
+      "export const app = { url, regex };",
+      "",
+    ].join("\n"));
 
     expect(readFile(projectRoot, "src/service.go")).toContain("var raw = `// keep /* here */`");
     expect(readFile(projectRoot, "src/service.go")).toContain('var url = "https://example.com"');
     expect(readFile(projectRoot, "src/service.go")).not.toContain("remove this");
     expect(readFile(projectRoot, "src/service.go")).not.toContain("and this");
+    expect(readFile(projectRoot, "src/service.go")).toBe([
+      "package demo",
+      "",
+      "var raw = `// keep /* here */`",
+      'var url = "https://example.com"',
+      "func build() string {",
+      "  return raw + url",
+      "}",
+      "",
+    ].join("\n"));
 
     expect(readFile(projectRoot, "src/lib.rs")).toContain("pub fn build<'a>() -> &'a str {");
     expect(readFile(projectRoot, "src/lib.rs")).toContain("let raw = r#\"// keep /* here */\"#;");
     expect(readFile(projectRoot, "src/lib.rs")).not.toContain("remove this");
     expect(readFile(projectRoot, "src/lib.rs")).not.toContain("outer");
     expect(readFile(projectRoot, "src/lib.rs")).not.toContain("inner");
+    expect(readFile(projectRoot, "src/lib.rs")).toBe([
+      "pub fn build<'a>() -> &'a str {",
+      "    let raw = r#\"// keep /* here */\"#;",
+      "    raw",
+      "}",
+      "",
+    ].join("\n"));
   });
 });

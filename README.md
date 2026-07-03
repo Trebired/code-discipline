@@ -335,7 +335,7 @@ The rule supports the same language families this package currently scans for di
 - Go
 - Rust
 
-It keeps string, regex, rune, char, byte-string, and raw-string content intact while removing actual source comments.
+It keeps string, regex, rune, char, byte-string, and raw-string content intact while removing actual source comments. When a removed comment occupied the whole line, that empty line is removed in the same file rewrite.
 
 Example targeted CLI usage:
 

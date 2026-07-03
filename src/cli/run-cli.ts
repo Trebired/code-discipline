@@ -21,6 +21,44 @@ type CliRunResult = {
   exitCode: number;
 };
 
+type LoadingAnimation = {
+  stop: () => void;
+};
+
+const LOADING_FRAMES = ["-", "\\", "|", "/"];
+
+function createLoadingAnimation(label: string, enabled: boolean): LoadingAnimation {
+  if (!enabled) {
+    return {
+      stop() {},
+    };
+  }
+
+  let frameIndex = 0;
+  process.stderr.write(`${label} ${LOADING_FRAMES[frameIndex]}`);
+  const timer = setInterval(() => {
+    frameIndex = (frameIndex + 1) % LOADING_FRAMES.length;
+    process.stderr.write(`\r${label} ${LOADING_FRAMES[frameIndex]}`);
+  }, 120);
+
+  return {
+    stop() {
+      clearInterval(timer);
+      process.stderr.write(`\r${" ".repeat(label.length + 2)}\r`);
+    },
+  };
+}
+
+async function withLoadingAnimation<T>(label: string, enabled: boolean, task: () => Promise<T>): Promise<T> {
+  const animation = createLoadingAnimation(label, enabled);
+
+  try {
+    return await task();
+  } finally {
+    animation.stop();
+  }
+}
+
 function padDatePart(value: number): string {
   return String(value).padStart(2, "0");
 }
@@ -153,6 +191,7 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
   const now = options.now ?? new Date();
   const stdout = options.stdout ?? ((text: string) => process.stdout.write(text));
   const stderr = options.stderr ?? ((text: string) => process.stderr.write(text));
+  const showLoadingAnimation = !options.stderr && Boolean(process.stderr.isTTY) && !process.env.CI;
   const [command, ...rest] = argv;
 
   if (!command || command === "help" || command === "--help" || command === "-h") {
@@ -170,13 +209,13 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
         throw new Error("Command separator -- is only supported with gate");
       }
 
-      const result = await codeDiscipline({
+      const result = await withLoadingAnimation("Scanning codebase", showLoadingAnimation, () => codeDiscipline({
         ...config,
         configPath,
         mode: "check",
         onlyRules: parsed.selectors as CodeDisciplineRuleSlug[],
         projectRoot: cwd,
-      });
+      }));
 
       const reportText = renderCheckOutput(result.violations, result.violationCount);
       stdout(reportText);
@@ -194,13 +233,13 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
         throw new Error("Command separator -- is only supported with gate");
       }
 
-      const result = await codeDiscipline({
+      const result = await withLoadingAnimation("Fixing codebase", showLoadingAnimation, () => codeDiscipline({
         ...config,
         configPath,
         mode: "fix",
         onlyRules: parsed.selectors as FixableRuleSlug[],
         projectRoot: cwd,
-      });
+      }));
 
       const reportText = renderFixOutput({
         movedFiles: result.moved_files,
@@ -225,13 +264,13 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
         throw new Error("Missing child command after --");
       }
 
-      const result = await codeDiscipline({
+      const result = await withLoadingAnimation("Scanning codebase", showLoadingAnimation, () => codeDiscipline({
         ...config,
         configPath,
         mode: "check",
         onlyRules: parsed.selectors as CodeDisciplineRuleSlug[],
         projectRoot: cwd,
-      });
+      }));
 
       if (!result.ok) {
         const reportText = renderCheckOutput(result.violations, result.violationCount);
