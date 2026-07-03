@@ -1,3 +1,4 @@
+#[napi]
 pub fn strip_comments(text: String, extension: String) -> Result<String> {
     let result = strip_comments_internal(&text, &extension);
     serde_json::to_string(&result).map_err(|error| err(error.to_string()))
