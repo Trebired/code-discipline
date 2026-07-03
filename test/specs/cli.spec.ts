@@ -372,6 +372,27 @@ describe("code-discipline cli", () => {
     expect(stdout.join("")).toContain("Fix summary: moved 0, rewritten files 1, rewritten imports 0, removed comments 1, remaining violations 0.");
   });
 
+  test("runs top-level evasion guards through an explicit config module", async () => {
+    const projectRoot = tempProject();
+    const stdout: string[] = [];
+
+    writeFile(projectRoot, "src/checkout.ts", "export function checkout(cart) { const total = cart.items.reduce((sum, item) => sum + item.price, 0); if (!cart.user) throw new Error(\"login\"); const tax = total * 0.2; const discount = cart.coupon ? total * 0.1 : 0; return total + tax - discount; }\n");
+    writeFile(projectRoot, "discipline.config.mjs", [
+      "export default {",
+      "  evasionGuards: true,",
+      "};",
+      "",
+    ].join("\n"));
+
+    const result = await runCli(["check", "evasion-guards", "--config", "./discipline.config.mjs"], {
+      cwd: projectRoot,
+      stdout: (text) => stdout.push(text),
+    });
+
+    expect(result.exitCode).toBe(1);
+    expect(stdout.join("")).toContain("evasion-guards src/checkout.ts");
+  });
+
   test("gate blocks the child command when discipline violations exist", () => {
     const projectRoot = tempProject();
     ensureBuiltCli();

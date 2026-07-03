@@ -8,6 +8,8 @@ All notable changes to `@trebired/code-discipline` will be documented here.
 - Added the check-only `evasion-guards` selector so opt-in anti-evasion scans can be targeted from the CLI/runtime.
 - Added a TTY loading animation for long CLI check/fix/gate scans.
 - Changed `remove-comments` fixes to remove comment-only lines during the same per-file rewrite.
+- Added the Rust native backend scaffold with TypeScript fallback and native acceleration for `remove-comments`.
+- Fixed runtime/CLI forwarding for top-level `evasionGuards`.
 
 ## 2.3.0
 

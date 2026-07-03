@@ -4,6 +4,8 @@ node_modules/
 # Build output
 dist/
 coverage/
+native/*/target/
+native/*.node
 
 # Package artifacts
 *.tgz

@@ -110,6 +110,7 @@ function buildCheckOptions(options: Omit<CodeDisciplineOptions, "mode">): CheckC
     logging: resolveLoggingOptions(options),
     onlyRules: options.onlyRules,
     rules: options.rules,
+    evasionGuards: options.evasionGuards,
   };
 }
 
@@ -131,6 +132,7 @@ async function codeDiscipline(options: CodeDisciplineOptions): Promise<CodeDisci
     logging: options.logging,
     onlyRules: options.onlyRules,
     rules: options.rules,
+    evasionGuards: options.evasionGuards,
     sourceExtensions: options.sourceExtensions,
     includeDefaultSourceExtensions: options.includeDefaultSourceExtensions,
     sourceRoot: options.sourceRoot,

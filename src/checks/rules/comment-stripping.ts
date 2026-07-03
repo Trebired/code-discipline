@@ -1,5 +1,6 @@
 import ts from "typescript";
 
+import { loadNativeBinding } from "../../native/native.js";
 import { isGoExtension, isRustExtension, isTypeScriptFamilyExtension } from "../../shared/languages.js";
 
 type CommentKind = "line" | "block";
@@ -339,7 +340,7 @@ function resolveCommentReplacement(text: string, range: CommentRange, previousEn
   };
 }
 
-function stripComments(text: string, extension: string): CommentStripResult {
+function stripCommentsJs(text: string, extension: string): CommentStripResult {
   const ranges = collectCommentRanges(text, extension);
 
   if (ranges.length === 0) {
@@ -381,5 +382,14 @@ function stripComments(text: string, extension: string): CommentStripResult {
   };
 }
 
-export { stripComments };
+function stripComments(text: string, extension: string): CommentStripResult {
+  const native = loadNativeBinding();
+  if (native) {
+    return JSON.parse(native.stripComments(text, extension)) as CommentStripResult;
+  }
+
+  return stripCommentsJs(text, extension);
+}
+
+export { stripComments, stripCommentsJs };
 export type { CommentStripResult };

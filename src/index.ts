@@ -28,6 +28,12 @@ export { syncPackageJsonImportsFromTsconfigPaths } from "./runtime/runtime-impor
 export { prepareTsconfigPaths, restoreTsconfigPaths } from "./runtime/tsconfig-paths.js";
 export { codeDiscipline, createCodeDiscipline } from "./run.js";
 export { resolveLogger } from "./shared/logging.js";
+export {
+  activeNativeBackendNotice,
+  nativeAddonCandidatePathsForCurrentPlatform,
+  nativeBinaryBasenameForCurrentPlatform,
+  resetNativeBindingForTests,
+} from "./native/native.js";
 
 export {
   AliasCollisionError,

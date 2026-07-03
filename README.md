@@ -8,6 +8,7 @@ Configurable repository discipline checks and rule-driven fixes for Bun and Node
 - structural rules such as folderizing compound files
 - sync rules such as keeping source imports, `tsconfig.json`, and optional `package.json#imports` aligned
 - source cleanup rules such as removing comments across supported languages
+- native acceleration with a TypeScript fallback for large codebases
 - DRY enforcement against registered canonical helper functions
 
 It is not a formatter, linter replacement, or build system.
@@ -33,6 +34,19 @@ code-discipline fix
 code-discipline fix sync-imports dry remove-comments
 code-discipline gate -- bun run dev
 ```
+
+## Native Backend
+
+`@trebired/code-discipline` can use a Rust native backend when a matching binary is available, with the TypeScript implementation as the fallback. This follows the same native-fast-path shape as `@trebired/logger`: package users keep the same CLI/API, while hot scanning and rewrite paths can move into Rust.
+
+The current native backend accelerates `remove-comments`. If no binary is present, the package automatically uses the TypeScript fallback.
+
+Useful native controls:
+
+- `bun run build:native` builds the host native addon into `native/<platform>.node`
+- `bun run build:native:matrix` builds the release target matrix
+- `TB_CODE_DISCIPLINE_DISABLE_NATIVE=1` forces the TypeScript fallback
+- `TB_CODE_DISCIPLINE_NATIVE_BINARY=/path/to/addon.node` loads a specific native addon
 
 Top-level `sync` is gone.
 
