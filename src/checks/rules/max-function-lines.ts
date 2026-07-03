@@ -5,6 +5,7 @@ import ts from "typescript";
 
 import type { NormalizedCheckCodeDisciplineOptions } from "../types.js";
 import type { ScannedSourceFile } from "../../imports/types.js";
+import { loadNativeBinding } from "../../native/native.js";
 import { parseSource } from "../../imports/module-specifiers.js";
 import { isGoExtension, isRustExtension, isTypeScriptFamilyExtension, supportsMaxFunctionLines } from "../../shared/languages.js";
 import type { CodeDisciplineViolation } from "../../shared/discipline-types.js";
@@ -15,6 +16,11 @@ type FunctionDescriptor = {
   name: string;
   startLine: number;
   endLine: number;
+};
+
+type NativeMaxFunctionLinesResult = {
+  violations: CodeDisciplineViolation[];
+  handledPaths: string[];
 };
 
 function isFunctionLikeWithBody(node: ts.Node): node is ts.FunctionLikeDeclaration {
@@ -229,8 +235,20 @@ async function runMaxFunctionLinesRule(
   if (!options.rules.maxFunctionLines) return [];
 
   const violations: CodeDisciplineViolation[] = [];
+  const native = loadNativeBinding();
+  const nativeHandledPaths = new Set<string>();
+
+  if (native) {
+    const nativeResult = JSON.parse(native.runMaxBlockFunctionLinesRule(JSON.stringify({
+      sourceFiles,
+      max: options.rules.maxFunctionLines.max,
+    }))) as NativeMaxFunctionLinesResult;
+    violations.push(...nativeResult.violations);
+    for (const filePath of nativeResult.handledPaths) nativeHandledPaths.add(filePath);
+  }
 
   for (const file of sourceFiles) {
+    if (nativeHandledPaths.has(file.absolutePath)) continue;
     if (!supportsMaxFunctionLines(file.extension)) continue;
 
     const text = await fs.readFile(file.absolutePath, "utf8");

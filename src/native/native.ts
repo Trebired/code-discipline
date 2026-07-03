@@ -4,6 +4,13 @@ import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 
 type NativeBinding = {
+  collectRemoveCommentsViolations(requestJson: string): string;
+  fixRemoveCommentsRule(requestJson: string): string;
+  runEvasionGuardsRule(requestJson: string): string;
+  runFolderizeCompoundFilesRule(requestJson: string): string;
+  runMaxBlockFunctionLinesRule(requestJson: string): string;
+  runMaxFileLinesRule(requestJson: string): string;
+  scanSourceFiles(requestJson: string): string;
   stripComments(text: string, extension: string): string;
 };
 

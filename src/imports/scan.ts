@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { ScannedSourceFile, SourceScanOptions } from "./types.js";
+import { loadNativeBinding } from "../native/native.js";
 import { normalizeRelativePath, toPosixPath } from "../shared/utils.js";
 
 function shouldExcludeDirectory(relativeDir: string, projectRelativeDir: string, directoryName: string, excludeDirs: string[]): boolean {
@@ -54,6 +55,16 @@ async function walkDirectory(
 }
 
 async function scanSourceFiles(options: SourceScanOptions): Promise<ScannedSourceFile[]> {
+  const native = loadNativeBinding();
+  if (native) {
+    return JSON.parse(native.scanSourceFiles(JSON.stringify({
+      projectRoot: options.projectRoot,
+      sourceRoot: options.sourceRoot,
+      sourceExtensions: options.sourceExtensions,
+      excludeDirs: options.excludeDirs,
+    }))) as ScannedSourceFile[];
+  }
+
   const rows: ScannedSourceFile[] = [];
   await walkDirectory(options.sourceRoot, "", options, rows);
   return rows.sort((left, right) => left.relativeFromProjectRoot.localeCompare(right.relativeFromProjectRoot));

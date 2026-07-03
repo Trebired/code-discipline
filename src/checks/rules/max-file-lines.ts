@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import type { NormalizedCheckCodeDisciplineOptions } from "../types.js";
 import type { ScannedSourceFile } from "../../imports/types.js";
 import type { CodeDisciplineViolation } from "../../shared/discipline-types.js";
+import { loadNativeBinding } from "../../native/native.js";
 
 function countLines(text: string): number {
   if (text.length === 0) return 0;
@@ -14,6 +15,14 @@ async function runMaxFileLinesRule(
   options: NormalizedCheckCodeDisciplineOptions,
 ): Promise<CodeDisciplineViolation[]> {
   if (!options.rules.maxFileLines) return [];
+
+  const native = loadNativeBinding();
+  if (native) {
+    return JSON.parse(native.runMaxFileLinesRule(JSON.stringify({
+      sourceFiles,
+      max: options.rules.maxFileLines.max,
+    }))) as CodeDisciplineViolation[];
+  }
 
   const violations: CodeDisciplineViolation[] = [];
 

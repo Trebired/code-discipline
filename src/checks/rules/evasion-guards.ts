@@ -4,6 +4,7 @@ import ts from "typescript";
 
 import type { ScannedSourceFile } from "../../imports/types.js";
 import { parseSource } from "../../imports/module-specifiers.js";
+import { loadNativeBinding } from "../../native/native.js";
 import type { CodeDisciplineViolation } from "../../shared/discipline-types.js";
 import { isTypeScriptFamilyExtension } from "../../shared/languages.js";
 import type { NormalizedCheckCodeDisciplineOptions } from "../types.js";
@@ -296,6 +297,14 @@ async function runEvasionGuardsRule(
 ): Promise<CodeDisciplineViolation[]> {
   const rule = options.evasionGuards;
   if (!rule) return [];
+
+  const native = loadNativeBinding();
+  if (native) {
+    return JSON.parse(native.runEvasionGuardsRule(JSON.stringify({
+      sourceFiles,
+      evasionGuards: rule,
+    }))) as CodeDisciplineViolation[];
+  }
 
   const violations: CodeDisciplineViolation[] = [];
 

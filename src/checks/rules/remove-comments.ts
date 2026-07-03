@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 
 import type { ScannedSourceFile } from "../../imports/types.js";
 import type { CodeDisciplineViolation } from "../../shared/discipline-types.js";
+import { loadNativeBinding } from "../../native/native.js";
 import { supportsRemoveComments } from "../../shared/languages.js";
 import type { FixCodeDisciplineRuleResult, NormalizedCheckCodeDisciplineOptions } from "../types.js";
 import { stripComments } from "./comment-stripping.js";
@@ -28,6 +29,11 @@ function createRemoveCommentsViolation(args: {
 async function collectRemoveCommentsViolations(
   sourceFiles: ScannedSourceFile[],
 ): Promise<CodeDisciplineViolation[]> {
+  const native = loadNativeBinding();
+  if (native) {
+    return JSON.parse(native.collectRemoveCommentsViolations(JSON.stringify({ sourceFiles }))) as CodeDisciplineViolation[];
+  }
+
   const violations: CodeDisciplineViolation[] = [];
 
   for (const file of sourceFiles) {
@@ -52,6 +58,11 @@ async function fixRemoveCommentsRule(
   sourceFiles: ScannedSourceFile[],
   _options: NormalizedCheckCodeDisciplineOptions,
 ): Promise<FixCodeDisciplineRuleResult> {
+  const native = loadNativeBinding();
+  if (native) {
+    return JSON.parse(native.fixRemoveCommentsRule(JSON.stringify({ sourceFiles }))) as FixCodeDisciplineRuleResult;
+  }
+
   let rewrittenFiles = 0;
   let removedComments = 0;
 

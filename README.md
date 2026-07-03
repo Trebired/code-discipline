@@ -39,7 +39,7 @@ code-discipline gate -- bun run dev
 
 `@trebired/code-discipline` can use a Rust native backend when a matching binary is available, with the TypeScript implementation as the fallback. This follows the same native-fast-path shape as `@trebired/logger`: package users keep the same CLI/API, while hot scanning and rewrite paths can move into Rust.
 
-The current native backend accelerates `remove-comments`. If no binary is present, the package automatically uses the TypeScript fallback.
+The current native backend accelerates source scanning, `max-file-lines`, common `max-function-lines` paths, `folderize-compound-files` checks, `remove-comments`, and `evasion-guards`. If no binary is present, the package automatically uses the TypeScript fallback.
 
 Useful native controls:
 
