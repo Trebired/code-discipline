@@ -49,12 +49,8 @@ function defineCodeDisciplineConfig(config: CodeDisciplineConfig): CodeDisciplin
   return config;
 }
 
-function isBunRuntime(): boolean {
-  return typeof Bun !== "undefined";
-}
-
-function shouldTranspileConfigForNode(filePath: string): boolean {
-  return !isBunRuntime() && NODE_TRANSPILE_EXTENSIONS.has(path.extname(filePath).toLowerCase());
+function shouldCompileConfigModule(filePath: string): boolean {
+  return NODE_TRANSPILE_EXTENSIONS.has(path.extname(filePath).toLowerCase());
 }
 
 async function createNativeImportUrl(filePath: string): Promise<string> {
@@ -119,7 +115,7 @@ async function transpileNodeConfigModule(
     if (!localImportPath) continue;
 
     const extension = path.extname(localImportPath).toLowerCase();
-    const importUrl = shouldTranspileConfigForNode(localImportPath) && extension !== ".cjs"
+    const importUrl = shouldCompileConfigModule(localImportPath) && extension !== ".cjs"
       ? await compileNodeConfigModuleToUrl(localImportPath, state)
       : await createNativeImportUrl(localImportPath);
 
@@ -169,7 +165,7 @@ function validateLoadedConfig(
 }
 
 async function importCodeDisciplineConfigModule(projectRoot: string, resolvedPath: string): Promise<unknown> {
-  if (!shouldTranspileConfigForNode(resolvedPath)) {
+  if (!shouldCompileConfigModule(resolvedPath)) {
     const imported = await import(await createNativeImportUrl(resolvedPath));
     return imported.default;
   }

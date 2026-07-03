@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { checkCodeDiscipline } from "../../src/index.js";
+import { checkCodeDiscipline, loadResolvedCodeDisciplineConfig } from "../../src/index.js";
 import { tempProject, writeFile } from "./helpers.js";
 
 test("rejects removed enabled keys for line-limit rules", async () => {
@@ -32,6 +32,39 @@ test("rejects removed enabled keys for line-limit rules", async () => {
     },
   })).rejects.toMatchObject({
     code: "invalid_config",
+  });
+});
+
+test("loads TypeScript config modules with relative local imports", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/config-helper.ts", [
+    "export function defineLocalConfig(value: unknown) {",
+    "  return value;",
+    "}",
+    "",
+  ].join("\n"));
+  writeFile(projectRoot, "tb.code-discipline.ts", [
+    "import { defineLocalConfig } from \"./src/config-helper.js\";",
+    "",
+    "export default defineLocalConfig({",
+    "  sourceRoot: \"src\",",
+    "  rules: {",
+    "    maxFileLines: { max: 10 },",
+    "  },",
+    "});",
+    "",
+  ].join("\n"));
+
+  const loaded = await loadResolvedCodeDisciplineConfig(projectRoot);
+
+  expect(loaded.config).toEqual({
+    sourceRoot: "src",
+    rules: {
+      maxFileLines: {
+        max: 10,
+      },
+    },
   });
 });
 

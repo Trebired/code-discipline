@@ -11,7 +11,7 @@ All notable changes to `@trebired/code-discipline` will be documented here.
 - Added the Rust native backend with TypeScript fallback and native acceleration for source scanning, `max-file-lines`, common `max-function-lines` paths, `folderize-compound-files` checks, `remove-comments`, and `evasion-guards`.
 - Fixed runtime/CLI forwarding for top-level `evasionGuards`.
 - Enforced code-discipline on its own codebase: the package is now a self devDependency, `bun run test` runs through `code-discipline gate`, and the source and test tree were refactored until `check` reports zero violations.
-- Fixed Node config loading for TypeScript config modules: transpiled modules are now written to `node_modules/.cache/code-discipline` instead of `data:` URLs, so relative `.js` specifiers resolving to `.ts` sources, bare package imports, and import cycles all work when the CLI runs under Node.
+- Fixed Bun and Node config loading for TypeScript config modules: transpiled modules are now written to `node_modules/.cache/code-discipline` instead of `data:` URLs, so relative `.js` specifiers resolving to `.ts` sources, bare package imports, and import cycles keep a real filesystem base.
 - Fixed CLI error handling so failures inside `check`, `fix`, and `gate` are reported on stderr with exit code 1 instead of escaping as unhandled rejections.
 
 ## 2.3.0
