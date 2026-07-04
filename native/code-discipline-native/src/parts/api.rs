@@ -8,13 +8,8 @@ pub fn strip_comments(text: String, extension: String) -> Result<String> {
 pub fn scan_source_files(request_json: String) -> Result<String> {
     let options: SourceScanRequest =
         serde_json::from_str(&request_json).map_err(|error| err(error.to_string()))?;
-    let mut rows = Vec::new();
-    walk_source_directory(Path::new(&options.source_root), "", &options, &mut rows)?;
-    rows.sort_by(|left, right| {
-        left.relative_from_project_root
-            .cmp(&right.relative_from_project_root)
-    });
-    serde_json::to_string(&rows).map_err(|error| err(error.to_string()))
+    let response = scan_source_directory(&options)?;
+    serde_json::to_string(&response).map_err(|error| err(error.to_string()))
 }
 
 #[napi]

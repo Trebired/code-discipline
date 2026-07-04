@@ -2,6 +2,7 @@ import type { LoggingOptions } from "../shared/logging-types.js";
 import type {
   ExcludeDirsOptions,
   PackageJsonImportsSyncOptions,
+  SourceScanObserver,
   SourceScanOptions,
   SyncImportsRuleOptions,
 } from "../imports/types.js";
@@ -110,6 +111,7 @@ type CheckCodeDisciplineOptions = {
   lifecycle?: CodeDisciplineLifecycleHooks;
   tsconfigPaths?: CodeDisciplineTsconfigPathsOptions;
   onlyRules?: CodeDisciplineRuleSlug[];
+  scanObserver?: SourceScanObserver;
 };
 
 type FixCodeDisciplineOptions = Omit<CheckCodeDisciplineOptions, "onlyRules"> & {

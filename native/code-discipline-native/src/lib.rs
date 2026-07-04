@@ -1,11 +1,15 @@
 use napi::Result;
 use napi_derive::napi;
+use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 
 include!("parts/support.rs");
+include!("parts/source_scan.rs");
 include!("parts/comment_ranges.rs");
 include!("parts/comment_stripping.rs");
 include!("parts/common_violations.rs");

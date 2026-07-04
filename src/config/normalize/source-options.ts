@@ -4,7 +4,7 @@ import { DEFAULT_EXCLUDE_DIRS, DEFAULT_SOURCE_EXTENSIONS, DEFAULT_SOURCE_ROOT } 
 import { readGitignoreExcludedDirs } from "../../shared/gitignore.js";
 import { InvalidProjectRootError, InvalidSourceRootError } from "../../shared/errors.js";
 import { ensureDotExtension, isDirectory, isInsideDirectory, normalizeRelativePath, uniqueStrings } from "../../shared/utils.js";
-import type { ExcludeDirsOptions } from "../../imports/types.js";
+import type { ExcludeDirsOptions, SourceScanObserver } from "../../imports/types.js";
 
 type NormalizedSourceOptions = {
   projectRoot: string;
@@ -14,6 +14,7 @@ type NormalizedSourceOptions = {
   excludeDirs: string[];
   excludeGitignoreDirs: boolean;
   gitignorePath: string;
+  scanObserver?: SourceScanObserver;
 };
 
 async function normalizeSourceOptions(options: {
@@ -23,6 +24,7 @@ async function normalizeSourceOptions(options: {
   includeDefaultSourceExtensions?: boolean;
   excludeDirs?: ExcludeDirsOptions;
   gitignorePath?: string;
+  scanObserver?: SourceScanObserver;
 }): Promise<NormalizedSourceOptions> {
   const projectRoot = path.resolve(options.projectRoot);
   if (!await isDirectory(projectRoot)) {
@@ -59,6 +61,7 @@ async function normalizeSourceOptions(options: {
     excludeDirs,
     excludeGitignoreDirs,
     gitignorePath,
+    scanObserver: options.scanObserver,
   };
 }
 

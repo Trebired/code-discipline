@@ -2,6 +2,13 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 3.1.0
+
+- Added explicit CLI scan completion timing so `check` and `gate` report how long the codebase scan took after `Scanning codebase`.
+- Added chunked scan progress logging and native/backend scan summaries so large-repository scans are easier to observe and tune.
+- Reworked source scanning in both the TypeScript fallback and Rust native backend to use chunked concurrent directory traversal for faster large-codebase scans.
+- Added the `TB_CODE_DISCIPLINE_SCAN_CONCURRENCY` override so scan throughput can be tuned per machine or CI worker.
+
 ## 3.0.0
 
 - Added top-level `evasionGuards` checks for packed files, packed lines, packed JavaScript/TypeScript functions, and runtime code hiding through string execution.

@@ -1,6 +1,34 @@
 import type { LoggingOptions } from "../shared/logging-types.js";
 import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
 
+type SourceScanBackend = "native" | "ts";
+
+type SourceScanChunkEvent = {
+  phase: "chunk";
+  backend: SourceScanBackend;
+  chunkIndex: number;
+  chunkSize: number;
+  chunkMatchedFiles: number;
+  queuedDirectories: number;
+  completedDirectories: number;
+  discoveredFiles: number;
+  elapsedMs: number;
+  concurrency: number;
+};
+
+type SourceScanCompletedEvent = {
+  phase: "completed";
+  backend: SourceScanBackend;
+  chunkCount: number;
+  directoryCount: number;
+  fileCount: number;
+  elapsedMs: number;
+  concurrency: number;
+};
+
+type SourceScanProgressEvent = SourceScanChunkEvent | SourceScanCompletedEvent;
+type SourceScanObserver = (event: SourceScanProgressEvent) => void;
+
 type PackageJsonImportsSyncOptions = {
   enabled?: boolean;
   aliasPrefix?: string | string[];
@@ -72,6 +100,7 @@ type SourceScanOptions = {
   excludeDirs: string[];
   excludeGitignoreDirs: boolean;
   gitignorePath: string;
+  scanObserver?: SourceScanObserver;
 };
 
 type NormalizedSyncImportsOptions = SourceScanOptions & {
@@ -139,7 +168,12 @@ export type {
   RewriteFileResult,
   RewriteResult,
   ScannedSourceFile,
+  SourceScanBackend,
+  SourceScanChunkEvent,
+  SourceScanCompletedEvent,
+  SourceScanObserver,
   SourceScanOptions,
+  SourceScanProgressEvent,
   PackageJsonImportsSyncOptions,
   SyncAliasesResult,
   SyncImportsOptions,

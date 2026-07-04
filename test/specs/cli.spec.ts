@@ -1,7 +1,44 @@
 import { expect, test } from "bun:test";
 
 import { runCli } from "../../src/cli.js";
+import { resetNativeBindingForTests } from "../../src/index.js";
 import { fileExists, readFile, tempProject, writeFile } from "./helpers.js";
+
+function writeMaxFileLinesConfig(projectRoot: string) {
+  writeFile(projectRoot, "discipline.config.mjs", [
+    "export default {",
+    "  rules: {",
+    "    maxFileLines: {",
+    "      max: 2,",
+    "    },",
+    "  },",
+    "};",
+    "",
+  ].join("\n"));
+}
+
+function restoreScanEnv(previousDisableNative: string | undefined, previousConcurrency: string | undefined) {
+  resetNativeBindingForTests();
+
+  if (previousDisableNative === undefined) {
+    delete process.env.TB_CODE_DISCIPLINE_DISABLE_NATIVE;
+  } else {
+    process.env.TB_CODE_DISCIPLINE_DISABLE_NATIVE = previousDisableNative;
+  }
+
+  if (previousConcurrency === undefined) {
+    delete process.env.TB_CODE_DISCIPLINE_SCAN_CONCURRENCY;
+  } else {
+    process.env.TB_CODE_DISCIPLINE_SCAN_CONCURRENCY = previousConcurrency;
+  }
+}
+
+function expectChunkedScanLogs(stdout: string[], stderr: string[]) {
+  expect(stdout.join("")).toContain("Found 4 discipline violation(s).");
+  expect(stderr.join("")).toContain("Source scan chunk 1:");
+  expect(stderr.join("")).toContain("Source scan finished via ts backend");
+  expect(stderr.join("")).toContain("Scanning codebase completed in");
+}
 
 test("auto-discovers a config module for plain cli usage", async () => {
   const projectRoot = tempProject();
@@ -27,7 +64,7 @@ test("auto-discovers a config module for plain cli usage", async () => {
   });
 
   expect(result.exitCode).toBe(1);
-  expect(stderr).toEqual([]);
+  expect(stderr.join("")).toContain("Scanning codebase completed in");
   expect(stdout.join("")).toContain("Found 1 discipline violation(s).");
 });
 
@@ -55,8 +92,38 @@ test("runs check through an explicit config module and exits non-zero when viola
   });
 
   expect(result.exitCode).toBe(1);
-  expect(stderr).toEqual([]);
+  expect(stderr.join("")).toContain("Scanning codebase completed in");
   expect(stdout.join("")).toContain("Found 1 discipline violation(s).");
+});
+
+test("logs chunked scan progress and completion timing to stderr", async () => {
+  const projectRoot = tempProject();
+  const stdout: string[] = [];
+  const stderr: string[] = [];
+  const previousDisableNative = process.env.TB_CODE_DISCIPLINE_DISABLE_NATIVE;
+  const previousConcurrency = process.env.TB_CODE_DISCIPLINE_SCAN_CONCURRENCY;
+
+  try {
+    process.env.TB_CODE_DISCIPLINE_DISABLE_NATIVE = "1";
+    process.env.TB_CODE_DISCIPLINE_SCAN_CONCURRENCY = "1";
+    resetNativeBindingForTests();
+
+    for (let index = 0; index < 4; index += 1) {
+      writeFile(projectRoot, `src/group-${index}/feature/app.ts`, "one\n2\n3\n");
+    }
+    writeMaxFileLinesConfig(projectRoot);
+
+    const result = await runCli(["check", "--config", "./discipline.config.mjs"], {
+      cwd: projectRoot,
+      stdout: (text) => stdout.push(text),
+      stderr: (text) => stderr.push(text),
+    });
+
+    expect(result.exitCode).toBe(1);
+    expectChunkedScanLogs(stdout, stderr);
+  } finally {
+    restoreScanEnv(previousDisableNative, previousConcurrency);
+  }
 });
 
 test("runs check through an explicit config module and prints concise violations", async () => {

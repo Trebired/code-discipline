@@ -9,6 +9,7 @@ import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
 import { loadResolvedCodeDisciplineConfig } from "../config/index.js";
 import { runGatedCommand } from "../runtime/gate-command.js";
 import { isDirectExecution } from "../shared/utils.js";
+import { createCliScanObserver, formatDuration, withLoadingAnimation } from "./progress.js";
 
 type CliRunOptions = {
   cwd?: string;
@@ -20,44 +21,6 @@ type CliRunOptions = {
 type CliRunResult = {
   exitCode: number;
 };
-
-type LoadingAnimation = {
-  stop: () => void;
-};
-
-const LOADING_FRAMES = ["-", "\\", "|", "/"];
-
-function createLoadingAnimation(label: string, enabled: boolean): LoadingAnimation {
-  if (!enabled) {
-    return {
-      stop() {},
-    };
-  }
-
-  let frameIndex = 0;
-  process.stderr.write(`${label} ${LOADING_FRAMES[frameIndex]}`);
-  const timer = setInterval(() => {
-    frameIndex = (frameIndex + 1) % LOADING_FRAMES.length;
-    process.stderr.write(`\r${label} ${LOADING_FRAMES[frameIndex]}`);
-  }, 120);
-
-  return {
-    stop() {
-      clearInterval(timer);
-      process.stderr.write(`\r${" ".repeat(label.length + 2)}\r`);
-    },
-  };
-}
-
-async function withLoadingAnimation<T>(label: string, enabled: boolean, task: () => Promise<T>): Promise<T> {
-  const animation = createLoadingAnimation(label, enabled);
-
-  try {
-    return await task();
-  } finally {
-    animation.stop();
-  }
-}
 
 function padDatePart(value: number): string {
   return String(value).padStart(2, "0");
@@ -202,21 +165,26 @@ async function runCheckCommand(args: {
   now: Date;
   parsed: ReturnType<typeof parseArgs>;
   showLoadingAnimation: boolean;
+  stderr: (text: string) => void;
   stdout: (text: string) => void;
 }): Promise<CliRunResult> {
   if (args.parsed.commandArgs.length > 0) {
     throw new Error("Command separator -- is only supported with gate");
   }
 
-  const result = await withLoadingAnimation("Scanning codebase", args.showLoadingAnimation, () => codeDiscipline({
+  const scanObserver = createCliScanObserver(args.stderr);
+  const timed = await withLoadingAnimation("Scanning codebase", args.showLoadingAnimation, () => codeDiscipline({
     ...args.config,
     configPath: args.configPath,
     mode: "check",
     onlyRules: args.parsed.selectors as CodeDisciplineRuleSlug[],
     projectRoot: args.cwd,
+    scanObserver,
   }));
+  const result = timed.result;
   const reportText = renderCheckOutput(result.violations, result.violationCount);
 
+  args.stderr(`Scanning codebase completed in ${formatDuration(timed.elapsedMs)}.\n`);
   args.stdout(reportText);
   await writeSavedReport({ ...args, reportText, saveOutput: args.parsed.saveOutput });
   return { exitCode: result.ok ? 0 : 1 };
@@ -229,19 +197,23 @@ async function runFixCommand(args: {
   now: Date;
   parsed: ReturnType<typeof parseArgs>;
   showLoadingAnimation: boolean;
+  stderr: (text: string) => void;
   stdout: (text: string) => void;
 }): Promise<CliRunResult> {
   if (args.parsed.commandArgs.length > 0) {
     throw new Error("Command separator -- is only supported with gate");
   }
 
-  const result = await withLoadingAnimation("Fixing codebase", args.showLoadingAnimation, () => codeDiscipline({
+  const scanObserver = createCliScanObserver(args.stderr);
+  const timed = await withLoadingAnimation("Fixing codebase", args.showLoadingAnimation, () => codeDiscipline({
     ...args.config,
     configPath: args.configPath,
     mode: "fix",
     onlyRules: args.parsed.selectors as FixableRuleSlug[],
     projectRoot: args.cwd,
+    scanObserver,
   }));
+  const result = timed.result;
   const reportText = renderFixOutput({
     movedFiles: result.moved_files,
     rewrittenFiles: result.rewritten_files,
@@ -263,19 +235,24 @@ async function runGateCommand(args: {
   now: Date;
   parsed: ReturnType<typeof parseArgs>;
   showLoadingAnimation: boolean;
+  stderr: (text: string) => void;
   stdout: (text: string) => void;
 }): Promise<CliRunResult> {
   if (args.parsed.commandArgs.length === 0) {
     throw new Error("Missing child command after --");
   }
 
-  const result = await withLoadingAnimation("Scanning codebase", args.showLoadingAnimation, () => codeDiscipline({
+  const scanObserver = createCliScanObserver(args.stderr);
+  const timed = await withLoadingAnimation("Scanning codebase", args.showLoadingAnimation, () => codeDiscipline({
     ...args.config,
     configPath: args.configPath,
     mode: "check",
     onlyRules: args.parsed.selectors as CodeDisciplineRuleSlug[],
     projectRoot: args.cwd,
+    scanObserver,
   }));
+  const result = timed.result;
+  args.stderr(`Scanning codebase completed in ${formatDuration(timed.elapsedMs)}.\n`);
 
   if (!result.ok) {
     const reportText = renderCheckOutput(result.violations, result.violationCount);
@@ -312,6 +289,7 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
       now,
       parsed,
       showLoadingAnimation,
+      stderr,
       stdout,
     };
 

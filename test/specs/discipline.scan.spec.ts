@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { checkCodeDiscipline } from "../../src/index.js";
+import { checkCodeDiscipline, resetNativeBindingForTests, scanSourceFiles } from "../../src/index.js";
 import { tempProject, writeFile } from "./helpers.js";
 
 test("reports removable comments without mistaking literal contents for comments", async () => {
@@ -180,4 +180,52 @@ test("combines default excludeDirs, explicit excludeDirs, and opt-in .gitignore 
     "src/app.ts",
     "src/generated/out.ts",
   ]);
+});
+
+test("emits chunked fallback scan progress for larger directory trees", async () => {
+  const projectRoot = tempProject();
+  const previousDisableNative = process.env.TB_CODE_DISCIPLINE_DISABLE_NATIVE;
+  const previousConcurrency = process.env.TB_CODE_DISCIPLINE_SCAN_CONCURRENCY;
+
+  try {
+    process.env.TB_CODE_DISCIPLINE_DISABLE_NATIVE = "1";
+    process.env.TB_CODE_DISCIPLINE_SCAN_CONCURRENCY = "1";
+    resetNativeBindingForTests();
+
+    for (let index = 0; index < 4; index += 1) {
+      writeFile(projectRoot, `src/group-${index}/feature/app.ts`, `export const value${index} = ${index};\n`);
+    }
+
+    const events: Array<{ phase: string; backend: string }> = [];
+    const rows = await scanSourceFiles({
+      projectRoot,
+      sourceRoot: `${projectRoot}/src`,
+      sourceExtensions: [".ts"],
+      excludeDirs: ["node_modules", "dist", ".git"],
+      excludeGitignoreDirs: false,
+      gitignorePath: `${projectRoot}/.gitignore`,
+      scanObserver: (event) => events.push({ phase: event.phase, backend: event.backend }),
+    });
+
+    expect(rows).toHaveLength(4);
+    expect(events.some((event) => event.phase === "chunk" && event.backend === "ts")).toBe(true);
+    expect(events[events.length - 1]).toEqual({
+      phase: "completed",
+      backend: "ts",
+    });
+  } finally {
+    resetNativeBindingForTests();
+
+    if (previousDisableNative === undefined) {
+      delete process.env.TB_CODE_DISCIPLINE_DISABLE_NATIVE;
+    } else {
+      process.env.TB_CODE_DISCIPLINE_DISABLE_NATIVE = previousDisableNative;
+    }
+
+    if (previousConcurrency === undefined) {
+      delete process.env.TB_CODE_DISCIPLINE_SCAN_CONCURRENCY;
+    } else {
+      process.env.TB_CODE_DISCIPLINE_SCAN_CONCURRENCY = previousConcurrency;
+    }
+  }
 });
