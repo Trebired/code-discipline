@@ -3,6 +3,8 @@ import { performance } from "node:perf_hooks";
 import type { SourceScanProgressEvent } from "../imports/types.js";
 
 type LoadingAnimation = {
+  pause: () => void;
+  resume: () => void;
   stop: () => void;
 };
 
@@ -16,31 +18,60 @@ const LOADING_FRAMES = ["-", "\\", "|", "/"];
 function createLoadingAnimation(label: string, enabled: boolean): LoadingAnimation {
   if (!enabled) {
     return {
+      pause() {},
+      resume() {},
       stop() {},
     };
   }
 
   let frameIndex = 0;
-  process.stderr.write(`${label} ${LOADING_FRAMES[frameIndex]}`);
+  let running = true;
+
+  const render = () => {
+    if (!running) return;
+    process.stderr.write(`\r${label} ${LOADING_FRAMES[frameIndex]}`);
+  };
+
+  const clear = () => {
+    process.stderr.write(`\r${" ".repeat(label.length + 2)}\r`);
+  };
+
+  render();
   const timer = setInterval(() => {
     frameIndex = (frameIndex + 1) % LOADING_FRAMES.length;
-    process.stderr.write(`\r${label} ${LOADING_FRAMES[frameIndex]}`);
+    render();
   }, 120);
 
   return {
+    pause() {
+      clear();
+    },
+    resume() {
+      render();
+    },
     stop() {
+      running = false;
       clearInterval(timer);
-      process.stderr.write(`\r${" ".repeat(label.length + 2)}\r`);
+      clear();
     },
   };
 }
 
-async function withLoadingAnimation<T>(label: string, enabled: boolean, task: () => Promise<T>): Promise<TimedTaskResult<T>> {
+async function withLoadingAnimation<T>(
+  label: string,
+  enabled: boolean,
+  task: (writeLine: (text: string) => void) => Promise<T>,
+): Promise<TimedTaskResult<T>> {
   const startedAt = performance.now();
   const animation = createLoadingAnimation(label, enabled);
+  const writeLine = (text: string) => {
+    animation.pause();
+    process.stderr.write(text);
+    animation.resume();
+  };
 
   try {
-    const result = await task();
+    const result = await task(writeLine);
     return {
       elapsedMs: performance.now() - startedAt,
       result,
@@ -67,23 +98,21 @@ function shouldPrintScanChunk(event: SourceScanProgressEvent): boolean {
     && (event.chunkIndex <= 3 || event.chunkIndex % 10 === 0 || event.queuedDirectories === 0);
 }
 
-function createCliScanObserver(stderr: (text: string) => void) {
+function createCliScanObserver(writeLine: (text: string) => void) {
   return (event: SourceScanProgressEvent) => {
     if (event.phase === "chunk") {
       if (!shouldPrintScanChunk(event)) return;
 
-      stderr(
-        `Source scan chunk ${event.chunkIndex}: dirs ${event.completedDirectories}, queued ${event.queuedDirectories}, `
-        + `chunk files ${event.chunkMatchedFiles}, total files ${event.discoveredFiles}, `
-        + `concurrency ${event.concurrency}, elapsed ${formatDuration(event.elapsedMs)}.\n`,
+      writeLine(
+        `Scan ${event.chunkIndex}: ${event.discoveredFiles} files, ${event.completedDirectories} dirs, `
+        + `${formatDuration(event.elapsedMs)}.\n`,
       );
       return;
     }
 
-    stderr(
-      `Source scan finished via ${event.backend} backend in ${formatDuration(event.elapsedMs)} `
-      + `for ${event.fileCount} file(s) across ${event.directoryCount} director${event.directoryCount === 1 ? "y" : "ies"} `
-      + `using ${event.chunkCount} chunk(s) at concurrency ${event.concurrency}.\n`,
+    writeLine(
+      `Discovered ${event.fileCount} files in ${formatDuration(event.elapsedMs)} `
+      + `(${event.backend} scan, ${event.directoryCount} dirs).\n`,
     );
   };
 }

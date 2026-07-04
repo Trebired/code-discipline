@@ -2,6 +2,12 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 3.1.1
+
+- Shortened CLI scan progress output so large-repository scans stay readable instead of dumping low-signal scan internals.
+- Clarified scan logging so source discovery time and total `check`/`gate` runtime are reported as separate lines with distinct wording.
+- Fixed the TTY spinner/log interaction so scan progress and completion lines do not get rendered on top of the loading frame.
+
 ## 3.1.0
 
 - Added explicit CLI scan completion timing so `check` and `gate` report how long the codebase scan took after `Scanning codebase`.

@@ -35,9 +35,9 @@ function restoreScanEnv(previousDisableNative: string | undefined, previousConcu
 
 function expectChunkedScanLogs(stdout: string[], stderr: string[]) {
   expect(stdout.join("")).toContain("Found 4 discipline violation(s).");
-  expect(stderr.join("")).toContain("Source scan chunk 1:");
-  expect(stderr.join("")).toContain("Source scan finished via ts backend");
-  expect(stderr.join("")).toContain("Scanning codebase completed in");
+  expect(stderr.join("")).toContain("Scan 1:");
+  expect(stderr.join("")).toContain("Discovered 4 files in");
+  expect(stderr.join("")).toContain("Check completed in");
 }
 
 test("auto-discovers a config module for plain cli usage", async () => {
@@ -64,7 +64,7 @@ test("auto-discovers a config module for plain cli usage", async () => {
   });
 
   expect(result.exitCode).toBe(1);
-  expect(stderr.join("")).toContain("Scanning codebase completed in");
+  expect(stderr.join("")).toContain("Check completed in");
   expect(stdout.join("")).toContain("Found 1 discipline violation(s).");
 });
 
@@ -92,7 +92,7 @@ test("runs check through an explicit config module and exits non-zero when viola
   });
 
   expect(result.exitCode).toBe(1);
-  expect(stderr.join("")).toContain("Scanning codebase completed in");
+  expect(stderr.join("")).toContain("Check completed in");
   expect(stdout.join("")).toContain("Found 1 discipline violation(s).");
 });
 

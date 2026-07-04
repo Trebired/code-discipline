@@ -172,19 +172,21 @@ async function runCheckCommand(args: {
     throw new Error("Command separator -- is only supported with gate");
   }
 
-  const scanObserver = createCliScanObserver(args.stderr);
-  const timed = await withLoadingAnimation("Scanning codebase", args.showLoadingAnimation, () => codeDiscipline({
-    ...args.config,
-    configPath: args.configPath,
-    mode: "check",
-    onlyRules: args.parsed.selectors as CodeDisciplineRuleSlug[],
-    projectRoot: args.cwd,
-    scanObserver,
-  }));
+  const timed = await withLoadingAnimation("Scanning codebase", args.showLoadingAnimation, (writeLine) => {
+    const scanObserver = createCliScanObserver(args.showLoadingAnimation ? writeLine : args.stderr);
+    return codeDiscipline({
+      ...args.config,
+      configPath: args.configPath,
+      mode: "check",
+      onlyRules: args.parsed.selectors as CodeDisciplineRuleSlug[],
+      projectRoot: args.cwd,
+      scanObserver,
+    });
+  });
   const result = timed.result;
   const reportText = renderCheckOutput(result.violations, result.violationCount);
 
-  args.stderr(`Scanning codebase completed in ${formatDuration(timed.elapsedMs)}.\n`);
+  args.stderr(`Check completed in ${formatDuration(timed.elapsedMs)}.\n`);
   args.stdout(reportText);
   await writeSavedReport({ ...args, reportText, saveOutput: args.parsed.saveOutput });
   return { exitCode: result.ok ? 0 : 1 };
@@ -204,15 +206,17 @@ async function runFixCommand(args: {
     throw new Error("Command separator -- is only supported with gate");
   }
 
-  const scanObserver = createCliScanObserver(args.stderr);
-  const timed = await withLoadingAnimation("Fixing codebase", args.showLoadingAnimation, () => codeDiscipline({
-    ...args.config,
-    configPath: args.configPath,
-    mode: "fix",
-    onlyRules: args.parsed.selectors as FixableRuleSlug[],
-    projectRoot: args.cwd,
-    scanObserver,
-  }));
+  const timed = await withLoadingAnimation("Fixing codebase", args.showLoadingAnimation, (writeLine) => {
+    const scanObserver = createCliScanObserver(args.showLoadingAnimation ? writeLine : args.stderr);
+    return codeDiscipline({
+      ...args.config,
+      configPath: args.configPath,
+      mode: "fix",
+      onlyRules: args.parsed.selectors as FixableRuleSlug[],
+      projectRoot: args.cwd,
+      scanObserver,
+    });
+  });
   const result = timed.result;
   const reportText = renderFixOutput({
     movedFiles: result.moved_files,
@@ -242,17 +246,19 @@ async function runGateCommand(args: {
     throw new Error("Missing child command after --");
   }
 
-  const scanObserver = createCliScanObserver(args.stderr);
-  const timed = await withLoadingAnimation("Scanning codebase", args.showLoadingAnimation, () => codeDiscipline({
-    ...args.config,
-    configPath: args.configPath,
-    mode: "check",
-    onlyRules: args.parsed.selectors as CodeDisciplineRuleSlug[],
-    projectRoot: args.cwd,
-    scanObserver,
-  }));
+  const timed = await withLoadingAnimation("Scanning codebase", args.showLoadingAnimation, (writeLine) => {
+    const scanObserver = createCliScanObserver(args.showLoadingAnimation ? writeLine : args.stderr);
+    return codeDiscipline({
+      ...args.config,
+      configPath: args.configPath,
+      mode: "check",
+      onlyRules: args.parsed.selectors as CodeDisciplineRuleSlug[],
+      projectRoot: args.cwd,
+      scanObserver,
+    });
+  });
   const result = timed.result;
-  args.stderr(`Scanning codebase completed in ${formatDuration(timed.elapsedMs)}.\n`);
+  args.stderr(`Gate check completed in ${formatDuration(timed.elapsedMs)}.\n`);
 
   if (!result.ok) {
     const reportText = renderCheckOutput(result.violations, result.violationCount);
