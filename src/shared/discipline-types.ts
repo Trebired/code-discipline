@@ -1,3 +1,5 @@
+import type { ResultLike } from "@trebired/result";
+
 type CodeDisciplineRuleName =
   | "max-file-lines"
   | "max-function-lines"
@@ -20,6 +22,11 @@ type CodeDisciplineResult = {
   ok: boolean;
   violationCount: number;
   violations: CodeDisciplineViolation[];
+  result?: ResultLike<{
+    violationCount: number;
+  }, {
+    rules: CodeDisciplineRuleName[];
+  }>;
 };
 
 export type {

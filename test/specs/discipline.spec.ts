@@ -3,6 +3,23 @@ import { expect, test } from "bun:test";
 import { checkCodeDiscipline, defineCodeDisciplineConfig } from "../../src/index.js";
 import { captureTrebiredLogger, tempProject, writeFile } from "./helpers.js";
 
+function expectedViolationResult(rules: string[]) {
+  return {
+    ok: false,
+    error: true,
+    noop: false,
+    status: 409,
+    error_code: "discipline-check-violations",
+    message: "check found 1 violation(s).",
+    data: {
+      violationCount: 1,
+    },
+    details: {
+      rules,
+    },
+  };
+}
+
 test("exports defineCodeDisciplineConfig as an identity helper", () => {
   const config = defineCodeDisciplineConfig({
     sourceRoot: "src",
@@ -39,6 +56,7 @@ test("returns error violations as ok=false", async () => {
 
   expect(result).toEqual({
     ok: false,
+    result: expectedViolationResult(["max-file-lines"]),
     violationCount: 1,
     violations: [
       {
@@ -103,6 +121,7 @@ test("reports oversized functions with name and line span details", async () => 
 
   expect(result).toEqual({
     ok: false,
+    result: expectedViolationResult(["max-function-lines"]),
     violationCount: 1,
     violations: [
       {

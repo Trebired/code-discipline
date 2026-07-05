@@ -1,4 +1,5 @@
 import path from "node:path";
+import { result as createResult } from "@trebired/result";
 
 import { normalizeCheckCodeDisciplineOptions } from "../config/normalize/check-options.js";
 import { collectSyncImportViolations } from "../imports/check-sync-imports.js";
@@ -119,6 +120,32 @@ function logSummary(
   logger.flush("success", `discipline-${label}-ok`, `${label} completed`, {
     violationCount: 0,
   });
+}
+
+function attachDisciplineResult<T extends CodeDisciplineResult>(
+  phase: "check" | "fix",
+  output: T,
+): T {
+  const details = {
+    rules: [...new Set(output.violations.map((violation) => violation.rule))],
+  };
+
+  return {
+    ...output,
+    result: output.violationCount > 0
+      ? createResult.error(409, `discipline-${phase}-violations`, `${phase} found ${output.violationCount} violation(s).`, {
+          data: {
+            violationCount: output.violationCount,
+          },
+          details,
+        })
+      : createResult.ok(`${phase} completed.`, {
+          data: {
+            violationCount: output.violationCount,
+          },
+          details,
+        }),
+  };
 }
 
 async function collectViolations(options: NormalizedCheckCodeDisciplineOptions): Promise<CodeDisciplineViolation[]> {
@@ -273,7 +300,7 @@ async function checkCodeDiscipline(options: CheckCodeDisciplineOptions): Promise
   const normalized = await normalizeCheckCodeDisciplineOptions(options, "check");
   const logger = resolveLogger(normalized.logging);
   const violations = await collectViolations(normalized);
-  const result: CheckCodeDisciplineResult = summarizeViolations(violations);
+  const result: CheckCodeDisciplineResult = attachDisciplineResult("check", summarizeViolations(violations));
 
   logSummary("check", result, logger);
   return result;
@@ -297,7 +324,7 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
   await applySyncImportsFix(state, normalized);
   await applyRemoveCommentsFix(state, normalized);
 
-  const result = createFixResult(state);
+  const result = attachDisciplineResult("fix", createFixResult(state));
   logFixResult(result, logger);
   return result;
 }

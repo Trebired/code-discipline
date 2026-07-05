@@ -60,7 +60,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@trebired/logger-adapter": "^0.2.0",
+    "@trebired/logger-adapter": "^0.2.2",
+    "@trebired/result": "^0.2.0",
     "typescript": "^6.0.2"
   },
   "devDependencies": {

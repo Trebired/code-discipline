@@ -3,6 +3,23 @@ import { expect, test } from "bun:test";
 import { checkCodeDiscipline, resetNativeBindingForTests, scanSourceFiles } from "../../src/index.js";
 import { tempProject, writeFile } from "./helpers.js";
 
+function expectedViolationResult(rules: string[]) {
+  return {
+    ok: false,
+    error: true,
+    noop: false,
+    status: 409,
+    error_code: "discipline-check-violations",
+    message: `check found 1 violation(s).`,
+    data: {
+      violationCount: 1,
+    },
+    details: {
+      rules,
+    },
+  };
+}
+
 test("reports removable comments without mistaking literal contents for comments", async () => {
   const projectRoot = tempProject();
 
@@ -24,6 +41,7 @@ test("reports removable comments without mistaking literal contents for comments
 
   expect(result).toEqual({
     ok: false,
+    result: expectedViolationResult(["remove-comments"]),
     violationCount: 1,
     violations: [
       {
@@ -85,6 +103,7 @@ test("merges directory excludes from .gitignore when explicitly enabled", async 
 
   expect(enabled).toEqual({
     ok: false,
+    result: expectedViolationResult(["max-file-lines"]),
     violationCount: 1,
     violations: [
       {
