@@ -5,7 +5,8 @@
     "": {
       "name": "@trebired/code-discipline",
       "dependencies": {
-        "@trebired/logger-adapter": "^0.2.0",
+        "@trebired/logger-adapter": "^0.2.2",
+        "@trebired/result": "^0.2.0",
         "typescript": "^6.0.2",
       },
       "devDependencies": {
@@ -18,7 +19,9 @@
   "packages": {
     "@trebired/code-discipline": ["@trebired/code-discipline@root:", {}],
 
-    "@trebired/logger-adapter": ["@trebired/logger-adapter@0.2.0", "", {}, "sha512-nRHfOVEdYIVYn4qBc1sZbWKGttLiw9VWscmWMJ5/EUGlc8lKaEO+k3n7JeaxOgRvYsCISCDTaQ6Zy7xrB7a3fg=="],
+    "@trebired/logger-adapter": ["@trebired/logger-adapter@0.2.2", "", {}, "sha512-8FurbitdICfB8Y5LmY1ucZesw5H0V1SVS1Um3ZqQHyyU2+5SHNlS6jhPSE34y53mAvYExCgriCj1r/5lG3UoWQ=="],
+
+    "@trebired/result": ["@trebired/result@0.2.0", "", { "dependencies": { "@trebired/logger-adapter": "^0.2.2" } }, "sha512-SRs5GZAqtmLsJqdNWaHIgWUH5fdonnQvb4bR4af/elDtPwESU7G3crQdQF3RJeFvWMhRZHjJmZTifWDm8JFMvQ=="],
 
     "@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
 
