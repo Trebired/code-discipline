@@ -2,6 +2,11 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 3.1.2
+
+- Added `@trebired/result`-backed internal outcome typing for touched check and reporting paths so package-owned backend communication can share the same result surface used across Trebired packages.
+- Kept the public CLI behavior unchanged while aligning the touched implementation with the current discipline expectations used to check other repositories.
+
 ## 3.1.1
 
 - Shortened CLI scan progress output so large-repository scans stay readable instead of dumping low-signal scan internals.
