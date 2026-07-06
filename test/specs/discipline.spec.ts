@@ -1,9 +1,10 @@
 import { expect, test } from "bun:test";
 
 import { checkCodeDiscipline, defineCodeDisciplineConfig } from "../../src/index.js";
+import type { CodeDisciplineRuleName } from "../../src/index.js";
 import { captureTrebiredLogger, tempProject, writeFile } from "./helpers.js";
 
-function expectedViolationResult(rules: string[]) {
+function expectedViolationResult(rules: CodeDisciplineRuleName[]) {
   return {
     ok: false,
     error: true,
