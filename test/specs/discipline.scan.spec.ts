@@ -60,6 +60,29 @@ test("reports removable comments without mistaking literal contents for comments
   });
 });
 
+test("ignores excluded comments in remove-comments checks", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", [
+    "// @ts-nocheck",
+    "export const app = true;",
+    "",
+  ].join("\n"));
+
+  const result = await checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      removeComments: {
+        exclude: ["@ts-nocheck"],
+      },
+    },
+  });
+
+  expect(result.ok).toBe(true);
+  expect(result.violationCount).toBe(0);
+  expect(result.violations).toEqual([]);
+});
+
 test("scans .gitignore directories by default", async () => {
   const projectRoot = tempProject();
 

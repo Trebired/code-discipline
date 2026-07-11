@@ -62,6 +62,7 @@ type FolderizeCompoundFilesRuleOptions = {
 
 type RemoveCommentsRuleOptions = {
   severity?: CodeDisciplineRuleSeverity;
+  exclude?: string[];
 };
 
 type DryHelperReference = {
@@ -172,6 +173,7 @@ type NormalizedDryRule = {
 
 type NormalizedRemoveCommentsRule = {
   severity: CodeDisciplineRuleSeverity;
+  exclude: string[];
 };
 
 type NormalizedPackedCodeGuardOptions = Required<PackedCodeGuardOptions>;

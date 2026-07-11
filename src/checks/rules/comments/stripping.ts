@@ -10,6 +10,10 @@ type CommentStripResult = {
   blockComments: number;
 };
 
+type CommentStripOptions = {
+  exclude?: string[];
+};
+
 function createBlockCommentReplacement(commentText: string): string {
   const newlineOnly = commentText.replace(/[^\r\n]/g, "");
   return newlineOnly.length > 0 ? newlineOnly : " ";
@@ -65,8 +69,16 @@ function createEmptyStripResult(text: string): CommentStripResult {
   };
 }
 
-function stripCommentsJs(text: string, extension: string): CommentStripResult {
-  const ranges = collectCommentRanges(text, extension);
+function shouldExcludeComment(text: string, range: CommentRange, options: CommentStripOptions): boolean {
+  const excludedPatterns = options.exclude ?? [];
+  if (excludedPatterns.length === 0) return false;
+
+  const commentText = text.slice(range.start, range.end);
+  return excludedPatterns.some((pattern) => pattern.length > 0 && commentText.includes(pattern));
+}
+
+function stripCommentsJs(text: string, extension: string, options: CommentStripOptions = {}): CommentStripResult {
+  const ranges = collectCommentRanges(text, extension).filter((range) => !shouldExcludeComment(text, range, options));
   if (ranges.length === 0) return createEmptyStripResult(text);
 
   let rewritten = "";
@@ -95,14 +107,18 @@ function stripCommentsJs(text: string, extension: string): CommentStripResult {
   };
 }
 
-function stripComments(text: string, extension: string): CommentStripResult {
+function stripComments(text: string, extension: string, options: CommentStripOptions = {}): CommentStripResult {
   const native = loadNativeBinding();
   if (native) {
-    return JSON.parse(native.stripComments(text, extension)) as CommentStripResult;
+    return JSON.parse(native.stripComments(JSON.stringify({
+      text,
+      extension,
+      excludedCommentPatterns: options.exclude ?? [],
+    }))) as CommentStripResult;
   }
 
-  return stripCommentsJs(text, extension);
+  return stripCommentsJs(text, extension, options);
 }
 
 export { stripComments, stripCommentsJs };
-export type { CommentStripResult };
+export type { CommentStripOptions, CommentStripResult };

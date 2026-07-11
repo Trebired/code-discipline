@@ -217,7 +217,7 @@ function normalizeRemoveCommentsRule(rule: RemoveCommentsRuleOptions | undefined
   if (!rule) return undefined;
   const source = rule as Record<string, unknown>;
   assertRemovedKeys("removeComments", source, ["enabled", "stop", "fix"]);
-  const unsupportedKeys = Object.keys(source).filter((key) => key !== "severity");
+  const unsupportedKeys = Object.keys(source).filter((key) => key !== "severity" && key !== "exclude");
   if (unsupportedKeys.length > 0) {
     throw new InvalidCodeDisciplineConfigError("removeComments does not accept rule options", {
       rule: "removeComments",
@@ -225,8 +225,16 @@ function normalizeRemoveCommentsRule(rule: RemoveCommentsRuleOptions | undefined
     });
   }
 
+  if (rule.exclude !== undefined && !Array.isArray(rule.exclude)) {
+    throw new InvalidCodeDisciplineConfigError("removeComments.exclude must be an array of strings when provided", {
+      rule: "removeComments",
+      value: rule.exclude,
+    });
+  }
+
   return {
     severity: normalizeSeverity(rule.severity, "removeComments"),
+    exclude: uniqueStrings((rule.exclude ?? []).map((pattern) => String(pattern).trim()).filter(Boolean)),
   };
 }
 

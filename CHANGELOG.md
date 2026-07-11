@@ -2,6 +2,11 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 3.2.1
+
+- Added `removeComments.exclude` so comment checks and fixes can preserve comments containing configured plain-text substrings such as `@ts-nocheck`, without hardcoding comment syntax.
+- Kept the exclusion behavior aligned across the TypeScript fallback and Rust native backend.
+
 ## 3.2.0
 
 - Added the new check-only `bannedPatterns` / `banned-patterns` rule with case-insensitive substring matching and per-pattern `allowedFiles`.

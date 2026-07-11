@@ -217,6 +217,40 @@ test("removes TypeScript comments while preserving literal contents", async () =
   ].join("\n"));
 });
 
+test("preserves excluded comments during remove-comments fixes", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", [
+    "// @ts-nocheck",
+    "// remove this",
+    "export const app = true;",
+    "",
+  ].join("\n"));
+
+  const result = await fixCodeDiscipline({
+    projectRoot,
+    rules: {
+      removeComments: {
+        exclude: ["@ts-nocheck"],
+      },
+    },
+  });
+
+  expect(result).toMatchObject({
+    ok: true,
+    violationCount: 0,
+    rewritten_files: 1,
+    removed_comments: 1,
+    violations: [],
+  });
+
+  expect(readFile(projectRoot, "src/app.ts")).toBe([
+    "// @ts-nocheck",
+    "export const app = true;",
+    "",
+  ].join("\n"));
+});
+
 test("removes Go comments while preserving raw string contents", async () => {
   const projectRoot = tempProject();
 

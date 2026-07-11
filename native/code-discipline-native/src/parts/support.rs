@@ -25,6 +25,17 @@ struct CommentStripResult {
 #[serde(rename_all = "camelCase")]
 struct SourceFilesRequest {
     source_files: Vec<ScannedSourceFile>,
+    #[serde(default)]
+    excluded_comment_patterns: Vec<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct StripCommentsRequest {
+    text: String,
+    extension: String,
+    #[serde(default)]
+    excluded_comment_patterns: Vec<String>,
 }
 
 #[derive(Deserialize)]

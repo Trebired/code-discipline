@@ -1,6 +1,12 @@
 #[napi]
-pub fn strip_comments(text: String, extension: String) -> Result<String> {
-    let result = strip_comments_internal(&text, &extension);
+pub fn strip_comments(request_json: String) -> Result<String> {
+    let request: StripCommentsRequest =
+        serde_json::from_str(&request_json).map_err(|error| err(error.to_string()))?;
+    let result = strip_comments_internal(
+        &request.text,
+        &request.extension,
+        &request.excluded_comment_patterns,
+    );
     serde_json::to_string(&result).map_err(|error| err(error.to_string()))
 }
 
@@ -112,7 +118,11 @@ pub fn collect_remove_comments_violations(request_json: String) -> Result<String
 
         let text =
             fs::read_to_string(&file.absolute_path).map_err(|error| err(error.to_string()))?;
-        let result = strip_comments_internal(&text, &file.extension);
+        let result = strip_comments_internal(
+            &text,
+            &file.extension,
+            &request.excluded_comment_patterns,
+        );
         if !result.changed {
             continue;
         }
@@ -137,7 +147,11 @@ pub fn fix_remove_comments_rule(request_json: String) -> Result<String> {
 
         let text =
             fs::read_to_string(&file.absolute_path).map_err(|error| err(error.to_string()))?;
-        let result = strip_comments_internal(&text, &file.extension);
+        let result = strip_comments_internal(
+            &text,
+            &file.extension,
+            &request.excluded_comment_patterns,
+        );
         if !result.changed {
             continue;
         }

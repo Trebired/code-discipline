@@ -140,7 +140,9 @@ export default defineCodeDisciplineConfig({
     folderizeCompoundFiles: {
       separators: ["_", "-"],
     },
-    removeComments: {},
+    removeComments: {
+      exclude: ["@ts-nocheck"],
+    },
     syncImports: {
       alias: {
         prefix: "#",
@@ -388,6 +390,16 @@ The rule supports the same language families this package currently scans for di
 - SCSS
 
 It keeps string, regex, rune, char, byte-string, and raw-string content intact while removing actual source comments. When a removed comment occupied the whole line, that empty line is removed in the same file rewrite.
+
+You can preserve specific comments by matching plain substrings inside the comment text itself, without hardcoding any comment syntax:
+
+```ts
+removeComments: {
+  exclude: ["@ts-nocheck"],
+}
+```
+
+In that example, any comment containing `@ts-nocheck` is ignored by both `check` and `fix`.
 
 Example targeted CLI usage:
 

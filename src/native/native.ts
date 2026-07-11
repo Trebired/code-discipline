@@ -11,7 +11,7 @@ type NativeBinding = {
   runMaxBlockFunctionLinesRule(requestJson: string): string;
   runMaxFileLinesRule(requestJson: string): string;
   scanSourceFiles(requestJson: string): string;
-  stripComments(text: string, extension: string): string;
+  stripComments(requestJson: string): string;
 };
 
 let cachedBinding: NativeBinding | null | undefined;

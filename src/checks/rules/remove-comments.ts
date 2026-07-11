@@ -28,10 +28,14 @@ function createRemoveCommentsViolation(args: {
 
 async function collectRemoveCommentsViolations(
   sourceFiles: ScannedSourceFile[],
+  options: NormalizedCheckCodeDisciplineOptions,
 ): Promise<CodeDisciplineViolation[]> {
   const native = loadNativeBinding();
   if (native) {
-    return JSON.parse(native.collectRemoveCommentsViolations(JSON.stringify({ sourceFiles }))) as CodeDisciplineViolation[];
+    return JSON.parse(native.collectRemoveCommentsViolations(JSON.stringify({
+      sourceFiles,
+      excludedCommentPatterns: options.rules.removeComments?.exclude ?? [],
+    }))) as CodeDisciplineViolation[];
   }
 
   const violations: CodeDisciplineViolation[] = [];
@@ -40,7 +44,9 @@ async function collectRemoveCommentsViolations(
     if (!supportsRemoveComments(file.extension)) continue;
 
     const sourceText = await fs.readFile(file.absolutePath, "utf8");
-    const result = stripComments(sourceText, file.extension);
+    const result = stripComments(sourceText, file.extension, {
+      exclude: options.rules.removeComments?.exclude ?? [],
+    });
     if (!result.changed) continue;
 
     violations.push(createRemoveCommentsViolation({
@@ -56,11 +62,14 @@ async function collectRemoveCommentsViolations(
 
 async function fixRemoveCommentsRule(
   sourceFiles: ScannedSourceFile[],
-  _options: NormalizedCheckCodeDisciplineOptions,
+  options: NormalizedCheckCodeDisciplineOptions,
 ): Promise<FixCodeDisciplineRuleResult> {
   const native = loadNativeBinding();
   if (native) {
-    return JSON.parse(native.fixRemoveCommentsRule(JSON.stringify({ sourceFiles }))) as FixCodeDisciplineRuleResult;
+    return JSON.parse(native.fixRemoveCommentsRule(JSON.stringify({
+      sourceFiles,
+      excludedCommentPatterns: options.rules.removeComments?.exclude ?? [],
+    }))) as FixCodeDisciplineRuleResult;
   }
 
   let rewrittenFiles = 0;
@@ -70,7 +79,9 @@ async function fixRemoveCommentsRule(
     if (!supportsRemoveComments(file.extension)) continue;
 
     const sourceText = await fs.readFile(file.absolutePath, "utf8");
-    const result = stripComments(sourceText, file.extension);
+    const result = stripComments(sourceText, file.extension, {
+      exclude: options.rules.removeComments?.exclude ?? [],
+    });
     if (!result.changed) continue;
 
     await fs.writeFile(file.absolutePath, result.text, "utf8");

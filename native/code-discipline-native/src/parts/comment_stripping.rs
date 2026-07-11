@@ -52,8 +52,30 @@ fn resolve_comment_replacement(
     (range.start, range.end, value)
 }
 
-fn strip_comments_internal(text: &str, extension: &str) -> CommentStripResult {
-    let ranges = collect_comment_ranges(text, extension);
+fn should_exclude_comment(
+    text: &str,
+    range: CommentRange,
+    excluded_comment_patterns: &[String],
+) -> bool {
+    if excluded_comment_patterns.is_empty() {
+        return false;
+    }
+
+    let comment_text = &text[range.start..range.end];
+    excluded_comment_patterns
+        .iter()
+        .any(|pattern| !pattern.is_empty() && comment_text.contains(pattern))
+}
+
+fn strip_comments_internal(
+    text: &str,
+    extension: &str,
+    excluded_comment_patterns: &[String],
+) -> CommentStripResult {
+    let ranges = collect_comment_ranges(text, extension)
+        .into_iter()
+        .filter(|range| !should_exclude_comment(text, *range, excluded_comment_patterns))
+        .collect::<Vec<_>>();
 
     if ranges.is_empty() {
         return CommentStripResult {

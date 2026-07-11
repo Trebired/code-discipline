@@ -80,8 +80,8 @@ test("native and TS comment stripping agree when native is available", async () 
   await withNativeBackendToggle(() => {
     delete process.env.TB_CODE_DISCIPLINE_DISABLE_NATIVE;
     resetNativeBindingForTests();
-    const nativeResult = stripComments(source, ".ts");
-    const jsResult = stripCommentsJs(source, ".ts");
+    const nativeResult = stripComments(source, ".ts", { exclude: ["@ts-nocheck"] });
+    const jsResult = stripCommentsJs(source, ".ts", { exclude: ["@ts-nocheck"] });
     expect(nativeResult).toEqual(jsResult);
   });
 });

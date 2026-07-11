@@ -23,7 +23,7 @@ mod tests {
         ]
         .join("\n");
 
-        let result = strip_comments_internal(&source, ".ts");
+        let result = strip_comments_internal(&source, ".ts", &[]);
 
         assert!(result.changed);
         assert_eq!(result.comment_count, 2);
@@ -52,7 +52,7 @@ mod tests {
         ]
         .join("\n");
 
-        let result = strip_comments_internal(&source, ".rs");
+        let result = strip_comments_internal(&source, ".rs", &[]);
 
         assert!(result.changed);
         assert_eq!(result.comment_count, 2);
@@ -125,6 +125,19 @@ mod tests {
         assert_eq!(
             violations[0].message,
             "arrow-function buildPayload has 6 lines and exceeds the limit of 5"
+        );
+    }
+
+    #[test]
+    fn preserves_excluded_comments() {
+        let source = ["// @ts-nocheck", "// remove this", "export const app = true;", ""].join("\n");
+        let result = strip_comments_internal(&source, ".ts", &["@ts-nocheck".to_string()]);
+
+        assert!(result.changed);
+        assert_eq!(result.comment_count, 1);
+        assert_eq!(
+            result.text,
+            ["// @ts-nocheck", "export const app = true;", ""].join("\n")
         );
     }
 }
