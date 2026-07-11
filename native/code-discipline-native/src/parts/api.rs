@@ -22,11 +22,20 @@ pub fn run_max_file_lines_rule(request_json: String) -> Result<String> {
         let text =
             fs::read_to_string(&file.absolute_path).map_err(|error| err(error.to_string()))?;
         let line_count = count_lines(&text);
+        let code_line_count =
+            count_code_lines(&mask_comments_for_line_count(&text, &file.extension), &file.extension);
 
-        if line_count > request.max {
+        if code_line_count > request.max {
             violations.push(create_max_file_lines_violation(
                 file,
+                code_line_count,
+                request.max,
+            ));
+        } else if request.warning && line_count > request.max {
+            violations.push(create_max_file_lines_warning(
+                file,
                 line_count,
+                code_line_count,
                 request.max,
             ));
         }
@@ -46,10 +55,13 @@ pub fn run_max_block_function_lines_rule(request_json: String) -> Result<String>
         if is_go_extension(&file.extension) || is_rust_extension(&file.extension) {
             let text =
                 fs::read_to_string(&file.absolute_path).map_err(|error| err(error.to_string()))?;
-            violations.extend(collect_block_function_violations(file, &text, request.max));
-            handled_paths.push(file.absolute_path.clone());
-            continue;
-        }
+                violations.extend(collect_block_function_violations(file, &text, request.max));
+                if request.warning {
+                    violations.extend(collect_block_function_warnings(file, &text, request.max));
+                }
+                handled_paths.push(file.absolute_path.clone());
+                continue;
+            }
 
         if is_ts_family_extension(&file.extension) {
             let text =
@@ -60,6 +72,13 @@ pub fn run_max_block_function_lines_rule(request_json: String) -> Result<String>
                     &text,
                     request.max,
                 ));
+                if request.warning {
+                    violations.extend(collect_simple_typescript_function_warnings(
+                        file,
+                        &text,
+                        request.max,
+                    ));
+                }
                 handled_paths.push(file.absolute_path.clone());
             }
         }

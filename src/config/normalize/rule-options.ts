@@ -4,16 +4,19 @@ import {
 } from "../../shared/constants.js";
 import { InvalidCodeDisciplineConfigError } from "../../shared/errors.js";
 import type {
+  BannedPatternsRuleOptions,
   CodeDisciplineSyncImportsRuleOptions,
   DryRuleOptions,
   EvasionGuardsOptions,
   FolderizeCompoundFilesRuleOptions,
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
+  NormalizedBannedPatternsRule,
   NormalizedDryRule,
   NormalizedEvasionGuardsOptions,
   RemoveCommentsRuleOptions,
 } from "../../checks/types.js";
+import { normalizeRelativePath } from "../../shared/utils.js";
 
 function assertRemovedKeys(ruleName: string, source: Record<string, unknown>, keys: string[]) {
   for (const key of keys) {
@@ -26,20 +29,23 @@ function assertRemovedKeys(ruleName: string, source: Record<string, unknown>, ke
   }
 }
 
-function assertSeverityRemoved(ruleName: string, rule: Record<string, unknown>) {
-  if ("severity" in rule) {
-    throw new InvalidCodeDisciplineConfigError(`${ruleName}.severity is no longer supported`, {
-      rule: ruleName,
-      key: "severity",
-    });
-  }
+function normalizeSeverity(
+  value: unknown,
+  ruleName: string,
+): "warning" | "fail" {
+  if (value === undefined) return "fail";
+  if (value === "warning" || value === "fail") return value;
+
+  throw new InvalidCodeDisciplineConfigError(`${ruleName}.severity must be "warning" or "fail" when provided`, {
+    rule: ruleName,
+    value,
+  });
 }
 
 function normalizeMaxFileLinesRule(rule: MaxFileLinesRuleOptions | undefined) {
   if (!rule) return undefined;
   const source = rule as Record<string, unknown>;
   assertRemovedKeys("maxFileLines", source, ["enabled", "stop", "fix"]);
-  assertSeverityRemoved("maxFileLines", source);
 
   if (!Number.isFinite(rule?.max)) {
     throw new InvalidCodeDisciplineConfigError("maxFileLines.max must be a finite number when the rule is configured", {
@@ -50,6 +56,49 @@ function normalizeMaxFileLinesRule(rule: MaxFileLinesRuleOptions | undefined) {
 
   return {
     max: Math.max(1, Math.floor(rule!.max as number)),
+    severity: normalizeSeverity(rule.severity, "maxFileLines"),
+  };
+}
+
+function normalizeBannedPatternsRule(rule: BannedPatternsRuleOptions | undefined): NormalizedBannedPatternsRule | undefined {
+  if (!rule) return undefined;
+  const source = rule as Record<string, unknown>;
+  assertRemovedKeys("bannedPatterns", source, ["enabled", "stop", "fix"]);
+
+  if (!Array.isArray(rule.patterns) || rule.patterns.length === 0) {
+    throw new InvalidCodeDisciplineConfigError("bannedPatterns.patterns must contain at least one pattern", {
+      rule: "bannedPatterns",
+    });
+  }
+
+  const patterns = rule.patterns.map((entry, index) => {
+    const value = typeof entry === "string"
+      ? entry.trim()
+      : typeof entry?.value === "string"
+        ? entry.value.trim()
+        : "";
+
+    if (!value) {
+      throw new InvalidCodeDisciplineConfigError("bannedPatterns.patterns[] entries must be non-empty strings or { value } objects", {
+        rule: "bannedPatterns",
+        index,
+      });
+    }
+
+    const allowedFiles = typeof entry === "string"
+      ? []
+      : uniqueStrings((entry.allowedFiles ?? []).map((filePath) => normalizeRelativePath(String(filePath).trim())).filter(Boolean));
+
+    return {
+      value,
+      normalizedValue: value.toLowerCase(),
+      allowedFiles,
+    };
+  });
+
+  return {
+    patterns,
+    severity: normalizeSeverity(rule.severity, "bannedPatterns"),
   };
 }
 
@@ -57,7 +106,6 @@ function normalizeMaxFunctionLinesRule(rule: MaxFunctionLinesRuleOptions | undef
   if (!rule) return undefined;
   const source = rule as Record<string, unknown>;
   assertRemovedKeys("maxFunctionLines", source, ["enabled", "stop", "fix"]);
-  assertSeverityRemoved("maxFunctionLines", source);
 
   if (!Number.isFinite(rule?.max)) {
     throw new InvalidCodeDisciplineConfigError("maxFunctionLines.max must be a finite number when the rule is configured", {
@@ -68,6 +116,7 @@ function normalizeMaxFunctionLinesRule(rule: MaxFunctionLinesRuleOptions | undef
 
   return {
     max: Math.max(1, Math.floor(rule!.max as number)),
+    severity: normalizeSeverity(rule.severity, "maxFunctionLines"),
   };
 }
 
@@ -75,7 +124,6 @@ function normalizeFolderizeCompoundFilesRule(rule: FolderizeCompoundFilesRuleOpt
   if (!rule) return undefined;
   const source = rule as Record<string, unknown>;
   assertRemovedKeys("folderizeCompoundFiles", source, ["enabled", "stop", "suffixes", "fix"]);
-  assertSeverityRemoved("folderizeCompoundFiles", source);
   const separators = uniqueStrings(rule?.separators ?? DEFAULT_FOLDERIZE_COMPOUND_FILE_SEPARATORS);
 
   if (separators.length === 0) {
@@ -86,6 +134,7 @@ function normalizeFolderizeCompoundFilesRule(rule: FolderizeCompoundFilesRuleOpt
 
   return {
     separators,
+    severity: normalizeSeverity(rule.severity, "folderizeCompoundFiles"),
   };
 }
 
@@ -93,7 +142,6 @@ function normalizeSyncImportsRule(rule: CodeDisciplineSyncImportsRuleOptions | u
   if (!rule) return undefined;
   const source = (rule ?? {}) as Record<string, unknown>;
   assertRemovedKeys("syncImports", source, ["enabled", "stop", "rewrite", "keepRelative"]);
-  assertSeverityRemoved("syncImports", source);
 
   if ("imports" in source) {
     throw new InvalidCodeDisciplineConfigError("syncImports.imports is no longer supported; use allowRelative directly under syncImports", {
@@ -112,14 +160,14 @@ function normalizeSyncImportsRule(rule: CodeDisciplineSyncImportsRuleOptions | u
   return {
     sourceRoot: rule?.sourceRoot,
     tsconfigPath: rule?.tsconfigPath,
-    sourceExtensions: rule?.sourceExtensions,
-    includeDefaultSourceExtensions: rule?.includeDefaultSourceExtensions,
+    excludeSourceExtensions: rule?.excludeSourceExtensions,
     excludeDirs: rule?.excludeDirs,
     gitignorePath: rule?.gitignorePath,
     alias: rule?.alias,
     allowRelative: rule?.allowRelative ?? DEFAULT_ALLOW_RELATIVE,
     packageJsonImports: rule?.packageJsonImports,
     logging: rule?.logging,
+    severity: normalizeSeverity(rule.severity, "syncImports"),
   };
 }
 
@@ -127,7 +175,6 @@ function normalizeDryRule(rule: DryRuleOptions | undefined): NormalizedDryRule |
   if (!rule) return undefined;
   const source = rule as Record<string, unknown>;
   assertRemovedKeys("dry", source, ["enabled", "stop", "fix"]);
-  assertSeverityRemoved("dry", source);
 
   if (!Array.isArray(rule.helpers) || rule.helpers.length === 0) {
     throw new InvalidCodeDisciplineConfigError("dry.helpers must contain at least one helper", {
@@ -162,6 +209,7 @@ function normalizeDryRule(rule: DryRuleOptions | undefined): NormalizedDryRule |
 
   return {
     helpers,
+    severity: normalizeSeverity(rule.severity, "dry"),
   };
 }
 
@@ -169,16 +217,17 @@ function normalizeRemoveCommentsRule(rule: RemoveCommentsRuleOptions | undefined
   if (!rule) return undefined;
   const source = rule as Record<string, unknown>;
   assertRemovedKeys("removeComments", source, ["enabled", "stop", "fix"]);
-  assertSeverityRemoved("removeComments", source);
-
-  if (Object.keys(source).length > 0) {
+  const unsupportedKeys = Object.keys(source).filter((key) => key !== "severity");
+  if (unsupportedKeys.length > 0) {
     throw new InvalidCodeDisciplineConfigError("removeComments does not accept rule options", {
       rule: "removeComments",
-      keys: Object.keys(source),
+      keys: unsupportedKeys,
     });
   }
 
-  return {};
+  return {
+    severity: normalizeSeverity(rule.severity, "removeComments"),
+  };
 }
 
 function normalizeThreshold(value: unknown, fallback: number, label: string): number {
@@ -215,6 +264,7 @@ function normalizeEvasionGuardsOptions(options: EvasionGuardsOptions | undefined
   return {
     packedCode,
     runtimeCodeHiding: source.runtimeCodeHiding ?? true,
+    severity: normalizeSeverity(source.severity, "evasionGuards"),
   };
 }
 
@@ -223,6 +273,7 @@ function uniqueStrings(values: string[]): string[] {
 }
 
 export {
+  normalizeBannedPatternsRule,
   normalizeDryRule,
   normalizeEvasionGuardsOptions,
   normalizeFolderizeCompoundFilesRule,

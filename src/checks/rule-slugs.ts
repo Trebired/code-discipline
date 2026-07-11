@@ -8,6 +8,7 @@ import type {
 } from "./types.js";
 
 const ALL_RULE_SLUGS: CodeDisciplineRuleSlug[] = [
+  "banned-patterns",
   "max-file-lines",
   "max-function-lines",
   "folderize-compound-files",
@@ -25,6 +26,7 @@ const FIXABLE_RULE_SLUGS: FixableRuleSlug[] = [
 ];
 
 const RULE_SLUG_BY_CONFIG_KEY = {
+  bannedPatterns: "banned-patterns",
   dry: "dry",
   folderizeCompoundFiles: "folderize-compound-files",
   maxFileLines: "max-file-lines",

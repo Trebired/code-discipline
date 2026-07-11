@@ -13,6 +13,7 @@ const TYPESCRIPT_FAMILY_EXTENSIONS = new Set([
 
 const GO_FAMILY_EXTENSIONS = new Set([".go"]);
 const RUST_FAMILY_EXTENSIONS = new Set([".rs"]);
+const SCSS_FAMILY_EXTENSIONS = new Set([".scss"]);
 
 function normalizeExtension(value: string): string {
   return value.startsWith(".") ? value.toLowerCase() : path.extname(value).toLowerCase();
@@ -30,6 +31,10 @@ function isRustExtension(value: string): boolean {
   return RUST_FAMILY_EXTENSIONS.has(normalizeExtension(value));
 }
 
+function isScssExtension(value: string): boolean {
+  return SCSS_FAMILY_EXTENSIONS.has(normalizeExtension(value));
+}
+
 function supportsSyncImports(value: string): boolean {
   return isTypeScriptFamilyExtension(value);
 }
@@ -43,12 +48,13 @@ function supportsMaxFunctionLines(value: string): boolean {
 }
 
 function supportsRemoveComments(value: string): boolean {
-  return isTypeScriptFamilyExtension(value) || isGoExtension(value) || isRustExtension(value);
+  return isTypeScriptFamilyExtension(value) || isGoExtension(value) || isRustExtension(value) || isScssExtension(value);
 }
 
 export {
   isGoExtension,
   isRustExtension,
+  isScssExtension,
   isTypeScriptFamilyExtension,
   supportsFolderizationFix,
   supportsMaxFunctionLines,

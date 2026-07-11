@@ -1,6 +1,6 @@
 const DEFAULT_SOURCE_ROOT = "src";
-const DEFAULT_SOURCE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".go", ".rs"];
-const DEFAULT_EXCLUDE_DIRS = ["node_modules", "dist", ".vite"];
+const DEFAULT_SOURCE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".mts", ".cts", ".cjs", ".go", ".rs", ".scss"];
+const DEFAULT_EXCLUDE_DIRS = [".git", "node_modules", "dist", ".vite"];
 const DEFAULT_ALIAS_PREFIX = "#";
 const DEFAULT_ALIAS_STRATEGY = "random";
 const DEFAULT_ALIAS_RANDOM_LENGTH = 12;

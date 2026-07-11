@@ -42,9 +42,8 @@ struct DirectoryTask {
 #[derive(Clone)]
 struct DirectoryScanContext {
     project_root: PathBuf,
-    source_root: PathBuf,
     source_extensions: HashSet<String>,
-    exclude_dirs: Vec<String>,
+    exclude_dir_paths: Vec<(String, String)>,
     excluded_directory_names: HashSet<String>,
 }
 
@@ -83,13 +82,16 @@ fn create_directory_scan_context(options: &SourceScanRequest) -> DirectoryScanCo
 
     DirectoryScanContext {
         project_root: PathBuf::from(&options.project_root),
-        source_root: PathBuf::from(&options.source_root),
         source_extensions: options
             .source_extensions
             .iter()
             .map(|entry| entry.to_lowercase())
             .collect::<HashSet<_>>(),
-        exclude_dirs,
+        exclude_dir_paths: exclude_dirs
+            .iter()
+            .filter(|entry| entry.contains('/'))
+            .map(|entry| (entry.clone(), format!("{entry}/")))
+            .collect::<Vec<_>>(),
         excluded_directory_names,
     }
 }
@@ -98,7 +100,7 @@ fn should_exclude_directory(
     relative_dir: &str,
     project_relative_dir: &str,
     directory_name: &str,
-    exclude_dirs: &[String],
+    exclude_dir_paths: &[(String, String)],
     excluded_directory_names: &HashSet<String>,
 ) -> bool {
     let normalized_relative_dir = normalize_relative_path(relative_dir);
@@ -108,11 +110,11 @@ fn should_exclude_directory(
         return true;
     }
 
-    exclude_dirs.iter().any(|entry| {
-        normalized_relative_dir == *entry
-            || normalized_relative_dir.starts_with(&format!("{entry}/"))
-            || normalized_project_relative_dir == *entry
-            || normalized_project_relative_dir.starts_with(&format!("{entry}/"))
+    exclude_dir_paths.iter().any(|(exact, prefix)| {
+        normalized_relative_dir == *exact
+            || normalized_relative_dir.starts_with(prefix)
+            || normalized_project_relative_dir == *exact
+            || normalized_project_relative_dir.starts_with(prefix)
     })
 }
 
@@ -129,20 +131,20 @@ fn scan_directory(task: DirectoryTask, context: &DirectoryScanContext) -> Result
     for entry in entries {
         let absolute_path = entry.path();
         let file_name = entry.file_name().to_string_lossy().to_string();
-        let relative_path = normalize_relative_path(if task.relative_dir.is_empty() {
-            file_name.clone()
-        } else {
-            format!("{}/{}", task.relative_dir, file_name)
-        });
-        let project_relative_path = path_relative_from(&context.project_root, &absolute_path);
         let file_type = entry.file_type().map_err(|error| err(error.to_string()))?;
 
         if file_type.is_dir() {
+            let relative_path = normalize_relative_path(if task.relative_dir.is_empty() {
+                file_name.clone()
+            } else {
+                format!("{}/{}", task.relative_dir, file_name)
+            });
+            let project_relative_path = path_relative_from(&context.project_root, &absolute_path);
             if should_exclude_directory(
                 &relative_path,
                 &project_relative_path,
                 &file_name,
-                &context.exclude_dirs,
+                &context.exclude_dir_paths,
                 &context.excluded_directory_names,
             ) {
                 continue;
@@ -164,10 +166,16 @@ fn scan_directory(task: DirectoryTask, context: &DirectoryScanContext) -> Result
             continue;
         }
 
+        let relative_path = normalize_relative_path(if task.relative_dir.is_empty() {
+            file_name.clone()
+        } else {
+            format!("{}/{}", task.relative_dir, file_name)
+        });
+
         files.push(ScannedSourceFile {
             absolute_path: absolute_path.to_string_lossy().to_string(),
             relative_from_project_root: path_relative_from(&context.project_root, &absolute_path),
-            relative_from_source_root: path_relative_from(&context.source_root, &absolute_path),
+            relative_from_source_root: relative_path,
             extension,
         });
     }

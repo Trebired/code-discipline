@@ -114,7 +114,12 @@ function parseArgs(args: string[]): {
 
 function formatViolation(violation: CodeDisciplineViolation): string {
   const suggested = violation.suggestedPath ? ` suggested=${violation.suggestedPath}` : "";
-  return `${violation.rule} ${violation.filePath} ${violation.message}${suggested}`;
+  const severity = violation.severity === "warning" ? "warning " : "";
+  return `${severity}${violation.rule} ${violation.filePath} ${violation.message}${suggested}`;
+}
+
+function countBlockingViolations(violations: CodeDisciplineViolation[]): number {
+  return violations.filter((violation) => violation.severity !== "warning").length;
 }
 
 function renderCheckOutput(violations: CodeDisciplineViolation[], violationCount: number): string {
@@ -122,9 +127,16 @@ function renderCheckOutput(violations: CodeDisciplineViolation[], violationCount
     return "No discipline violations found.\n";
   }
 
+  const blockingCount = countBlockingViolations(violations);
+  const warningCount = violationCount - blockingCount;
+
   return [
     ...violations.map((violation) => `${formatViolation(violation)}\n`),
-    `Found ${violationCount} discipline violation(s).\n`,
+    blockingCount > 0
+      ? warningCount > 0
+        ? `Found ${blockingCount} discipline violation(s) and ${warningCount} warning(s).\n`
+        : `Found ${blockingCount} discipline violation(s).\n`
+      : `Found ${warningCount} discipline warning(s).\n`,
   ].join("");
 }
 
@@ -186,7 +198,7 @@ async function runCheckCommand(args: {
   const result = timed.result;
   const reportText = renderCheckOutput(result.violations, result.violationCount);
 
-  args.stderr(`Check completed in ${formatDuration(timed.elapsedMs)}.\n`);
+  args.stderr(`Total check: ${formatDuration(timed.elapsedMs)}.\n`);
   args.stdout(reportText);
   await writeSavedReport({ ...args, reportText, saveOutput: args.parsed.saveOutput });
   return { exitCode: result.ok ? 0 : 1 };
@@ -258,7 +270,7 @@ async function runGateCommand(args: {
     });
   });
   const result = timed.result;
-  args.stderr(`Gate check completed in ${formatDuration(timed.elapsedMs)}.\n`);
+  args.stderr(`Total gate check: ${formatDuration(timed.elapsedMs)}.\n`);
 
   if (!result.ok) {
     const reportText = renderCheckOutput(result.violations, result.violationCount);

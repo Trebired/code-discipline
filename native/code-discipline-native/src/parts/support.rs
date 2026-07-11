@@ -32,6 +32,7 @@ struct SourceFilesRequest {
 struct MaxFileLinesRequest {
     source_files: Vec<ScannedSourceFile>,
     max: usize,
+    warning: bool,
 }
 
 #[derive(Deserialize)]
@@ -74,6 +75,7 @@ struct FolderizeRequest {
 struct MaxFunctionLinesRequest {
     source_files: Vec<ScannedSourceFile>,
     max: usize,
+    warning: bool,
 }
 
 #[derive(Serialize)]
@@ -84,6 +86,8 @@ struct CodeDisciplineViolation {
     file_path: String,
     message: String,
     details: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    severity: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     suggested_path: Option<String>,
 }
@@ -155,4 +159,8 @@ fn is_go_extension(extension: &str) -> bool {
 
 fn is_rust_extension(extension: &str) -> bool {
     extension == ".rs"
+}
+
+fn is_scss_extension(extension: &str) -> bool {
+    extension == ".scss"
 }

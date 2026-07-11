@@ -16,12 +16,25 @@ type CodeDisciplineRuleSlug = CodeDisciplineRuleName;
 type FixableRuleSlug = "folderize-compound-files" | "sync-imports" | "remove-comments" | "dry";
 type CodeDisciplineMode = "check" | "fix";
 type CodeDisciplineRuntimeMode = CodeDisciplineMode;
+type CodeDisciplineRuleSeverity = "warning" | "fail";
+type BannedPatternRuleEntry = string | {
+  value: string;
+  allowedFiles?: string[];
+};
+
+type BannedPatternsRuleOptions = {
+  patterns: BannedPatternRuleEntry[];
+  severity?: CodeDisciplineRuleSeverity;
+};
+
 type MaxFileLinesRuleOptions = {
   max?: number;
+  severity?: CodeDisciplineRuleSeverity;
 };
 
 type MaxFunctionLinesRuleOptions = {
   max?: number;
+  severity?: CodeDisciplineRuleSeverity;
 };
 
 type PackedCodeGuardOptions = {
@@ -39,13 +52,17 @@ type PackedCodeGuardOptions = {
 type EvasionGuardsOptions = boolean | {
   packedCode?: boolean | PackedCodeGuardOptions;
   runtimeCodeHiding?: boolean;
+  severity?: CodeDisciplineRuleSeverity;
 };
 
 type FolderizeCompoundFilesRuleOptions = {
   separators?: string[];
+  severity?: CodeDisciplineRuleSeverity;
 };
 
-type RemoveCommentsRuleOptions = Record<string, never>;
+type RemoveCommentsRuleOptions = {
+  severity?: CodeDisciplineRuleSeverity;
+};
 
 type DryHelperReference = {
   from: string;
@@ -55,15 +72,18 @@ type DryHelperReference = {
 
 type DryRuleOptions = {
   helpers: DryHelperReference[];
+  severity?: CodeDisciplineRuleSeverity;
 };
 
 type CodeDisciplinePackageJsonImportsOptions = PackageJsonImportsSyncOptions;
 
 type CodeDisciplineSyncImportsRuleOptions = Omit<SyncImportsRuleOptions, "fix"> & {
   packageJsonImports?: CodeDisciplinePackageJsonImportsOptions;
+  severity?: CodeDisciplineRuleSeverity;
 };
 
 type CodeDisciplineRules = {
+  bannedPatterns?: BannedPatternsRuleOptions;
   maxFileLines?: MaxFileLinesRuleOptions;
   maxFunctionLines?: MaxFunctionLinesRuleOptions;
   folderizeCompoundFiles?: FolderizeCompoundFilesRuleOptions;
@@ -101,8 +121,7 @@ type CheckCodeDisciplineOptions = {
   projectRoot: string;
   configPath?: string;
   sourceRoot?: string;
-  sourceExtensions?: string[];
-  includeDefaultSourceExtensions?: boolean;
+  excludeSourceExtensions?: string[];
   excludeDirs?: ExcludeDirsOptions;
   gitignorePath?: string;
   logging?: LoggingOptions;
@@ -120,29 +139,47 @@ type FixCodeDisciplineOptions = Omit<CheckCodeDisciplineOptions, "onlyRules"> & 
 
 type CodeDisciplineConfig = Omit<CheckCodeDisciplineOptions, "projectRoot">;
 
+type NormalizedBannedPatternRuleEntry = {
+  value: string;
+  normalizedValue: string;
+  allowedFiles: string[];
+};
+
+type NormalizedBannedPatternsRule = {
+  patterns: NormalizedBannedPatternRuleEntry[];
+  severity: CodeDisciplineRuleSeverity;
+};
+
 type NormalizedMaxFileLinesRule = {
   max: number;
+  severity: CodeDisciplineRuleSeverity;
 };
 
 type NormalizedMaxFunctionLinesRule = {
   max: number;
+  severity: CodeDisciplineRuleSeverity;
 };
 
 type NormalizedFolderizeCompoundFilesRule = {
   separators: string[];
+  severity: CodeDisciplineRuleSeverity;
 };
 
 type NormalizedDryRule = {
   helpers: DryHelperReference[];
+  severity: CodeDisciplineRuleSeverity;
 };
 
-type NormalizedRemoveCommentsRule = Record<string, never>;
+type NormalizedRemoveCommentsRule = {
+  severity: CodeDisciplineRuleSeverity;
+};
 
 type NormalizedPackedCodeGuardOptions = Required<PackedCodeGuardOptions>;
 
 type NormalizedEvasionGuardsOptions = {
   packedCode?: NormalizedPackedCodeGuardOptions;
   runtimeCodeHiding: boolean;
+  severity: CodeDisciplineRuleSeverity;
 };
 
 type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
@@ -151,6 +188,7 @@ type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
   logging: LoggingOptions;
   onlyRules?: CodeDisciplineRuleSlug[] | FixableRuleSlug[];
   rules: {
+    bannedPatterns?: NormalizedBannedPatternsRule;
     maxFileLines?: NormalizedMaxFileLinesRule;
     maxFunctionLines?: NormalizedMaxFunctionLinesRule;
     folderizeCompoundFiles?: NormalizedFolderizeCompoundFilesRule;
@@ -184,6 +222,8 @@ type FixCodeDisciplineResult = CodeDisciplineResult & {
 };
 
 export type {
+  BannedPatternRuleEntry,
+  BannedPatternsRuleOptions,
   CheckCodeDisciplineOptions,
   CheckCodeDisciplineResult,
   CodeDisciplineConfig,
@@ -193,6 +233,7 @@ export type {
   CodeDisciplineMode,
   CodeDisciplinePackageJsonImportsOptions,
   CodeDisciplineRuleSlug,
+  CodeDisciplineRuleSeverity,
   CodeDisciplineRuntimeMode,
   CodeDisciplineRules,
   CodeDisciplineSyncImportsRuleOptions,
@@ -207,6 +248,8 @@ export type {
   FolderizeCompoundFilesRuleOptions,
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
+  NormalizedBannedPatternRuleEntry,
+  NormalizedBannedPatternsRule,
   RemoveCommentsRuleOptions,
   NormalizedCheckCodeDisciplineOptions,
   NormalizedDryRule,

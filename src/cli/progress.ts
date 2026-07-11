@@ -104,15 +104,13 @@ function createCliScanObserver(writeLine: (text: string) => void) {
       if (!shouldPrintScanChunk(event)) return;
 
       writeLine(
-        `Scan ${event.chunkIndex}: ${event.discoveredFiles} files, ${event.completedDirectories} dirs, `
-        + `${formatDuration(event.elapsedMs)}.\n`,
+        `Scan ${event.chunkIndex}: ${event.discoveredFiles} files, ${formatDuration(event.elapsedMs)}.\n`,
       );
       return;
     }
 
     writeLine(
-      `Discovered ${event.fileCount} files in ${formatDuration(event.elapsedMs)} `
-      + `(${event.backend} scan, ${event.directoryCount} dirs).\n`,
+      `Scan: ${event.fileCount} files in ${formatDuration(event.elapsedMs)} (${event.backend}).\n`,
     );
   };
 }

@@ -1,6 +1,7 @@
 import type { ResultLike } from "@trebired/result";
 
 type CodeDisciplineRuleName =
+  | "banned-patterns"
   | "max-file-lines"
   | "max-function-lines"
   | "folderize-compound-files"
@@ -9,6 +10,8 @@ type CodeDisciplineRuleName =
   | "dry"
   | "evasion-guards";
 
+type CodeDisciplineViolationSeverity = "fail" | "warning";
+
 type CodeDisciplineViolation = {
   rule: CodeDisciplineRuleName;
   fix: boolean;
@@ -16,6 +19,7 @@ type CodeDisciplineViolation = {
   message: string;
   details: Record<string, unknown>;
   suggestedPath?: string;
+  severity?: CodeDisciplineViolationSeverity;
 };
 
 type CodeDisciplineResult = {
@@ -33,4 +37,5 @@ export type {
   CodeDisciplineResult,
   CodeDisciplineRuleName,
   CodeDisciplineViolation,
+  CodeDisciplineViolationSeverity,
 };

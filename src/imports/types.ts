@@ -64,8 +64,7 @@ type SyncImportsOptions = {
   configPath?: string;
   sourceRoot?: string;
   tsconfigPath?: string;
-  sourceExtensions?: string[];
-  includeDefaultSourceExtensions?: boolean;
+  excludeSourceExtensions?: string[];
   excludeDirs?: ExcludeDirsOptions;
   gitignorePath?: string;
   fix?: boolean;

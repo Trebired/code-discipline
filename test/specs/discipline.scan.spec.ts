@@ -111,9 +111,9 @@ test("merges directory excludes from .gitignore when explicitly enabled", async 
         rule: "max-file-lines",
         fix: false,
         filePath: "src/app.ts",
-        message: "file has 4 lines and exceeds the limit of 2",
+        message: "file has 3 lines and exceeds the limit of 2",
         details: {
-          lineCount: 4,
+          lineCount: 3,
           max: 2,
         },
       },
@@ -121,15 +121,14 @@ test("merges directory excludes from .gitignore when explicitly enabled", async 
   });
 });
 
-test("combines default and custom source extensions unless explicitly disabled", async () => {
+test("filters default source extensions through excludeSourceExtensions", async () => {
   const projectRoot = tempProject();
 
   writeFile(projectRoot, "src/app.ts", "one\n2\n3\n");
   writeFile(projectRoot, "src/lib.rs", "one\n2\n3\n");
 
-  const additive = await checkCodeDiscipline({
+  const includeAll = await checkCodeDiscipline({
     projectRoot,
-    sourceExtensions: [".rs"],
     rules: {
       maxFileLines: {
         max: 2,
@@ -137,16 +136,15 @@ test("combines default and custom source extensions unless explicitly disabled",
     },
   });
 
-  expect(additive.violationCount).toBe(2);
-  expect(additive.violations.map((entry) => entry.filePath)).toEqual([
+  expect(includeAll.violationCount).toBe(2);
+  expect(includeAll.violations.map((entry) => entry.filePath)).toEqual([
     "src/app.ts",
     "src/lib.rs",
   ]);
 
-  const overrideOnlyRust = await checkCodeDiscipline({
+  const excludeTypeScript = await checkCodeDiscipline({
     projectRoot,
-    sourceExtensions: [".rs"],
-    includeDefaultSourceExtensions: false,
+    excludeSourceExtensions: [".ts"],
     rules: {
       maxFileLines: {
         max: 2,
@@ -154,8 +152,69 @@ test("combines default and custom source extensions unless explicitly disabled",
     },
   });
 
-  expect(overrideOnlyRust.violationCount).toBe(1);
-  expect(overrideOnlyRust.violations[0]?.filePath).toBe("src/lib.rs");
+  expect(excludeTypeScript.violationCount).toBe(1);
+  expect(excludeTypeScript.violations[0]?.filePath).toBe("src/lib.rs");
+});
+
+test("treats comment and blank line overflow as warnings for max line rules", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", [
+    "export function app() {",
+    "  // comment",
+    "",
+    "  return true;",
+    "}",
+    "",
+  ].join("\n"));
+
+  const result = await checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      maxFileLines: {
+        max: 3,
+      },
+      maxFunctionLines: {
+        max: 3,
+      },
+    },
+  });
+
+  expect(result.ok).toBe(true);
+  expect(result.violationCount).toBe(2);
+  expect(result.violations.every((violation) => violation.severity === "warning")).toBe(true);
+});
+
+test("supports scss files in the max-file-lines rule", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/styles.scss", [
+    ".button {",
+    "  /* comment */",
+    "",
+    "  color: red;",
+    "}",
+    "",
+  ].join("\n"));
+
+  const result = await checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      maxFileLines: {
+        max: 2,
+      },
+    },
+  });
+
+  expect(result.ok).toBe(false);
+  expect(result.violations[0]).toMatchObject({
+    rule: "max-file-lines",
+    filePath: "src/styles.scss",
+    details: {
+      lineCount: 3,
+      max: 2,
+    },
+  });
 });
 
 test("combines default excludeDirs, explicit excludeDirs, and opt-in .gitignore excludes", async () => {

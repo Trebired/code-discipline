@@ -81,6 +81,7 @@ fn collect_block_function_violations(
     }
 
     let lines = text.lines().collect::<Vec<_>>();
+    let masked_text = mask_comments_for_line_count(text, &file.extension);
     let mut violations = Vec::new();
     let mut pending_header = String::new();
     let mut pending_start_line = 0_usize;
@@ -122,8 +123,8 @@ fn collect_block_function_violations(
         }
 
         let end_line = index + 1;
-        let line_count = end_line - pending_start_line + 1;
-        if line_count > max {
+        let code_line_count = count_code_lines_in_range(&masked_text, pending_start_line, end_line);
+        if code_line_count > max {
             violations.push(create_max_function_lines_violation(
                 file,
                 &pending_kind,
@@ -132,7 +133,7 @@ fn collect_block_function_violations(
                 } else {
                     &pending_name
                 },
-                line_count,
+                code_line_count,
                 max,
                 pending_start_line,
                 end_line,
@@ -147,6 +148,87 @@ fn collect_block_function_violations(
     }
 
     violations
+}
+
+fn collect_block_function_warnings(
+    file: &ScannedSourceFile,
+    text: &str,
+    max: usize,
+) -> Vec<CodeDisciplineViolation> {
+    if !is_go_extension(&file.extension) && !is_rust_extension(&file.extension) {
+        return Vec::new();
+    }
+
+    let lines = text.lines().collect::<Vec<_>>();
+    let masked_text = mask_comments_for_line_count(text, &file.extension);
+    let mut warnings = Vec::new();
+    let mut pending_header = String::new();
+    let mut pending_start_line = 0_usize;
+    let mut pending_brace_depth = 0_i32;
+    let mut pending_name = String::new();
+    let mut pending_kind = "function".to_string();
+
+    for (index, line) in lines.iter().enumerate() {
+        if pending_header.is_empty() {
+            if !header_start_matches(line, &file.extension) {
+                continue;
+            }
+            pending_header = (*line).to_string();
+            pending_start_line = index + 1;
+            pending_kind = if is_go_extension(&file.extension) && line.contains("func (") {
+                "method".to_string()
+            } else {
+                "function".to_string()
+            };
+            pending_name = extract_function_name(&pending_header, &file.extension);
+        } else {
+            pending_header.push('\n');
+            pending_header.push_str(line);
+            if pending_name.is_empty() || pending_name == "anonymous" {
+                pending_name = extract_function_name(&pending_header, &file.extension);
+            }
+        }
+
+        if pending_brace_depth == 0
+            && !strip_line_comments_and_strings(&pending_header).contains('{')
+        {
+            continue;
+        }
+
+        pending_brace_depth += count_brace_delta(line);
+
+        if pending_brace_depth > 0 {
+            continue;
+        }
+
+        let end_line = index + 1;
+        let line_count = end_line - pending_start_line + 1;
+        let code_line_count = count_code_lines_in_range(&masked_text, pending_start_line, end_line);
+        if code_line_count <= max && line_count > max {
+            warnings.push(create_max_function_lines_warning(
+                file,
+                &pending_kind,
+                if pending_name.is_empty() {
+                    "anonymous"
+                } else {
+                    &pending_name
+                },
+                line_count,
+                code_line_count,
+                max,
+                pending_start_line,
+                end_line,
+            ));
+        }
+
+        pending_header.clear();
+        pending_start_line = 0;
+        pending_brace_depth = 0;
+        pending_name.clear();
+        pending_kind = "function".to_string();
+    }
+
+    warnings
 }
 
 fn is_simple_typescript_function_file(text: &str) -> bool {
@@ -213,6 +295,7 @@ fn collect_simple_typescript_function_violations(
     }
 
     let lines = text.lines().collect::<Vec<_>>();
+    let masked_text = mask_comments_for_line_count(text, &file.extension);
     let mut violations = Vec::new();
     let mut pending_kind = String::new();
     let mut pending_name = String::new();
@@ -237,13 +320,13 @@ fn collect_simple_typescript_function_violations(
         }
 
         let end_line = index + 1;
-        let line_count = end_line - pending_start_line + 1;
-        if line_count > max {
+        let code_line_count = count_code_lines_in_range(&masked_text, pending_start_line, end_line);
+        if code_line_count > max {
             violations.push(create_max_function_lines_violation(
                 file,
                 &pending_kind,
                 &pending_name,
-                line_count,
+                code_line_count,
                 max,
                 pending_start_line,
                 end_line,
@@ -257,4 +340,63 @@ fn collect_simple_typescript_function_violations(
     }
 
     violations
+}
+
+fn collect_simple_typescript_function_warnings(
+    file: &ScannedSourceFile,
+    text: &str,
+    max: usize,
+) -> Vec<CodeDisciplineViolation> {
+    if !is_ts_family_extension(&file.extension) || !is_simple_typescript_function_file(text) {
+        return Vec::new();
+    }
+
+    let lines = text.lines().collect::<Vec<_>>();
+    let masked_text = mask_comments_for_line_count(text, &file.extension);
+    let mut warnings = Vec::new();
+    let mut pending_kind = String::new();
+    let mut pending_name = String::new();
+    let mut pending_start_line = 0_usize;
+    let mut pending_brace_depth = 0_i32;
+
+    for (index, line) in lines.iter().enumerate() {
+        if pending_start_line == 0 {
+            let Some((kind, name)) = find_typescript_function_start(line) else {
+                continue;
+            };
+            pending_kind = kind;
+            pending_name = name;
+            pending_start_line = index + 1;
+            pending_brace_depth = 0;
+        }
+
+        pending_brace_depth += count_brace_delta(line);
+
+        if pending_brace_depth > 0 {
+            continue;
+        }
+
+        let end_line = index + 1;
+        let line_count = end_line - pending_start_line + 1;
+        let code_line_count = count_code_lines_in_range(&masked_text, pending_start_line, end_line);
+        if code_line_count <= max && line_count > max {
+            warnings.push(create_max_function_lines_warning(
+                file,
+                &pending_kind,
+                &pending_name,
+                line_count,
+                code_line_count,
+                max,
+                pending_start_line,
+                end_line,
+            ));
+        }
+
+        pending_kind.clear();
+        pending_name.clear();
+        pending_start_line = 0;
+        pending_brace_depth = 0;
+    }
+
+    warnings
 }

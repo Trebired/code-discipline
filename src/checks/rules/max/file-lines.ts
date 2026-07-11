@@ -4,11 +4,7 @@ import type { NormalizedCheckCodeDisciplineOptions } from "../../types.js";
 import type { ScannedSourceFile } from "../../../imports/types.js";
 import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
 import { loadNativeBinding } from "../../../native/native.js";
-
-function countLines(text: string): number {
-  if (text.length === 0) return 0;
-  return text.split(/\r?\n/).length;
-}
+import { countCodeLines, countPhysicalLines, maskCommentsForLineCounting } from "./code-lines.js";
 
 async function runMaxFileLinesRule(
   sourceFiles: ScannedSourceFile[],
@@ -21,6 +17,7 @@ async function runMaxFileLinesRule(
     return JSON.parse(native.runMaxFileLinesRule(JSON.stringify({
       sourceFiles,
       max: options.rules.maxFileLines.max,
+      warning: true,
     }))) as CodeDisciplineViolation[];
   }
 
@@ -28,20 +25,37 @@ async function runMaxFileLinesRule(
 
   for (const file of sourceFiles) {
     const text = await fs.readFile(file.absolutePath, "utf8");
-    const lineCount = countLines(text);
+    const lineCount = countPhysicalLines(text);
+    const codeLineCount = countCodeLines(maskCommentsForLineCounting(text, file.extension));
 
-    if (lineCount <= options.rules.maxFileLines.max) continue;
+    if (codeLineCount > options.rules.maxFileLines.max) {
+      violations.push({
+        rule: "max-file-lines",
+        fix: false,
+        filePath: file.relativeFromProjectRoot,
+        message: `file has ${codeLineCount} lines and exceeds the limit of ${options.rules.maxFileLines.max}`,
+        details: {
+          lineCount: codeLineCount,
+          max: options.rules.maxFileLines.max,
+        },
+      });
+      continue;
+    }
 
-    violations.push({
-      rule: "max-file-lines",
-      fix: false,
-      filePath: file.relativeFromProjectRoot,
-      message: `file has ${lineCount} lines and exceeds the limit of ${options.rules.maxFileLines.max}`,
-      details: {
-        lineCount,
-        max: options.rules.maxFileLines.max,
-      },
-    });
+    if (lineCount > options.rules.maxFileLines.max) {
+      violations.push({
+        rule: "max-file-lines",
+        fix: false,
+        filePath: file.relativeFromProjectRoot,
+        severity: "warning",
+        message: `file has ${lineCount} physical lines, but only ${codeLineCount} code lines count toward the limit of ${options.rules.maxFileLines.max}`,
+        details: {
+          lineCount,
+          codeLineCount,
+          max: options.rules.maxFileLines.max,
+        },
+      });
+    }
   }
 
   return violations;

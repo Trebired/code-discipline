@@ -64,13 +64,112 @@ test("returns error violations as ok=false", async () => {
         rule: "max-file-lines",
         fix: false,
         filePath: "src/too-long.ts",
-        message: "file has 4 lines and exceeds the limit of 2",
+        message: "file has 3 lines and exceeds the limit of 2",
         details: {
-          lineCount: 4,
+          lineCount: 3,
           max: 2,
         },
       },
     ],
+  });
+});
+
+test("reports banned patterns with case-insensitive substring matching", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", [
+    "export const label = \"Test runner\";",
+    "export const detail = \"contest\";",
+    "",
+  ].join("\n"));
+
+  const result = await checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      bannedPatterns: {
+        patterns: ["test"],
+      },
+    },
+  });
+
+  expect(result.ok).toBe(false);
+  expect(result.violationCount).toBe(1);
+  expect(result.violations[0]).toMatchObject({
+    rule: "banned-patterns",
+    filePath: "src/app.ts",
+    message: 'file contains banned pattern "test" 2 times',
+    details: {
+      pattern: "test",
+      occurrences: 2,
+    },
+  });
+});
+
+test("allows banned patterns in explicitly allowed files", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/allowed.ts", "export const label = \"Test\";\n");
+  writeFile(projectRoot, "src/blocked.ts", "export const label = \"test\";\n");
+
+  const result = await checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      bannedPatterns: {
+        patterns: [
+          {
+            value: "test",
+            allowedFiles: ["src/allowed.ts"],
+          },
+        ],
+      },
+    },
+  });
+
+  expect(result.ok).toBe(false);
+  expect(result.violationCount).toBe(1);
+  expect(result.violations[0]?.filePath).toBe("src/blocked.ts");
+});
+
+test("supports warning-only banned pattern checks", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", "export const label = \"test\";\n");
+
+  const result = await checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      bannedPatterns: {
+        severity: "warning",
+        patterns: ["test"],
+      },
+    },
+  });
+
+  expect(result.ok).toBe(true);
+  expect(result.violationCount).toBe(1);
+  expect(result.violations[0]?.severity).toBe("warning");
+});
+
+test("supports warning severity on max file lines", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", "one\n2\n3\n");
+
+  const result = await checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      maxFileLines: {
+        max: 2,
+        severity: "warning",
+      },
+    },
+  });
+
+  expect(result.ok).toBe(true);
+  expect(result.violationCount).toBe(1);
+  expect(result.violations[0]).toMatchObject({
+    rule: "max-file-lines",
+    severity: "warning",
   });
 });
 

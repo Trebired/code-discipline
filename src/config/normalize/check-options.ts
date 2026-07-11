@@ -6,6 +6,7 @@ import type {
 } from "../../checks/types.js";
 import { normalizeOnlyRules } from "../../checks/rule-slugs.js";
 import {
+  normalizeBannedPatternsRule,
   normalizeDryRule,
   normalizeEvasionGuardsOptions,
   normalizeFolderizeCompoundFilesRule,
@@ -33,6 +34,7 @@ async function normalizeCheckCodeDisciplineOptions(
     },
     onlyRules: normalizeOnlyRules(mode, options.onlyRules, options.rules, options.evasionGuards),
     rules: {
+      bannedPatterns: normalizeBannedPatternsRule(options.rules?.bannedPatterns),
       dry: normalizeDryRule(options.rules?.dry),
       maxFileLines: normalizeMaxFileLinesRule(options.rules?.maxFileLines),
       maxFunctionLines: normalizeMaxFunctionLinesRule(options.rules?.maxFunctionLines),

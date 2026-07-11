@@ -35,6 +35,61 @@ test("rejects removed enabled keys for line-limit rules", async () => {
   });
 });
 
+test("rejects empty bannedPatterns config", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
+
+  await expect(checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      bannedPatterns: {
+        patterns: [],
+      },
+    },
+  })).rejects.toMatchObject({
+    code: "invalid_config",
+  });
+});
+
+test("rejects invalid severity values", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
+
+  await expect(checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      maxFileLines: {
+        max: 5,
+        // @ts-expect-error invalid severity
+        severity: "error",
+      },
+    },
+  })).rejects.toMatchObject({
+    code: "invalid_config",
+  });
+});
+
+test("rejects removed sourceExtensions config in favor of excludeSourceExtensions", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
+
+  await expect(checkCodeDiscipline({
+    projectRoot,
+    // @ts-expect-error legacy config
+    sourceExtensions: [".ts"],
+    rules: {
+      maxFileLines: {
+        max: 5,
+      },
+    },
+  })).rejects.toMatchObject({
+    code: "invalid_config",
+  });
+});
+
 test("loads TypeScript config modules with relative local imports", async () => {
   const projectRoot = tempProject();
 

@@ -31,6 +31,11 @@ type ExcludeMatcher = {
   shouldExcludeDirectory: (relativeDir: string, projectRelativeDir: string, directoryName: string) => boolean;
 };
 
+type NormalizedExcludeEntry = {
+  exact: string;
+  prefix: string;
+};
+
 function resolveScanConcurrency(): number {
   const override = Number.parseInt(process.env.TB_CODE_DISCIPLINE_SCAN_CONCURRENCY ?? "", 10);
   if (Number.isFinite(override) && override > 0) {
@@ -46,6 +51,9 @@ function resolveScanConcurrency(): number {
 function createExcludeMatcher(excludeDirs: string[]): ExcludeMatcher {
   const normalizedEntries = uniqueStrings(excludeDirs.map((entry) => normalizeRelativePath(entry)).filter(Boolean));
   const excludedDirectoryNames = new Set(normalizedEntries.filter((entry) => !entry.includes("/")));
+  const excludedPaths = normalizedEntries
+    .filter((entry) => entry.includes("/"))
+    .map((entry) => ({ exact: entry, prefix: `${entry}/` }));
 
   return {
     shouldExcludeDirectory(relativeDir: string, projectRelativeDir: string, directoryName: string): boolean {
@@ -56,12 +64,12 @@ function createExcludeMatcher(excludeDirs: string[]): ExcludeMatcher {
         return true;
       }
 
-      for (const entry of normalizedEntries) {
+      for (const entry of excludedPaths) {
         if (
-          normalizedRelativeDir === entry
-          || normalizedRelativeDir.startsWith(`${entry}/`)
-          || normalizedProjectRelativeDir === entry
-          || normalizedProjectRelativeDir.startsWith(`${entry}/`)
+          normalizedRelativeDir === entry.exact
+          || normalizedRelativeDir.startsWith(entry.prefix)
+          || normalizedProjectRelativeDir === entry.exact
+          || normalizedProjectRelativeDir.startsWith(entry.prefix)
         ) {
           return true;
         }
@@ -98,10 +106,10 @@ async function scanDirectory(
 
   for (const entry of entries) {
     const absolutePath = path.join(task.absolutePath, entry.name);
-    const relativePath = normalizeRelativePath(path.join(task.relativeDir, entry.name));
-    const projectRelativePath = normalizeRelativePath(path.relative(options.projectRoot, absolutePath));
 
     if (entry.isDirectory()) {
+      const relativePath = normalizeRelativePath(path.join(task.relativeDir, entry.name));
+      const projectRelativePath = normalizeRelativePath(path.relative(options.projectRoot, absolutePath));
       if (excludeMatcher.shouldExcludeDirectory(relativePath, projectRelativePath, entry.name)) continue;
       directories.push({ absolutePath, relativeDir: relativePath });
       continue;
@@ -111,6 +119,7 @@ async function scanDirectory(
 
     const extension = path.extname(entry.name).toLowerCase();
     if (!extensionSet.has(extension)) continue;
+    const relativePath = normalizeRelativePath(path.join(task.relativeDir, entry.name));
 
     files.push({
       absolutePath,

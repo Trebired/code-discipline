@@ -102,6 +102,8 @@ export type {
 } from "./run.js";
 
 export type {
+  BannedPatternRuleEntry,
+  BannedPatternsRuleOptions,
   CheckCodeDisciplineOptions,
   CheckCodeDisciplineResult,
   CodeDisciplineConfig,
@@ -124,6 +126,8 @@ export type {
   FolderizeCompoundFilesRuleOptions,
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
+  NormalizedBannedPatternRuleEntry,
+  NormalizedBannedPatternsRule,
   NormalizedCheckCodeDisciplineOptions,
   NormalizedDryRule,
   NormalizedEvasionGuardsOptions,

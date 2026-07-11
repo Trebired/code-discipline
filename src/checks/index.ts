@@ -14,6 +14,7 @@ import { ensureDotExtension, normalizeRelativePath, uniqueStrings } from "../sha
 import { shouldRunRule } from "./rule-slugs.js";
 import { fixFolderization } from "./fix-folderization.js";
 import { runFolderizeCompoundFilesRule } from "./rules/folderize/compound-files.js";
+import { collectBannedPatternViolations } from "./rules/banned-patterns.js";
 import { collectDryViolations, fixDryRule } from "./rules/dry/index.js";
 import { runEvasionGuardsRule } from "./rules/evasion-guards/index.js";
 import { runMaxFileLinesRule } from "./rules/max/file-lines.js";
@@ -52,11 +53,11 @@ async function buildNormalizedSyncOptions(
     ? path.resolve(sourceRootInput)
     : path.resolve(options.projectRoot, sourceRootInput);
   const sourceRootRelative = normalizeRelativePath(path.relative(options.projectRoot, sourceRoot));
-  const sourceExtensions = rule.sourceExtensions
-    ? uniqueStrings([
-      ...(rule.includeDefaultSourceExtensions === false ? [] : DEFAULT_SOURCE_EXTENSIONS),
-      ...rule.sourceExtensions.map(ensureDotExtension),
-    ])
+  const excludedSourceExtensions = rule.excludeSourceExtensions
+    ? new Set(rule.excludeSourceExtensions.map(ensureDotExtension))
+    : null;
+  const sourceExtensions = excludedSourceExtensions
+    ? uniqueStrings(DEFAULT_SOURCE_EXTENSIONS.filter((extension) => !excludedSourceExtensions.has(extension)))
     : options.sourceExtensions;
   const gitignorePath = rule.gitignorePath ?? options.gitignorePath;
   const gitignoreDirs = rule.excludeDirs?.gitignore === true
@@ -97,9 +98,50 @@ function sortViolations(violations: CodeDisciplineViolation[]): CodeDisciplineVi
   return [...violations].sort((left, right) => left.filePath.localeCompare(right.filePath) || left.rule.localeCompare(right.rule));
 }
 
+function resolveConfiguredSeverity(
+  violation: CodeDisciplineViolation,
+  options: NormalizedCheckCodeDisciplineOptions,
+): "warning" | "fail" {
+  switch (violation.rule) {
+    case "banned-patterns":
+      return options.rules.bannedPatterns?.severity ?? "fail";
+    case "max-file-lines":
+      return options.rules.maxFileLines?.severity ?? "fail";
+    case "max-function-lines":
+      return options.rules.maxFunctionLines?.severity ?? "fail";
+    case "folderize-compound-files":
+      return options.rules.folderizeCompoundFiles?.severity ?? "fail";
+    case "sync-imports":
+      return options.rules.syncImports?.severity ?? "fail";
+    case "remove-comments":
+      return options.rules.removeComments?.severity ?? "fail";
+    case "dry":
+      return options.rules.dry?.severity ?? "fail";
+    case "evasion-guards":
+      return options.evasionGuards?.severity ?? "fail";
+  }
+}
+
+function applyConfiguredSeverity(
+  violations: CodeDisciplineViolation[],
+  options: NormalizedCheckCodeDisciplineOptions,
+): CodeDisciplineViolation[] {
+  return violations.map((violation) => {
+    const severity = violation.severity ?? resolveConfiguredSeverity(violation, options);
+    return {
+      ...violation,
+      severity: severity === "warning" ? "warning" : undefined,
+    };
+  });
+}
+
+function isBlockingViolation(violation: CodeDisciplineViolation): boolean {
+  return violation.severity !== "warning";
+}
+
 function summarizeViolations(violations: CodeDisciplineViolation[]): CodeDisciplineResult {
   return {
-    ok: violations.length === 0,
+    ok: violations.every((violation) => !isBlockingViolation(violation)),
     violationCount: violations.length,
     violations,
   };
@@ -110,8 +152,9 @@ function logSummary(
   result: CheckCodeDisciplineResult | FixCodeDisciplineResult,
   logger: ReturnType<typeof resolveLogger>,
 ) {
+  const blockingCount = result.violations.filter(isBlockingViolation).length;
   if (result.violationCount > 0) {
-    logger.flush("warn", `discipline-${label}-violations`, `${label} found ${result.violationCount} violation(s)`, {
+    logger.flush("warn", `discipline-${label}-violations`, `${label} found ${blockingCount} blocking violation(s) and ${result.violationCount - blockingCount} warning(s)`, {
       violationCount: result.violationCount,
     });
     return;
@@ -132,8 +175,8 @@ function attachDisciplineResult<T extends CodeDisciplineResult>(
 
   return {
     ...output,
-    result: output.violationCount > 0
-      ? createResult.error(409, `discipline-${phase}-violations`, `${phase} found ${output.violationCount} violation(s).`, {
+    result: output.violations.some(isBlockingViolation)
+      ? createResult.error(409, `discipline-${phase}-violations`, `${phase} found ${output.violations.filter(isBlockingViolation).length} violation(s).`, {
           data: {
             violationCount: output.violationCount,
           },
@@ -151,6 +194,10 @@ function attachDisciplineResult<T extends CodeDisciplineResult>(
 async function collectViolations(options: NormalizedCheckCodeDisciplineOptions): Promise<CodeDisciplineViolation[]> {
   const sourceFiles = await scanSourceFiles(options);
   const violations: CodeDisciplineViolation[] = [];
+
+  if (options.rules.bannedPatterns && shouldRunRule("banned-patterns", options.onlyRules)) {
+    violations.push(...await collectBannedPatternViolations(sourceFiles, options));
+  }
 
   if (options.rules.maxFileLines && shouldRunRule("max-file-lines", options.onlyRules)) {
     violations.push(...await runMaxFileLinesRule(sourceFiles, options));
@@ -183,7 +230,7 @@ async function collectViolations(options: NormalizedCheckCodeDisciplineOptions):
     violations.push(...await runEvasionGuardsRule(sourceFiles, options));
   }
 
-  return sortViolations(violations);
+  return sortViolations(applyConfiguredSeverity(violations, options));
 }
 
 function mapFixRuleResult(result: {
@@ -222,8 +269,9 @@ async function applyFolderizeFix(
   if (!normalized.rules.folderizeCompoundFiles || !shouldRunFixRule("folderize-compound-files", normalized)) return;
 
   const result = await fixFolderization(state.sourceFiles, normalized, logger);
-  state.ruleResults["folderize-compound-files"] = mapFixRuleResult(result);
-  state.violations.push(...result.violations);
+  const violations = applyConfiguredSeverity(result.violations, normalized);
+  state.ruleResults["folderize-compound-files"] = mapFixRuleResult({ ...result, violations });
+  state.violations.push(...violations);
   state.movedFiles += result.moved_files;
   state.rewrittenFiles += result.rewritten_files;
   state.rewrittenImports += result.rewritten_imports;
@@ -237,8 +285,9 @@ async function applyDryFix(state: FixState, normalized: NormalizedCheckCodeDisci
   if (!normalized.rules.dry || !shouldRunFixRule("dry", normalized)) return;
 
   const result = await fixDryRule(state.sourceFiles, normalized);
-  state.ruleResults.dry = mapFixRuleResult(result);
-  state.violations.push(...result.violations);
+  const violations = applyConfiguredSeverity(result.violations, normalized);
+  state.ruleResults.dry = mapFixRuleResult({ ...result, violations });
+  state.violations.push(...violations);
   state.rewrittenFiles += result.rewritten_files ?? 0;
 
   if ((result.rewritten_files ?? 0) > 0) {
@@ -253,8 +302,9 @@ async function applySyncImportsFix(state: FixState, normalized: NormalizedCheckC
   if (!syncOptions) return;
 
   const result = await syncImports(syncOptions);
-  state.ruleResults["sync-imports"] = mapFixRuleResult(result);
-  state.violations.push(...result.violations);
+  const violations = applyConfiguredSeverity(result.violations, normalized);
+  state.ruleResults["sync-imports"] = mapFixRuleResult({ ...result, violations });
+  state.violations.push(...violations);
   state.rewrittenFiles += result.rewritten_files;
   state.rewrittenImports += result.rewritten_imports;
 }
@@ -263,8 +313,9 @@ async function applyRemoveCommentsFix(state: FixState, normalized: NormalizedChe
   if (!normalized.rules.removeComments || !shouldRunFixRule("remove-comments", normalized)) return;
 
   const result = await fixRemoveCommentsRule(state.sourceFiles, normalized);
-  state.ruleResults["remove-comments"] = mapFixRuleResult(result);
-  state.violations.push(...result.violations);
+  const violations = applyConfiguredSeverity(result.violations, normalized);
+  state.ruleResults["remove-comments"] = mapFixRuleResult({ ...result, violations });
+  state.violations.push(...violations);
   state.rewrittenFiles += result.rewritten_files ?? 0;
   state.removedComments += result.removed_comments ?? 0;
 }

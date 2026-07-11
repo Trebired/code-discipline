@@ -2,7 +2,7 @@ import path from "node:path";
 
 import { DEFAULT_EXCLUDE_DIRS, DEFAULT_SOURCE_EXTENSIONS, DEFAULT_SOURCE_ROOT } from "../../shared/constants.js";
 import { readGitignoreExcludedDirs } from "../../shared/gitignore.js";
-import { InvalidProjectRootError, InvalidSourceRootError } from "../../shared/errors.js";
+import { InvalidCodeDisciplineConfigError, InvalidProjectRootError, InvalidSourceRootError } from "../../shared/errors.js";
 import { ensureDotExtension, isDirectory, isInsideDirectory, normalizeRelativePath, uniqueStrings } from "../../shared/utils.js";
 import type { ExcludeDirsOptions, SourceScanObserver } from "../../imports/types.js";
 
@@ -20,12 +20,24 @@ type NormalizedSourceOptions = {
 async function normalizeSourceOptions(options: {
   projectRoot: string;
   sourceRoot?: string;
-  sourceExtensions?: string[];
-  includeDefaultSourceExtensions?: boolean;
+  excludeSourceExtensions?: string[];
   excludeDirs?: ExcludeDirsOptions;
   gitignorePath?: string;
   scanObserver?: SourceScanObserver;
 }): Promise<NormalizedSourceOptions> {
+  const source = options as Record<string, unknown>;
+  if ("sourceExtensions" in source) {
+    throw new InvalidCodeDisciplineConfigError("sourceExtensions is no longer supported; use excludeSourceExtensions", {
+      key: "sourceExtensions",
+    });
+  }
+
+  if ("includeDefaultSourceExtensions" in source) {
+    throw new InvalidCodeDisciplineConfigError("includeDefaultSourceExtensions is no longer supported; use excludeSourceExtensions", {
+      key: "includeDefaultSourceExtensions",
+    });
+  }
+
   const projectRoot = path.resolve(options.projectRoot);
   if (!await isDirectory(projectRoot)) {
     throw new InvalidProjectRootError(projectRoot);
@@ -43,10 +55,8 @@ async function normalizeSourceOptions(options: {
   const gitignoreDirs = excludeGitignoreDirs
     ? await readGitignoreExcludedDirs(projectRoot, gitignorePath)
     : [];
-  const sourceExtensions = uniqueStrings([
-    ...(options.includeDefaultSourceExtensions === false ? [] : DEFAULT_SOURCE_EXTENSIONS),
-    ...((options.sourceExtensions ?? []).map(ensureDotExtension)),
-  ]);
+  const excludedExtensions = new Set((options.excludeSourceExtensions ?? []).map(ensureDotExtension));
+  const sourceExtensions = uniqueStrings(DEFAULT_SOURCE_EXTENSIONS.filter((extension) => !excludedExtensions.has(extension)));
   const excludeDirs = uniqueStrings([
     ...DEFAULT_EXCLUDE_DIRS,
     ...(options.excludeDirs?.dirs ?? []),

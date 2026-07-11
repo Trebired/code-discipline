@@ -2,6 +2,14 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 3.2.0
+
+- Added the new check-only `bannedPatterns` / `banned-patterns` rule with case-insensitive substring matching and per-pattern `allowedFiles`.
+- Restored rule-level severity configuration with `severity: "warning" | "fail"`, defaulting to `fail`, while keeping blank/comment-only max-line overflow as a non-blocking warning.
+- Changed source scanning to include every built-in supported extension by default and replaced additive `sourceExtensions` config with `excludeSourceExtensions`.
+- Added SCSS support to source scanning and comment-aware line counting paths.
+- Further reduced scan overhead in both the TypeScript fallback and Rust native backend.
+
 ## 3.1.2
 
 - Added `@trebired/result`-backed internal outcome typing for touched check and reporting paths so package-owned backend communication can share the same result surface used across Trebired packages.

@@ -6,8 +6,29 @@ fn count_lines(text: &str) -> usize {
     }
 }
 
+fn count_code_lines(masked_text: &str, _extension: &str) -> usize {
+    masked_text
+        .lines()
+        .filter(|line| !line.trim().is_empty())
+        .count()
+}
+
+fn count_code_lines_in_range(masked_text: &str, start_line: usize, end_line: usize) -> usize {
+    masked_text
+        .lines()
+        .enumerate()
+        .filter(|(index, line)| {
+            let line_number = index + 1;
+            line_number >= start_line && line_number <= end_line && !line.trim().is_empty()
+        })
+        .count()
+}
+
 fn supports_remove_comments(extension: &str) -> bool {
-    is_ts_family_extension(extension) || is_go_extension(extension) || is_rust_extension(extension)
+    is_ts_family_extension(extension)
+        || is_go_extension(extension)
+        || is_rust_extension(extension)
+        || is_scss_extension(extension)
 }
 
 fn supports_folderization_fix(extension: &str) -> bool {
@@ -46,9 +67,33 @@ fn create_max_file_lines_violation(
         fix: false,
         file_path: file.relative_from_project_root.clone(),
         message: format!("file has {line_count} lines and exceeds the limit of {max}"),
+        severity: None,
         suggested_path: None,
         details: json!({
             "lineCount": line_count,
+            "max": max,
+        }),
+    }
+}
+
+fn create_max_file_lines_warning(
+    file: &ScannedSourceFile,
+    physical_line_count: usize,
+    code_line_count: usize,
+    max: usize,
+) -> CodeDisciplineViolation {
+    CodeDisciplineViolation {
+        rule: "max-file-lines".to_string(),
+        fix: false,
+        file_path: file.relative_from_project_root.clone(),
+        message: format!(
+            "file has {physical_line_count} physical lines, but only {code_line_count} code lines count toward the limit of {max}"
+        ),
+        severity: Some("warning".to_string()),
+        suggested_path: None,
+        details: json!({
+            "lineCount": physical_line_count,
+            "codeLineCount": code_line_count,
             "max": max,
         }),
     }
@@ -66,6 +111,7 @@ fn create_remove_comments_violation(
             "file contains {} removable comment(s)",
             result.comment_count
         ),
+        severity: None,
         suggested_path: None,
         details: json!({
             "commentCount": result.comment_count,
@@ -73,6 +119,27 @@ fn create_remove_comments_violation(
             "blockComments": result.block_comments,
         }),
     }
+}
+
+fn mask_comments_for_line_count(text: &str, extension: &str) -> String {
+    let ranges = collect_comment_ranges(text, extension);
+    if ranges.is_empty() {
+        return text.to_string();
+    }
+
+    let mut result = String::with_capacity(text.len());
+    let mut previous_end = 0_usize;
+
+    for range in ranges {
+        result.push_str(&text[previous_end..range.start]);
+        for ch in text[range.start..range.end].chars() {
+            result.push(if ch == '\n' || ch == '\r' { ch } else { ' ' });
+        }
+        previous_end = range.end;
+    }
+
+    result.push_str(&text[previous_end..]);
+    result
 }
 
 fn strip_comments_and_strings(text: &str) -> String {
@@ -191,6 +258,7 @@ fn create_packed_file_violation(
         fix: false,
         file_path: file.relative_from_project_root.clone(),
         message: format!("file appears packed into {non_empty_line_count} non-empty line(s)"),
+        severity: None,
         suggested_path: None,
         details: json!({
             "kind": "packed-file",
@@ -217,6 +285,7 @@ fn create_packed_line_violation(
         fix: false,
         file_path: file.relative_from_project_root.clone(),
         message: format!("line {line} appears packed to avoid line-count rules"),
+        severity: None,
         suggested_path: None,
         details: json!({
             "kind": "packed-line",
@@ -245,6 +314,7 @@ fn create_packed_function_violation(
         fix: false,
         file_path: file.relative_from_project_root.clone(),
         message: format!("function {name} appears packed into {line_count} line(s)"),
+        severity: None,
         suggested_path: None,
         details: json!({
             "kind": "packed-function",
@@ -271,6 +341,7 @@ fn create_runtime_code_hiding_violation(
         fix: false,
         file_path: file.relative_from_project_root.clone(),
         message: format!("runtime code hiding detected via {pattern}"),
+        severity: None,
         suggested_path: None,
         details: json!({
             "kind": "runtime-code-hiding",
@@ -293,6 +364,7 @@ fn create_folderize_violation(
         fix: true,
         file_path: file.relative_from_project_root.clone(),
         message: format!("file can be grouped under {suggested_path}"),
+        severity: None,
         suggested_path: Some(suggested_path.clone()),
         details: json!({
             "mode": mode,
@@ -317,11 +389,43 @@ fn create_max_function_lines_violation(
         fix: false,
         file_path: file.relative_from_project_root.clone(),
         message: format!("{kind} {name} has {line_count} lines and exceeds the limit of {max}"),
+        severity: None,
         suggested_path: None,
         details: json!({
             "functionKind": kind,
             "functionName": name,
             "lineCount": line_count,
+            "max": max,
+            "startLine": start_line,
+            "endLine": end_line,
+        }),
+    }
+}
+
+fn create_max_function_lines_warning(
+    file: &ScannedSourceFile,
+    kind: &str,
+    name: &str,
+    physical_line_count: usize,
+    code_line_count: usize,
+    max: usize,
+    start_line: usize,
+    end_line: usize,
+) -> CodeDisciplineViolation {
+    CodeDisciplineViolation {
+        rule: "max-function-lines".to_string(),
+        fix: false,
+        file_path: file.relative_from_project_root.clone(),
+        message: format!(
+            "{kind} {name} has {physical_line_count} physical lines, but only {code_line_count} code lines count toward the limit of {max}"
+        ),
+        severity: Some("warning".to_string()),
+        suggested_path: None,
+        details: json!({
+            "functionKind": kind,
+            "functionName": name,
+            "lineCount": physical_line_count,
+            "codeLineCount": code_line_count,
             "max": max,
             "startLine": start_line,
             "endLine": end_line,

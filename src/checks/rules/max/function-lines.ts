@@ -9,6 +9,7 @@ import { loadNativeBinding } from "../../../native/native.js";
 import { parseSource } from "../../../imports/module-specifiers.js";
 import { isGoExtension, isRustExtension, isTypeScriptFamilyExtension, supportsMaxFunctionLines } from "../../../shared/languages.js";
 import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
+import { countCodeLinesInRange, maskCommentsForLineCounting } from "./code-lines.js";
 
 type FunctionDescriptor = {
   kind: string;
@@ -255,6 +256,7 @@ async function runMaxFunctionLinesRule(
     const nativeResult = JSON.parse(native.runMaxBlockFunctionLinesRule(JSON.stringify({
       sourceFiles,
       max: options.rules.maxFunctionLines.max,
+      warning: true,
     }))) as NativeMaxFunctionLinesResult;
     violations.push(...nativeResult.violations);
     for (const filePath of nativeResult.handledPaths) nativeHandledPaths.add(filePath);
@@ -266,6 +268,7 @@ async function runMaxFunctionLinesRule(
 
     const text = await fs.readFile(file.absolutePath, "utf8");
     const extension = path.extname(file.absolutePath).toLowerCase();
+    const maskedText = maskCommentsForLineCounting(text, extension);
     const functions = isTypeScriptFamilyExtension(extension)
       ? collectTypeScriptFunctionDescriptors(parseSource(text, file.absolutePath))
       : (isGoExtension(extension) || isRustExtension(extension))
@@ -273,22 +276,44 @@ async function runMaxFunctionLinesRule(
         : [];
 
     for (const descriptor of functions) {
-      if (descriptor.lineCount <= options.rules.maxFunctionLines.max) continue;
+      const codeLineCount = countCodeLinesInRange(maskedText, descriptor.startLine, descriptor.endLine);
+      const physicalLineCount = descriptor.lineCount;
+      if (codeLineCount > options.rules.maxFunctionLines.max) {
+        violations.push({
+          rule: "max-function-lines",
+          fix: false,
+          filePath: file.relativeFromProjectRoot,
+          message: `${descriptor.kind} ${descriptor.name} has ${codeLineCount} lines and exceeds the limit of ${options.rules.maxFunctionLines.max}`,
+          details: {
+            functionKind: descriptor.kind,
+            functionName: descriptor.name,
+            lineCount: codeLineCount,
+            max: options.rules.maxFunctionLines.max,
+            startLine: descriptor.startLine,
+            endLine: descriptor.endLine,
+          },
+        });
+        continue;
+      }
 
-      violations.push({
-        rule: "max-function-lines",
-        fix: false,
-        filePath: file.relativeFromProjectRoot,
-        message: `${descriptor.kind} ${descriptor.name} has ${descriptor.lineCount} lines and exceeds the limit of ${options.rules.maxFunctionLines.max}`,
-        details: {
-          functionKind: descriptor.kind,
-          functionName: descriptor.name,
-          lineCount: descriptor.lineCount,
-          max: options.rules.maxFunctionLines.max,
-          startLine: descriptor.startLine,
-          endLine: descriptor.endLine,
-        },
-      });
+      if (physicalLineCount > options.rules.maxFunctionLines.max) {
+        violations.push({
+          rule: "max-function-lines",
+          fix: false,
+          filePath: file.relativeFromProjectRoot,
+          severity: "warning",
+          message: `${descriptor.kind} ${descriptor.name} has ${physicalLineCount} physical lines, but only ${codeLineCount} code lines count toward the limit of ${options.rules.maxFunctionLines.max}`,
+          details: {
+            functionKind: descriptor.kind,
+            functionName: descriptor.name,
+            lineCount: physicalLineCount,
+            codeLineCount,
+            max: options.rules.maxFunctionLines.max,
+            startLine: descriptor.startLine,
+            endLine: descriptor.endLine,
+          },
+        });
+      }
     }
   }
 

@@ -102,6 +102,8 @@ Legacy config filenames are no longer auto-discovered, but they still work when 
 
 Rules are enabled by presence. If a rule object exists under `rules`, it runs.
 
+Rule severity is optional and now supports only `severity: "warning" | "fail"`. If omitted, the default is `fail`.
+
 `evasionGuards` is a top-level opt-in system because it checks suspicious compliance patterns across rules instead of being a normal style rule.
 
 Example `tb.code-discipline.ts`:
@@ -111,7 +113,7 @@ import { defineCodeDisciplineConfig } from "@trebired/code-discipline";
 
 export default defineCodeDisciplineConfig({
   sourceRoot: "src",
-  sourceExtensions: [".go", ".rs"],
+  excludeSourceExtensions: [".scss"],
   excludeDirs: {
     dirs: ["coverage"],
     gitignore: true,
@@ -129,9 +131,11 @@ export default defineCodeDisciplineConfig({
   rules: {
     maxFileLines: {
       max: 500,
+      severity: "warning",
     },
     maxFunctionLines: {
       max: 80,
+      severity: "warning",
     },
     folderizeCompoundFiles: {
       separators: ["_", "-"],
@@ -160,13 +164,13 @@ export default defineCodeDisciplineConfig({
 });
 ```
 
-Source scanning stays additive by default:
+Source scanning covers every built-in supported source family by default:
 
-- built-in source extensions are included unless `includeDefaultSourceExtensions: false`
+- exclude specific extensions with `excludeSourceExtensions`
 - built-in excluded directories are always included
 - root `.gitignore` directory entries are included only when `excludeDirs.gitignore: true`
 
-So you can extend the defaults without having to repeat the generated-folder list inline.
+So you get the full supported scan set automatically and only opt out when needed.
 
 Example scan configuration:
 
@@ -174,8 +178,8 @@ Example scan configuration:
 export default defineCodeDisciplineConfig({
   sourceRoot: "src",
 
-  // Add extra file types on top of the built-in JS/TS set.
-  sourceExtensions: [".go", ".rs"],
+  // Skip specific built-in file types when needed.
+  excludeSourceExtensions: [".scss"],
 
   // Add extra ignored directories on top of the built-in set.
   excludeDirs: {
@@ -204,6 +208,7 @@ code-discipline fix sync-imports dry remove-comments
 
 Rules use kebab-case public slugs:
 
+- `banned-patterns`
 - `max-file-lines`
 - `max-function-lines`
 - `folderize-compound-files`
@@ -246,6 +251,15 @@ import { createCodeDiscipline } from "@trebired/code-discipline";
 const discipline = createCodeDiscipline({
   sourceRoot: "src",
   rules: {
+    bannedPatterns: {
+      patterns: [
+        "test",
+        {
+          value: "mock",
+          allowedFiles: ["src/testing/mock-registry.ts"],
+        },
+      ],
+    },
     maxFunctionLines: {
       max: 80,
     },
@@ -266,6 +280,29 @@ await discipline.fix({
 Every violation is treated uniformly now. Results expose `ok`, `violationCount`, and `violations`, and the CLI prints concise rule/file/message lines instead of large JSON-style payloads.
 
 ## Rules
+
+### `bannedPatterns`
+
+Reports case-insensitive substring matches found in source files.
+
+- `"test"` matches `test`, `Test`, `contest`, and `"Test runner"`
+- matching is content-based, not whole-word-only
+- `allowedFiles` lets specific project-relative files bypass a specific banned pattern
+- `severity` defaults to `"fail"`
+
+Example:
+
+```ts
+bannedPatterns: {
+  patterns: [
+    "test",
+    {
+      value: "mock",
+      allowedFiles: ["src/testing/mock-registry.ts"],
+    },
+  ],
+}
+```
 
 ### `maxFileLines`
 
@@ -348,6 +385,7 @@ The rule supports the same language families this package currently scans for di
 - JavaScript and TypeScript
 - Go
 - Rust
+- SCSS
 
 It keeps string, regex, rune, char, byte-string, and raw-string content intact while removing actual source comments. When a removed comment occupied the whole line, that empty line is removed in the same file rewrite.
 

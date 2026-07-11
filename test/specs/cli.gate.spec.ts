@@ -146,6 +146,42 @@ test("gate runs the child command when discipline passes", () => {
   expect(result.stdout).not.toContain("Found 1 discipline violation(s).");
 });
 
+test("gate allows warning-only max line results to pass", () => {
+  const projectRoot = tempProject();
+  ensureBuiltCli();
+
+  writeFile(projectRoot, "src/app.ts", [
+    "export const app = () => {",
+    "  // comment",
+    "",
+    "  return true;",
+    "};",
+    "",
+  ].join("\n"));
+  writeFile(projectRoot, "tb.code-discipline.ts", [
+    "export default {",
+    "  rules: {",
+    "    maxFileLines: { max: 3 },",
+    "  },",
+    "};",
+    "",
+  ].join("\n"));
+
+  const result = runCommand("node", [
+    builtCliPath,
+    "gate",
+    "--",
+    "node",
+    "-e",
+    "process.stdout.write('started\\n')",
+  ], {
+    cwd: projectRoot,
+  });
+
+  expect(result.status).toBe(0);
+  expect(result.stdout).toContain("started");
+});
+
 test("gate fails clearly when the child command is missing", async () => {
   const projectRoot = tempProject();
   const stderr: string[] = [];

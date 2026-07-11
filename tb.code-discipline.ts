@@ -2,14 +2,8 @@ import { defineCodeDisciplineConfig } from "./src/index.js";
 
 export default defineCodeDisciplineConfig({
   sourceRoot: ".",
-  sourceExtensions: [".ts", ".tsx", ".js", ".jsx", ".mjs", ".mts", ".cts", ".cjs", ".go", ".rs"],
   excludeDirs: {
-    dirs: [
-      ".git",
-      "dist",
-      "node_modules",
-      "native/code-discipline-native/target",
-    ],
+    gitignore: true,
   },
   rules: {
     maxFileLines: { max: 350 },
