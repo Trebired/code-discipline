@@ -90,29 +90,19 @@ fn collect_block_function_violations(
     let mut pending_kind = "function".to_string();
 
     for (index, line) in lines.iter().enumerate() {
-        if pending_header.is_empty() {
-            if !header_start_matches(line, &file.extension) {
-                continue;
-            }
-            pending_header = (*line).to_string();
-            pending_start_line = index + 1;
-            pending_kind = if is_go_extension(&file.extension) && line.contains("func (") {
-                "method".to_string()
-            } else {
-                "function".to_string()
-            };
-            pending_name = extract_function_name(&pending_header, &file.extension);
-        } else {
-            pending_header.push('\n');
-            pending_header.push_str(line);
-            if pending_name.is_empty() || pending_name == "anonymous" {
-                pending_name = extract_function_name(&pending_header, &file.extension);
-            }
+        if !update_pending_block_function(
+            file,
+            line,
+            &mut pending_header,
+            &mut pending_start_line,
+            &mut pending_name,
+            &mut pending_kind,
+            index,
+        ) {
+            continue;
         }
 
-        if pending_brace_depth == 0
-            && !strip_line_comments_and_strings(&pending_header).contains('{')
-        {
+        if should_continue_pending_block_function(&pending_header, pending_brace_depth) {
             continue;
         }
 
@@ -140,11 +130,13 @@ fn collect_block_function_violations(
             ));
         }
 
-        pending_header.clear();
-        pending_start_line = 0;
-        pending_brace_depth = 0;
-        pending_name.clear();
-        pending_kind = "function".to_string();
+        reset_pending_function_state(
+            &mut pending_header,
+            &mut pending_start_line,
+            &mut pending_brace_depth,
+            &mut pending_name,
+            &mut pending_kind,
+        );
     }
 
     violations
@@ -169,29 +161,19 @@ fn collect_block_function_warnings(
     let mut pending_kind = "function".to_string();
 
     for (index, line) in lines.iter().enumerate() {
-        if pending_header.is_empty() {
-            if !header_start_matches(line, &file.extension) {
-                continue;
-            }
-            pending_header = (*line).to_string();
-            pending_start_line = index + 1;
-            pending_kind = if is_go_extension(&file.extension) && line.contains("func (") {
-                "method".to_string()
-            } else {
-                "function".to_string()
-            };
-            pending_name = extract_function_name(&pending_header, &file.extension);
-        } else {
-            pending_header.push('\n');
-            pending_header.push_str(line);
-            if pending_name.is_empty() || pending_name == "anonymous" {
-                pending_name = extract_function_name(&pending_header, &file.extension);
-            }
+        if !update_pending_block_function(
+            file,
+            line,
+            &mut pending_header,
+            &mut pending_start_line,
+            &mut pending_name,
+            &mut pending_kind,
+            index,
+        ) {
+            continue;
         }
 
-        if pending_brace_depth == 0
-            && !strip_line_comments_and_strings(&pending_header).contains('{')
-        {
+        if should_continue_pending_block_function(&pending_header, pending_brace_depth) {
             continue;
         }
 
@@ -221,11 +203,13 @@ fn collect_block_function_warnings(
             ));
         }
 
-        pending_header.clear();
-        pending_start_line = 0;
-        pending_brace_depth = 0;
-        pending_name.clear();
-        pending_kind = "function".to_string();
+        reset_pending_function_state(
+            &mut pending_header,
+            &mut pending_start_line,
+            &mut pending_brace_depth,
+            &mut pending_name,
+            &mut pending_kind,
+        );
     }
 
     warnings

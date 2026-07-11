@@ -17,15 +17,7 @@ type NormalizedSourceOptions = {
   scanObserver?: SourceScanObserver;
 };
 
-async function normalizeSourceOptions(options: {
-  projectRoot: string;
-  sourceRoot?: string;
-  excludeSourceExtensions?: string[];
-  excludeDirs?: ExcludeDirsOptions;
-  gitignorePath?: string;
-  scanObserver?: SourceScanObserver;
-}): Promise<NormalizedSourceOptions> {
-  const source = options as Record<string, unknown>;
+function assertLegacySourceOptionsRemoved(source: Record<string, unknown>): void {
   if ("sourceExtensions" in source) {
     throw new InvalidCodeDisciplineConfigError("sourceExtensions is no longer supported; use excludeSourceExtensions", {
       key: "sourceExtensions",
@@ -37,6 +29,41 @@ async function normalizeSourceOptions(options: {
       key: "includeDefaultSourceExtensions",
     });
   }
+}
+
+function resolveSourceRoot(projectRoot: string, sourceRootInput: string): string {
+  return path.isAbsolute(sourceRootInput)
+    ? path.resolve(sourceRootInput)
+    : path.resolve(projectRoot, sourceRootInput);
+}
+
+async function readNormalizedGitignoreDirs(
+  projectRoot: string,
+  options: {
+    excludeDirs?: ExcludeDirsOptions;
+    gitignorePath?: string;
+  },
+): Promise<{ excludeGitignoreDirs: boolean; gitignoreDirs: string[]; gitignorePath: string }> {
+  const excludeGitignoreDirs = options.excludeDirs?.gitignore === true;
+  const gitignoreInput = options.gitignorePath ?? path.join(projectRoot, ".gitignore");
+  const gitignorePath = path.isAbsolute(gitignoreInput) ? path.resolve(gitignoreInput) : path.resolve(projectRoot, gitignoreInput);
+  const gitignoreDirs = excludeGitignoreDirs
+    ? await readGitignoreExcludedDirs(projectRoot, gitignorePath)
+    : [];
+
+  return { excludeGitignoreDirs, gitignoreDirs, gitignorePath };
+}
+
+async function normalizeSourceOptions(options: {
+  projectRoot: string;
+  sourceRoot?: string;
+  excludeSourceExtensions?: string[];
+  excludeDirs?: ExcludeDirsOptions;
+  gitignorePath?: string;
+  scanObserver?: SourceScanObserver;
+}): Promise<NormalizedSourceOptions> {
+  const source = options as Record<string, unknown>;
+  assertLegacySourceOptionsRemoved(source);
 
   const projectRoot = path.resolve(options.projectRoot);
   if (!await isDirectory(projectRoot)) {
@@ -44,17 +71,12 @@ async function normalizeSourceOptions(options: {
   }
 
   const sourceRootInput = options.sourceRoot ?? DEFAULT_SOURCE_ROOT;
-  const sourceRoot = path.isAbsolute(sourceRootInput) ? path.resolve(sourceRootInput) : path.resolve(projectRoot, sourceRootInput);
+  const sourceRoot = resolveSourceRoot(projectRoot, sourceRootInput);
   if (!await isDirectory(sourceRoot) || !isInsideDirectory(sourceRoot, projectRoot)) {
     throw new InvalidSourceRootError(sourceRoot);
   }
 
-  const excludeGitignoreDirs = options.excludeDirs?.gitignore === true;
-  const gitignoreInput = options.gitignorePath ?? path.join(projectRoot, ".gitignore");
-  const gitignorePath = path.isAbsolute(gitignoreInput) ? path.resolve(gitignoreInput) : path.resolve(projectRoot, gitignoreInput);
-  const gitignoreDirs = excludeGitignoreDirs
-    ? await readGitignoreExcludedDirs(projectRoot, gitignorePath)
-    : [];
+  const { excludeGitignoreDirs, gitignoreDirs, gitignorePath } = await readNormalizedGitignoreDirs(projectRoot, options);
   const excludedExtensions = new Set((options.excludeSourceExtensions ?? []).map(ensureDotExtension));
   const sourceExtensions = uniqueStrings(DEFAULT_SOURCE_EXTENSIONS.filter((extension) => !excludedExtensions.has(extension)));
   const excludeDirs = uniqueStrings([
