@@ -55,7 +55,7 @@ test.serial("retries transiently broken tsconfig reads during initialization", a
   });
   expect(rows[0]).toMatchObject({
     event: "package-initialized",
-    group: "code-discipline.initialize",
+    group: "trebired.code-discipline.initialize",
     level: "success",
     message: "@trebired/code-discipline initialized",
   });

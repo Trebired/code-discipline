@@ -2,6 +2,10 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 3.2.2
+
+- Moved package-owned code-discipline logging under the `trebired.code-discipline` group root, including initialization notices and buffered event summaries.
+
 ## 3.2.1
 
 - Added `removeComments.exclude` so comment checks and fixes can preserve comments containing configured plain-text substrings such as `@ts-nocheck`, without hardcoding comment syntax.

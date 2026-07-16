@@ -234,7 +234,7 @@ test("buffers unresolved rewrite diagnostics into one final report", async () =>
   expect(rows).toHaveLength(2);
   expect(rows[0]).toMatchObject({
     event: "package-initialized",
-    group: "code-discipline.initialize",
+    group: "trebired.code-discipline.initialize",
     level: "success",
   });
   expect(rows[1]).toMatchObject({
