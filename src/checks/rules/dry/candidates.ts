@@ -2,64 +2,46 @@ import fs from "node:fs/promises";
 
 import ts from "typescript";
 
-import type { NormalizedCheckCodeDisciplineOptions } from "../../types.js";
 import { parseSource } from "../../../imports/module-specifiers.js";
 import type { ScannedSourceFile } from "../../../imports/types.js";
 import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
-import {
-  createFunctionFingerprint,
-  resolveClassification,
-  resolveFunctionDisplayName,
-  resolveRemovalRange,
-  resolveStandaloneName,
-} from "./fingerprint.js";
-import type { DryCandidateDescriptor, DryHelperDescriptor, DrySourceDuplicateDescriptor } from "./model.js";
+import { createFunctionFingerprint, resolveClassification, resolveFunctionDisplayName } from "./fingerprint.js";
+import type { DryFunctionDescriptor } from "./model.js";
 
 const MIN_SOURCE_DUPLICATE_CHARACTERS = 300;
+const MIN_NAME_DUPLICATE_CHARACTERS = 300;
+const SIMILARITY_THRESHOLD = 0.99;
 
-function createDryViolation(
-  candidate: DryCandidateDescriptor,
-  options: NormalizedCheckCodeDisciplineOptions,
-): CodeDisciplineViolation {
-  return {
-    rule: "dry",
-    fix: true,
-    filePath: candidate.filePath,
-    message: `${candidate.localName ?? "anonymous function"} duplicates registered helper ${candidate.helper.helperKey}`,
-    details: {
-      fixable: candidate.safeToFix,
-      helper: candidate.helper.helperKey,
-      helperFile: candidate.helper.filePath,
-      reason: candidate.nonFixableReason,
-    },
-  };
-}
+type DuplicateSignal = "exact-normalized" | "matching-name" | "similar-structure";
 
-function createDrySourceDuplicateViolation(
-  candidate: DrySourceDuplicateDescriptor,
-  canonical: DrySourceDuplicateDescriptor,
-): CodeDisciplineViolation {
-  const candidateLine = candidate.sourceFile.getLineAndCharacterOfPosition(candidate.nodeStart).line + 1;
-  const canonicalLine = canonical.sourceFile.getLineAndCharacterOfPosition(canonical.nodeStart).line + 1;
+type DuplicateGroup = {
+  confidence: number;
+  functions: DryFunctionDescriptor[];
+  signals: DuplicateSignal[];
+};
 
-  return {
-    rule: "dry",
-    fix: false,
-    filePath: candidate.filePath,
-    message: `${candidate.localName ?? "anonymous function"} duplicates ${canonical.localName ?? "function"} in ${canonical.filePath}`,
-    details: {
-      fixable: false,
-      reason: "source duplicate requires a canonical helper for autofix",
-      duplicateOf: {
-        filePath: canonical.filePath,
-        line: canonicalLine,
-        name: canonical.localName,
-      },
-      line: candidateLine,
-      usesOuterScope: candidate.usesOuterScope,
-      usesRestrictedRuntime: candidate.usesRestrictedRuntime,
-    },
-  };
+class DisjointSet {
+  private readonly parents: number[];
+
+  constructor(size: number) {
+    this.parents = Array.from({ length: size }, (_, index) => index);
+  }
+
+  find(index: number): number {
+    const parent = this.parents[index]!;
+    if (parent === index) return index;
+
+    const root = this.find(parent);
+    this.parents[index] = root;
+    return root;
+  }
+
+  union(left: number, right: number): void {
+    const leftRoot = this.find(left);
+    const rightRoot = this.find(right);
+    if (leftRoot === rightRoot) return;
+    this.parents[rightRoot] = leftRoot;
+  }
 }
 
 function isFingerprintableFunction(node: ts.Node): node is ts.FunctionLikeDeclaration {
@@ -72,100 +54,57 @@ function isFingerprintableFunction(node: ts.Node): node is ts.FunctionLikeDeclar
     || (ts.isConstructorDeclaration(node) && Boolean(node.body));
 }
 
-function buildDrySourceDuplicate(
+function normalizeFunctionName(name: string | undefined): string | undefined {
+  const normalized = name?.trim().toLowerCase();
+  return normalized || undefined;
+}
+
+function isTopLevelFunction(node: ts.FunctionLikeDeclaration): boolean {
+  if (ts.isFunctionDeclaration(node)) {
+    return ts.isSourceFile(node.parent);
+  }
+
+  const parent = node.parent;
+  if (!parent || !ts.isVariableDeclaration(parent)) return false;
+
+  const declarationList = parent.parent;
+  const statement = declarationList.parent;
+  return ts.isVariableDeclarationList(declarationList)
+    && ts.isVariableStatement(statement)
+    && ts.isSourceFile(statement.parent);
+}
+
+function buildDryFunctionDescriptor(
   node: ts.FunctionLikeDeclaration,
   sourceFile: ts.SourceFile,
   file: ScannedSourceFile,
-  helpers: Map<string, DryHelperDescriptor>,
-): DrySourceDuplicateDescriptor | null {
+): DryFunctionDescriptor | null {
   const classification = resolveClassification(node);
   if (classification === "unsupported") return null;
 
   const sourceText = node.getText(sourceFile).replace(/\s+/g, "");
-  if (sourceText.length < MIN_SOURCE_DUPLICATE_CHARACTERS) return null;
-
   const fingerprintState = createFunctionFingerprint(node, sourceFile);
-  if (helpers.has(fingerprintState.fingerprint)) return null;
+  const localName = resolveFunctionDisplayName(node, sourceFile);
 
   return {
     absolutePath: file.absolutePath,
+    characterCount: sourceText.length,
     classification,
     fingerprint: fingerprintState.fingerprint,
     filePath: file.relativeFromProjectRoot,
-    localName: resolveFunctionDisplayName(node, sourceFile),
-    nodeStart: node.getStart(sourceFile),
-    sourceFile,
-    usesOuterScope: fingerprintState.usesOuterScope,
-    usesRestrictedRuntime: fingerprintState.usesRestrictedRuntime,
-  };
-}
-
-function resolveNonFixableReason(args: {
-  classification: ReturnType<typeof resolveClassification>;
-  removalOk: boolean;
-  usesOuterScope: boolean;
-  usesRestrictedRuntime: boolean;
-}): string | undefined {
-  if (args.classification === "method") return "methods are report-only in v1";
-  if (args.classification !== "standalone") return "unsupported function shape";
-  if (!args.removalOk) return "duplicate declaration cannot be removed safely";
-  if (args.usesOuterScope) return "duplicate captures outer scope";
-  if (args.usesRestrictedRuntime) return "duplicate depends on this, super, arguments, or new.target";
-  return undefined;
-}
-
-function buildDryCandidate(
-  node: ts.FunctionLikeDeclaration,
-  sourceFile: ts.SourceFile,
-  file: ScannedSourceFile,
-  helpers: Map<string, DryHelperDescriptor>,
-): DryCandidateDescriptor | null {
-  const classification = resolveClassification(node);
-  const localName = resolveStandaloneName(node);
-  const removal = resolveRemovalRange(node, sourceFile);
-  const fingerprintState = createFunctionFingerprint(node, sourceFile);
-  const helper = helpers.get(fingerprintState.fingerprint);
-  if (!helper) return null;
-
-  const isSelf = helper.absolutePath === file.absolutePath
-    && helper.nodeStart === node.getStart(sourceFile)
-    && helper.nodeEnd === node.getEnd();
-  if (isSelf) return null;
-
-  const safeToFix = classification === "standalone"
-    && removal.ok
-    && !fingerprintState.usesOuterScope
-    && !fingerprintState.usesRestrictedRuntime
-    && Boolean(localName);
-
-  return {
-    absolutePath: file.absolutePath,
-    classification,
-    fingerprint: fingerprintState.fingerprint,
-    filePath: file.relativeFromProjectRoot,
-    helper,
     localName,
-    nonFixableReason: resolveNonFixableReason({
-      classification,
-      removalOk: removal.ok,
-      usesOuterScope: fingerprintState.usesOuterScope,
-      usesRestrictedRuntime: fingerprintState.usesRestrictedRuntime,
-    }),
-    removalEnd: removal.end,
-    removalStart: removal.start,
-    safeToFix,
+    normalizedName: normalizeFunctionName(localName),
+    nodeStart: node.getStart(sourceFile),
+    normalizedText: fingerprintState.fingerprint,
     sourceFile,
+    topLevel: isTopLevelFunction(node),
     usesOuterScope: fingerprintState.usesOuterScope,
     usesRestrictedRuntime: fingerprintState.usesRestrictedRuntime,
   };
 }
 
-async function collectDryCandidates(
-  sourceFiles: ScannedSourceFile[],
-  helpers: Map<string, DryHelperDescriptor>,
-  options: NormalizedCheckCodeDisciplineOptions,
-): Promise<DryCandidateDescriptor[]> {
-  const results: DryCandidateDescriptor[] = [];
+async function collectDryFunctions(sourceFiles: ScannedSourceFile[]): Promise<DryFunctionDescriptor[]> {
+  const functions: DryFunctionDescriptor[] = [];
 
   for (const file of sourceFiles) {
     const text = await fs.readFile(file.absolutePath, "utf8");
@@ -173,8 +112,8 @@ async function collectDryCandidates(
 
     const visit = (node: ts.Node): void => {
       if (isFingerprintableFunction(node)) {
-        const candidate = buildDryCandidate(node, sourceFile, file, helpers);
-        if (candidate) results.push(candidate);
+        const descriptor = buildDryFunctionDescriptor(node, sourceFile, file);
+        if (descriptor) functions.push(descriptor);
       }
 
       ts.forEachChild(node, visit);
@@ -183,51 +122,160 @@ async function collectDryCandidates(
     visit(sourceFile);
   }
 
-  return results;
+  return functions.sort((left, right) => left.filePath.localeCompare(right.filePath) || left.nodeStart - right.nodeStart);
 }
 
-async function collectDrySourceDuplicateViolations(
-  sourceFiles: ScannedSourceFile[],
-  helpers: Map<string, DryHelperDescriptor>,
-): Promise<CodeDisciplineViolation[]> {
-  const byFingerprint = new Map<string, DrySourceDuplicateDescriptor[]>();
+function getTrigrams(value: string): Set<string> {
+  const padded = `  ${value}  `;
+  const trigrams = new Set<string>();
 
-  for (const file of sourceFiles) {
-    const text = await fs.readFile(file.absolutePath, "utf8");
-    const sourceFile = parseSource(text, file.absolutePath);
-
-    const visit = (node: ts.Node): void => {
-      if (isFingerprintableFunction(node)) {
-        const duplicate = buildDrySourceDuplicate(node, sourceFile, file, helpers);
-        if (duplicate) {
-          const rows = byFingerprint.get(duplicate.fingerprint) ?? [];
-          rows.push(duplicate);
-          byFingerprint.set(duplicate.fingerprint, rows);
-        }
-      }
-
-      ts.forEachChild(node, visit);
-    };
-
-    visit(sourceFile);
+  for (let index = 0; index <= padded.length - 3; index += 1) {
+    trigrams.add(padded.slice(index, index + 3));
   }
 
-  const violations: CodeDisciplineViolation[] = [];
+  return trigrams;
+}
 
-  for (const rows of byFingerprint.values()) {
-    if (rows.length < 2) continue;
+function jaccardSimilarity(left: Set<string>, right: Set<string>): number {
+  let intersection = 0;
 
-    const [canonical, ...duplicates] = rows.sort((left, right) => (
-      left.filePath.localeCompare(right.filePath)
-      || left.nodeStart - right.nodeStart
-    ));
+  for (const entry of left) {
+    if (right.has(entry)) intersection += 1;
+  }
 
-    for (const duplicate of duplicates) {
-      violations.push(createDrySourceDuplicateViolation(duplicate, canonical!));
+  const union = left.size + right.size - intersection;
+  return union === 0 ? 1 : intersection / union;
+}
+
+function shouldCompareSimilarity(left: DryFunctionDescriptor, right: DryFunctionDescriptor): boolean {
+  if (left.characterCount < MIN_SOURCE_DUPLICATE_CHARACTERS || right.characterCount < MIN_SOURCE_DUPLICATE_CHARACTERS) return false;
+
+  const smaller = Math.min(left.normalizedText.length, right.normalizedText.length);
+  const larger = Math.max(left.normalizedText.length, right.normalizedText.length);
+  return smaller / larger >= 0.75;
+}
+
+function resolvePairSignals(left: DryFunctionDescriptor, right: DryFunctionDescriptor): Array<{
+  confidence: number;
+  signal: DuplicateSignal;
+}> {
+  const signals: Array<{ confidence: number; signal: DuplicateSignal }> = [];
+
+  if (left.fingerprint === right.fingerprint && left.characterCount >= MIN_SOURCE_DUPLICATE_CHARACTERS && right.characterCount >= MIN_SOURCE_DUPLICATE_CHARACTERS) {
+    signals.push({ confidence: 1, signal: "exact-normalized" });
+  }
+
+  if (
+    left.classification === "standalone"
+    && right.classification === "standalone"
+    && left.topLevel
+    && right.topLevel
+    && left.characterCount >= MIN_NAME_DUPLICATE_CHARACTERS
+    && right.characterCount >= MIN_NAME_DUPLICATE_CHARACTERS
+    && left.normalizedName
+    && left.normalizedName === right.normalizedName
+  ) {
+    signals.push({ confidence: 1, signal: "matching-name" });
+  }
+
+  if (shouldCompareSimilarity(left, right)) {
+    const similarity = jaccardSimilarity(getTrigrams(left.normalizedText), getTrigrams(right.normalizedText));
+    if (similarity >= SIMILARITY_THRESHOLD) {
+      signals.push({ confidence: similarity, signal: "similar-structure" });
     }
   }
 
-  return violations;
+  return signals;
 }
 
-export { collectDryCandidates, collectDrySourceDuplicateViolations, createDryViolation };
+function collectDuplicateGroups(functions: DryFunctionDescriptor[]): DuplicateGroup[] {
+  const disjointSet = new DisjointSet(functions.length);
+  const groupSignals = new Map<string, { confidence: number; signals: Set<DuplicateSignal> }>();
+
+  for (let leftIndex = 0; leftIndex < functions.length; leftIndex += 1) {
+    for (let rightIndex = leftIndex + 1; rightIndex < functions.length; rightIndex += 1) {
+      const signals = resolvePairSignals(functions[leftIndex]!, functions[rightIndex]!);
+      if (signals.length === 0) continue;
+
+      disjointSet.union(leftIndex, rightIndex);
+
+      const key = `${leftIndex}:${rightIndex}`;
+      groupSignals.set(key, {
+        confidence: Math.max(...signals.map((signal) => signal.confidence)),
+        signals: new Set(signals.map((signal) => signal.signal)),
+      });
+    }
+  }
+
+  const indexesByRoot = new Map<number, number[]>();
+  for (let index = 0; index < functions.length; index += 1) {
+    const root = disjointSet.find(index);
+    const indexes = indexesByRoot.get(root) ?? [];
+    indexes.push(index);
+    indexesByRoot.set(root, indexes);
+  }
+
+  const groups: DuplicateGroup[] = [];
+
+  for (const indexes of indexesByRoot.values()) {
+    if (indexes.length < 2) continue;
+
+    let confidence = 0;
+    const signals = new Set<DuplicateSignal>();
+
+    for (const [key, entry] of groupSignals) {
+      const [left, right] = key.split(":").map((value) => Number.parseInt(value, 10));
+      if (!indexes.includes(left) || !indexes.includes(right)) continue;
+
+      confidence = Math.max(confidence, entry.confidence);
+      for (const signal of entry.signals) signals.add(signal);
+    }
+
+    groups.push({
+      confidence,
+      functions: indexes.map((index) => functions[index]!),
+      signals: [...signals].sort(),
+    });
+  }
+
+  return groups;
+}
+
+function formatFunctionLocation(descriptor: DryFunctionDescriptor): string {
+  return descriptor.localName
+    ? `${descriptor.filePath}#${descriptor.localName}`
+    : descriptor.filePath;
+}
+
+function createDryGroupViolation(group: DuplicateGroup): CodeDisciplineViolation {
+  const files = [...new Set(group.functions.map((descriptor) => descriptor.filePath))];
+
+  return {
+    rule: "dry",
+    fix: false,
+    filePath: "multiple files",
+    message: `function duplicates in files: ${files.join(", ")}`,
+    details: {
+      confidence: Number(group.confidence.toFixed(3)),
+      files,
+      fixable: false,
+      functions: group.functions.map((descriptor) => ({
+        classification: descriptor.classification,
+        filePath: descriptor.filePath,
+        line: descriptor.sourceFile.getLineAndCharacterOfPosition(descriptor.nodeStart).line + 1,
+        name: descriptor.localName,
+        topLevel: descriptor.topLevel,
+      })),
+      locations: group.functions.map(formatFunctionLocation),
+      reason: "duplicate function group requires human canonicalization",
+      signals: group.signals,
+    },
+  };
+}
+
+async function collectDrySourceDuplicateViolations(sourceFiles: ScannedSourceFile[]): Promise<CodeDisciplineViolation[]> {
+  const functions = await collectDryFunctions(sourceFiles);
+  return collectDuplicateGroups(functions).map(createDryGroupViolation);
+}
+
+export { collectDrySourceDuplicateViolations };

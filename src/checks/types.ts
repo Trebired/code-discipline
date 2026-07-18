@@ -13,7 +13,7 @@ import type {
 } from "../shared/discipline-types.js";
 
 type CodeDisciplineRuleSlug = CodeDisciplineRuleName;
-type FixableRuleSlug = "banned-files" | "folderize-compound-files" | "sync-imports" | "remove-comments" | "dry";
+type FixableRuleSlug = "banned-files" | "folderize-compound-files" | "sync-imports" | "remove-comments";
 type CodeDisciplineMode = "check" | "fix";
 type CodeDisciplineRuntimeMode = CodeDisciplineMode;
 type CodeDisciplineRuleSeverity = "warning" | "fail";
@@ -74,14 +74,7 @@ type RemoveCommentsRuleOptions = {
   exclude?: string[];
 };
 
-type DryHelperReference = {
-  from: string;
-  exportName: string;
-  key?: string;
-};
-
 type DryRuleOptions = {
-  helpers?: DryHelperReference[];
   severity?: CodeDisciplineRuleSeverity;
 };
 
@@ -186,7 +179,6 @@ type NormalizedFolderizeCompoundFilesRule = {
 };
 
 type NormalizedDryRule = {
-  helpers: DryHelperReference[];
   severity: CodeDisciplineRuleSeverity;
 };
 
@@ -264,7 +256,6 @@ export type {
   CodeDisciplineRules,
   CodeDisciplineSyncImportsRuleOptions,
   CodeDisciplineTsconfigPathsOptions,
-  DryHelperReference,
   DryRuleOptions,
   EvasionGuardsOptions,
   FixableRuleSlug,

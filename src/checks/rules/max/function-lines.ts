@@ -9,7 +9,8 @@ import { loadNativeBinding } from "../../../native/native.js";
 import { parseSource } from "../../../imports/module-specifiers.js";
 import { isGoExtension, isRustExtension, isTypeScriptFamilyExtension, supportsMaxFunctionLines } from "../../../shared/languages.js";
 import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
-import { isFunctionLikeWithBody, resolveFunctionKind } from "../typescript-functions.js";
+import { getEndLine, getStartLine, isFunctionLikeWithBody, resolveFunctionKind, resolveFunctionName } from "../typescript-functions.js";
+import { stripCommentsAndStrings } from "../evasion-guards/strip.js";
 import { countCodeLinesInRange, maskCommentsForLineCounting } from "./code-lines.js";
 
 type FunctionDescriptor = {
@@ -25,13 +26,6 @@ type NativeMaxFunctionLinesResult = {
   handledPaths: string[];
 };
 
-type StripState = {
-  escaped: boolean;
-  inDouble: boolean;
-  inSingle: boolean;
-  inTemplate: boolean;
-};
-
 type PendingBlockFunction = {
   braceDepth: number;
   header: string;
@@ -40,33 +34,9 @@ type PendingBlockFunction = {
   startLine: number;
 };
 
-function resolveFunctionName(node: ts.FunctionLikeDeclaration, sourceFile: ts.SourceFile): string {
-  if ("name" in node && node.name) {
-    return node.name.getText(sourceFile);
-  }
-
-  const parent = node.parent;
-
-  if (parent && ts.isVariableDeclaration(parent) && ts.isIdentifier(parent.name)) {
-    return parent.name.text;
-  }
-
-  if (parent && ts.isBinaryExpression(parent) && ts.isIdentifier(parent.left)) {
-    return parent.left.text;
-  }
-
-  if (parent && ts.isPropertyAssignment(parent)) {
-    return parent.name.getText(sourceFile);
-  }
-
-  return "anonymous";
-}
-
-function describeFunction(node: ts.FunctionLikeDeclaration, sourceFile: ts.SourceFile): FunctionDescriptor | null {
-  const start = node.getStart(sourceFile);
-  const end = node.getEnd();
-  const startLine = sourceFile.getLineAndCharacterOfPosition(start).line + 1;
-  const endLine = sourceFile.getLineAndCharacterOfPosition(end).line + 1;
+function describeLineLimitedFunction(node: ts.FunctionLikeDeclaration, sourceFile: ts.SourceFile): FunctionDescriptor | null {
+  const startLine = getStartLine(sourceFile, node);
+  const endLine = getEndLine(sourceFile, node);
   const lineCount = Math.max(1, endLine - startLine + 1);
 
   return {
@@ -83,7 +53,7 @@ function collectTypeScriptFunctionDescriptors(sourceFile: ts.SourceFile): Functi
 
   function visit(node: ts.Node) {
     if (isFunctionLikeWithBody(node)) {
-      const descriptor = describeFunction(node, sourceFile);
+      const descriptor = describeLineLimitedFunction(node, sourceFile);
       if (descriptor) {
         descriptors.push(descriptor);
       }
@@ -94,57 +64,6 @@ function collectTypeScriptFunctionDescriptors(sourceFile: ts.SourceFile): Functi
 
   visit(sourceFile);
   return descriptors;
-}
-
-function updateStripState(state: StripState, character: string): void {
-  if (state.escaped) {
-    state.escaped = false;
-    return;
-  }
-
-  if ((state.inSingle || state.inDouble || state.inTemplate) && character === "\\") {
-    state.escaped = true;
-    return;
-  }
-
-  if (!state.inDouble && !state.inTemplate && character === "'") state.inSingle = !state.inSingle;
-  if (!state.inSingle && !state.inTemplate && character === "\"") state.inDouble = !state.inDouble;
-  if (!state.inSingle && !state.inDouble && character === "`") state.inTemplate = !state.inTemplate;
-}
-
-function isInString(state: StripState): boolean {
-  return state.inSingle || state.inDouble || state.inTemplate;
-}
-
-function stripCommentsAndStrings(value: string): string {
-  let result = "";
-  const state: StripState = {
-    escaped: false,
-    inDouble: false,
-    inSingle: false,
-    inTemplate: false,
-  };
-
-  for (let index = 0; index < value.length; index += 1) {
-    const character = value[index] ?? "";
-    const nextCharacter = value[index + 1];
-
-    if (!isInString(state) && character === "/" && nextCharacter === "/") break;
-
-    if (!isInString(state) && character === "/" && nextCharacter === "*") {
-      const closingIndex = value.indexOf("*/", index + 2);
-      if (closingIndex < 0) break;
-      index = closingIndex + 1;
-      continue;
-    }
-
-    updateStripState(state, character);
-    if (!isInString(state) && !state.escaped) {
-      result += character;
-    }
-  }
-
-  return result;
 }
 
 function countBraceDelta(value: string): number {

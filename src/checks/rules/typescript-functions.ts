@@ -22,4 +22,45 @@ function resolveFunctionKind(node: ts.FunctionLikeDeclaration): string {
   return "function";
 }
 
-export { isFunctionLikeWithBody, resolveFunctionKind };
+function getStartLine(sourceFile: ts.SourceFile, node: ts.Node): number {
+  return sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
+}
+
+function getEndLine(sourceFile: ts.SourceFile, node: ts.Node): number {
+  return sourceFile.getLineAndCharacterOfPosition(node.getEnd()).line + 1;
+}
+
+function getLineCount(sourceFile: ts.SourceFile, node: ts.Node): number {
+  return Math.max(1, getEndLine(sourceFile, node) - getStartLine(sourceFile, node) + 1);
+}
+
+function resolveFunctionName(node: ts.FunctionLikeDeclaration, sourceFile: ts.SourceFile): string {
+  if ("name" in node && node.name) {
+    return node.name.getText(sourceFile);
+  }
+
+  const parent = node.parent;
+
+  if (parent && ts.isVariableDeclaration(parent) && ts.isIdentifier(parent.name)) {
+    return parent.name.text;
+  }
+
+  if (parent && ts.isBinaryExpression(parent) && ts.isIdentifier(parent.left)) {
+    return parent.left.text;
+  }
+
+  if (parent && ts.isPropertyAssignment(parent)) {
+    return parent.name.getText(sourceFile);
+  }
+
+  return "anonymous";
+}
+
+export {
+  getEndLine,
+  getLineCount,
+  getStartLine,
+  isFunctionLikeWithBody,
+  resolveFunctionKind,
+  resolveFunctionName,
+};

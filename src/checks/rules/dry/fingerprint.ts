@@ -10,6 +10,7 @@ function createFunctionFingerprint(
   sourceFile: ts.SourceFile,
 ): {
   fingerprint: string;
+  normalized: unknown;
   usesOuterScope: boolean;
   usesRestrictedRuntime: boolean;
 } {
@@ -18,6 +19,7 @@ function createFunctionFingerprint(
 
   return {
     fingerprint: stableSerialize(normalized),
+    normalized,
     usesOuterScope: context.usesOuterScope,
     usesRestrictedRuntime: context.usesRestrictedRuntime,
   };

@@ -24,7 +24,6 @@ const FIXABLE_RULE_SLUGS: FixableRuleSlug[] = [
   "folderize-compound-files",
   "sync-imports",
   "remove-comments",
-  "dry",
 ];
 
 const RULE_SLUG_BY_CONFIG_KEY = {

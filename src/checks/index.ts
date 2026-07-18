@@ -12,7 +12,7 @@ import { fixFolderization } from "./fix-folderization.js";
 import { runFolderizeCompoundFilesRule } from "./rules/folderize/compound-files.js";
 import { collectBannedFileViolations, fixBannedFilesRule } from "./rules/banned/files.js";
 import { collectBannedPatternViolations } from "./rules/banned/patterns.js";
-import { collectDryViolations, fixDryRule } from "./rules/dry/index.js";
+import { collectDryViolations } from "./rules/dry/index.js";
 import { runEvasionGuardsRule } from "./rules/evasion-guards/index.js";
 import { runMaxFileLinesRule } from "./rules/max/file-lines.js";
 import { runMaxFunctionLinesRule } from "./rules/max/function-lines.js";
@@ -248,20 +248,6 @@ async function applyFolderizeFix(
   }
 }
 
-async function applyDryFix(state: FixState, normalized: NormalizedCheckCodeDisciplineOptions): Promise<void> {
-  if (!normalized.rules.dry || !shouldRunFixRule("dry", normalized)) return;
-
-  const result = await fixDryRule(state.sourceFiles, normalized);
-  const violations = applyConfiguredSeverity(result.violations, normalized);
-  state.ruleResults.dry = mapFixRuleResult({ ...result, violations });
-  state.violations.push(...violations);
-  state.rewrittenFiles += result.rewritten_files ?? 0;
-
-  if ((result.rewritten_files ?? 0) > 0) {
-    state.sourceFiles = await scanSourceFiles(normalized);
-  }
-}
-
 async function applySyncImportsFix(state: FixState, normalized: NormalizedCheckCodeDisciplineOptions): Promise<void> {
   if (!normalized.rules.syncImports || !shouldRunFixRule("sync-imports", normalized)) return;
 
@@ -342,7 +328,6 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
 
   await applyBannedFilesFix(state, normalized);
   await applyFolderizeFix(state, normalized, logger);
-  await applyDryFix(state, normalized);
   await applySyncImportsFix(state, normalized);
   await applyRemoveCommentsFix(state, normalized);
 

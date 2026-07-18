@@ -2,6 +2,12 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 3.3.2
+
+- Removed `dry.helpers` registration and the helper-based `dry` autofix path; `dry` now scans source functions directly.
+- Changed `dry` duplicate reporting to emit neutral function groups such as `function duplicates in files: ...` instead of selecting a primary file.
+- Added matching function names and high structural similarity as DRY duplicate signals alongside exact normalized structure.
+
 ## 3.3.1
 
 - Made `banned-files` fixable; `code-discipline fix banned-files` now deletes matching banned files and reports a `deleted_files` count.

@@ -1,6 +1,12 @@
 import ts from "typescript";
 
-import { isFunctionLikeWithBody, resolveFunctionKind } from "../typescript-functions.js";
+import {
+  getLineCount,
+  getStartLine,
+  isFunctionLikeWithBody,
+  resolveFunctionKind,
+  resolveFunctionName,
+} from "../typescript-functions.js";
 
 type FunctionDescriptor = {
   characterCount: number;
@@ -10,28 +16,6 @@ type FunctionDescriptor = {
   startLine: number;
   statementCount: number;
 };
-
-function getStartLine(sourceFile: ts.SourceFile, node: ts.Node): number {
-  return sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1;
-}
-
-function getLineCount(sourceFile: ts.SourceFile, node: ts.Node): number {
-  const start = node.getStart(sourceFile);
-  const end = node.getEnd();
-  const startLine = sourceFile.getLineAndCharacterOfPosition(start).line + 1;
-  const endLine = sourceFile.getLineAndCharacterOfPosition(end).line + 1;
-  return Math.max(1, endLine - startLine + 1);
-}
-
-function resolveFunctionName(node: ts.FunctionLikeDeclaration, sourceFile: ts.SourceFile): string {
-  if ("name" in node && node.name) return node.name.getText(sourceFile);
-
-  const parent = node.parent;
-  if (parent && ts.isVariableDeclaration(parent) && ts.isIdentifier(parent.name)) return parent.name.text;
-  if (parent && ts.isBinaryExpression(parent) && ts.isIdentifier(parent.left)) return parent.left.text;
-  if (parent && ts.isPropertyAssignment(parent)) return parent.name.getText(sourceFile);
-  return "anonymous";
-}
 
 function countExecutableStatements(node: ts.Node): number {
   let count = 0;
@@ -45,7 +29,7 @@ function countExecutableStatements(node: ts.Node): number {
   return count;
 }
 
-function describeFunction(node: ts.FunctionLikeDeclaration, sourceFile: ts.SourceFile): FunctionDescriptor {
+function describePackedFunction(node: ts.FunctionLikeDeclaration, sourceFile: ts.SourceFile): FunctionDescriptor {
   const body = node.body;
   const statementCount = body && ts.isBlock(body)
     ? countExecutableStatements(body)
@@ -65,7 +49,7 @@ function collectFunctionDescriptors(sourceFile: ts.SourceFile): FunctionDescript
   const descriptors: FunctionDescriptor[] = [];
 
   function visit(node: ts.Node) {
-    if (isFunctionLikeWithBody(node)) descriptors.push(describeFunction(node, sourceFile));
+    if (isFunctionLikeWithBody(node)) descriptors.push(describePackedFunction(node, sourceFile));
     ts.forEachChild(node, visit);
   }
 

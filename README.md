@@ -9,7 +9,7 @@ Configurable repository discipline checks and rule-driven fixes for Bun and Node
 - sync rules such as keeping source imports, `tsconfig.json`, and optional `package.json#imports` aligned
 - source cleanup rules such as removing comments across supported languages
 - native acceleration with a TypeScript fallback for large codebases
-- DRY enforcement against registered canonical helper functions
+- DRY enforcement through source-tree duplicate function grouping
 
 It is not a formatter, linter replacement, or build system.
 
@@ -31,7 +31,7 @@ code-discipline check
 code-discipline check save
 code-discipline check max-function-lines dry
 code-discipline fix
-code-discipline fix banned-files sync-imports dry remove-comments
+code-discipline fix banned-files sync-imports remove-comments
 code-discipline gate -- bun run dev
 ```
 
@@ -160,14 +160,7 @@ export default defineCodeDisciplineConfig({
         aliasPrefix: "#",
       },
     },
-    dry: {
-      helpers: [
-        {
-          from: "./src/shared/to-text.ts",
-          exportName: "toText",
-        },
-      ],
-    },
+    dry: {},
   },
 });
 ```
@@ -211,7 +204,7 @@ export default defineCodeDisciplineConfig({
 
 ```sh
 code-discipline check max-file-lines max-function-lines
-code-discipline fix banned-files sync-imports dry remove-comments
+code-discipline fix banned-files sync-imports remove-comments
 ```
 
 Rules use kebab-case public slugs:
@@ -226,7 +219,7 @@ Rules use kebab-case public slugs:
 - `dry`
 - `evasion-guards`
 
-`fix` only accepts fixable rules. Trying to run `code-discipline fix max-function-lines` or `code-discipline fix evasion-guards` fails clearly.
+`fix` only accepts fixable rules. Trying to run `code-discipline fix max-function-lines`, `code-discipline fix dry`, or `code-discipline fix evasion-guards` fails clearly.
 
 ## Runtime API
 
@@ -440,36 +433,24 @@ code-discipline fix remove-comments
 
 ### `dry`
 
-Registers canonical helper functions and reports exact normalized duplicates. It also scans the configured source tree for likely duplicate functions even when no helpers are registered.
+Reports duplicate function groups across the configured source tree.
 
-- matching is exact normalized structure, not heuristic similarity
+- exact normalized structure is reported with 100% confidence
+- matching function names are reported with 100% confidence
+- highly similar normalized function structure is reported as a likely duplicate
 - whitespace, comments, function names, and local identifier names do not matter
-- class/object methods are report-only
-- autofix only runs when the duplicate can be removed completely and replaced by a canonical import
-- source-tree duplicate discovery is check-only; add a canonical helper when you want autofix
-
-Canonical helpers are registered by module export reference:
+- reports are neutral groups, not "file A duplicates file B"
+- `dry` is check-only
 
 ```ts
-dry: {
-  helpers: [
-    {
-      from: "./src/shared/to-text.ts",
-      exportName: "toText",
-    },
-    {
-      from: "./src/shared/normalize.ts",
-      exportName: "default",
-    },
-  ],
-}
+dry: {}
 ```
 
-Supported canonical helper exports:
+Example output:
 
-- exported function declarations
-- exported const bindings initialized with function expressions or arrow functions
-- default exports of those function shapes
+```txt
+dry multiple files function duplicates in files: src/one.ts, src/two.ts
+```
 
 ## Lifecycle Hooks
 

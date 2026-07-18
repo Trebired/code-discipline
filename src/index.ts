@@ -118,7 +118,6 @@ export type {
   CodeDisciplineRules,
   CodeDisciplineSyncImportsRuleOptions,
   CodeDisciplineTsconfigPathsOptions,
-  DryHelperReference,
   DryRuleOptions,
   EvasionGuardsOptions,
   FixableRuleSlug,

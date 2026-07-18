@@ -213,41 +213,9 @@ function normalizeSyncImportsRule(rule: CodeDisciplineSyncImportsRuleOptions | u
 function normalizeDryRule(rule: DryRuleOptions | undefined): NormalizedDryRule | undefined {
   if (!rule) return undefined;
   const source = rule as Record<string, unknown>;
-  assertRemovedKeys("dry", source, ["enabled", "stop", "fix"]);
-
-  if (rule.helpers !== undefined && !Array.isArray(rule.helpers)) {
-    throw new InvalidCodeDisciplineConfigError("dry.helpers must be an array when provided", {
-      rule: "dry",
-    });
-  }
-
-  const helpers = (rule.helpers ?? []).map((helper, index) => {
-    const from = String(helper?.from ?? "").trim();
-    const exportName = String(helper?.exportName ?? "").trim();
-
-    if (!from) {
-      throw new InvalidCodeDisciplineConfigError("dry.helpers[].from must be a non-empty string", {
-        rule: "dry",
-        index,
-      });
-    }
-
-    if (!exportName) {
-      throw new InvalidCodeDisciplineConfigError("dry.helpers[].exportName must be a non-empty string", {
-        rule: "dry",
-        index,
-      });
-    }
-
-    return {
-      from,
-      exportName,
-      key: helper?.key ? String(helper.key).trim() : undefined,
-    };
-  });
+  assertRemovedKeys("dry", source, ["enabled", "stop", "fix", "helpers"]);
 
   return {
-    helpers,
     severity: normalizeSeverity(rule.severity, "dry"),
   };
 }

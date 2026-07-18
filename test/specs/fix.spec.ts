@@ -127,96 +127,21 @@ test("deletes banned files during fix", async () => {
   expect(fileExists(projectRoot, "src/feature/app.spec.tsx")).toBe(false);
 });
 
-test("replaces a standalone DRY duplicate with an imported canonical helper", async () => {
+test("rejects dry as a fix selector", async () => {
   const projectRoot = tempProject();
 
-  writeFile(projectRoot, "src/shared/to-text.ts", [
-    "export function toText(value: unknown) {",
-    "  return String(value == null ? \"\" : value).trim();",
-    "}",
-    "",
-  ].join("\n"));
-  writeFile(projectRoot, "src/app.ts", [
-    "export function clean(input: unknown) {",
-    "  return String(input == null ? \"\" : input).trim();",
-    "}",
-    "",
-    "export const app = clean(\"  hi  \");",
-    "",
-  ].join("\n"));
+  writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
 
-  const result = await fixCodeDiscipline({
+  await expect(fixCodeDiscipline({
     projectRoot,
+    // @ts-expect-error dry is check-only
+    onlyRules: ["dry"],
     rules: {
-      dry: {
-        helpers: [
-          {
-            from: "./src/shared/to-text.ts",
-            exportName: "toText",
-          },
-        ],
-      },
+      dry: {},
     },
+  })).rejects.toMatchObject({
+    code: "invalid_config",
   });
-
-  expect(result).toMatchObject({
-    ok: true,
-    violationCount: 0,
-    violations: [],
-    ruleResults: {
-      dry: {
-        ok: true,
-        added_imports: 1,
-        removed_duplicates: 1,
-      },
-    },
-  });
-  expect(readFile(projectRoot, "src/app.ts")).toContain('import { toText as clean } from "./shared/to-text";');
-  expect(readFile(projectRoot, "src/app.ts")).not.toContain("export function clean");
-});
-
-test("reports duplicate methods without autofixing them", async () => {
-  const projectRoot = tempProject();
-
-  writeFile(projectRoot, "src/shared/to-text.ts", [
-    "export function toText(value: unknown) {",
-    "  return String(value == null ? \"\" : value).trim();",
-    "}",
-    "",
-  ].join("\n"));
-  writeFile(projectRoot, "src/app.ts", [
-    "export const formatter = {",
-    "  clean(input: unknown) {",
-    "    return String(input == null ? \"\" : input).trim();",
-    "  },",
-    "};",
-    "",
-  ].join("\n"));
-
-  const result = await fixCodeDiscipline({
-    projectRoot,
-    rules: {
-      dry: {
-        helpers: [
-          {
-            from: "./src/shared/to-text.ts",
-            exportName: "toText",
-          },
-        ],
-      },
-    },
-  });
-
-  expect(result.ok).toBe(false);
-  expect(result.violations).toHaveLength(1);
-  expect(result.violations[0]).toMatchObject({
-    rule: "dry",
-    details: {
-      fixable: false,
-      reason: "methods are report-only in v1",
-    },
-  });
-  expect(readFile(projectRoot, "src/app.ts")).toContain("clean(input: unknown)");
 });
 
 test("removes TypeScript comments while preserving literal contents", async () => {
