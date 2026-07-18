@@ -42,6 +42,18 @@ type DryCandidateDescriptor = {
   usesRestrictedRuntime: boolean;
 };
 
+type DrySourceDuplicateDescriptor = {
+  absolutePath: string;
+  classification: "method" | "standalone";
+  fingerprint: string;
+  filePath: string;
+  localName?: string;
+  nodeStart: number;
+  sourceFile: ts.SourceFile;
+  usesOuterScope: boolean;
+  usesRestrictedRuntime: boolean;
+};
+
 type ImportBinding = {
   exportName: string;
   localName: string;
@@ -52,4 +64,4 @@ function filterDrySourceFiles(sourceFiles: ScannedSourceFile[]): ScannedSourceFi
 }
 
 export { DRY_RESOLUTION_EXTENSIONS, filterDrySourceFiles };
-export type { DryCandidateDescriptor, DryHelperDescriptor, ImportBinding };
+export type { DryCandidateDescriptor, DryHelperDescriptor, DrySourceDuplicateDescriptor, ImportBinding };

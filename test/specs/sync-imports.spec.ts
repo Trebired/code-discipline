@@ -201,7 +201,6 @@ test("returns drift and logs a warning when fix is disabled", async () => {
     fix: false,
     alias: { strategy: "relative-path-slug" },
     logging: {
-      enabled: true,
       logger,
     },
   });
@@ -224,7 +223,6 @@ test("buffers unresolved rewrite diagnostics into one final report", async () =>
     fix: true,
     alias: { strategy: "relative-path-slug" },
     logging: {
-      enabled: true,
       adapter,
     },
   });

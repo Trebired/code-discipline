@@ -50,10 +50,6 @@ function eventGroup(event: CodeDisciplineLogEvent): string {
   return String(event.group || CODE_DISCIPLINE_LOG_GROUP);
 }
 
-function shouldSkipForQuiet(level: CodeDisciplineLogLevel, quiet: boolean): boolean {
-  return quiet && (level === "debug" || level === "info" || level === "success");
-}
-
 function writeToConsole(event: CodeDisciplineLogEvent) {
   const formatted = formatMessage(eventGroup(event), event.message);
   const payload = event.metadata ? buildMetadata(event.event, event.metadata) : null;
@@ -221,12 +217,10 @@ function writeInitializedEvent(enabled: boolean, writer: (event: CodeDisciplineL
 function createEmitter(args: {
   enabled: boolean;
   getStore: () => BufferedEventStore;
-  quiet: boolean;
 }) {
   return (level: CodeDisciplineLogLevel, event: string, message: string, metadata?: Record<string, unknown>) => {
     const bufferedEvents = args.getStore();
     if (!args.enabled) return;
-    if (shouldSkipForQuiet(level, args.quiet)) return;
 
     bufferEvent(bufferedEvents, {
       event,
@@ -266,15 +260,14 @@ function createFlusher(args: {
 }
 
 function resolveLogger(options?: LoggingOptions): NormalizedCodeDisciplineLogger {
-  const enabled = options?.enabled ?? Boolean(options?.logger || options?.adapter);
-  const quiet = options?.quiet ?? false;
+  const enabled = Boolean(options?.logger || options?.adapter);
   const writer = resolveWriter(options);
   let bufferedEvents = createBufferedEventStore();
   const getStore = () => bufferedEvents;
   const resetStore = () => {
     bufferedEvents = createBufferedEventStore();
   };
-  const emit = createEmitter({ enabled, getStore, quiet });
+  const emit = createEmitter({ enabled, getStore });
   const flush = createFlusher({ enabled, getStore, resetStore, writer });
 
   writeInitializedEvent(enabled, writer);

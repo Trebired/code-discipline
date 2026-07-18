@@ -10,6 +10,7 @@ import {
 import { InvalidCodeDisciplineConfigError, InvalidTsconfigPathError } from "../../shared/errors.js";
 import type { NormalizedSyncImportsOptions, SyncImportsOptions } from "../../imports/types.js";
 import { isDirectory } from "../../shared/utils.js";
+import { normalizeLoggingOptions } from "./logging-options.js";
 import { normalizeSourceOptions } from "./source-options.js";
 
 async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise<NormalizedSyncImportsOptions> {
@@ -52,12 +53,7 @@ async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise
     },
     allowRelative: options.allowRelative ?? DEFAULT_ALLOW_RELATIVE,
     packageJsonImports: options.packageJsonImports,
-    logging: {
-      enabled: options.logging?.enabled ?? Boolean(options.logging?.logger || options.logging?.adapter),
-      logger: options.logging?.logger,
-      adapter: options.logging?.adapter,
-      quiet: options.logging?.quiet ?? false,
-    },
+    logging: normalizeLoggingOptions(options.logging, "logging"),
   };
 }
 

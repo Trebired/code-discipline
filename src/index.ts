@@ -103,6 +103,8 @@ export type {
 
 export type {
   BannedPatternRuleEntry,
+  BannedFileRuleEntry,
+  BannedFilesRuleOptions,
   BannedPatternsRuleOptions,
   CheckCodeDisciplineOptions,
   CheckCodeDisciplineResult,
@@ -126,6 +128,8 @@ export type {
   FolderizeCompoundFilesRuleOptions,
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
+  NormalizedBannedFileRuleEntry,
+  NormalizedBannedFilesRule,
   NormalizedBannedPatternRuleEntry,
   NormalizedBannedPatternsRule,
   NormalizedCheckCodeDisciplineOptions,

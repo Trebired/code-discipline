@@ -7,6 +7,7 @@ import type {
 import { normalizeOnlyRules } from "../../checks/rule-slugs.js";
 import {
   normalizeBannedPatternsRule,
+  normalizeBannedFilesRule,
   normalizeDryRule,
   normalizeEvasionGuardsOptions,
   normalizeFolderizeCompoundFilesRule,
@@ -15,6 +16,7 @@ import {
   normalizeRemoveCommentsRule,
   normalizeSyncImportsRule,
 } from "./rule-options.js";
+import { normalizeLoggingOptions } from "./logging-options.js";
 import { normalizeSourceOptions } from "./source-options.js";
 
 async function normalizeCheckCodeDisciplineOptions(
@@ -26,15 +28,11 @@ async function normalizeCheckCodeDisciplineOptions(
   return {
     ...source,
     configPath: options.configPath,
-    logging: {
-      enabled: options.logging?.enabled ?? Boolean(options.logging?.logger || options.logging?.adapter),
-      logger: options.logging?.logger,
-      adapter: options.logging?.adapter,
-      quiet: options.logging?.quiet ?? false,
-    },
+    logging: normalizeLoggingOptions(options.logging, "logging"),
     onlyRules: normalizeOnlyRules(mode, options.onlyRules, options.rules, options.evasionGuards),
     rules: {
       bannedPatterns: normalizeBannedPatternsRule(options.rules?.bannedPatterns),
+      bannedFiles: normalizeBannedFilesRule(options.rules?.bannedFiles),
       dry: normalizeDryRule(options.rules?.dry),
       maxFileLines: normalizeMaxFileLinesRule(options.rules?.maxFileLines),
       maxFunctionLines: normalizeMaxFunctionLinesRule(options.rules?.maxFunctionLines),

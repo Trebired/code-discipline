@@ -2,6 +2,7 @@ import type { ResultLike } from "@trebired/result";
 
 type CodeDisciplineRuleName =
   | "banned-patterns"
+  | "banned-files"
   | "max-file-lines"
   | "max-function-lines"
   | "folderize-compound-files"

@@ -5,6 +5,7 @@ import {
 import { InvalidCodeDisciplineConfigError } from "../../shared/errors.js";
 import type {
   BannedPatternsRuleOptions,
+  BannedFilesRuleOptions,
   CodeDisciplineSyncImportsRuleOptions,
   DryRuleOptions,
   EvasionGuardsOptions,
@@ -12,11 +13,13 @@ import type {
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
   NormalizedBannedPatternsRule,
+  NormalizedBannedFilesRule,
   NormalizedDryRule,
   NormalizedEvasionGuardsOptions,
   RemoveCommentsRuleOptions,
 } from "../../checks/types.js";
 import { normalizeRelativePath } from "../../shared/utils.js";
+import { normalizeLoggingOptions } from "./logging-options.js";
 
 function assertRemovedKeys(ruleName: string, source: Record<string, unknown>, keys: string[]) {
   for (const key of keys) {
@@ -102,6 +105,42 @@ function normalizeBannedPatternsRule(rule: BannedPatternsRuleOptions | undefined
   };
 }
 
+function normalizeBannedFilesRule(rule: BannedFilesRuleOptions | undefined): NormalizedBannedFilesRule | undefined {
+  if (!rule) return undefined;
+  const source = rule as Record<string, unknown>;
+  assertRemovedKeys("bannedFiles", source, ["enabled", "stop", "fix"]);
+
+  if (!Array.isArray(rule.patterns) || rule.patterns.length === 0) {
+    throw new InvalidCodeDisciplineConfigError("bannedFiles.patterns must contain at least one pattern", {
+      rule: "bannedFiles",
+    });
+  }
+
+  const patterns = rule.patterns.map((entry, index) => {
+    const glob = typeof entry === "string"
+      ? entry.trim()
+      : typeof entry?.glob === "string"
+        ? entry.glob.trim()
+        : "";
+
+    if (!glob) {
+      throw new InvalidCodeDisciplineConfigError("bannedFiles.patterns[] entries must be non-empty strings or { glob } objects", {
+        rule: "bannedFiles",
+        index,
+      });
+    }
+
+    return {
+      glob: normalizeRelativePath(glob),
+    };
+  });
+
+  return {
+    patterns,
+    severity: normalizeSeverity(rule.severity, "bannedFiles"),
+  };
+}
+
 function normalizeMaxFunctionLinesRule(rule: MaxFunctionLinesRuleOptions | undefined) {
   if (!rule) return undefined;
   const source = rule as Record<string, unknown>;
@@ -166,7 +205,7 @@ function normalizeSyncImportsRule(rule: CodeDisciplineSyncImportsRuleOptions | u
     alias: rule?.alias,
     allowRelative: rule?.allowRelative ?? DEFAULT_ALLOW_RELATIVE,
     packageJsonImports: rule?.packageJsonImports,
-    logging: rule?.logging,
+    logging: normalizeLoggingOptions(rule?.logging, "syncImports.logging"),
     severity: normalizeSeverity(rule.severity, "syncImports"),
   };
 }
@@ -176,13 +215,13 @@ function normalizeDryRule(rule: DryRuleOptions | undefined): NormalizedDryRule |
   const source = rule as Record<string, unknown>;
   assertRemovedKeys("dry", source, ["enabled", "stop", "fix"]);
 
-  if (!Array.isArray(rule.helpers) || rule.helpers.length === 0) {
-    throw new InvalidCodeDisciplineConfigError("dry.helpers must contain at least one helper", {
+  if (rule.helpers !== undefined && !Array.isArray(rule.helpers)) {
+    throw new InvalidCodeDisciplineConfigError("dry.helpers must be an array when provided", {
       rule: "dry",
     });
   }
 
-  const helpers = rule.helpers.map((helper, index) => {
+  const helpers = (rule.helpers ?? []).map((helper, index) => {
     const from = String(helper?.from ?? "").trim();
     const exportName = String(helper?.exportName ?? "").trim();
 
@@ -282,6 +321,7 @@ function uniqueStrings(values: string[]): string[] {
 
 export {
   normalizeBannedPatternsRule,
+  normalizeBannedFilesRule,
   normalizeDryRule,
   normalizeEvasionGuardsOptions,
   normalizeFolderizeCompoundFilesRule,

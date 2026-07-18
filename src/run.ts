@@ -19,14 +19,12 @@ type CodeDisciplineInvocationOptions = {
   configPath?: string;
   logging?: LoggingOptions;
   logger?: unknown;
-  quiet?: boolean;
   scanObserver?: SourceScanObserver;
 };
 
 type CodeDisciplineOptions = CheckCodeDisciplineOptions & {
   mode: CodeDisciplineRuntimeMode;
   logger?: unknown;
-  quiet?: boolean;
 };
 
 type CheckCodeDisciplineCommandOptions = Omit<CodeDisciplineOptions, "mode"> & {
@@ -61,20 +59,16 @@ type CreatedCodeDiscipline = {
 function resolveLoggingOptions(options: {
   logging?: LoggingOptions;
   logger?: unknown;
-  quiet?: boolean;
 }): LoggingOptions | undefined {
   const hasLogger = options.logger !== undefined;
-  const hasQuiet = options.quiet !== undefined;
 
-  if (!options.logging && !hasLogger && !hasQuiet) {
+  if (!options.logging && !hasLogger) {
     return undefined;
   }
 
   return {
     ...options.logging,
-    enabled: options.logging?.enabled ?? (hasLogger ? true : undefined),
     logger: hasLogger ? options.logger : options.logging?.logger,
-    quiet: hasQuiet ? options.quiet : options.logging?.quiet,
   };
 }
 
@@ -83,20 +77,16 @@ function mergeLoggingOptions(
   options: {
     logging?: LoggingOptions;
     logger?: unknown;
-    quiet?: boolean;
   },
 ): LoggingOptions | undefined {
   return resolveLoggingOptions({
     logging: {
       ...baseLogging,
       ...options.logging,
-      enabled: options.logging?.enabled ?? baseLogging?.enabled,
       logger: options.logging?.logger ?? baseLogging?.logger,
-      quiet: options.logging?.quiet ?? baseLogging?.quiet,
       adapter: options.logging?.adapter ?? baseLogging?.adapter,
     },
     logger: options.logger,
-    quiet: options.quiet,
   });
 }
 

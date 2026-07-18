@@ -27,6 +27,15 @@ type BannedPatternsRuleOptions = {
   severity?: CodeDisciplineRuleSeverity;
 };
 
+type BannedFileRuleEntry = string | {
+  glob: string;
+};
+
+type BannedFilesRuleOptions = {
+  patterns: BannedFileRuleEntry[];
+  severity?: CodeDisciplineRuleSeverity;
+};
+
 type MaxFileLinesRuleOptions = {
   max?: number;
   severity?: CodeDisciplineRuleSeverity;
@@ -72,7 +81,7 @@ type DryHelperReference = {
 };
 
 type DryRuleOptions = {
-  helpers: DryHelperReference[];
+  helpers?: DryHelperReference[];
   severity?: CodeDisciplineRuleSeverity;
 };
 
@@ -84,6 +93,7 @@ type CodeDisciplineSyncImportsRuleOptions = Omit<SyncImportsRuleOptions, "fix"> 
 };
 
 type CodeDisciplineRules = {
+  bannedFiles?: BannedFilesRuleOptions;
   bannedPatterns?: BannedPatternsRuleOptions;
   maxFileLines?: MaxFileLinesRuleOptions;
   maxFunctionLines?: MaxFunctionLinesRuleOptions;
@@ -151,6 +161,15 @@ type NormalizedBannedPatternsRule = {
   severity: CodeDisciplineRuleSeverity;
 };
 
+type NormalizedBannedFileRuleEntry = {
+  glob: string;
+};
+
+type NormalizedBannedFilesRule = {
+  patterns: NormalizedBannedFileRuleEntry[];
+  severity: CodeDisciplineRuleSeverity;
+};
+
 type NormalizedMaxFileLinesRule = {
   max: number;
   severity: CodeDisciplineRuleSeverity;
@@ -190,6 +209,7 @@ type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
   logging: LoggingOptions;
   onlyRules?: CodeDisciplineRuleSlug[] | FixableRuleSlug[];
   rules: {
+    bannedFiles?: NormalizedBannedFilesRule;
     bannedPatterns?: NormalizedBannedPatternsRule;
     maxFileLines?: NormalizedMaxFileLinesRule;
     maxFunctionLines?: NormalizedMaxFunctionLinesRule;
@@ -225,6 +245,8 @@ type FixCodeDisciplineResult = CodeDisciplineResult & {
 
 export type {
   BannedPatternRuleEntry,
+  BannedFileRuleEntry,
+  BannedFilesRuleOptions,
   BannedPatternsRuleOptions,
   CheckCodeDisciplineOptions,
   CheckCodeDisciplineResult,
@@ -250,6 +272,8 @@ export type {
   FolderizeCompoundFilesRuleOptions,
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
+  NormalizedBannedFileRuleEntry,
+  NormalizedBannedFilesRule,
   NormalizedBannedPatternRuleEntry,
   NormalizedBannedPatternsRule,
   RemoveCommentsRuleOptions,

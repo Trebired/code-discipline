@@ -130,6 +130,60 @@ test("allows banned patterns in explicitly allowed files", async () => {
   expect(result.violations[0]?.filePath).toBe("src/blocked.ts");
 });
 
+test("reports banned files with glob matching", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
+  writeFile(projectRoot, "src/app.spec.ts", "export const spec = true;\n");
+  writeFile(projectRoot, "src/feature/app.spec.tsx", "export const spec = true;\n");
+
+  const result = await checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      bannedFiles: {
+        patterns: [
+          { glob: "**/*.spec.ts" },
+          { glob: "**/*.spec.tsx" },
+        ],
+      },
+    },
+  });
+
+  expect(result.ok).toBe(false);
+  expect(result.violationCount).toBe(2);
+  expect(result.violations.map((violation) => violation.filePath)).toEqual([
+    "src/app.spec.ts",
+    "src/feature/app.spec.tsx",
+  ]);
+  expect(result.violations[0]).toMatchObject({
+    rule: "banned-files",
+    message: 'file path matches banned glob "**/*.spec.ts"',
+    details: {
+      glob: "**/*.spec.ts",
+    },
+  });
+});
+
+test("supports warning-only banned file checks", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.spec.ts", "export const spec = true;\n");
+
+  const result = await checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      bannedFiles: {
+        severity: "warning",
+        patterns: ["**/*.spec.ts"],
+      },
+    },
+  });
+
+  expect(result.ok).toBe(true);
+  expect(result.violationCount).toBe(1);
+  expect(result.violations[0]?.severity).toBe("warning");
+});
+
 test("supports warning-only banned pattern checks", async () => {
   const projectRoot = tempProject();
 
@@ -182,7 +236,6 @@ test("returns violations as ok=false and logs a warning transport event", async 
   const result = await checkCodeDiscipline({
     projectRoot,
     logging: {
-      enabled: true,
       logger,
     },
     rules: {

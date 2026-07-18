@@ -2,6 +2,12 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 3.3.0
+
+- Removed the public `logging.enabled` and `logging.quiet` booleans; logging is now active whenever a `logger` or `adapter` is provided.
+- Added the check-only `bannedFiles` / `banned-files` rule for banning project-relative file paths with glob patterns.
+- Made the `dry` rule scan source files for likely exact normalized duplicates even without registered helper references, while keeping autofix limited to canonical helpers.
+
 ## 3.2.2
 
 - Moved package-owned code-discipline logging under the `trebired.code-discipline` group root, including initialization notices and buffered event summaries.

@@ -52,6 +52,58 @@ test("rejects empty bannedPatterns config", async () => {
   });
 });
 
+test("rejects empty bannedFiles config", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
+
+  await expect(checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      bannedFiles: {
+        patterns: [],
+      },
+    },
+  })).rejects.toMatchObject({
+    code: "invalid_config",
+  });
+});
+
+test("rejects removed logging boolean config", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
+
+  await expect(checkCodeDiscipline({
+    projectRoot,
+    logging: {
+      // @ts-expect-error removed config
+      enabled: true,
+    },
+    rules: {
+      maxFileLines: {
+        max: 5,
+      },
+    },
+  })).rejects.toMatchObject({
+    code: "invalid_config",
+  });
+
+  await expect(checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      syncImports: {
+        logging: {
+          // @ts-expect-error removed config
+          quiet: false,
+        },
+      },
+    },
+  })).rejects.toMatchObject({
+    code: "invalid_config",
+  });
+});
+
 test("rejects invalid severity values", async () => {
   const projectRoot = tempProject();
 
@@ -270,6 +322,56 @@ test("reports DRY duplicates despite renamed parameters and comments", async () 
     details: {
       fixable: true,
       helper: "./src/shared/to-text.ts#toText",
+    },
+  });
+});
+
+test("reports likely DRY duplicates discovered across source files", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/one.ts", [
+    "export function buildUserLabel(user: { name?: string; email?: string }) {",
+    "  const name = String(user.name ?? \"\").trim();",
+    "  const email = String(user.email ?? \"\").trim();",
+    "  const normalizedName = name.replace(/\\s+/g, \" \");",
+    "  const normalizedEmail = email.toLowerCase();",
+    "  const domain = normalizedEmail.includes(\"@\") ? normalizedEmail.split(\"@\")[1] : \"\";",
+    "  return domain ? `${normalizedName} <${normalizedEmail}>` : normalizedEmail;",
+    "}",
+    "",
+  ].join("\n"));
+  writeFile(projectRoot, "src/two.ts", [
+    "export function formatAccountLabel(account: { name?: string; email?: string }) {",
+    "  const displayName = String(account.name ?? \"\").trim();",
+    "  const contact = String(account.email ?? \"\").trim();",
+    "  const readableName = displayName.replace(/\\s+/g, \" \");",
+    "  const readableContact = contact.toLowerCase();",
+    "  const contactDomain = readableContact.includes(\"@\") ? readableContact.split(\"@\")[1] : \"\";",
+    "  return contactDomain ? `${readableName} <${readableContact}>` : readableContact;",
+    "}",
+    "",
+  ].join("\n"));
+
+  const result = await checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      dry: {},
+    },
+  });
+
+  expect(result.ok).toBe(false);
+  expect(result.violationCount).toBe(1);
+  expect(result.violations[0]).toMatchObject({
+    rule: "dry",
+    fix: false,
+    filePath: "src/two.ts",
+    details: {
+      fixable: false,
+      reason: "source duplicate requires a canonical helper for autofix",
+      duplicateOf: {
+        filePath: "src/one.ts",
+        name: "buildUserLabel",
+      },
     },
   });
 });

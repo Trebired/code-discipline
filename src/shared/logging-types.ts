@@ -11,10 +11,8 @@ type CodeDisciplineLogEvent = {
 type CodeDisciplineLogAdapterFn = (event: CodeDisciplineLogEvent) => void;
 
 type LoggingOptions = {
-  enabled?: boolean;
   logger?: unknown;
   adapter?: "trebired" | "generic" | "console" | CodeDisciplineLogAdapterFn;
-  quiet?: boolean;
 };
 
 type NormalizedCodeDisciplineLogger = {

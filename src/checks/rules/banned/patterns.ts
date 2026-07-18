@@ -1,8 +1,8 @@
 import fs from "node:fs/promises";
 
-import type { ScannedSourceFile } from "../../imports/types.js";
-import type { NormalizedCheckCodeDisciplineOptions } from "../types.js";
-import type { CodeDisciplineViolation } from "../../shared/discipline-types.js";
+import type { ScannedSourceFile } from "../../../imports/types.js";
+import type { NormalizedCheckCodeDisciplineOptions } from "../../types.js";
+import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
 
 function countOccurrences(text: string, pattern: string): number {
   if (!pattern) return 0;

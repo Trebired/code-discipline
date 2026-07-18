@@ -143,6 +143,12 @@ export default defineCodeDisciplineConfig({
     removeComments: {
       exclude: ["@ts-nocheck"],
     },
+    bannedFiles: {
+      patterns: [
+        { glob: "**/*.spec.ts" },
+        { glob: "**/*.spec.tsx" },
+      ],
+    },
     syncImports: {
       alias: {
         prefix: "#",
@@ -211,6 +217,7 @@ code-discipline fix sync-imports dry remove-comments
 Rules use kebab-case public slugs:
 
 - `banned-patterns`
+- `banned-files`
 - `max-file-lines`
 - `max-function-lines`
 - `folderize-compound-files`
@@ -262,6 +269,9 @@ const discipline = createCodeDiscipline({
         },
       ],
     },
+    bannedFiles: {
+      patterns: ["**/*.spec.ts"],
+    },
     maxFunctionLines: {
       max: 80,
     },
@@ -302,6 +312,26 @@ bannedPatterns: {
       value: "mock",
       allowedFiles: ["src/testing/mock-registry.ts"],
     },
+  ],
+}
+```
+
+### `bannedFiles`
+
+Reports source files whose project-relative paths match banned glob patterns.
+
+- `**/*.spec.ts` matches root and nested TypeScript spec files
+- `*` matches within a single path segment
+- `**` can cross directory boundaries
+- `severity` defaults to `"fail"`
+
+Example:
+
+```ts
+bannedFiles: {
+  patterns: [
+    { glob: "**/*.spec.ts" },
+    { glob: "**/*.spec.tsx" },
   ],
 }
 ```
@@ -409,14 +439,13 @@ code-discipline fix remove-comments
 
 ### `dry`
 
-Registers canonical helper functions and reports exact normalized duplicates.
-
-The first version is intentionally conservative:
+Registers canonical helper functions and reports exact normalized duplicates. It also scans the configured source tree for likely duplicate functions even when no helpers are registered.
 
 - matching is exact normalized structure, not heuristic similarity
 - whitespace, comments, function names, and local identifier names do not matter
 - class/object methods are report-only
 - autofix only runs when the duplicate can be removed completely and replaced by a canonical import
+- source-tree duplicate discovery is check-only; add a canonical helper when you want autofix
 
 Canonical helpers are registered by module export reference:
 

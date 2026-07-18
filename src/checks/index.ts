@@ -10,7 +10,8 @@ import type { CodeDisciplineResult, CodeDisciplineViolation } from "../shared/di
 import { shouldRunRule } from "./rule-slugs.js";
 import { fixFolderization } from "./fix-folderization.js";
 import { runFolderizeCompoundFilesRule } from "./rules/folderize/compound-files.js";
-import { collectBannedPatternViolations } from "./rules/banned-patterns.js";
+import { collectBannedFileViolations } from "./rules/banned/files.js";
+import { collectBannedPatternViolations } from "./rules/banned/patterns.js";
 import { collectDryViolations, fixDryRule } from "./rules/dry/index.js";
 import { runEvasionGuardsRule } from "./rules/evasion-guards/index.js";
 import { runMaxFileLinesRule } from "./rules/max/file-lines.js";
@@ -48,6 +49,8 @@ function resolveConfiguredSeverity(
   switch (violation.rule) {
     case "banned-patterns":
       return options.rules.bannedPatterns?.severity ?? "fail";
+    case "banned-files":
+      return options.rules.bannedFiles?.severity ?? "fail";
     case "max-file-lines":
       return options.rules.maxFileLines?.severity ?? "fail";
     case "max-function-lines":
@@ -140,6 +143,10 @@ async function collectViolations(options: NormalizedCheckCodeDisciplineOptions):
 
   if (options.rules.bannedPatterns && shouldRunRule("banned-patterns", options.onlyRules)) {
     violations.push(...await collectBannedPatternViolations(sourceFiles, options));
+  }
+
+  if (options.rules.bannedFiles && shouldRunRule("banned-files", options.onlyRules)) {
+    violations.push(...collectBannedFileViolations(sourceFiles, options));
   }
 
   if (options.rules.maxFileLines && shouldRunRule("max-file-lines", options.onlyRules)) {

@@ -36,6 +36,21 @@ function resolveStandaloneName(node: ts.FunctionLikeDeclaration): string | undef
   return undefined;
 }
 
+function resolveFunctionDisplayName(node: ts.FunctionLikeDeclaration, sourceFile: ts.SourceFile): string | undefined {
+  const standaloneName = resolveStandaloneName(node);
+  if (standaloneName) return standaloneName;
+
+  if ((ts.isMethodDeclaration(node) || ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node)) && node.name) {
+    return node.name.getText(sourceFile);
+  }
+
+  if (ts.isConstructorDeclaration(node)) {
+    return "constructor";
+  }
+
+  return undefined;
+}
+
 function resolveClassification(node: ts.FunctionLikeDeclaration): "method" | "standalone" | "unsupported" {
   if (ts.isMethodDeclaration(node) || ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node) || ts.isConstructorDeclaration(node)) {
     return "method";
@@ -101,6 +116,7 @@ function expandRemovalEnd(text: string, end: number): number {
 export {
   createFunctionFingerprint,
   resolveClassification,
+  resolveFunctionDisplayName,
   resolveRemovalRange,
   resolveStandaloneName,
 };

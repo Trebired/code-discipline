@@ -9,6 +9,7 @@ import { loadNativeBinding } from "../../../native/native.js";
 import { parseSource } from "../../../imports/module-specifiers.js";
 import { isGoExtension, isRustExtension, isTypeScriptFamilyExtension, supportsMaxFunctionLines } from "../../../shared/languages.js";
 import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
+import { isFunctionLikeWithBody, resolveFunctionKind } from "../typescript-functions.js";
 import { countCodeLinesInRange, maskCommentsForLineCounting } from "./code-lines.js";
 
 type FunctionDescriptor = {
@@ -38,28 +39,6 @@ type PendingBlockFunction = {
   name: string;
   startLine: number;
 };
-
-function isFunctionLikeWithBody(node: ts.Node): node is ts.FunctionLikeDeclaration {
-  return (
-    (ts.isFunctionDeclaration(node) && node.body !== undefined)
-    || (ts.isMethodDeclaration(node) && node.body !== undefined)
-    || (ts.isConstructorDeclaration(node) && node.body !== undefined)
-    || (ts.isGetAccessorDeclaration(node) && node.body !== undefined)
-    || (ts.isSetAccessorDeclaration(node) && node.body !== undefined)
-    || (ts.isFunctionExpression(node) && node.body !== undefined)
-    || (ts.isArrowFunction(node) && node.body !== undefined)
-  );
-}
-
-function resolveFunctionKind(node: ts.FunctionLikeDeclaration): string {
-  if (ts.isMethodDeclaration(node)) return "method";
-  if (ts.isConstructorDeclaration(node)) return "constructor";
-  if (ts.isGetAccessorDeclaration(node)) return "getter";
-  if (ts.isSetAccessorDeclaration(node)) return "setter";
-  if (ts.isArrowFunction(node)) return "arrow-function";
-  if (ts.isFunctionExpression(node)) return "function-expression";
-  return "function";
-}
 
 function resolveFunctionName(node: ts.FunctionLikeDeclaration, sourceFile: ts.SourceFile): string {
   if ("name" in node && node.name) {
