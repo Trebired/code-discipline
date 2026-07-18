@@ -10,7 +10,7 @@ import type { CodeDisciplineResult, CodeDisciplineViolation } from "../shared/di
 import { shouldRunRule } from "./rule-slugs.js";
 import { fixFolderization } from "./fix-folderization.js";
 import { runFolderizeCompoundFilesRule } from "./rules/folderize/compound-files.js";
-import { collectBannedFileViolations } from "./rules/banned/files.js";
+import { collectBannedFileViolations, fixBannedFilesRule } from "./rules/banned/files.js";
 import { collectBannedPatternViolations } from "./rules/banned/patterns.js";
 import { collectDryViolations, fixDryRule } from "./rules/dry/index.js";
 import { runEvasionGuardsRule } from "./rules/evasion-guards/index.js";
@@ -29,6 +29,7 @@ import type {
 } from "./types.js";
 
 type FixState = {
+  deletedFiles: number;
   movedFiles: number;
   removedComments: number;
   rewrittenFiles: number;
@@ -188,11 +189,12 @@ function mapFixRuleResult(result: {
   violationCount: number;
   violations: CodeDisciplineViolation[];
   moved_files?: number;
-    rewritten_files?: number;
-    rewritten_imports?: number;
-    removed_comments?: number;
-    removed_duplicates?: number;
-    added_imports?: number;
+  rewritten_files?: number;
+  rewritten_imports?: number;
+  removed_comments?: number;
+  removed_duplicates?: number;
+  added_imports?: number;
+  deleted_files?: number;
 }): FixCodeDisciplineRuleResult {
   return {
     ok: result.ok,
@@ -204,11 +206,26 @@ function mapFixRuleResult(result: {
     removed_comments: result.removed_comments,
     removed_duplicates: result.removed_duplicates,
     added_imports: result.added_imports,
+    deleted_files: result.deleted_files,
   };
 }
 
 function shouldRunFixRule(rule: FixableRuleSlug, options: NormalizedCheckCodeDisciplineOptions): boolean {
   return shouldRunRule(rule, options.onlyRules);
+}
+
+async function applyBannedFilesFix(state: FixState, normalized: NormalizedCheckCodeDisciplineOptions): Promise<void> {
+  if (!normalized.rules.bannedFiles || !shouldRunFixRule("banned-files", normalized)) return;
+
+  const result = await fixBannedFilesRule(state.sourceFiles, normalized);
+  const violations = applyConfiguredSeverity(result.violations, normalized);
+  state.ruleResults["banned-files"] = mapFixRuleResult({ ...result, violations });
+  state.violations.push(...violations);
+  state.deletedFiles += result.deleted_files ?? 0;
+
+  if ((result.deleted_files ?? 0) > 0) {
+    state.sourceFiles = await scanSourceFiles(normalized);
+  }
 }
 
 async function applyFolderizeFix(
@@ -273,6 +290,7 @@ async function applyRemoveCommentsFix(state: FixState, normalized: NormalizedChe
 function createFixResult(state: FixState): FixCodeDisciplineResult {
   return {
     ...summarizeViolations(sortViolations(state.violations)),
+    deleted_files: state.deletedFiles,
     moved_files: state.movedFiles,
     rewritten_files: state.rewrittenFiles,
     rewritten_imports: state.rewrittenImports,
@@ -289,6 +307,7 @@ function logFixResult(result: FixCodeDisciplineResult, logger: ReturnType<typeof
 
   logger.flush("success", "discipline-fix-ok", "fix completed", {
     violationCount: result.violationCount,
+    deletedFiles: result.deleted_files,
     movedFiles: result.moved_files,
     rewrittenFiles: result.rewritten_files,
     rewrittenImports: result.rewritten_imports,
@@ -311,6 +330,7 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
   const normalized = await normalizeCheckCodeDisciplineOptions(options, "fix");
   const logger = resolveLogger(normalized.logging);
   const state: FixState = {
+    deletedFiles: 0,
     movedFiles: 0,
     removedComments: 0,
     rewrittenFiles: 0,
@@ -320,6 +340,7 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
     violations: [],
   };
 
+  await applyBannedFilesFix(state, normalized);
   await applyFolderizeFix(state, normalized, logger);
   await applyDryFix(state, normalized);
   await applySyncImportsFix(state, normalized);

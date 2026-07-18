@@ -141,6 +141,7 @@ function renderCheckOutput(violations: CodeDisciplineViolation[], violationCount
 }
 
 function renderFixOutput(args: {
+  deletedFiles: number;
   movedFiles: number;
   rewrittenFiles: number;
   rewrittenImports: number;
@@ -150,7 +151,7 @@ function renderFixOutput(args: {
 }): string {
   return [
     ...args.violations.map((violation) => `${formatViolation(violation)}\n`),
-    `Fix summary: moved ${args.movedFiles}, rewritten files ${args.rewrittenFiles}, rewritten imports ${args.rewrittenImports}, removed comments ${args.removedComments}, remaining violations ${args.violationCount}.\n`,
+    `Fix summary: deleted files ${args.deletedFiles}, moved ${args.movedFiles}, rewritten files ${args.rewrittenFiles}, rewritten imports ${args.rewrittenImports}, removed comments ${args.removedComments}, remaining violations ${args.violationCount}.\n`,
   ].join("");
 }
 
@@ -231,6 +232,7 @@ async function runFixCommand(args: {
   });
   const result = timed.result;
   const reportText = renderFixOutput({
+    deletedFiles: result.deleted_files,
     movedFiles: result.moved_files,
     rewrittenFiles: result.rewritten_files,
     rewrittenImports: result.rewritten_imports,

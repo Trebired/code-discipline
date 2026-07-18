@@ -178,7 +178,35 @@ test("runs fix sync-imports through an explicit config module", async () => {
 
   expect(result.exitCode).toBe(0);
   expect(readFile(projectRoot, "src/feature/app.ts")).toContain('from "#shared-util"');
-  expect(stdout.join("")).toContain("Fix summary: moved 0, rewritten files 1, rewritten imports 1, removed comments 0, remaining violations 0.");
+  expect(stdout.join("")).toContain("Fix summary: deleted files 0, moved 0, rewritten files 1, rewritten imports 1, removed comments 0, remaining violations 0.");
+});
+
+test("runs fix banned-files through an explicit config module", async () => {
+  const projectRoot = tempProject();
+  const stdout: string[] = [];
+
+  writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
+  writeFile(projectRoot, "src/app.spec.ts", "export const spec = true;\n");
+  writeFile(projectRoot, "discipline.config.mjs", [
+    "export default {",
+    "  rules: {",
+    "    bannedFiles: {",
+    "      patterns: [{ glob: \"**/*.spec.ts\" }],",
+    "    },",
+    "  },",
+    "};",
+    "",
+  ].join("\n"));
+
+  const result = await runCli(["fix", "banned-files", "--config", "./discipline.config.mjs"], {
+    cwd: projectRoot,
+    stdout: (text) => stdout.push(text),
+  });
+
+  expect(result.exitCode).toBe(0);
+  expect(fileExists(projectRoot, "src/app.ts")).toBe(true);
+  expect(fileExists(projectRoot, "src/app.spec.ts")).toBe(false);
+  expect(stdout.join("")).toContain("Fix summary: deleted files 1, moved 0, rewritten files 0, rewritten imports 0, removed comments 0, remaining violations 0.");
 });
 
 test("runs fix through an explicit config module and applies folderization moves", async () => {
@@ -205,7 +233,7 @@ test("runs fix through an explicit config module and applies folderization moves
   expect(result.exitCode).toBe(0);
   expect(fileExists(projectRoot, "src/api/user/route.ts")).toBe(true);
   expect(readFile(projectRoot, "src/app.ts")).toContain('from "./api/user/route"');
-  expect(stdout.join("")).toContain("Fix summary: moved 2, rewritten files 1, rewritten imports 2, removed comments 0, remaining violations 0.");
+  expect(stdout.join("")).toContain("Fix summary: deleted files 0, moved 2, rewritten files 1, rewritten imports 2, removed comments 0, remaining violations 0.");
 });
 
 test("saves check output to a top-level report file", async () => {
@@ -262,7 +290,7 @@ test("runs fix remove-comments through an explicit config module", async () => {
   expect(result.exitCode).toBe(0);
   expect(readFile(projectRoot, "src/app.ts")).toContain('const url = "https://example.com";');
   expect(readFile(projectRoot, "src/app.ts")).not.toContain("remove this");
-  expect(stdout.join("")).toContain("Fix summary: moved 0, rewritten files 1, rewritten imports 0, removed comments 1, remaining violations 0.");
+  expect(stdout.join("")).toContain("Fix summary: deleted files 0, moved 0, rewritten files 1, rewritten imports 0, removed comments 1, remaining violations 0.");
 });
 
 test("runs top-level evasion guards through an explicit config module", async () => {

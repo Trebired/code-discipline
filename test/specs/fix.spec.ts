@@ -90,6 +90,43 @@ test("fails safely on file conflicts", async () => {
   })).rejects.toBeInstanceOf(FileConflictError);
 });
 
+test("deletes banned files during fix", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
+  writeFile(projectRoot, "src/app.spec.ts", "export const spec = true;\n");
+  writeFile(projectRoot, "src/feature/app.spec.tsx", "export const spec = true;\n");
+
+  const result = await fixCodeDiscipline({
+    projectRoot,
+    onlyRules: ["banned-files"],
+    rules: {
+      bannedFiles: {
+        patterns: [
+          { glob: "**/*.spec.ts" },
+          { glob: "**/*.spec.tsx" },
+        ],
+      },
+    },
+  });
+
+  expect(result).toMatchObject({
+    ok: true,
+    violationCount: 0,
+    deleted_files: 2,
+    violations: [],
+    ruleResults: {
+      "banned-files": {
+        ok: true,
+        deleted_files: 2,
+      },
+    },
+  });
+  expect(fileExists(projectRoot, "src/app.ts")).toBe(true);
+  expect(fileExists(projectRoot, "src/app.spec.ts")).toBe(false);
+  expect(fileExists(projectRoot, "src/feature/app.spec.tsx")).toBe(false);
+});
+
 test("replaces a standalone DRY duplicate with an imported canonical helper", async () => {
   const projectRoot = tempProject();
 

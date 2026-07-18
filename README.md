@@ -31,7 +31,7 @@ code-discipline check
 code-discipline check save
 code-discipline check max-function-lines dry
 code-discipline fix
-code-discipline fix sync-imports dry remove-comments
+code-discipline fix banned-files sync-imports dry remove-comments
 code-discipline gate -- bun run dev
 ```
 
@@ -211,7 +211,7 @@ export default defineCodeDisciplineConfig({
 
 ```sh
 code-discipline check max-file-lines max-function-lines
-code-discipline fix sync-imports dry remove-comments
+code-discipline fix banned-files sync-imports dry remove-comments
 ```
 
 Rules use kebab-case public slugs:
@@ -323,6 +323,7 @@ Reports source files whose project-relative paths match banned glob patterns.
 - `**/*.spec.ts` matches root and nested TypeScript spec files
 - `*` matches within a single path segment
 - `**` can cross directory boundaries
+- `code-discipline fix banned-files` deletes matching files
 - `severity` defaults to `"fail"`
 
 Example:

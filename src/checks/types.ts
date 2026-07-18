@@ -13,7 +13,7 @@ import type {
 } from "../shared/discipline-types.js";
 
 type CodeDisciplineRuleSlug = CodeDisciplineRuleName;
-type FixableRuleSlug = "folderize-compound-files" | "sync-imports" | "remove-comments" | "dry";
+type FixableRuleSlug = "banned-files" | "folderize-compound-files" | "sync-imports" | "remove-comments" | "dry";
 type CodeDisciplineMode = "check" | "fix";
 type CodeDisciplineRuntimeMode = CodeDisciplineMode;
 type CodeDisciplineRuleSeverity = "warning" | "fail";
@@ -233,9 +233,11 @@ type FixCodeDisciplineRuleResult = {
   removed_comments?: number;
   removed_duplicates?: number;
   added_imports?: number;
+  deleted_files?: number;
 };
 
 type FixCodeDisciplineResult = CodeDisciplineResult & {
+  deleted_files: number;
   moved_files: number;
   rewritten_files: number;
   rewritten_imports: number;

@@ -2,6 +2,10 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 3.3.1
+
+- Made `banned-files` fixable; `code-discipline fix banned-files` now deletes matching banned files and reports a `deleted_files` count.
+
 ## 3.3.0
 
 - Removed the public `logging.enabled` and `logging.quiet` booleans; logging is now active whenever a `logger` or `adapter` is provided.
