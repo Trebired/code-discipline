@@ -112,7 +112,56 @@ function parseArgs(args: string[]): {
   return { configPath, saveOutput, selectors, commandArgs };
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function formatDryConfidence(value: unknown): string {
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  if (typeof value === "string" && value.trim()) return value.trim();
+  return "unknown";
+}
+
+function formatDrySignals(value: unknown): string {
+  if (!Array.isArray(value)) return "unknown";
+
+  const signals = value.filter((signal): signal is string => typeof signal === "string" && signal.trim().length > 0);
+  return signals.length > 0 ? signals.join(", ") : "unknown";
+}
+
+function formatDryFunctionLine(value: unknown): string | undefined {
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  if (typeof value === "string" && value.trim()) return value.trim();
+  return undefined;
+}
+
+function formatDryFunctionName(value: unknown): string {
+  return typeof value === "string" && value.trim() ? value.trim() : "anonymous function";
+}
+
+function formatDryFunctionDetail(value: unknown): string {
+  const detail = isRecord(value) ? value : {};
+  const filePath = typeof detail.filePath === "string" && detail.filePath.trim() ? detail.filePath.trim() : "unknown file";
+  const line = formatDryFunctionLine(detail.line);
+  const location = line ? `${filePath}:${line}` : filePath;
+
+  return `  - ${location} ${formatDryFunctionName(detail.name)}`;
+}
+
+function formatDryViolation(violation: CodeDisciplineViolation): string {
+  const details = violation.details;
+  const functions = Array.isArray(details.functions) ? details.functions : [];
+  const severity = violation.severity === "warning" ? "warning " : "";
+  const functionLabel = functions.length === 1 ? "function" : "functions";
+  const header = `${severity}${violation.rule} ${violation.message}: ${functions.length} ${functionLabel}, confidence ${formatDryConfidence(details.confidence)}, signals: ${formatDrySignals(details.signals)}`;
+  const functionLines = functions.map(formatDryFunctionDetail);
+
+  return functionLines.length > 0 ? [header, ...functionLines].join("\n") : header;
+}
+
 function formatViolation(violation: CodeDisciplineViolation): string {
+  if (violation.rule === "dry") return formatDryViolation(violation);
+
   const suggested = violation.suggestedPath ? ` suggested=${violation.suggestedPath}` : "";
   const severity = violation.severity === "warning" ? "warning " : "";
   return `${severity}${violation.rule} ${violation.filePath} ${violation.message}${suggested}`;

@@ -28,11 +28,11 @@ test("emits chunked progress while checking configured rules", async () => {
   });
 
   expect(progress).toEqual(expect.arrayContaining([
-    expect.objectContaining({ phase: "rule-chunk", rule: "banned-files", violationCount: 1 }),
+    expect.objectContaining({ completedItems: 2, phase: "rule-chunk", rule: "banned-files", totalItems: 2, violationCount: 1 }),
     expect.objectContaining({ phase: "rule-completed", rule: "banned-files", violationCount: 1 }),
-    expect.objectContaining({ phase: "rule-chunk", rule: "banned-patterns", violationCount: 1 }),
+    expect.objectContaining({ completedItems: 2, phase: "rule-chunk", rule: "banned-patterns", totalItems: 2, violationCount: 1 }),
     expect.objectContaining({ phase: "rule-completed", rule: "banned-patterns", violationCount: 1 }),
-    expect.objectContaining({ phase: "rule-chunk", rule: "max-file-lines" }),
+    expect.objectContaining({ completedItems: 2, phase: "rule-chunk", rule: "max-file-lines", totalItems: 2 }),
     expect.objectContaining({ phase: "rule-completed", rule: "max-file-lines" }),
   ]));
 });
@@ -59,8 +59,8 @@ test("emits chunked progress while fixing configured rules", async () => {
   expect(fileExists(projectRoot, "src/one.spec.ts")).toBe(false);
   expect(fileExists(projectRoot, "src/two.spec.ts")).toBe(false);
   expect(progress).toEqual(expect.arrayContaining([
-    expect.objectContaining({ phase: "rule-chunk", rule: "banned-files", stage: "scan", violationCount: 2 }),
-    expect.objectContaining({ phase: "rule-chunk", rule: "banned-files", stage: "fix", deletedFiles: 2 }),
+    expect.objectContaining({ completedItems: 2, phase: "rule-chunk", rule: "banned-files", stage: "scan", totalItems: 2, violationCount: 2 }),
+    expect.objectContaining({ completedItems: 2, phase: "rule-chunk", rule: "banned-files", stage: "fix", totalItems: 2, deletedFiles: 2 }),
     expect.objectContaining({ phase: "rule-completed", rule: "banned-files", stage: "fix", deletedFiles: 2 }),
   ]));
 });

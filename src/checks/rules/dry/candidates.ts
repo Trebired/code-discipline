@@ -132,7 +132,7 @@ function createDryGroupViolation(group: DuplicateGroup): CodeDisciplineViolation
     rule: "dry",
     fix: false,
     filePath: "multiple files",
-    message: `function duplicates in files: ${files.join(", ")}`,
+    message: "duplicate function group",
     details: {
       confidence: Number(group.confidence.toFixed(3)),
       files,

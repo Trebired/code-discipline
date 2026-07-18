@@ -76,7 +76,7 @@ test("reports DRY duplicates despite renamed parameters and comments", async () 
     rule: "dry",
     fix: false,
     filePath: "multiple files",
-    message: "function duplicates in files: src/app.ts, src/shared/to-text.ts",
+    message: "duplicate function group",
     details: {
       files: ["src/app.ts", "src/shared/to-text.ts"],
       fixable: false,
@@ -123,7 +123,7 @@ test("reports same-name DRY duplicates as high confidence", async () => {
   expect(result.violations[0]).toMatchObject({
     rule: "dry",
     filePath: "multiple files",
-    message: "function duplicates in files: src/one.ts, src/two.ts",
+    message: "duplicate function group",
     details: {
       confidence: 1,
       files: ["src/one.ts", "src/two.ts"],
@@ -171,7 +171,7 @@ test("reports likely DRY duplicates discovered across source files", async () =>
     rule: "dry",
     fix: false,
     filePath: "multiple files",
-    message: "function duplicates in files: src/one.ts, src/two.ts",
+    message: "duplicate function group",
     details: {
       fixable: false,
       reason: "duplicate function group requires human canonicalization",
@@ -180,9 +180,9 @@ test("reports likely DRY duplicates discovered across source files", async () =>
   });
 });
 
-test("emits DRY progress chunks while parsing and matching", async () => {
+test("emits DRY progress chunks after completed parse and match chunks", async () => {
   const projectRoot = tempProject();
-  const progress: Array<{ phase: string; stage?: string }> = [];
+  const progress: Array<{ completedItems?: number; phase: string; stage?: string; totalItems?: number }> = [];
 
   writeFile(projectRoot, "src/one.ts", [
     "export function buildUserLabel(user: { name?: string; email?: string }) {",
@@ -209,16 +209,23 @@ test("emits DRY progress chunks while parsing and matching", async () => {
 
   await checkCodeDiscipline({
     projectRoot,
-    progressObserver: (event) => progress.push({ phase: event.phase, stage: "stage" in event ? event.stage : undefined }),
+    progressObserver: (event) => {
+      progress.push({
+        completedItems: "completedItems" in event ? event.completedItems : undefined,
+        phase: event.phase,
+        stage: "stage" in event ? event.stage : undefined,
+        totalItems: "totalItems" in event ? event.totalItems : undefined,
+      });
+    },
     rules: {
       dry: {},
     },
   });
 
   expect(progress).toEqual(expect.arrayContaining([
-    { phase: "rule-chunk", stage: "parse" },
-    { phase: "rule-completed", stage: "parse" },
-    { phase: "rule-chunk", stage: "match" },
-    { phase: "rule-completed", stage: "match" },
+    expect.objectContaining({ completedItems: 2, phase: "rule-chunk", stage: "parse", totalItems: 2 }),
+    expect.objectContaining({ phase: "rule-completed", stage: "parse" }),
+    expect.objectContaining({ completedItems: 2, phase: "rule-chunk", stage: "match", totalItems: 2 }),
+    expect.objectContaining({ phase: "rule-completed", stage: "match" }),
   ]));
 });

@@ -152,6 +152,56 @@ test("runs check through an explicit config module and prints concise violations
   expect(stdout.join("")).toContain("Found 1 discipline violation(s).");
 });
 
+test("prints human-readable DRY duplicate function groups", async () => {
+  const projectRoot = tempProject();
+  const stdout: string[] = [];
+
+  writeFile(projectRoot, "src/a.ts", [
+    "export function buildUserLabel(user: { name?: string; email?: string }) {",
+    "  const name = String(user.name ?? \"\").trim();",
+    "  const email = String(user.email ?? \"\").trim();",
+    "  const normalizedName = name.replace(/\\s+/g, \" \");",
+    "  const normalizedEmail = email.toLowerCase();",
+    "  const domain = normalizedEmail.includes(\"@\") ? normalizedEmail.split(\"@\")[1] : \"\";",
+    "  return domain ? `${normalizedName} <${normalizedEmail}>` : normalizedEmail;",
+    "}",
+    "",
+  ].join("\n"));
+  writeFile(projectRoot, "src/b.ts", [
+    "export function formatUserLabel(account: { name?: string; email?: string }) {",
+    "  const displayName = String(account.name ?? \"\").trim();",
+    "  const contact = String(account.email ?? \"\").trim();",
+    "  const readableName = displayName.replace(/\\s+/g, \" \");",
+    "  const readableContact = contact.toLowerCase();",
+    "  const contactDomain = readableContact.includes(\"@\") ? readableContact.split(\"@\")[1] : \"\";",
+    "  return contactDomain ? `${readableName} <${readableContact}>` : readableContact;",
+    "}",
+    "",
+  ].join("\n"));
+  writeFile(projectRoot, "discipline.config.mjs", [
+    "export default {",
+    "  rules: {",
+    "    dry: {},",
+    "  },",
+    "};",
+    "",
+  ].join("\n"));
+
+  const result = await runCli(["check", "--config", "./discipline.config.mjs"], {
+    cwd: projectRoot,
+    stdout: (text) => stdout.push(text),
+  });
+
+  const output = stdout.join("");
+
+  expect(result.exitCode).toBe(1);
+  expect(output).toContain("dry duplicate function group: 2 functions, confidence 1, signals: exact-normalized, similar-structure");
+  expect(output).toContain("  - src/a.ts:1 buildUserLabel");
+  expect(output).toContain("  - src/b.ts:1 formatUserLabel");
+  expect(output).not.toContain("function duplicates in files");
+  expect(output).toContain("Found 1 discipline violation(s).");
+});
+
 test("runs fix sync-imports through an explicit config module", async () => {
   const projectRoot = tempProject();
   const stdout: string[] = [];

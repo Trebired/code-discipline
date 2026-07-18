@@ -2,6 +2,12 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 3.4.0
+
+- Rendered `dry` duplicate groups in CLI output with the duplicated function names, file paths, line numbers, confidence, and `signals: ...` metadata.
+- Changed the public `dry` violation message to `duplicate function group` while keeping duplicate details intact for API and report consumers.
+- Kept chunk progress output as after-chunk summaries for check and fix runs, including DRY parse/match result counts.
+
 ## 3.3.3
 
 - Added chunked rule progress for CLI/API check and fix runs, including per-chunk violation and mutation counts for long-running rules.
