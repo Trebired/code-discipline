@@ -10,7 +10,7 @@ import type {
   FixCodeDisciplineOptions,
   FixCodeDisciplineResult,
 } from "./checks/types.js";
-import type { SourceScanObserver } from "./imports/types.js";
+import type { SourceProgressObserver, SourceScanObserver } from "./imports/types.js";
 import { orchestrateCodeDisciplineRun } from "./runtime/orchestrate.js";
 import type { LoggingOptions } from "./shared/logging-types.js";
 
@@ -19,6 +19,7 @@ type CodeDisciplineInvocationOptions = {
   configPath?: string;
   logging?: LoggingOptions;
   logger?: unknown;
+  progressObserver?: SourceProgressObserver;
   scanObserver?: SourceScanObserver;
 };
 
@@ -100,6 +101,7 @@ function buildCheckOptions(options: Omit<CodeDisciplineOptions, "mode">): CheckC
     gitignorePath: options.gitignorePath,
     logging: resolveLoggingOptions(options),
     onlyRules: options.onlyRules,
+    progressObserver: options.progressObserver,
     rules: options.rules,
     evasionGuards: options.evasionGuards,
     scanObserver: options.scanObserver,
@@ -127,6 +129,7 @@ async function codeDiscipline(options: CodeDisciplineOptions): Promise<CodeDisci
     evasionGuards: options.evasionGuards,
     excludeSourceExtensions: options.excludeSourceExtensions,
     sourceRoot: options.sourceRoot,
+    progressObserver: options.progressObserver,
     scanObserver: options.scanObserver,
     tsconfigPaths: options.tsconfigPaths,
   };

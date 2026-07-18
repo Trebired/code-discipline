@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 
+import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "../checks/progress.js";
 import { RewriteFailureError } from "../shared/errors.js";
 import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
 import { applyTextReplacements, collectModuleSpecifiers } from "./module-specifiers.js";
@@ -93,15 +94,24 @@ async function rewriteSourceImports(
   logger: NormalizedCodeDisciplineLogger,
 ): Promise<RewriteResult> {
   const aliasIdsByFilePath = new Map(aliasRecords.map((record) => [record.absolutePath, record.id]));
+  const progress = createRuleProgress({
+    observer: options.progressObserver,
+    rule: "sync-imports",
+    stage: "fix",
+    totalItems: sourceFiles.length,
+  });
   let rewrittenFiles = 0;
   let rewrittenImports = 0;
 
-  for (const file of sourceFiles) {
+  for (let index = 0; index < sourceFiles.length; index += 1) {
+    const file = sourceFiles[index]!;
     const result = await rewriteSourceFile(file, options, aliasIdsByFilePath, logger);
     if (result.rewritten) rewrittenFiles += 1;
     rewrittenImports += result.rewrittenImports;
+    emitRuleChunk(progress, index + 1, 0, { rewrittenFiles, rewrittenImports });
   }
 
+  emitRuleCompleted(progress, 0, { rewrittenFiles, rewrittenImports });
   return {
     rewrittenFiles,
     rewrittenImports,

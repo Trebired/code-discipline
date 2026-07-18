@@ -1,6 +1,11 @@
 import { performance } from "node:perf_hooks";
 
-import type { SourceScanProgressEvent } from "../imports/types.js";
+import type {
+  SourceProgressEvent,
+  SourceRuleCompletedEvent,
+  SourceRuleProgressEvent,
+  SourceScanProgressEvent,
+} from "../imports/types.js";
 
 type LoadingAnimation = {
   pause: () => void;
@@ -98,8 +103,24 @@ function shouldPrintScanChunk(event: SourceScanProgressEvent): boolean {
     && (event.chunkIndex <= 3 || event.chunkIndex % 10 === 0 || event.queuedDirectories === 0);
 }
 
+function formatRuleProgressDetails(event: SourceRuleProgressEvent | SourceRuleCompletedEvent): string {
+  const details = [
+    typeof event.violationCount === "number" ? `${event.violationCount} violations` : "",
+    typeof event.deletedFiles === "number" ? `${event.deletedFiles} deleted` : "",
+    typeof event.movedFiles === "number" ? `${event.movedFiles} moved` : "",
+    typeof event.rewrittenFiles === "number" ? `${event.rewrittenFiles} rewritten files` : "",
+    typeof event.rewrittenImports === "number" ? `${event.rewrittenImports} rewritten imports` : "",
+    typeof event.removedComments === "number" ? `${event.removedComments} removed comments` : "",
+    typeof event.discoveredFunctions === "number" ? `${event.discoveredFunctions} functions` : "",
+    typeof event.duplicateGroups === "number" ? `${event.duplicateGroups} groups` : "",
+    typeof event.comparedCandidates === "number" ? `${event.comparedCandidates} comparisons` : "",
+  ].filter(Boolean);
+
+  return details.length > 0 ? `, ${details.join(", ")}` : "";
+}
+
 function createCliScanObserver(writeLine: (text: string) => void) {
-  return (event: SourceScanProgressEvent) => {
+  return (event: SourceProgressEvent) => {
     if (event.phase === "chunk") {
       if (!shouldPrintScanChunk(event)) return;
 
@@ -109,8 +130,22 @@ function createCliScanObserver(writeLine: (text: string) => void) {
       return;
     }
 
+    if (event.phase === "completed") {
+      writeLine(
+        `Scan: ${event.fileCount} files in ${formatDuration(event.elapsedMs)} (${event.backend}).\n`,
+      );
+      return;
+    }
+
+    if (event.phase === "rule-chunk") {
+      writeLine(
+        `${event.rule} ${event.stage} ${event.chunkIndex}: ${event.completedItems}/${event.totalItems}${formatRuleProgressDetails(event)}, ${formatDuration(event.elapsedMs)}.\n`,
+      );
+      return;
+    }
+
     writeLine(
-      `Scan: ${event.fileCount} files in ${formatDuration(event.elapsedMs)} (${event.backend}).\n`,
+      `${event.rule} ${event.stage}: ${event.totalItems} items${formatRuleProgressDetails(event)} in ${formatDuration(event.elapsedMs)}.\n`,
     );
   };
 }

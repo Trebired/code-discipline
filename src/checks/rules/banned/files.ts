@@ -4,7 +4,10 @@ import type { ScannedSourceFile } from "../../../imports/types.js";
 import { FixFailureError } from "../../../shared/errors.js";
 import { matchesGlob } from "../../../shared/globs.js";
 import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
+import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "../../progress.js";
 import type { FixCodeDisciplineRuleResult, NormalizedCheckCodeDisciplineOptions } from "../../types.js";
+
+const BANNED_FILES_FIX_CHUNK_SIZE = 250;
 
 function collectBannedFileViolations(
   sourceFiles: ScannedSourceFile[],
@@ -14,8 +17,14 @@ function collectBannedFileViolations(
   if (!rule) return [];
 
   const violations: CodeDisciplineViolation[] = [];
+  const progress = createRuleProgress({
+    observer: options.progressObserver,
+    rule: "banned-files",
+    totalItems: sourceFiles.length,
+  });
 
-  for (const file of sourceFiles) {
+  for (let index = 0; index < sourceFiles.length; index += 1) {
+    const file = sourceFiles[index]!;
     for (const pattern of rule.patterns) {
       if (!matchesGlob(file.relativeFromProjectRoot, pattern.glob)) continue;
 
@@ -29,8 +38,11 @@ function collectBannedFileViolations(
         },
       });
     }
+
+    emitRuleChunk(progress, index + 1, violations.length);
   }
 
+  emitRuleCompleted(progress, violations.length);
   return violations;
 }
 
@@ -52,20 +64,34 @@ async function fixBannedFilesRule(
   const filesToDelete = [...new Set(violations.map((violation) => violation.filePath))]
     .map((filePath) => filesByRelativePath.get(filePath))
     .filter((file): file is ScannedSourceFile => Boolean(file));
+  const progress = createRuleProgress({
+    chunkSize: BANNED_FILES_FIX_CHUNK_SIZE,
+    observer: options.progressObserver,
+    rule: "banned-files",
+    stage: "fix",
+    totalItems: filesToDelete.length,
+  });
+  let deletedFiles = 0;
 
   try {
-    await Promise.all(filesToDelete.map((file) => fs.unlink(file.absolutePath)));
+    for (let index = 0; index < filesToDelete.length; index += BANNED_FILES_FIX_CHUNK_SIZE) {
+      const chunk = filesToDelete.slice(index, index + BANNED_FILES_FIX_CHUNK_SIZE);
+      await Promise.all(chunk.map((file) => fs.unlink(file.absolutePath)));
+      deletedFiles += chunk.length;
+      emitRuleChunk(progress, deletedFiles, 0, { deletedFiles });
+    }
   } catch (error) {
     throw new FixFailureError("banned-files fix failed", {
       cause: error instanceof Error ? error.message : String(error),
     });
   }
 
+  emitRuleCompleted(progress, 0, { deletedFiles });
   return {
     ok: true,
     violationCount: 0,
     violations: [],
-    deleted_files: filesToDelete.length,
+    deleted_files: deletedFiles,
   };
 }
 

@@ -79,6 +79,8 @@ Typical `package.json` scripts can stay simple:
 
 `gate` runs the same repo config discovery as `check`. If violations are found, it exits non-zero and does not launch the child command. If the repo is clean, it starts the child command and forwards its exit status.
 
+Long check and fix runs emit chunked rule progress in the CLI, including current violation counts and fix mutation counts where applicable.
+
 ## Config
 
 The CLI auto-discovers a top-level config module in this order:

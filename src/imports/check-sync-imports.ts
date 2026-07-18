@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "../checks/progress.js";
 import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
 import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
 import { collectPackageJsonImportsSyncState } from "../runtime/imports-sync.js";
@@ -17,6 +18,11 @@ async function collectSyncImportViolations(
   logger?: NormalizedCodeDisciplineLogger,
 ): Promise<CodeDisciplineViolation[]> {
   const supportedSourceFiles = sourceFiles.filter((file) => supportsSyncImports(file.extension));
+  const progress = createRuleProgress({
+    observer: options.progressObserver,
+    rule: "sync-imports",
+    totalItems: supportedSourceFiles.length,
+  });
   const aliasPlan = await planTsconfigAliases(options, supportedSourceFiles, logger);
   const aliasIdsByFilePath = new Map(aliasPlan.aliasRecords.map((record) => [record.absolutePath, record.id]));
   const violations: CodeDisciplineViolation[] = [];
@@ -52,7 +58,8 @@ async function collectSyncImportViolations(
     });
   }
 
-  for (const file of supportedSourceFiles) {
+  for (let index = 0; index < supportedSourceFiles.length; index += 1) {
+    const file = supportedSourceFiles[index]!;
     const text = await fs.readFile(file.absolutePath, "utf8");
 
     for (const occurrence of collectModuleSpecifiers(text, file.absolutePath)) {
@@ -78,8 +85,11 @@ async function collectSyncImportViolations(
         },
       });
     }
+
+    emitRuleChunk(progress, index + 1, violations.length);
   }
 
+  emitRuleCompleted(progress, violations.length);
   return violations;
 }
 

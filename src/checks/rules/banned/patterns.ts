@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import type { ScannedSourceFile } from "../../../imports/types.js";
 import type { NormalizedCheckCodeDisciplineOptions } from "../../types.js";
 import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
+import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "../../progress.js";
 
 function countOccurrences(text: string, pattern: string): number {
   if (!pattern) return 0;
@@ -28,8 +29,14 @@ async function collectBannedPatternViolations(
   if (!rule) return [];
 
   const violations: CodeDisciplineViolation[] = [];
+  const progress = createRuleProgress({
+    observer: options.progressObserver,
+    rule: "banned-patterns",
+    totalItems: sourceFiles.length,
+  });
 
-  for (const file of sourceFiles) {
+  for (let index = 0; index < sourceFiles.length; index += 1) {
+    const file = sourceFiles[index]!;
     const text = await fs.readFile(file.absolutePath, "utf8");
     const normalizedText = text.toLowerCase();
 
@@ -50,8 +57,11 @@ async function collectBannedPatternViolations(
         },
       });
     }
+
+    emitRuleChunk(progress, index + 1, violations.length);
   }
 
+  emitRuleCompleted(progress, violations.length);
   return violations;
 }
 

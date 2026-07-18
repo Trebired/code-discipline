@@ -54,6 +54,7 @@ async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise
     allowRelative: options.allowRelative ?? DEFAULT_ALLOW_RELATIVE,
     packageJsonImports: options.packageJsonImports,
     logging: normalizeLoggingOptions(options.logging, "logging"),
+    progressObserver: options.progressObserver,
   };
 }
 

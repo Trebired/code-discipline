@@ -186,14 +186,15 @@ async function runCheckCommand(args: {
   }
 
   const timed = await withLoadingAnimation("Scanning codebase", args.showLoadingAnimation, (writeLine) => {
-    const scanObserver = createCliScanObserver(args.showLoadingAnimation ? writeLine : args.stderr);
+    const progressObserver = createCliScanObserver(args.showLoadingAnimation ? writeLine : args.stderr);
     return codeDiscipline({
       ...args.config,
       configPath: args.configPath,
       mode: "check",
       onlyRules: args.parsed.selectors as CodeDisciplineRuleSlug[],
       projectRoot: args.cwd,
-      scanObserver,
+      progressObserver,
+      scanObserver: progressObserver,
     });
   });
   const result = timed.result;
@@ -220,14 +221,15 @@ async function runFixCommand(args: {
   }
 
   const timed = await withLoadingAnimation("Fixing codebase", args.showLoadingAnimation, (writeLine) => {
-    const scanObserver = createCliScanObserver(args.showLoadingAnimation ? writeLine : args.stderr);
+    const progressObserver = createCliScanObserver(args.showLoadingAnimation ? writeLine : args.stderr);
     return codeDiscipline({
       ...args.config,
       configPath: args.configPath,
       mode: "fix",
       onlyRules: args.parsed.selectors as FixableRuleSlug[],
       projectRoot: args.cwd,
-      scanObserver,
+      progressObserver,
+      scanObserver: progressObserver,
     });
   });
   const result = timed.result;
@@ -261,14 +263,15 @@ async function runGateCommand(args: {
   }
 
   const timed = await withLoadingAnimation("Scanning codebase", args.showLoadingAnimation, (writeLine) => {
-    const scanObserver = createCliScanObserver(args.showLoadingAnimation ? writeLine : args.stderr);
+    const progressObserver = createCliScanObserver(args.showLoadingAnimation ? writeLine : args.stderr);
     return codeDiscipline({
       ...args.config,
       configPath: args.configPath,
       mode: "check",
       onlyRules: args.parsed.selectors as CodeDisciplineRuleSlug[],
       projectRoot: args.cwd,
-      scanObserver,
+      progressObserver,
+      scanObserver: progressObserver,
     });
   });
   const result = timed.result;

@@ -4,6 +4,7 @@ import type { NormalizedCheckCodeDisciplineOptions } from "../../types.js";
 import type { ScannedSourceFile } from "../../../imports/types.js";
 import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
 import { loadNativeBinding } from "../../../native/native.js";
+import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "../../progress.js";
 import { countCodeLines, countPhysicalLines, maskCommentsForLineCounting } from "./code-lines.js";
 
 async function runMaxFileLinesRule(
@@ -12,18 +13,26 @@ async function runMaxFileLinesRule(
 ): Promise<CodeDisciplineViolation[]> {
   if (!options.rules.maxFileLines) return [];
 
+  const progress = createRuleProgress({
+    observer: options.progressObserver,
+    rule: "max-file-lines",
+    totalItems: sourceFiles.length,
+  });
   const native = loadNativeBinding();
-  if (native) {
-    return JSON.parse(native.runMaxFileLinesRule(JSON.stringify({
+  if (native && !options.progressObserver) {
+    const violations = JSON.parse(native.runMaxFileLinesRule(JSON.stringify({
       sourceFiles,
       max: options.rules.maxFileLines.max,
       warning: true,
     }))) as CodeDisciplineViolation[];
+    emitRuleCompleted(progress, violations.length);
+    return violations;
   }
 
   const violations: CodeDisciplineViolation[] = [];
 
-  for (const file of sourceFiles) {
+  for (let index = 0; index < sourceFiles.length; index += 1) {
+    const file = sourceFiles[index]!;
     const text = await fs.readFile(file.absolutePath, "utf8");
     const lineCount = countPhysicalLines(text);
     const codeLineCount = countCodeLines(maskCommentsForLineCounting(text, file.extension));
@@ -39,6 +48,7 @@ async function runMaxFileLinesRule(
           max: options.rules.maxFileLines.max,
         },
       });
+      emitRuleChunk(progress, index + 1, violations.length);
       continue;
     }
 
@@ -56,8 +66,11 @@ async function runMaxFileLinesRule(
         },
       });
     }
+
+    emitRuleChunk(progress, index + 1, violations.length);
   }
 
+  emitRuleCompleted(progress, violations.length);
   return violations;
 }
 

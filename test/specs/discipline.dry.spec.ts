@@ -179,3 +179,46 @@ test("reports likely DRY duplicates discovered across source files", async () =>
     },
   });
 });
+
+test("emits DRY progress chunks while parsing and matching", async () => {
+  const projectRoot = tempProject();
+  const progress: Array<{ phase: string; stage?: string }> = [];
+
+  writeFile(projectRoot, "src/one.ts", [
+    "export function buildUserLabel(user: { name?: string; email?: string }) {",
+    "  const name = String(user.name ?? \"\").trim();",
+    "  const email = String(user.email ?? \"\").trim();",
+    "  const normalizedName = name.replace(/\\s+/g, \" \");",
+    "  const normalizedEmail = email.toLowerCase();",
+    "  const domain = normalizedEmail.includes(\"@\") ? normalizedEmail.split(\"@\")[1] : \"\";",
+    "  return domain ? `${normalizedName} <${normalizedEmail}>` : normalizedEmail;",
+    "}",
+    "",
+  ].join("\n"));
+  writeFile(projectRoot, "src/two.ts", [
+    "export function formatAccountLabel(account: { name?: string; email?: string }) {",
+    "  const displayName = String(account.name ?? \"\").trim();",
+    "  const contact = String(account.email ?? \"\").trim();",
+    "  const readableName = displayName.replace(/\\s+/g, \" \");",
+    "  const readableContact = contact.toLowerCase();",
+    "  const contactDomain = readableContact.includes(\"@\") ? readableContact.split(\"@\")[1] : \"\";",
+    "  return contactDomain ? `${readableName} <${readableContact}>` : readableContact;",
+    "}",
+    "",
+  ].join("\n"));
+
+  await checkCodeDiscipline({
+    projectRoot,
+    progressObserver: (event) => progress.push({ phase: event.phase, stage: "stage" in event ? event.stage : undefined }),
+    rules: {
+      dry: {},
+    },
+  });
+
+  expect(progress).toEqual(expect.arrayContaining([
+    { phase: "rule-chunk", stage: "parse" },
+    { phase: "rule-completed", stage: "parse" },
+    { phase: "rule-chunk", stage: "match" },
+    { phase: "rule-completed", stage: "match" },
+  ]));
+});

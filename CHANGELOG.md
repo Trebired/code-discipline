@@ -2,6 +2,11 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 3.3.3
+
+- Added chunked rule progress for CLI/API check and fix runs, including per-chunk violation and mutation counts for long-running rules.
+- Replaced the expensive all-pairs `dry` similarity pass with indexed matching and chunked parse/match progress to avoid stalls on large function sets.
+
 ## 3.3.2
 
 - Removed `dry.helpers` registration and the helper-based `dry` autofix path; `dry` now scans source functions directly.

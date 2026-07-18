@@ -3,6 +3,7 @@ import path from "node:path";
 import type { NormalizedCheckCodeDisciplineOptions } from "../../types.js";
 import type { ScannedSourceFile } from "../../../imports/types.js";
 import { supportsFolderizationFix } from "../../../shared/languages.js";
+import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "../../progress.js";
 
 type FolderizationCandidate = {
   absolutePath: string;
@@ -74,6 +75,12 @@ function planFolderizeCompoundFiles(
   const separators = options.rules.folderizeCompoundFiles.separators;
   const byDirectoryAndPrefix = new Map<string, ScannedSourceFile[]>();
   const matchesByPath = new Map<string, PrefixMatch>();
+  const progress = createRuleProgress({
+    observer: options.progressObserver,
+    rule: "folderize-compound-files",
+    stage: "plan",
+    totalItems: sourceFiles.length,
+  });
 
   for (const file of sourceFiles) {
     if (!supportsFolderizationFix(file.extension)) continue;
@@ -89,9 +96,13 @@ function planFolderizeCompoundFiles(
 
   const candidates: FolderizationCandidate[] = [];
 
-  for (const file of sourceFiles) {
+  for (let index = 0; index < sourceFiles.length; index += 1) {
+    const file = sourceFiles[index]!;
     const match = matchesByPath.get(file.absolutePath);
-    if (!match) continue;
+    if (!match) {
+      emitRuleChunk(progress, index + 1, candidates.length);
+      continue;
+    }
 
     const directoryName = path.basename(path.dirname(file.absolutePath));
     const directoryKey = `${path.posix.dirname(file.relativeFromSourceRoot)}::${match.prefix}`;
@@ -102,7 +113,10 @@ function planFolderizeCompoundFiles(
         ? "same-directory-group"
         : null;
 
-    if (!mode) continue;
+    if (!mode) {
+      emitRuleChunk(progress, index + 1, candidates.length);
+      continue;
+    }
 
     const suggested = buildSuggestedPath(file, match.prefix, match.remainder, mode);
     candidates.push({
@@ -115,8 +129,10 @@ function planFolderizeCompoundFiles(
       separator: match.separator,
       mode,
     });
+    emitRuleChunk(progress, index + 1, candidates.length);
   }
 
+  emitRuleCompleted(progress, candidates.length);
   return candidates.sort((left, right) => left.relativeFromProjectRoot.localeCompare(right.relativeFromProjectRoot));
 }
 

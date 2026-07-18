@@ -2,6 +2,7 @@ import type { NormalizedCheckCodeDisciplineOptions } from "../../types.js";
 import type { ScannedSourceFile } from "../../../imports/types.js";
 import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
 import { loadNativeBinding } from "../../../native/native.js";
+import { createRuleProgress, emitRuleCompleted } from "../../progress.js";
 import { planFolderizeCompoundFiles } from "./plan.js";
 
 function runFolderizeCompoundFilesRule(
@@ -10,12 +11,19 @@ function runFolderizeCompoundFilesRule(
 ): CodeDisciplineViolation[] {
   if (!options.rules.folderizeCompoundFiles) return [];
 
+  const progress = createRuleProgress({
+    observer: options.progressObserver,
+    rule: "folderize-compound-files",
+    totalItems: sourceFiles.length,
+  });
   const native = loadNativeBinding();
-  if (native) {
-    return JSON.parse(native.runFolderizeCompoundFilesRule(JSON.stringify({
+  if (native && !options.progressObserver) {
+    const violations = JSON.parse(native.runFolderizeCompoundFilesRule(JSON.stringify({
       sourceFiles,
       separators: options.rules.folderizeCompoundFiles.separators,
     }))) as CodeDisciplineViolation[];
+    emitRuleCompleted(progress, violations.length);
+    return violations;
   }
 
   return planFolderizeCompoundFiles(sourceFiles, options).map((candidate) => ({

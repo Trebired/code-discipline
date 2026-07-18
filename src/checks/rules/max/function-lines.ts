@@ -9,6 +9,7 @@ import { loadNativeBinding } from "../../../native/native.js";
 import { parseSource } from "../../../imports/module-specifiers.js";
 import { isGoExtension, isRustExtension, isTypeScriptFamilyExtension, supportsMaxFunctionLines } from "../../../shared/languages.js";
 import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
+import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "../../progress.js";
 import { getEndLine, getStartLine, isFunctionLikeWithBody, resolveFunctionKind, resolveFunctionName } from "../typescript-functions.js";
 import { stripCommentsAndStrings } from "../evasion-guards/strip.js";
 import { countCodeLinesInRange, maskCommentsForLineCounting } from "./code-lines.js";
@@ -147,6 +148,11 @@ async function runMaxFunctionLinesRule(
   if (!options.rules.maxFunctionLines) return [];
 
   const violations: CodeDisciplineViolation[] = [];
+  const progress = createRuleProgress({
+    observer: options.progressObserver,
+    rule: "max-function-lines",
+    totalItems: sourceFiles.length,
+  });
   const native = loadNativeBinding();
   const nativeHandledPaths = new Set<string>();
 
@@ -160,9 +166,12 @@ async function runMaxFunctionLinesRule(
     for (const filePath of nativeResult.handledPaths) nativeHandledPaths.add(filePath);
   }
 
-  for (const file of sourceFiles) {
-    if (nativeHandledPaths.has(file.absolutePath)) continue;
-    if (!supportsMaxFunctionLines(file.extension)) continue;
+  for (let index = 0; index < sourceFiles.length; index += 1) {
+    const file = sourceFiles[index]!;
+    if (nativeHandledPaths.has(file.absolutePath) || !supportsMaxFunctionLines(file.extension)) {
+      emitRuleChunk(progress, index + 1, violations.length);
+      continue;
+    }
 
     const text = await fs.readFile(file.absolutePath, "utf8");
     const extension = path.extname(file.absolutePath).toLowerCase();
@@ -213,8 +222,11 @@ async function runMaxFunctionLinesRule(
         });
       }
     }
+
+    emitRuleChunk(progress, index + 1, violations.length);
   }
 
+  emitRuleCompleted(progress, violations.length);
   return violations;
 }
 

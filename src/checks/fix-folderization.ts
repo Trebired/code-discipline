@@ -13,6 +13,7 @@ import { isRelativeImportSpecifier } from "../imports/resolve.js";
 import { supportsFolderizationFix } from "../shared/languages.js";
 import { FileConflictError, FixFailureError, RewriteFailureError } from "../shared/errors.js";
 import { ensureDotExtension, pathExists, stripKnownExtension, toPosixPath } from "../shared/utils.js";
+import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "./progress.js";
 import { planFolderizeCompoundFiles } from "./rules/folderize/plan.js";
 
 type PlannedMove = {
@@ -21,7 +22,6 @@ type PlannedMove = {
   toAbsolutePath: string;
   toRelativePath: string;
 };
-
 function createFolderizationViolation(
   filePath: string,
   suggestedPath: string,
@@ -132,11 +132,21 @@ async function planImportRewritesForFolderizationMoves(
   const movedPaths = new Map(moves.map((move) => [move.fromAbsolutePath, move.toAbsolutePath]));
   const knownFiles = new Set(sourceFiles.map((file) => file.absolutePath));
   const rewrittenByPath = new Map<string, { text: string; count: number }>();
+  const progress = createRuleProgress({
+    observer: options.progressObserver,
+    rule: "folderize-compound-files",
+    stage: "rewrite-plan",
+    totalItems: sourceFiles.length,
+  });
   let rewrittenFiles = 0;
   let rewrittenImports = 0;
 
-  for (const file of sourceFiles) {
-    if (!supportsFolderizationFix(file.extension)) continue;
+  for (let index = 0; index < sourceFiles.length; index += 1) {
+    const file = sourceFiles[index]!;
+    if (!supportsFolderizationFix(file.extension)) {
+      emitRuleChunk(progress, index + 1, 0, { rewrittenFiles, rewrittenImports });
+      continue;
+    }
     const originalText = await fs.readFile(file.absolutePath, "utf8");
     const futureFilePath = movedPaths.get(file.absolutePath) ?? file.absolutePath;
     const replacements = [];
@@ -170,13 +180,18 @@ async function planImportRewritesForFolderizationMoves(
     }
 
     const next = applyTextReplacements(originalText, replacements);
-    if (next.count === 0) continue;
+    if (next.count === 0) {
+      emitRuleChunk(progress, index + 1, 0, { rewrittenFiles, rewrittenImports });
+      continue;
+    }
 
     rewrittenByPath.set(futureFilePath, next);
     rewrittenFiles += 1;
     rewrittenImports += next.count;
+    emitRuleChunk(progress, index + 1, 0, { rewrittenFiles, rewrittenImports });
   }
 
+  emitRuleCompleted(progress, 0, { rewrittenFiles, rewrittenImports });
   return { rewrittenByPath, rewrittenFiles, rewrittenImports };
 }
 
@@ -204,17 +219,57 @@ async function validateMovePlan(moves: PlannedMove[]): Promise<void> {
   }
 }
 
-async function moveFiles(moves: PlannedMove[]): Promise<number> {
+async function moveFiles(moves: PlannedMove[], options: NormalizedCheckCodeDisciplineOptions): Promise<number> {
+  const progress = createRuleProgress({
+    observer: options.progressObserver,
+    rule: "folderize-compound-files",
+    stage: "move",
+    totalItems: moves.length,
+  });
   let movedFiles = 0;
 
-  for (const move of moves) {
-    if (move.fromAbsolutePath === move.toAbsolutePath) continue;
+  for (let index = 0; index < moves.length; index += 1) {
+    const move = moves[index]!;
+    if (move.fromAbsolutePath === move.toAbsolutePath) {
+      emitRuleChunk(progress, index + 1, 0, { movedFiles });
+      continue;
+    }
     await fs.mkdir(path.dirname(move.toAbsolutePath), { recursive: true });
     await fs.rename(move.fromAbsolutePath, move.toAbsolutePath);
     movedFiles += 1;
+    emitRuleChunk(progress, index + 1, 0, { movedFiles });
   }
 
+  emitRuleCompleted(progress, 0, { movedFiles });
   return movedFiles;
+}
+
+async function writeFolderizationRewrites(
+  rewrites: Map<string, { text: string; count: number }>,
+  options: NormalizedCheckCodeDisciplineOptions,
+): Promise<void> {
+  const entries = [...rewrites.entries()];
+  const totalImports = entries.reduce((sum, [, rewrite]) => sum + rewrite.count, 0);
+  const progress = createRuleProgress({
+    observer: options.progressObserver,
+    rule: "folderize-compound-files",
+    stage: "write",
+    totalItems: entries.length,
+  });
+
+  for (let index = 0; index < entries.length; index += 1) {
+    const [filePath, next] = entries[index]!;
+    await fs.writeFile(filePath, next.text);
+    emitRuleChunk(progress, index + 1, 0, {
+      rewrittenFiles: index + 1,
+      rewrittenImports: totalImports,
+    });
+  }
+
+  emitRuleCompleted(progress, 0, {
+    rewrittenFiles: entries.length,
+    rewrittenImports: totalImports,
+  });
 }
 
 async function removeEmptyDirectories(directories: string[]): Promise<void> {
@@ -259,11 +314,8 @@ async function fixFolderization(
 
   try {
     const rewriteState = await planImportRewritesForFolderizationMoves(sourceFiles, moves, options);
-    const movedFiles = await moveFiles(moves);
-
-    for (const [filePath, next] of rewriteState.rewrittenByPath) {
-      await fs.writeFile(filePath, next.text);
-    }
+    const movedFiles = await moveFiles(moves, options);
+    await writeFolderizationRewrites(rewriteState.rewrittenByPath, options);
 
     await removeEmptyDirectories(sourceDirectories);
 

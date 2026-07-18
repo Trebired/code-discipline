@@ -26,8 +26,46 @@ type SourceScanCompletedEvent = {
   concurrency: number;
 };
 
+type SourceRuleProgressEvent = {
+  phase: "rule-chunk";
+  rule: string;
+  stage: string;
+  chunkIndex: number;
+  completedItems: number;
+  totalItems: number;
+  elapsedMs: number;
+  discoveredFunctions?: number;
+  duplicateGroups?: number;
+  comparedCandidates?: number;
+  deletedFiles?: number;
+  violationCount?: number;
+  movedFiles?: number;
+  removedComments?: number;
+  rewrittenFiles?: number;
+  rewrittenImports?: number;
+};
+
+type SourceRuleCompletedEvent = {
+  phase: "rule-completed";
+  rule: string;
+  stage: string;
+  totalItems: number;
+  elapsedMs: number;
+  discoveredFunctions?: number;
+  duplicateGroups?: number;
+  comparedCandidates?: number;
+  deletedFiles?: number;
+  violationCount?: number;
+  movedFiles?: number;
+  removedComments?: number;
+  rewrittenFiles?: number;
+  rewrittenImports?: number;
+};
+
 type SourceScanProgressEvent = SourceScanChunkEvent | SourceScanCompletedEvent;
+type SourceProgressEvent = SourceScanProgressEvent | SourceRuleProgressEvent | SourceRuleCompletedEvent;
 type SourceScanObserver = (event: SourceScanProgressEvent) => void;
+type SourceProgressObserver = (event: SourceProgressEvent) => void;
 
 type PackageJsonImportsSyncOptions = {
   enabled?: boolean;
@@ -76,6 +114,7 @@ type SyncImportsOptions = {
   allowRelative?: string[] | AllowRelativeFn;
   packageJsonImports?: PackageJsonImportsSyncOptions;
   logging?: LoggingOptions;
+  progressObserver?: SourceProgressObserver;
 };
 
 type SyncImportsRuleOptions = Omit<SyncImportsOptions, "projectRoot">;
@@ -115,6 +154,7 @@ type NormalizedSyncImportsOptions = SourceScanOptions & {
   allowRelative: string[] | AllowRelativeFn;
   packageJsonImports?: PackageJsonImportsSyncOptions;
   logging: LoggingOptions;
+  progressObserver?: SourceProgressObserver;
 };
 
 type ScannedSourceFile = {
@@ -173,6 +213,10 @@ export type {
   SourceScanObserver,
   SourceScanOptions,
   SourceScanProgressEvent,
+  SourceProgressEvent,
+  SourceProgressObserver,
+  SourceRuleCompletedEvent,
+  SourceRuleProgressEvent,
   PackageJsonImportsSyncOptions,
   SyncAliasesResult,
   SyncImportsOptions,

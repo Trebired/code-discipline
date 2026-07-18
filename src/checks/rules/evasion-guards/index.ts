@@ -5,6 +5,7 @@ import type { ScannedSourceFile } from "../../../imports/types.js";
 import { loadNativeBinding } from "../../../native/native.js";
 import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
 import { isTypeScriptFamilyExtension } from "../../../shared/languages.js";
+import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "../../progress.js";
 import type { NormalizedCheckCodeDisciplineOptions, NormalizedPackedCodeGuardOptions } from "../../types.js";
 import { collectFunctionDescriptors } from "./functions.js";
 import { collectRuntimeCodeHidingViolations } from "./runtime.js";
@@ -158,18 +159,28 @@ async function runEvasionGuardsRule(
   const rule = options.evasionGuards;
   if (!rule) return [];
 
+  const progress = createRuleProgress({
+    observer: options.progressObserver,
+    rule: "evasion-guards",
+    totalItems: sourceFiles.length,
+  });
   const native = loadNativeBinding();
-  if (native) {
-    return JSON.parse(native.runEvasionGuardsRule(JSON.stringify({
+  if (native && !options.progressObserver) {
+    const violations = JSON.parse(native.runEvasionGuardsRule(JSON.stringify({
       sourceFiles,
       evasionGuards: rule,
     }))) as CodeDisciplineViolation[];
+    emitRuleCompleted(progress, violations.length);
+    return violations;
   }
 
   const violations: CodeDisciplineViolation[] = [];
-  for (const file of sourceFiles) {
+  for (let index = 0; index < sourceFiles.length; index += 1) {
+    const file = sourceFiles[index]!;
     violations.push(...await collectFileEvasionViolations(file, options));
+    emitRuleChunk(progress, index + 1, violations.length);
   }
+  emitRuleCompleted(progress, violations.length);
   return violations;
 }
 

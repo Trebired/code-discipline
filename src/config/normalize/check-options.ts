@@ -30,6 +30,7 @@ async function normalizeCheckCodeDisciplineOptions(
     configPath: options.configPath,
     logging: normalizeLoggingOptions(options.logging, "logging"),
     onlyRules: normalizeOnlyRules(mode, options.onlyRules, options.rules, options.evasionGuards),
+    progressObserver: options.progressObserver,
     rules: {
       bannedPatterns: normalizeBannedPatternsRule(options.rules?.bannedPatterns),
       bannedFiles: normalizeBannedFilesRule(options.rules?.bannedFiles),

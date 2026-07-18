@@ -44,6 +44,7 @@ async function buildNormalizedSyncOptions(
     excludeDirs,
     excludeGitignoreDirs: rule.excludeDirs?.gitignore ?? options.excludeGitignoreDirs,
     gitignorePath,
+    progressObserver: options.progressObserver,
     scanObserver: options.scanObserver,
     tsconfigPath: rule.tsconfigPath ?? `${options.projectRoot}/tsconfig.json`,
     fix,

@@ -2,6 +2,7 @@ import type { LoggingOptions } from "../shared/logging-types.js";
 import type {
   ExcludeDirsOptions,
   PackageJsonImportsSyncOptions,
+  SourceProgressObserver,
   SourceScanObserver,
   SourceScanOptions,
   SyncImportsRuleOptions,
@@ -134,6 +135,7 @@ type CheckCodeDisciplineOptions = {
   lifecycle?: CodeDisciplineLifecycleHooks;
   tsconfigPaths?: CodeDisciplineTsconfigPathsOptions;
   onlyRules?: CodeDisciplineRuleSlug[];
+  progressObserver?: SourceProgressObserver;
   scanObserver?: SourceScanObserver;
 };
 
@@ -200,6 +202,7 @@ type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
   sourceRootRelative: string;
   logging: LoggingOptions;
   onlyRules?: CodeDisciplineRuleSlug[] | FixableRuleSlug[];
+  progressObserver?: SourceProgressObserver;
   rules: {
     bannedFiles?: NormalizedBannedFilesRule;
     bannedPatterns?: NormalizedBannedPatternsRule;
