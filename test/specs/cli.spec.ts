@@ -157,24 +157,15 @@ test("prints human-readable DRY duplicate function groups", async () => {
   const stdout: string[] = [];
 
   writeFile(projectRoot, "src/a.ts", [
-    "export function buildUserLabel(user: { name?: string; email?: string }) {",
-    "  const name = String(user.name ?? \"\").trim();",
-    "  const email = String(user.email ?? \"\").trim();",
-    "  const normalizedName = name.replace(/\\s+/g, \" \");",
-    "  const normalizedEmail = email.toLowerCase();",
-    "  const domain = normalizedEmail.includes(\"@\") ? normalizedEmail.split(\"@\")[1] : \"\";",
-    "  return domain ? `${normalizedName} <${normalizedEmail}>` : normalizedEmail;",
+    "export function buildUserLabel(value: unknown) {",
+    "  return String(value ?? \"\").trim();",
     "}",
     "",
   ].join("\n"));
   writeFile(projectRoot, "src/b.ts", [
-    "export function formatUserLabel(account: { name?: string; email?: string }) {",
-    "  const displayName = String(account.name ?? \"\").trim();",
-    "  const contact = String(account.email ?? \"\").trim();",
-    "  const readableName = displayName.replace(/\\s+/g, \" \");",
-    "  const readableContact = contact.toLowerCase();",
-    "  const contactDomain = readableContact.includes(\"@\") ? readableContact.split(\"@\")[1] : \"\";",
-    "  return contactDomain ? `${readableName} <${readableContact}>` : readableContact;",
+    "export function formatUserLabel(input: unknown) {",
+    "  if (input == null) return \"\";",
+    "  return String(input).trim();",
     "}",
     "",
   ].join("\n"));
@@ -195,7 +186,7 @@ test("prints human-readable DRY duplicate function groups", async () => {
   const output = stdout.join("");
 
   expect(result.exitCode).toBe(1);
-  expect(output).toContain("dry duplicate function group: 2 functions, confidence 1, signals: exact-normalized, similar-structure");
+  expect(output).toContain("dry duplicate function group: 2 functions, confidence 1, signals: normalized-behavior");
   expect(output).toContain("  - src/a.ts:1 buildUserLabel");
   expect(output).toContain("  - src/b.ts:1 formatUserLabel");
   expect(output).not.toContain("function duplicates in files");

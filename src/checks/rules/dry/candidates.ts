@@ -58,6 +58,7 @@ function buildDryFunctionDescriptor(
 
   return {
     absolutePath: file.absolutePath,
+    behaviorFingerprint: fingerprintState.behaviorFingerprint,
     characterCount: sourceText.length,
     classification,
     fingerprint: fingerprintState.fingerprint,

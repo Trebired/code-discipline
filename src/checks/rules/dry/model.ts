@@ -5,6 +5,7 @@ import { isTypeScriptFamilyExtension } from "../../../shared/languages.js";
 
 type DryFunctionDescriptor = {
   absolutePath: string;
+  behaviorFingerprint?: string;
   characterCount: number;
   classification: "method" | "standalone";
   fingerprint: string;

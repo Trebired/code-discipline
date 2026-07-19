@@ -2,6 +2,12 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 3.4.2
+
+- Added normalized behavioral fingerprints for simple pure `dry` functions, so equivalent implementations can be grouped despite different names, parameters, locals, formatting, or expression-vs-block structure.
+- Normalized common equivalent helper forms including nullish fallbacks, const-then-return wrappers, branch returns, finite number guards, and object guard checks while preserving behavior-changing distinctions.
+- Added the `normalized-behavior` DRY signal and fixtures covering representative text, number, clamp, and object helpers without hardcoding project-specific names or paths.
+
 ## 3.4.1
 
 - Added `dry.minDuplicateCharacters`, defaulting to `0`, so DRY duplicate detection no longer has a hidden minimum function size.

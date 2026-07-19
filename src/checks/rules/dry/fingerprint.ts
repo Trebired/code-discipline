@@ -1,6 +1,7 @@
 import ts from "typescript";
 
 import { stableSerialize } from "../../../shared/utils.js";
+import { createBehaviorFingerprint } from "./behavior/index.js";
 import { serializeFunctionLike } from "./serialize/bindings.js";
 import { createSerializeContext } from "./serialize/context.js";
 import { serializeNode } from "./serialize/node.js";
@@ -10,16 +11,21 @@ function createFunctionFingerprint(
   sourceFile: ts.SourceFile,
 ): {
   fingerprint: string;
+  behaviorFingerprint?: string;
   normalized: unknown;
+  normalizedBehavior?: unknown;
   usesOuterScope: boolean;
   usesRestrictedRuntime: boolean;
 } {
   const context = createSerializeContext();
   const normalized = serializeFunctionLike(node, context, sourceFile, serializeNode);
+  const behavior = createBehaviorFingerprint(node, sourceFile);
 
   return {
+    behaviorFingerprint: behavior?.fingerprint,
     fingerprint: stableSerialize(normalized),
     normalized,
+    normalizedBehavior: behavior?.normalized,
     usesOuterScope: context.usesOuterScope,
     usesRestrictedRuntime: context.usesRestrictedRuntime,
   };

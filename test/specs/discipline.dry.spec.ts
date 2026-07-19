@@ -118,7 +118,7 @@ test("reports short DRY duplicates by default", async () => {
         expect.objectContaining({ filePath: "src/one.ts", line: 1, name: "buildTinyLabel" }),
         expect.objectContaining({ filePath: "src/two.ts", line: 1, name: "formatTinyLabel" }),
       ],
-      signals: ["exact-normalized", "similar-structure"],
+      signals: ["exact-normalized", "normalized-behavior", "similar-structure"],
     },
   });
 });

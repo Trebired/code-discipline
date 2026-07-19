@@ -440,10 +440,12 @@ code-discipline fix remove-comments
 Reports duplicate function groups across the configured source tree.
 
 - exact normalized structure is reported with 100% confidence
+- equivalent normalized behavior in simple pure functions is reported with 100% confidence
 - matching function names are reported with 100% confidence
 - highly similar normalized function structure is reported as a likely duplicate
 - `minDuplicateCharacters` defaults to `0`; raise it if you only want larger duplicate functions
-- whitespace, comments, function names, and local identifier names do not matter
+- whitespace, comments, function names, parameter names, and local identifier names do not matter
+- expression bodies, single-return blocks, simple const-then-return blocks, nullish fallback forms, finite number guards, and object guard branches are normalized when their behavior matches
 - reports are neutral groups, not "file A duplicates file B"
 - `dry` is check-only
 
@@ -456,7 +458,7 @@ dry: {
 Example output:
 
 ```txt
-dry duplicate function group: 2 functions, confidence 1, signals: exact-normalized, similar-structure
+dry duplicate function group: 2 functions, confidence 1, signals: exact-normalized, normalized-behavior, similar-structure
   - src/one.ts:1 buildUserLabel
   - src/two.ts:1 formatUserLabel
 ```
