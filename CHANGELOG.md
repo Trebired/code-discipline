@@ -2,6 +2,12 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 3.4.1
+
+- Added `dry.minDuplicateCharacters`, defaulting to `0`, so DRY duplicate detection no longer has a hidden minimum function size.
+- Applied the configurable threshold consistently across exact-normalized, matching-name, and similar-structure DRY signals.
+- Documented the new DRY threshold and kept this repository's own self-check threshold explicit at `300`.
+
 ## 3.4.0
 
 - Rendered `dry` duplicate groups in CLI output with the duplicated function names, file paths, line numbers, confidence, and `signals: ...` metadata.

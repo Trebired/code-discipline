@@ -6,6 +6,7 @@ import ts from "typescript";
 import { parseSource } from "../../../imports/module-specifiers.js";
 import type { ScannedSourceFile, SourceProgressObserver } from "../../../imports/types.js";
 import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
+import type { NormalizedDryRule } from "../../types.js";
 import { createFunctionFingerprint, resolveClassification, resolveFunctionDisplayName } from "./fingerprint.js";
 import { collectDuplicateGroups } from "./matching.js";
 import type { DuplicateGroup } from "./matching.js";
@@ -153,10 +154,11 @@ function createDryGroupViolation(group: DuplicateGroup): CodeDisciplineViolation
 
 async function collectDrySourceDuplicateViolations(
   sourceFiles: ScannedSourceFile[],
+  rule: NormalizedDryRule,
   observer?: SourceProgressObserver,
 ): Promise<CodeDisciplineViolation[]> {
   const functions = await collectDryFunctions(sourceFiles, observer);
-  return collectDuplicateGroups(functions, observer).map(createDryGroupViolation);
+  return collectDuplicateGroups(functions, rule, observer).map(createDryGroupViolation);
 }
 
 export { collectDrySourceDuplicateViolations };

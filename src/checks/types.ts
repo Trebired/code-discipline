@@ -76,6 +76,7 @@ type RemoveCommentsRuleOptions = {
 };
 
 type DryRuleOptions = {
+  minDuplicateCharacters?: number;
   severity?: CodeDisciplineRuleSeverity;
 };
 
@@ -181,6 +182,7 @@ type NormalizedFolderizeCompoundFilesRule = {
 };
 
 type NormalizedDryRule = {
+  minDuplicateCharacters: number;
   severity: CodeDisciplineRuleSeverity;
 };
 

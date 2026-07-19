@@ -141,6 +141,24 @@ test("rejects non-array removeComments.exclude values", async () => {
   });
 });
 
+test("rejects invalid dry minDuplicateCharacters values", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
+
+  await expect(checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      dry: {
+        // @ts-expect-error invalid min
+        minDuplicateCharacters: "300",
+      },
+    },
+  })).rejects.toMatchObject({
+    code: "invalid_config",
+  });
+});
+
 test("rejects removed sourceExtensions config in favor of excludeSourceExtensions", async () => {
   const projectRoot = tempProject();
 

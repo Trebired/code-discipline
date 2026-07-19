@@ -45,6 +45,19 @@ function normalizeSeverity(
   });
 }
 
+function normalizeMinDuplicateCharacters(value: unknown): number {
+  if (value === undefined) return 0;
+
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new InvalidCodeDisciplineConfigError("dry.minDuplicateCharacters must be a finite number when provided", {
+      rule: "dry",
+      value,
+    });
+  }
+
+  return Math.max(0, Math.floor(value as number));
+}
+
 function normalizeMaxFileLinesRule(rule: MaxFileLinesRuleOptions | undefined) {
   if (!rule) return undefined;
   const source = rule as Record<string, unknown>;
@@ -216,6 +229,7 @@ function normalizeDryRule(rule: DryRuleOptions | undefined): NormalizedDryRule |
   assertRemovedKeys("dry", source, ["enabled", "stop", "fix", "helpers"]);
 
   return {
+    minDuplicateCharacters: normalizeMinDuplicateCharacters(rule.minDuplicateCharacters),
     severity: normalizeSeverity(rule.severity, "dry"),
   };
 }

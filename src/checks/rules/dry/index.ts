@@ -12,7 +12,7 @@ async function collectDryViolations(
   if (!rule) return [];
 
   const drySourceFiles = filterDrySourceFiles(sourceFiles);
-  return collectDrySourceDuplicateViolations(drySourceFiles, options.progressObserver);
+  return collectDrySourceDuplicateViolations(drySourceFiles, rule, options.progressObserver);
 }
 
 export { collectDryViolations };

@@ -1,6 +1,7 @@
 import { performance } from "node:perf_hooks";
 
 import type { SourceProgressObserver } from "../../../imports/types.js";
+import type { NormalizedDryRule } from "../../types.js";
 import type { DryFunctionDescriptor } from "./model.js";
 import {
   collectCandidateIndexes,
@@ -12,8 +13,6 @@ import {
 } from "./similarity.js";
 import type { SimilarityIndex, SimilarityRecord } from "./similarity.js";
 
-const MIN_SOURCE_DUPLICATE_CHARACTERS = 300;
-const MIN_NAME_DUPLICATE_CHARACTERS = 300;
 const SIMILARITY_THRESHOLD = 0.99;
 const DRY_MATCH_CHUNK_SIZE = 500;
 
@@ -86,7 +85,7 @@ function unionIndexGroup(state: DuplicateState, indexes: number[], signal: Dupli
   }
 }
 
-function indexExactAndNamedFunctions(functions: DryFunctionDescriptor[]): {
+function indexExactAndNamedFunctions(functions: DryFunctionDescriptor[], options: NormalizedDryRule): {
   indexesByFingerprint: Map<string, number[]>;
   indexesByName: Map<string, number[]>;
 } {
@@ -95,13 +94,13 @@ function indexExactAndNamedFunctions(functions: DryFunctionDescriptor[]): {
 
   for (let index = 0; index < functions.length; index += 1) {
     const descriptor = functions[index]!;
-    if (descriptor.characterCount >= MIN_SOURCE_DUPLICATE_CHARACTERS) {
+    if (isWithinDuplicateSizeThreshold(descriptor, options)) {
       const indexes = indexesByFingerprint.get(descriptor.fingerprint) ?? [];
       indexes.push(index);
       indexesByFingerprint.set(descriptor.fingerprint, indexes);
     }
 
-    if (shouldIndexNameDuplicate(descriptor)) {
+    if (shouldIndexNameDuplicate(descriptor, options)) {
       const indexes = indexesByName.get(descriptor.normalizedName!) ?? [];
       indexes.push(index);
       indexesByName.set(descriptor.normalizedName!, indexes);
@@ -111,15 +110,19 @@ function indexExactAndNamedFunctions(functions: DryFunctionDescriptor[]): {
   return { indexesByFingerprint, indexesByName };
 }
 
-function shouldIndexNameDuplicate(descriptor: DryFunctionDescriptor): boolean {
+function isWithinDuplicateSizeThreshold(descriptor: DryFunctionDescriptor, options: NormalizedDryRule): boolean {
+  return descriptor.characterCount >= options.minDuplicateCharacters;
+}
+
+function shouldIndexNameDuplicate(descriptor: DryFunctionDescriptor, options: NormalizedDryRule): boolean {
   return descriptor.classification === "standalone"
     && descriptor.topLevel
-    && descriptor.characterCount >= MIN_NAME_DUPLICATE_CHARACTERS
+    && isWithinDuplicateSizeThreshold(descriptor, options)
     && Boolean(descriptor.normalizedName);
 }
 
-function unionExactAndNamedGroups(state: DuplicateState, functions: DryFunctionDescriptor[]): void {
-  const { indexesByFingerprint, indexesByName } = indexExactAndNamedFunctions(functions);
+function unionExactAndNamedGroups(state: DuplicateState, functions: DryFunctionDescriptor[], options: NormalizedDryRule): void {
+  const { indexesByFingerprint, indexesByName } = indexExactAndNamedFunctions(functions, options);
 
   for (const indexes of indexesByFingerprint.values()) {
     unionIndexGroup(state, indexes, "exact-normalized");
@@ -151,7 +154,12 @@ function emitMatchChunk(args: {
   });
 }
 
-function compareSimilarityCandidates(record: SimilarityRecord, index: SimilarityIndex, state: DuplicateState): number {
+function compareSimilarityCandidates(
+  record: SimilarityRecord,
+  index: SimilarityIndex,
+  state: DuplicateState,
+  minDuplicateCharacters: number,
+): number {
   let comparedCandidates = 0;
 
   for (const candidateIndex of collectCandidateIndexes(index, record)) {
@@ -160,7 +168,7 @@ function compareSimilarityCandidates(record: SimilarityRecord, index: Similarity
     if (!candidate || index.seenPairs.has(pairKey)) continue;
 
     index.seenPairs.add(pairKey);
-    if (!shouldCompareSimilarity(candidate.descriptor, record.descriptor)) continue;
+    if (!shouldCompareSimilarity(candidate.descriptor, record.descriptor, minDuplicateCharacters)) continue;
 
     comparedCandidates += 1;
     const similarity = jaccardSimilarity(candidate.trigrams, record.trigrams);
@@ -175,6 +183,7 @@ function compareSimilarityCandidates(record: SimilarityRecord, index: Similarity
 function applyIndexedSimilarity(
   functions: DryFunctionDescriptor[],
   state: DuplicateState,
+  options: NormalizedDryRule,
   observer: SourceProgressObserver | undefined,
   startedAt: number,
 ): number {
@@ -182,9 +191,9 @@ function applyIndexedSimilarity(
   let comparedCandidates = 0;
 
   for (let functionIndex = 0; functionIndex < functions.length; functionIndex += 1) {
-    const record = createSimilarityRecord(functions[functionIndex]!, functionIndex);
+    const record = createSimilarityRecord(functions[functionIndex]!, functionIndex, options.minDuplicateCharacters);
     if (record) {
-      comparedCandidates += compareSimilarityCandidates(record, index, state);
+      comparedCandidates += compareSimilarityCandidates(record, index, state, options.minDuplicateCharacters);
       indexSimilarityRecord(index, record);
     }
 
@@ -240,12 +249,16 @@ function buildDuplicateGroups(functions: DryFunctionDescriptor[], state: Duplica
   return groups;
 }
 
-function collectDuplicateGroups(functions: DryFunctionDescriptor[], observer?: SourceProgressObserver): DuplicateGroup[] {
+function collectDuplicateGroups(
+  functions: DryFunctionDescriptor[],
+  options: NormalizedDryRule,
+  observer?: SourceProgressObserver,
+): DuplicateGroup[] {
   const startedAt = performance.now();
   const state = createDuplicateState(functions.length);
 
-  unionExactAndNamedGroups(state, functions);
-  const comparedCandidates = applyIndexedSimilarity(functions, state, observer, startedAt);
+  unionExactAndNamedGroups(state, functions, options);
+  const comparedCandidates = applyIndexedSimilarity(functions, state, options, observer, startedAt);
   const groups = buildDuplicateGroups(functions, state);
 
   observer?.({

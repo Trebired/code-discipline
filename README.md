@@ -162,7 +162,9 @@ export default defineCodeDisciplineConfig({
         aliasPrefix: "#",
       },
     },
-    dry: {},
+    dry: {
+      minDuplicateCharacters: 0,
+    },
   },
 });
 ```
@@ -440,18 +442,23 @@ Reports duplicate function groups across the configured source tree.
 - exact normalized structure is reported with 100% confidence
 - matching function names are reported with 100% confidence
 - highly similar normalized function structure is reported as a likely duplicate
+- `minDuplicateCharacters` defaults to `0`; raise it if you only want larger duplicate functions
 - whitespace, comments, function names, and local identifier names do not matter
 - reports are neutral groups, not "file A duplicates file B"
 - `dry` is check-only
 
 ```ts
-dry: {}
+dry: {
+  minDuplicateCharacters: 0,
+}
 ```
 
 Example output:
 
 ```txt
-dry multiple files function duplicates in files: src/one.ts, src/two.ts
+dry duplicate function group: 2 functions, confidence 1, signals: exact-normalized, similar-structure
+  - src/one.ts:1 buildUserLabel
+  - src/two.ts:1 formatUserLabel
 ```
 
 ## Lifecycle Hooks

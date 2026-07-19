@@ -85,6 +85,73 @@ test("reports DRY duplicates despite renamed parameters and comments", async () 
   });
 });
 
+test("reports short DRY duplicates by default", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/one.ts", [
+    "export function buildTinyLabel() {",
+    "  return \"same\";",
+    "}",
+    "",
+  ].join("\n"));
+  writeFile(projectRoot, "src/two.ts", [
+    "export function formatTinyLabel() {",
+    "  return \"same\";",
+    "}",
+    "",
+  ].join("\n"));
+
+  const result = await checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      dry: {},
+    },
+  });
+
+  expect(result.ok).toBe(false);
+  expect(result.violations).toHaveLength(1);
+  expect(result.violations[0]).toMatchObject({
+    rule: "dry",
+    message: "duplicate function group",
+    details: {
+      functions: [
+        expect.objectContaining({ filePath: "src/one.ts", line: 1, name: "buildTinyLabel" }),
+        expect.objectContaining({ filePath: "src/two.ts", line: 1, name: "formatTinyLabel" }),
+      ],
+      signals: ["exact-normalized", "similar-structure"],
+    },
+  });
+});
+
+test("honors dry minDuplicateCharacters", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/one.ts", [
+    "export function buildTinyLabel() {",
+    "  return \"same\";",
+    "}",
+    "",
+  ].join("\n"));
+  writeFile(projectRoot, "src/two.ts", [
+    "export function formatTinyLabel() {",
+    "  return \"same\";",
+    "}",
+    "",
+  ].join("\n"));
+
+  const result = await checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      dry: {
+        minDuplicateCharacters: 300,
+      },
+    },
+  });
+
+  expect(result.ok).toBe(true);
+  expect(result.violations).toHaveLength(0);
+});
+
 test("reports same-name DRY duplicates as high confidence", async () => {
   const projectRoot = tempProject();
 

@@ -74,6 +74,26 @@ function runCommand(command: string, args: string[], options: {
   cwd?: string;
   env?: NodeJS.ProcessEnv;
 } = {}) {
+  if (typeof Bun !== "undefined") {
+    const result = Bun.spawnSync([command, ...args], {
+      cwd: options.cwd,
+      env: {
+        ...process.env,
+        ...options.env,
+      },
+      stderr: "pipe",
+      stdout: "pipe",
+    });
+
+    return {
+      error: undefined,
+      signal: null,
+      status: result.exitCode,
+      stderr: new TextDecoder().decode(result.stderr),
+      stdout: new TextDecoder().decode(result.stdout),
+    };
+  }
+
   return spawnSync(command, args, {
     cwd: options.cwd,
     env: {

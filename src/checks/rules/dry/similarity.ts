@@ -1,6 +1,5 @@
 import type { DryFunctionDescriptor } from "./model.js";
 
-const MIN_SOURCE_DUPLICATE_CHARACTERS = 300;
 const SIMILARITY_LENGTH_BUCKET_SIZE = 250;
 const SIMILARITY_MINHASH_COUNT = 16;
 const SIMILARITY_MINHASH_BAND_SIZE = 4;
@@ -52,8 +51,12 @@ function createSimilarityBands(minhashes: number[]): string[] {
   return bands;
 }
 
-function createSimilarityRecord(descriptor: DryFunctionDescriptor, index: number): SimilarityRecord | null {
-  if (descriptor.characterCount < MIN_SOURCE_DUPLICATE_CHARACTERS) return null;
+function createSimilarityRecord(
+  descriptor: DryFunctionDescriptor,
+  index: number,
+  minDuplicateCharacters: number,
+): SimilarityRecord | null {
+  if (descriptor.characterCount < minDuplicateCharacters) return null;
 
   const trigrams = getTrigrams(descriptor.normalizedText);
   const minhashes = [...trigrams].map(hashString).sort((left, right) => left - right).slice(0, SIMILARITY_MINHASH_COUNT);
@@ -80,8 +83,12 @@ function jaccardSimilarity(left: Set<string>, right: Set<string>): number {
   return union === 0 ? 1 : intersection / union;
 }
 
-function shouldCompareSimilarity(left: DryFunctionDescriptor, right: DryFunctionDescriptor): boolean {
-  if (left.characterCount < MIN_SOURCE_DUPLICATE_CHARACTERS || right.characterCount < MIN_SOURCE_DUPLICATE_CHARACTERS) return false;
+function shouldCompareSimilarity(
+  left: DryFunctionDescriptor,
+  right: DryFunctionDescriptor,
+  minDuplicateCharacters: number,
+): boolean {
+  if (left.characterCount < minDuplicateCharacters || right.characterCount < minDuplicateCharacters) return false;
 
   const smaller = Math.min(left.normalizedText.length, right.normalizedText.length);
   const larger = Math.max(left.normalizedText.length, right.normalizedText.length);
