@@ -1,5 +1,5 @@
 import { normalizeSyncImportsOptions } from "../config/normalize/sync-imports-options.js";
-import { syncPackageJsonImportsFromTsconfigPaths } from "../runtime/imports-sync.js";
+import { syncPackageJsonImportsFromAliasMap, syncPackageJsonImportsFromTsconfigPaths } from "../runtime/imports-sync.js";
 import { resolveLogger } from "../shared/logging.js";
 import { supportsSyncImports } from "../shared/languages.js";
 import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
@@ -62,12 +62,20 @@ async function applySyncFixes(
     ? await syncTsconfigAliases(normalized, sourceFiles, logger)
     : plannedAliases;
   const rewriteState = await rewriteSourceImports(sourceFiles, aliasState.aliasRecords, normalized, logger);
-  const packageJsonImportsState = await syncPackageJsonImportsFromTsconfigPaths({
-    configPath: normalized.configPath,
-    options: normalized.packageJsonImports,
-    projectRoot: normalized.projectRoot,
-    tsconfigPath: normalized.tsconfigPath,
-  });
+  const packageJsonImportsState = normalized.importsFolder.enabled && aliasState.aliasPathMap
+    ? await syncPackageJsonImportsFromAliasMap({
+      aliasPathMap: aliasState.aliasPathMap,
+      cleanWhenDisabled: true,
+      configPath: normalized.configPath,
+      options: normalized.packageJsonImports,
+      projectRoot: normalized.projectRoot,
+    })
+    : await syncPackageJsonImportsFromTsconfigPaths({
+      configPath: normalized.configPath,
+      options: normalized.packageJsonImports,
+      projectRoot: normalized.projectRoot,
+      tsconfigPath: normalized.tsconfigPath,
+    });
   const result: SyncImportsResult = {
     ok: true,
     violationCount: 0,

@@ -126,7 +126,7 @@ function ensureBuiltCli() {
 
 function writeErroringCliFixture(projectRoot: string) {
   writeFile(projectRoot, "src/too-long.ts", "one\n2\n3\n");
-  writeFile(projectRoot, "tb.code-discipline.ts", [
+  writeFile(projectRoot, "code-discipline.ts", [
     "export default {",
     "  rules: {",
     "    maxFileLines: {",

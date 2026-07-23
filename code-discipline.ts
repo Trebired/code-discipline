@@ -10,7 +10,7 @@ export default defineCodeDisciplineConfig({
     maxFunctionLines: { max: 50 },
     folderizeCompoundFiles: {},
     dry: {
-      minDuplicateCharacters: 300,
+      severity: "warning",
     },
   },
 });

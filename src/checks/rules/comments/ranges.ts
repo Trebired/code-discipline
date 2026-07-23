@@ -1,6 +1,6 @@
 import ts from "typescript";
 
-import { isGoExtension, isRustExtension, isScssExtension, isTypeScriptFamilyExtension } from "../../../shared/languages.js";
+import { isGoExtension, isRustExtension, isStyleExtension, isTypeScriptFamilyExtension } from "../../../shared/languages.js";
 
 type CommentKind = "line" | "block";
 
@@ -248,7 +248,7 @@ function collectCommentRanges(text: string, extension: string): CommentRange[] {
   if (isTypeScriptFamilyExtension(extension)) return collectTypeScriptCommentRanges(text, extension);
   if (isGoExtension(extension)) return collectGoCommentRanges(text);
   if (isRustExtension(extension)) return collectRustCommentRanges(text);
-  if (isScssExtension(extension)) return collectGoCommentRanges(text);
+  if (isStyleExtension(extension)) return collectGoCommentRanges(text);
   return [];
 }
 

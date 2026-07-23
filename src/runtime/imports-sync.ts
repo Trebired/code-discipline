@@ -124,6 +124,63 @@ function buildPackageJsonImports(context: PackageJsonImportsContext): {
   };
 }
 
+async function collectPackageJsonAliasImports(args: {
+  configPath?: string;
+  options: CodeDisciplinePackageJsonImportsOptions | undefined;
+  projectRoot: string;
+}): Promise<Record<string, string>> {
+  const packageJsonPath = resolvePackageJsonPath(args.projectRoot, args.configPath, args.options?.packageJsonPath);
+  if (!await pathExists(packageJsonPath)) return {};
+
+  const packageJson = await readPackageJson(packageJsonPath);
+  const imports = packageJson.imports
+    && typeof packageJson.imports === "object"
+    && !Array.isArray(packageJson.imports)
+    ? packageJson.imports
+    : {};
+  const aliasPrefixes = normalizeAliasPrefixes(args.options?.aliasPrefix);
+  const entries = Object.entries(imports)
+    .filter(([aliasId, target]) => aliasPrefixes.some((prefix) => aliasId.startsWith(prefix)) && typeof target === "string")
+    .sort(([left], [right]) => left.localeCompare(right));
+
+  return Object.fromEntries(entries) as Record<string, string>;
+}
+
+function buildPackageJsonImportsFromAliasMap(args: {
+  aliasPathMap: Record<string, string>;
+  aliasPrefixes: string[];
+  packageJson: PackageJsonWithImports;
+  writeManagedImports: boolean;
+}): {
+  managedImports: Record<string, string>;
+  nextImports: Record<string, string>;
+} {
+  const shouldManageAlias = (aliasId: string) => args.aliasPrefixes.some((prefix) => aliasId.startsWith(prefix));
+  const existingImports = args.packageJson.imports
+    && typeof args.packageJson.imports === "object"
+    && !Array.isArray(args.packageJson.imports)
+    ? args.packageJson.imports
+    : {};
+  const preservedImports = Object.fromEntries(
+    Object.entries(existingImports).filter(([aliasId]) => !shouldManageAlias(aliasId)),
+  );
+  const managedImports = args.writeManagedImports
+    ? Object.fromEntries(
+      Object.entries(args.aliasPathMap)
+        .filter(([aliasId]) => shouldManageAlias(aliasId))
+        .map(([aliasId, target]) => [aliasId, normalizePackageImportTarget(target)]),
+    ) as Record<string, string>
+    : {};
+
+  return {
+    managedImports,
+    nextImports: Object.fromEntries(
+      Object.entries({ ...preservedImports, ...managedImports })
+        .sort(([left], [right]) => left.localeCompare(right)),
+    ) as Record<string, string>,
+  };
+}
+
 async function collectPackageJsonImportsSyncState(args: {
   configPath?: string;
   options: CodeDisciplinePackageJsonImportsOptions | undefined;
@@ -148,6 +205,48 @@ async function collectPackageJsonImportsSyncState(args: {
   };
 }
 
+async function collectPackageJsonImportsSyncStateFromAliasMap(args: {
+  aliasPathMap: Record<string, string>;
+  cleanWhenDisabled?: boolean;
+  configPath?: string;
+  options: CodeDisciplinePackageJsonImportsOptions | undefined;
+  projectRoot: string;
+}): Promise<RuntimeImportsSyncResult | null> {
+  const enabled = args.options?.enabled === true;
+  if (!enabled && !args.cleanWhenDisabled) return null;
+
+  const packageJsonPath = resolvePackageJsonPath(args.projectRoot, args.configPath, args.options?.packageJsonPath);
+  if (!await pathExists(packageJsonPath)) {
+    if (!enabled) return null;
+    throw new InvalidCodeDisciplineConfigError("packageJsonImports package.json was not found", {
+      filePath: packageJsonPath,
+    });
+  }
+
+  const packageJson = await readPackageJson(packageJsonPath);
+  const aliasPrefixes = normalizeAliasPrefixes(args.options?.aliasPrefix);
+  const { managedImports, nextImports } = buildPackageJsonImportsFromAliasMap({
+    aliasPathMap: args.aliasPathMap,
+    aliasPrefixes,
+    packageJson,
+    writeManagedImports: enabled,
+  });
+  const nextPackageJson: PackageJsonWithImports = { ...packageJson };
+
+  if (Object.keys(nextImports).length > 0) {
+    nextPackageJson.imports = nextImports;
+  } else {
+    delete nextPackageJson.imports;
+  }
+
+  return {
+    changed: stableSerialize(packageJson) !== stableSerialize(nextPackageJson),
+    importsCount: enabled ? Object.keys(managedImports).length : 0,
+    nextImports,
+    packageJsonPath,
+  };
+}
+
 async function syncPackageJsonImportsFromTsconfigPaths(args: {
   configPath?: string;
   options: CodeDisciplinePackageJsonImportsOptions | undefined;
@@ -167,5 +266,36 @@ async function syncPackageJsonImportsFromTsconfigPaths(args: {
   return state;
 }
 
-export { collectPackageJsonImportsSyncState, syncPackageJsonImportsFromTsconfigPaths };
+async function syncPackageJsonImportsFromAliasMap(args: {
+  aliasPathMap: Record<string, string>;
+  cleanWhenDisabled?: boolean;
+  configPath?: string;
+  options: CodeDisciplinePackageJsonImportsOptions | undefined;
+  projectRoot: string;
+}): Promise<RuntimeImportsSyncResult | null> {
+  const state = await collectPackageJsonImportsSyncStateFromAliasMap(args);
+  if (!state || !state.changed) return state;
+
+  const packageJson = await readPackageJson(state.packageJsonPath);
+  const nextPackageJson: PackageJsonWithImports = {
+    ...packageJson,
+  };
+
+  if (Object.keys(state.nextImports).length > 0) {
+    nextPackageJson.imports = state.nextImports;
+  } else {
+    delete nextPackageJson.imports;
+  }
+
+  await fs.writeFile(state.packageJsonPath, toStableJson(nextPackageJson));
+  return state;
+}
+
+export {
+  collectPackageJsonAliasImports,
+  collectPackageJsonImportsSyncState,
+  collectPackageJsonImportsSyncStateFromAliasMap,
+  syncPackageJsonImportsFromAliasMap,
+  syncPackageJsonImportsFromTsconfigPaths,
+};
 export type { RuntimeImportsSyncResult };

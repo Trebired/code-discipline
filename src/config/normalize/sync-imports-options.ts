@@ -41,6 +41,8 @@ async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise
     throw new InvalidTsconfigPathError(tsconfigPath);
   }
 
+  const importsFolderEnabled = options.importsFolder?.enabled ?? false;
+
   return {
     ...source,
     configPath: options.configPath,
@@ -52,6 +54,15 @@ async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise
       randomLength: Math.max(1, Math.floor(options.alias?.randomLength ?? DEFAULT_ALIAS_RANDOM_LENGTH)),
     },
     allowRelative: options.allowRelative ?? DEFAULT_ALLOW_RELATIVE,
+    importsFolder: {
+      enabled: importsFolderEnabled,
+      dir: options.importsFolder?.dir ?? "imports",
+      maxEntriesPerFile: Math.max(1, Math.floor(options.importsFolder?.maxEntriesPerFile ?? 1000)),
+    },
+    generatedTsconfig: {
+      enabled: options.generatedTsconfig?.enabled ?? importsFolderEnabled,
+      path: options.generatedTsconfig?.path ?? ".code-discipline/generated/tsconfig.paths.json",
+    },
     packageJsonImports: options.packageJsonImports,
     logging: normalizeLoggingOptions(options.logging, "logging"),
     progressObserver: options.progressObserver,

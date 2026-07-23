@@ -12,12 +12,7 @@ import { InvalidCodeDisciplineConfigError } from "../shared/errors.js";
 import { pathExists } from "../shared/utils.js";
 
 const DEFAULT_CONFIG_FILENAMES = [
-  "tb.code-discipline.ts",
-  "tb.code-discipline.mts",
-  "tb.code-discipline.mjs",
-  "tb.code-discipline.js",
-  "tb.code-discipline.cts",
-  "tb.code-discipline.cjs",
+  "code-discipline.ts",
 ];
 
 const NODE_TRANSPILE_EXTENSIONS = new Set([

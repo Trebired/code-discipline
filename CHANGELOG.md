@@ -2,6 +2,14 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.0.0
+
+- Changed config auto-discovery to `code-discipline.ts` only; legacy `tb.code-discipline.*` filenames are no longer auto-discovered unless passed explicitly with `--config`.
+- Added `syncImports.importsFolder` support so alias maps can live in sorted `imports/*.json` source-of-truth files with deterministic max-entry splitting.
+- Added generated tsconfig path projection through `syncImports.generatedTsconfig`, with root `tsconfig.json` extending the generated file and inline `compilerOptions.paths` removed in imports-folder mode.
+- Added imports-folder migration from existing root `tsconfig.json` paths and `package.json#imports`, while keeping `package.json` clean unless `packageJsonImports.enabled` is explicitly true.
+- Added CSS support alongside SCSS for source scanning and removable comment handling.
+
 ## 3.4.2
 
 - Added normalized behavioral fingerprints for simple pure `dry` functions, so equivalent implementations can be grouped despite different names, parameters, locals, formatting, or expression-vs-block structure.
@@ -120,7 +128,7 @@ All notable changes to `@trebired/code-discipline` will be documented here.
 
 - Removed the top-level `code-discipline sync` command and the runtime `sync` / `startup` modes.
 - Changed the package-owned surface to `check` and `fix`, with positional rule selectors such as `code-discipline fix sync-imports`.
-- Changed config auto-discovery to the new `tb.code-discipline.*` filenames and added package-owned TypeScript config loading for Node and Bun.
+- Changed config auto-discovery to package-owned TypeScript config loading for Node and Bun.
 - Added the `dry` rule for canonical helper registration, duplicate detection, and full-removal standalone autofix.
 - Moved optional `package.json#imports` syncing under `rules.syncImports.packageJsonImports`.
 - Changed `fixCodeDiscipline()` from a folderization-only mutation path into a rule-ordered fix pipeline with `ruleResults`.

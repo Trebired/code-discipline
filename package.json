@@ -1,6 +1,6 @@
 {
   "name": "@trebired/code-discipline",
-  "version": "3.4.2",
+  "version": "4.0.0",
   "description": "Configurable codebase discipline checks and rule-driven fixes for Bun and Node.js projects.",
   "license": "AGPL-3.0-only",
   "keywords": [

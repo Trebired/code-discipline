@@ -73,6 +73,17 @@ type PackageJsonImportsSyncOptions = {
   packageJsonPath?: string;
 };
 
+type ImportsFolderSyncOptions = {
+  enabled?: boolean;
+  dir?: string;
+  maxEntriesPerFile?: number;
+};
+
+type GeneratedTsconfigSyncOptions = {
+  enabled?: boolean;
+  path?: string;
+};
+
 type AliasStrategyInput = {
   absolutePath: string;
   relativeFromProjectRoot: string;
@@ -112,6 +123,8 @@ type SyncImportsOptions = {
     randomLength?: number;
   };
   allowRelative?: string[] | AllowRelativeFn;
+  importsFolder?: ImportsFolderSyncOptions;
+  generatedTsconfig?: GeneratedTsconfigSyncOptions;
   packageJsonImports?: PackageJsonImportsSyncOptions;
   logging?: LoggingOptions;
   progressObserver?: SourceProgressObserver;
@@ -152,6 +165,8 @@ type NormalizedSyncImportsOptions = SourceScanOptions & {
     randomLength: number;
   };
   allowRelative: string[] | AllowRelativeFn;
+  importsFolder: Required<ImportsFolderSyncOptions>;
+  generatedTsconfig: Required<GeneratedTsconfigSyncOptions>;
   packageJsonImports?: PackageJsonImportsSyncOptions;
   logging: LoggingOptions;
   progressObserver?: SourceProgressObserver;
@@ -165,6 +180,7 @@ type ScannedSourceFile = {
 };
 
 type TsconfigJson = {
+  extends?: string | string[];
   compilerOptions?: {
     paths?: Record<string, string[]>;
     baseUrl?: string;
@@ -183,6 +199,14 @@ type SyncAliasesResult = {
   aliasesChanged: boolean;
   aliasesCount: number;
   aliasRecords: AliasRecord[];
+  aliasPathMap?: Record<string, string>;
+  drift?: {
+    generatedTsconfigChanged?: boolean;
+    importsFolderChanged?: boolean;
+    inlineTsconfigPaths?: boolean;
+    maxEntriesExceeded?: Array<{ filePath: string; count: number; max: number }>;
+    rootExtendsChanged?: boolean;
+  };
   tsconfig: TsconfigJson;
 };
 
@@ -203,6 +227,8 @@ export type {
   AllowRelativeContext,
   AllowRelativeFn,
   ExcludeDirsOptions,
+  GeneratedTsconfigSyncOptions,
+  ImportsFolderSyncOptions,
   NormalizedSyncImportsOptions,
   RewriteFileResult,
   RewriteResult,

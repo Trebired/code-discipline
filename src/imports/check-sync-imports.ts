@@ -4,7 +4,7 @@ import path from "node:path";
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "../checks/progress.js";
 import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
 import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
-import { collectPackageJsonImportsSyncState } from "../runtime/imports-sync.js";
+import { collectPackageJsonImportsSyncState, collectPackageJsonImportsSyncStateFromAliasMap } from "../runtime/imports-sync.js";
 import { supportsSyncImports } from "../shared/languages.js";
 import { planTsconfigAliases } from "./aliases.js";
 import { collectModuleSpecifiers } from "./module-specifiers.js";
@@ -31,20 +31,33 @@ async function collectSyncImportViolations(
     violations.push({
       rule: "sync-imports",
       fix: true,
-      filePath: path.relative(options.projectRoot, options.tsconfigPath) || "tsconfig.json",
-      message: "tsconfig paths are out of sync with the current source tree",
+      filePath: options.importsFolder.enabled
+        ? path.relative(options.projectRoot, options.tsconfigPath) || "tsconfig.json"
+        : path.relative(options.projectRoot, options.tsconfigPath) || "tsconfig.json",
+      message: options.importsFolder.enabled
+        ? "imports folder and generated tsconfig are out of sync"
+        : "tsconfig paths are out of sync with the current source tree",
       details: {
         aliasesCount: aliasPlan.aliasesCount,
+        drift: aliasPlan.drift,
       },
     });
   }
 
-  const packageJsonSyncState = await collectPackageJsonImportsSyncState({
-    configPath: options.configPath,
-    options: options.packageJsonImports,
-    projectRoot: options.projectRoot,
-    tsconfigPath: options.tsconfigPath,
-  });
+  const packageJsonSyncState = options.importsFolder.enabled && aliasPlan.aliasPathMap
+    ? await collectPackageJsonImportsSyncStateFromAliasMap({
+      aliasPathMap: aliasPlan.aliasPathMap,
+      cleanWhenDisabled: true,
+      configPath: options.configPath,
+      options: options.packageJsonImports,
+      projectRoot: options.projectRoot,
+    })
+    : await collectPackageJsonImportsSyncState({
+      configPath: options.configPath,
+      options: options.packageJsonImports,
+      projectRoot: options.projectRoot,
+      tsconfigPath: options.tsconfigPath,
+    });
 
   if (packageJsonSyncState?.changed) {
     violations.push({

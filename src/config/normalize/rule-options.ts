@@ -217,6 +217,8 @@ function normalizeSyncImportsRule(rule: CodeDisciplineSyncImportsRuleOptions | u
     gitignorePath: rule?.gitignorePath,
     alias: rule?.alias,
     allowRelative: rule?.allowRelative ?? DEFAULT_ALLOW_RELATIVE,
+    importsFolder: rule?.importsFolder,
+    generatedTsconfig: rule?.generatedTsconfig,
     packageJsonImports: rule?.packageJsonImports,
     logging: normalizeLoggingOptions(rule?.logging, "syncImports.logging"),
     severity: normalizeSeverity(rule.severity, "syncImports"),

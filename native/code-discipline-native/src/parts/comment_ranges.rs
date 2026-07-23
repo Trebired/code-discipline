@@ -282,7 +282,7 @@ fn collect_comment_ranges(text: &str, extension: &str) -> Vec<CommentRange> {
         return collect_rust_comment_ranges(text);
     }
 
-    if is_scss_extension(extension) {
+    if is_style_extension(extension) {
         return collect_c_like_comment_ranges(text, false, false);
     }
 

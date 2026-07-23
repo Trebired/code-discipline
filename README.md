@@ -85,14 +85,9 @@ Long check and fix runs emit chunked rule progress in the CLI, including current
 
 The CLI auto-discovers a top-level config module in this order:
 
-- `tb.code-discipline.ts`
-- `tb.code-discipline.mts`
-- `tb.code-discipline.mjs`
-- `tb.code-discipline.js`
-- `tb.code-discipline.cts`
-- `tb.code-discipline.cjs`
+- `code-discipline.ts`
 
-`tb.code-discipline.ts` is the recommended default.
+`code-discipline.ts` is the only auto-discovered config filename.
 
 You can still point at an explicit module path:
 
@@ -108,7 +103,7 @@ Rule severity is optional and now supports only `severity: "warning" | "fail"`. 
 
 `evasionGuards` is a top-level opt-in system because it checks suspicious compliance patterns across rules instead of being a normal style rule.
 
-Example `tb.code-discipline.ts`:
+Example `code-discipline.ts`:
 
 ```ts
 import { defineCodeDisciplineConfig } from "@trebired/code-discipline";
@@ -157,8 +152,17 @@ export default defineCodeDisciplineConfig({
         strategy: "relative-path-slug",
       },
       allowRelative: ["./"],
-      packageJsonImports: {
+      importsFolder: {
         enabled: true,
+        dir: "imports",
+        maxEntriesPerFile: 1000,
+      },
+      generatedTsconfig: {
+        enabled: true,
+        path: ".code-discipline/generated/tsconfig.paths.json",
+      },
+      packageJsonImports: {
+        enabled: false,
         aliasPrefix: "#",
       },
     },
@@ -386,8 +390,11 @@ Validates and optionally fixes:
 - `tsconfig.compilerOptions.paths`
 - relative source imports that should become aliases
 - optional `package.json#imports` drift through `packageJsonImports`
+- optional folder-backed alias maps through `importsFolder`
 
 `syncImports` only rewrites JavaScript and TypeScript module files. Mixed-language repositories can still include Go and Rust under the same `sourceRoot`; those files are ignored by alias syncing instead of causing parser failures.
+
+When `importsFolder.enabled` is true, sorted JSON files such as `imports/1.json` become the alias source of truth. `code-discipline fix` migrates root `tsconfig.json` paths and managed `package.json#imports` entries into that folder, splits entries by `maxEntriesPerFile`, recreates the generated tsconfig projection, removes inline root `compilerOptions.paths`, and makes root `tsconfig.json` extend the generated file. Keep `packageJsonImports.enabled` false for dev-only aliases; set it true for dist/runtime workflows that need Node package imports materialized.
 
 `excludeDirs` now groups scan exclusions in one place, so you can add explicit directories through `excludeDirs.dirs` and opt into root `.gitignore` directory entries through `excludeDirs.gitignore`.
 
@@ -415,7 +422,7 @@ The rule supports the same language families this package currently scans for di
 - JavaScript and TypeScript
 - Go
 - Rust
-- SCSS
+- SCSS and CSS
 
 It keeps string, regex, rune, char, byte-string, and raw-string content intact while removing actual source comments. When a removed comment occupied the whole line, that empty line is removed in the same file rewrite.
 

@@ -46,7 +46,7 @@ test("auto-discovers a config module for plain cli usage", async () => {
   const stderr: string[] = [];
 
   writeFile(projectRoot, "src/too-long.ts", "one\n2\n3\n");
-  writeFile(projectRoot, "tb.code-discipline.ts", [
+  writeFile(projectRoot, "code-discipline.ts", [
     "export default {",
     "  rules: {",
     "    maxFileLines: {",
@@ -283,7 +283,7 @@ test("saves check output to a top-level report file", async () => {
   const reportName = "cd-report-2026-05-26-19-00-00.txt";
 
   writeFile(projectRoot, "src/too-long.ts", "one\n2\n3\n");
-  writeFile(projectRoot, "tb.code-discipline.ts", [
+  writeFile(projectRoot, "code-discipline.ts", [
     "export default {",
     "  rules: {",
     "    maxFileLines: { max: 2 },",

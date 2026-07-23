@@ -187,7 +187,7 @@ test("loads TypeScript config modules with relative local imports", async () => 
     "}",
     "",
   ].join("\n"));
-  writeFile(projectRoot, "tb.code-discipline.ts", [
+  writeFile(projectRoot, "code-discipline.ts", [
     "import { defineLocalConfig } from \"./src/config-helper.js\";",
     "",
     "export default defineLocalConfig({",

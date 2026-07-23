@@ -54,6 +54,15 @@ async function buildNormalizedSyncOptions(
       randomLength: rule.alias?.randomLength ?? 12,
     },
     allowRelative: rule.allowRelative ?? ["./"],
+    importsFolder: {
+      enabled: rule.importsFolder?.enabled ?? false,
+      dir: rule.importsFolder?.dir ?? "imports",
+      maxEntriesPerFile: Math.max(1, Math.floor(rule.importsFolder?.maxEntriesPerFile ?? 1000)),
+    },
+    generatedTsconfig: {
+      enabled: rule.generatedTsconfig?.enabled ?? rule.importsFolder?.enabled ?? false,
+      path: rule.generatedTsconfig?.path ?? ".code-discipline/generated/tsconfig.paths.json",
+    },
     packageJsonImports: rule.packageJsonImports,
     logging: rule.logging ?? options.logging,
   };

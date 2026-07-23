@@ -12,6 +12,7 @@ import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js"
 import { resolveProjectPathTarget } from "./resolve.js";
 import { generateAliasId } from "./strategies.js";
 import { isInsideDirectory, parseTsconfigJson, pathExists, stableSerialize, toPosixPath, toStableJson, wait } from "../shared/utils.js";
+import { planImportsFolderAliases, writeImportsFolderAliases } from "./folder.js";
 
 const TSCONFIG_READ_RETRY_ATTEMPTS = 20;
 const TSCONFIG_READ_RETRY_DELAY_MS = 50;
@@ -134,6 +135,10 @@ async function syncTsconfigAliases(
   const result = await planTsconfigAliases(options, sourceFiles, logger);
 
   if (result.aliasesChanged) {
+    if (options.importsFolder.enabled && result.aliasPathMap) {
+      await writeImportsFolderAliases(options, result.aliasPathMap);
+    }
+
     await fs.writeFile(options.tsconfigPath, toStableJson(result.tsconfig));
     logger.success("aliases-written", `aliases written count=${result.aliasesCount}`, {
       tsconfigPath: options.tsconfigPath,
@@ -154,6 +159,10 @@ async function planTsconfigAliases(
   sourceFiles: ScannedSourceFile[],
   logger?: NormalizedCodeDisciplineLogger,
 ): Promise<SyncAliasesResult> {
+  if (options.importsFolder.enabled) {
+    return planImportsFolderAliases(options, sourceFiles, logger);
+  }
+
   const { config, originalConfig } = await readTsconfig(options, logger);
   const sourceFilesByPath = new Map(sourceFiles.map((file) => [file.absolutePath, file]));
   const compilerOptions = { ...(config.compilerOptions ?? {}) };

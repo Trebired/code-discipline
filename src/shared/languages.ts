@@ -13,7 +13,7 @@ const TYPESCRIPT_FAMILY_EXTENSIONS = new Set([
 
 const GO_FAMILY_EXTENSIONS = new Set([".go"]);
 const RUST_FAMILY_EXTENSIONS = new Set([".rs"]);
-const SCSS_FAMILY_EXTENSIONS = new Set([".scss"]);
+const STYLE_FAMILY_EXTENSIONS = new Set([".scss", ".css"]);
 
 function normalizeExtension(value: string): string {
   return value.startsWith(".") ? value.toLowerCase() : path.extname(value).toLowerCase();
@@ -32,7 +32,11 @@ function isRustExtension(value: string): boolean {
 }
 
 function isScssExtension(value: string): boolean {
-  return SCSS_FAMILY_EXTENSIONS.has(normalizeExtension(value));
+  return normalizeExtension(value) === ".scss";
+}
+
+function isStyleExtension(value: string): boolean {
+  return STYLE_FAMILY_EXTENSIONS.has(normalizeExtension(value));
 }
 
 function supportsSyncImports(value: string): boolean {
@@ -48,13 +52,14 @@ function supportsMaxFunctionLines(value: string): boolean {
 }
 
 function supportsRemoveComments(value: string): boolean {
-  return isTypeScriptFamilyExtension(value) || isGoExtension(value) || isRustExtension(value) || isScssExtension(value);
+  return isTypeScriptFamilyExtension(value) || isGoExtension(value) || isRustExtension(value) || isStyleExtension(value);
 }
 
 export {
   isGoExtension,
   isRustExtension,
   isScssExtension,
+  isStyleExtension,
   isTypeScriptFamilyExtension,
   supportsFolderizationFix,
   supportsMaxFunctionLines,

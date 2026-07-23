@@ -175,3 +175,7 @@ fn is_rust_extension(extension: &str) -> bool {
 fn is_scss_extension(extension: &str) -> bool {
     extension == ".scss"
 }
+
+fn is_style_extension(extension: &str) -> bool {
+    matches!(extension, ".scss" | ".css")
+}

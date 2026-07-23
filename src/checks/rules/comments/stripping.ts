@@ -1,4 +1,5 @@
 import { loadNativeBinding } from "../../../native/native.js";
+import { isStyleExtension } from "../../../shared/languages.js";
 import { collectCommentRanges } from "./ranges.js";
 import type { CommentRange } from "./ranges.js";
 
@@ -108,6 +109,10 @@ function stripCommentsJs(text: string, extension: string, options: CommentStripO
 }
 
 function stripComments(text: string, extension: string, options: CommentStripOptions = {}): CommentStripResult {
+  if (isStyleExtension(extension)) {
+    return stripCommentsJs(text, extension, options);
+  }
+
   const native = loadNativeBinding();
   if (native) {
     return JSON.parse(native.stripComments(JSON.stringify({

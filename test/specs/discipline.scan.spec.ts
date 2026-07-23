@@ -35,6 +35,7 @@ test("reports removable comments without mistaking literal contents for comments
 
   const result = await checkCodeDiscipline({
     projectRoot,
+    progressObserver() {},
     rules: {
       removeComments: {},
     },
@@ -238,6 +239,42 @@ test("supports scss files in the max-file-lines rule", async () => {
       max: 2,
     },
   });
+});
+
+test("supports css files in source scanning and removable comments", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/styles.css", [
+    ".button {",
+    "  /* remove */",
+    "  color: red;",
+    "}",
+    "",
+  ].join("\n"));
+
+  const result = await checkCodeDiscipline({
+    projectRoot,
+    progressObserver() {},
+    rules: {
+      removeComments: {},
+      maxFileLines: {
+        max: 2,
+      },
+    },
+  });
+
+  expect(result.ok).toBe(false);
+  expect(result.violations).toContainEqual(expect.objectContaining({
+    rule: "max-file-lines",
+    filePath: "src/styles.css",
+  }));
+  expect(result.violations).toContainEqual(expect.objectContaining({
+    rule: "remove-comments",
+    filePath: "src/styles.css",
+    details: expect.objectContaining({
+      blockComments: 1,
+    }),
+  }));
 });
 
 test("combines default excludeDirs, explicit excludeDirs, and opt-in .gitignore excludes", async () => {

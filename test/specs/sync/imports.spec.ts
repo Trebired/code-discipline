@@ -7,8 +7,8 @@ import {
   createRelativePathHashAlias,
   createRelativePathSlugAlias,
   syncImports,
-} from "../../src/index.js";
-import { captureCallbackLogger, captureTrebiredLogger, readFile, readJson, tempProject, writeFile } from "./helpers.js";
+} from "../../../src/index.js";
+import { captureCallbackLogger, captureTrebiredLogger, readFile, readJson, tempProject, writeFile } from "../helpers.js";
 
 test("exports stable slug and hash strategies", () => {
   expect(createRelativePathSlugAlias({
