@@ -2,6 +2,12 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.0.1
+
+- Kept this repository's own `dry` rule enforced during self-checks and removed the duplicate helper groups introduced around the 4.0.0 release.
+- Changed the package self-test script to run the local built `dist/cli.js` directly instead of going through the self-referential `node_modules` symlink.
+- Supersedes the already-published `4.0.0` package artifact; npm package versions are immutable and cannot be overwritten.
+
 ## 4.0.0
 
 - Changed config auto-discovery to `code-discipline.ts` only; legacy `tb.code-discipline.*` filenames are no longer auto-discovered unless passed explicitly with `--config`.
