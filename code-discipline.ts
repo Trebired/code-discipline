@@ -9,8 +9,6 @@ export default defineCodeDisciplineConfig({
     maxFileLines: { max: 350 },
     maxFunctionLines: { max: 50 },
     folderizeCompoundFiles: {},
-    dry: {
-      severity: "warning",
-    },
+    dry: {},
   },
 });

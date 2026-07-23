@@ -4,7 +4,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-import type { SyncImportsLogEvent } from "../../src/index.js";
+import type { CodeDisciplineRuleName, SyncImportsLogEvent } from "../../src/index.js";
 
 type TrebiredLogRow = {
   method: string;
@@ -33,6 +33,23 @@ function readJson(projectRoot: string, relativePath: string): any {
 
 function fileExists(projectRoot: string, relativePath: string): boolean {
   return fs.existsSync(path.join(projectRoot, relativePath));
+}
+
+function expectedViolationResult(rules: CodeDisciplineRuleName[]) {
+  return {
+    ok: false,
+    error: true,
+    noop: false,
+    status: 409,
+    error_code: "discipline-check-violations",
+    message: "check found 1 violation(s).",
+    data: {
+      violationCount: 1,
+    },
+    details: {
+      rules,
+    },
+  };
 }
 
 function captureTrebiredLogger() {
@@ -143,6 +160,7 @@ export {
   captureCallbackLogger,
   captureTrebiredLogger,
   ensureBuiltCli,
+  expectedViolationResult,
   fileExists,
   packageRoot,
   readFile,

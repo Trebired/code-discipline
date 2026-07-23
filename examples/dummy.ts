@@ -4,17 +4,18 @@ import path from "node:path";
 
 import { syncImports } from "../src/index.js";
 
-function writeFile(rootDir: string, relativePath: string, contents: string): void {
-  const filePath = path.join(rootDir, relativePath);
-  fs.mkdirSync(path.dirname(filePath), { recursive: true });
-  fs.writeFileSync(filePath, contents);
+function writeDemoFile(rootDir: string, relativePath: string, contents: string): void {
+  const destination = path.resolve(rootDir, relativePath);
+  const parentDirectory = path.dirname(destination);
+  fs.mkdirSync(parentDirectory, { recursive: true });
+  fs.writeFileSync(destination, contents, "utf8");
 }
 
 async function run(): Promise<void> {
   const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), "code-discipline-demo-"));
 
-  writeFile(projectRoot, "tsconfig.json", "{}\n");
-  writeFile(
+  writeDemoFile(projectRoot, "tsconfig.json", "{}\n");
+  writeDemoFile(
     projectRoot,
     "src/feature/app.ts",
     [
@@ -24,8 +25,8 @@ async function run(): Promise<void> {
       "",
     ].join("\n"),
   );
-  writeFile(projectRoot, "src/feature/local.ts", "export const local = true;\n");
-  writeFile(projectRoot, "src/shared/util.ts", "export const util = true;\n");
+  writeDemoFile(projectRoot, "src/feature/local.ts", "export const local = true;\n");
+  writeDemoFile(projectRoot, "src/shared/util.ts", "export const util = true;\n");
 
   const result = await syncImports({
     projectRoot,

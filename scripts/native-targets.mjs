@@ -16,7 +16,7 @@ const RELEASE_NATIVE_TARGETS = [
   "aarch64-apple-darwin",
 ];
 
-function linuxLibcVariant() {
+function releaseLinuxLibcVariant() {
   const report = typeof process.report?.getReport === "function" ? process.report.getReport() : null;
   const header = report && typeof report === "object" ? report.header : null;
   if (header && header.glibcVersionRuntime) return "gnu";
@@ -26,7 +26,7 @@ function linuxLibcVariant() {
 
 function expectedHostBinaryName() {
   if (process.platform === "linux") {
-    const libc = linuxLibcVariant();
+    const libc = releaseLinuxLibcVariant();
     if (process.arch === "x64") return `linux-x64-${libc}.node`;
     if (process.arch === "arm64") return `linux-arm64-${libc}.node`;
     return "";

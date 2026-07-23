@@ -9,7 +9,7 @@ import { rewriteSourceImports } from "./rewrite.js";
 import { scanSourceFiles } from "./scan.js";
 import type { NormalizedSyncImportsOptions, SyncImportsOptions, SyncImportsResult } from "./types.js";
 
-function summarizeViolations(violations: CodeDisciplineViolation[]) {
+function summarizeSyncImportViolations(violations: CodeDisciplineViolation[]) {
   return {
     ok: violations.length === 0,
     violationCount: violations.length,
@@ -27,7 +27,7 @@ function createCheckOnlyResult(args: {
   violations: CodeDisciplineViolation[];
 }): SyncImportsResult {
   return {
-    ...summarizeViolations(args.violations),
+    ...summarizeSyncImportViolations(args.violations),
     mutations_allowed: false,
     aliases_changed: args.aliasesChanged,
     aliases_count: args.aliasesCount,

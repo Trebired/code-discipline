@@ -18,6 +18,12 @@ function normalizeRelativePath(value: string): string {
   return normalized === "." ? "" : normalized;
 }
 
+function normalizeDotPrefixedTarget(value: string): string {
+  const normalized = toPosixPath(value).replace(/^\.\/+/, "").replace(/\/+/g, "/");
+  if (normalized.startsWith("../")) return normalized;
+  return normalized.startsWith("./") ? normalized : `./${normalized.replace(/^\/+/g, "")}`;
+}
+
 function ensureDotExtension(value: string): string {
   return value.startsWith(".") ? value.toLowerCase() : `.${value.toLowerCase()}`;
 }
@@ -167,6 +173,7 @@ export {
   isDirectory,
   isFile,
   isInsideDirectory,
+  normalizeDotPrefixedTarget,
   normalizeRelativePath,
   parseTsconfigJson,
   pathExists,

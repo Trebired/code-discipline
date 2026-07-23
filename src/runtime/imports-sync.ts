@@ -5,9 +5,9 @@ import type { CodeDisciplinePackageJsonImportsOptions } from "../checks/types.js
 import { InvalidCodeDisciplineConfigError } from "../shared/errors.js";
 import {
   parseTsconfigJson,
+  normalizeDotPrefixedTarget,
   pathExists,
   stableSerialize,
-  toPosixPath,
   toStableJson,
 } from "../shared/utils.js";
 
@@ -39,12 +39,6 @@ function resolvePackageJsonPath(
   if (path.isAbsolute(input)) return path.resolve(input);
   const baseDir = configPath ? path.dirname(configPath) : projectRoot;
   return path.resolve(baseDir, input);
-}
-
-function normalizePackageImportTarget(target: string): string {
-  const normalized = toPosixPath(target).replace(/^\.\/+/, "");
-  if (normalized.startsWith("../")) return normalized;
-  return normalized.startsWith("./") ? normalized : `./${normalized.replace(/^\/+/g, "")}`;
 }
 
 function normalizeAliasPrefixes(value: string | string[] | undefined): string[] {
@@ -112,7 +106,7 @@ function buildPackageJsonImports(context: PackageJsonImportsContext): {
   const managedImports = Object.fromEntries(
     Object.entries(context.compilerPaths)
       .filter(([aliasId, targets]) => shouldManageAlias(aliasId) && Array.isArray(targets) && targets.length > 0)
-      .map(([aliasId, targets]) => [aliasId, normalizePackageImportTarget(String(targets[0]))]),
+      .map(([aliasId, targets]) => [aliasId, normalizeDotPrefixedTarget(String(targets[0]))]),
   );
 
   return {
@@ -168,7 +162,7 @@ function buildPackageJsonImportsFromAliasMap(args: {
     ? Object.fromEntries(
       Object.entries(args.aliasPathMap)
         .filter(([aliasId]) => shouldManageAlias(aliasId))
-        .map(([aliasId, target]) => [aliasId, normalizePackageImportTarget(target)]),
+        .map(([aliasId, target]) => [aliasId, normalizeDotPrefixedTarget(target)]),
     ) as Record<string, string>
     : {};
 

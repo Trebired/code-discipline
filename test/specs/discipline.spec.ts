@@ -1,25 +1,7 @@
 import { expect, test } from "bun:test";
 
 import { checkCodeDiscipline, defineCodeDisciplineConfig } from "../../src/index.js";
-import type { CodeDisciplineRuleName } from "../../src/index.js";
-import { captureTrebiredLogger, tempProject, writeFile } from "./helpers.js";
-
-function expectedViolationResult(rules: CodeDisciplineRuleName[]) {
-  return {
-    ok: false,
-    error: true,
-    noop: false,
-    status: 409,
-    error_code: "discipline-check-violations",
-    message: "check found 1 violation(s).",
-    data: {
-      violationCount: 1,
-    },
-    details: {
-      rules,
-    },
-  };
-}
+import { captureTrebiredLogger, expectedViolationResult, tempProject, writeFile } from "./helpers.js";
 
 test("exports defineCodeDisciplineConfig as an identity helper", () => {
   const config = defineCodeDisciplineConfig({

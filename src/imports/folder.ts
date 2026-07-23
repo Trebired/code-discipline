@@ -4,6 +4,7 @@ import path from "node:path";
 import { collectPackageJsonAliasImports } from "../runtime/imports-sync.js";
 import {
   isInsideDirectory,
+  normalizeDotPrefixedTarget,
   parseTsconfigJson,
   pathExists,
   stableSerialize,
@@ -27,12 +28,6 @@ type ImportsFolderState = {
   map: Record<string, string>;
   stableFiles: Record<string, Record<string, string>>;
 };
-
-function normalizeRootRelativeTarget(targetPath: string): string {
-  const normalized = toPosixPath(targetPath).replace(/^\.\/+/, "").replace(/\/+/g, "/");
-  if (normalized.startsWith("../")) return normalized;
-  return normalized.startsWith("./") ? normalized : `./${normalized.replace(/^\/+/g, "")}`;
-}
 
 function resolveImportsFolderPath(options: NormalizedSyncImportsOptions): string {
   const input = options.importsFolder.dir;
@@ -166,7 +161,7 @@ async function readImportsFolderState(options: NormalizedSyncImportsOptions): Pr
         throw new Error(`${filePath} alias ${aliasId} must point to a string target path`);
       }
 
-      normalizedFile[aliasId] = normalizeRootRelativeTarget(target);
+      normalizedFile[aliasId] = normalizeDotPrefixedTarget(target);
       if (!(aliasId in map)) map[aliasId] = normalizedFile[aliasId];
     }
 
@@ -208,7 +203,7 @@ function collectTsconfigAliasPaths(tsconfig: TsconfigJson): Record<string, strin
 
   for (const [aliasId, targets] of Object.entries(paths).sort(([left], [right]) => left.localeCompare(right))) {
     const firstTarget = targets[0];
-    if (typeof firstTarget === "string") aliasPathMap[aliasId] = normalizeRootRelativeTarget(firstTarget);
+    if (typeof firstTarget === "string") aliasPathMap[aliasId] = normalizeDotPrefixedTarget(firstTarget);
   }
 
   return aliasPathMap;
@@ -295,7 +290,7 @@ async function planImportsFolderAliases(
     const preservedAlias = preservedAliasesByPath.get(file.absolutePath);
     const aliasId = preservedAlias ?? generateAliasId(file, options, Array.from(reservedIds));
     reservedIds.add(aliasId);
-    managedAliasPathMap[aliasId] = normalizeRootRelativeTarget(file.relativeFromProjectRoot);
+    managedAliasPathMap[aliasId] = normalizeDotPrefixedTarget(file.relativeFromProjectRoot);
     aliasRecords.push({
       id: aliasId,
       absolutePath: file.absolutePath,

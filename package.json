@@ -56,7 +56,7 @@
     "prepublishOnly": "bun run typecheck && bun run test && bun run build",
     "publish:npm": "bun run build:native:matrix && npm publish",
     "publish:npm:host": "bun run build:native && npm publish",
-    "test": "bun node_modules/@trebired/code-discipline/dist/cli.js gate -- bun test",
+    "test": "bun dist/cli.js gate -- bun test",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

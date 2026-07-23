@@ -1,24 +1,10 @@
 import { expect, test } from "bun:test";
 
 import { checkCodeDiscipline, resetNativeBindingForTests, scanSourceFiles } from "../../src/index.js";
-import type { CodeDisciplineRuleName } from "../../src/index.js";
-import { tempProject, writeFile } from "./helpers.js";
+import { expectedViolationResult, tempProject, writeFile } from "./helpers.js";
 
-function expectedViolationResult(rules: CodeDisciplineRuleName[]) {
-  return {
-    ok: false,
-    error: true,
-    noop: false,
-    status: 409,
-    error_code: "discipline-check-violations",
-    message: `check found 1 violation(s).`,
-    data: {
-      violationCount: 1,
-    },
-    details: {
-      rules,
-    },
-  };
+function forceTypeScriptRulePath(event: unknown): void {
+  void event;
 }
 
 test("reports removable comments without mistaking literal contents for comments", async () => {
@@ -35,7 +21,7 @@ test("reports removable comments without mistaking literal contents for comments
 
   const result = await checkCodeDiscipline({
     projectRoot,
-    progressObserver() {},
+    progressObserver: forceTypeScriptRulePath,
     rules: {
       removeComments: {},
     },
@@ -254,7 +240,7 @@ test("supports css files in source scanning and removable comments", async () =>
 
   const result = await checkCodeDiscipline({
     projectRoot,
-    progressObserver() {},
+    progressObserver: forceTypeScriptRulePath,
     rules: {
       removeComments: {},
       maxFileLines: {

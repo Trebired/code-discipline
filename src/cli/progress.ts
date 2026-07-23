@@ -19,13 +19,14 @@ type TimedTaskResult<T> = {
 };
 
 const LOADING_FRAMES = ["-", "\\", "|", "/"];
+const disabledAnimationStep = () => undefined;
 
 function createLoadingAnimation(label: string, enabled: boolean): LoadingAnimation {
   if (!enabled) {
     return {
-      pause() {},
-      resume() {},
-      stop() {},
+      pause: disabledAnimationStep,
+      resume: disabledAnimationStep,
+      stop: disabledAnimationStep,
     };
   }
 

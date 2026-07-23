@@ -44,7 +44,7 @@ function supportsSyncImports(value: string): boolean {
 }
 
 function supportsFolderizationFix(value: string): boolean {
-  return isTypeScriptFamilyExtension(value);
+  return supportsSyncImports(value);
 }
 
 function supportsMaxFunctionLines(value: string): boolean {

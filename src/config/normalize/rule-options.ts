@@ -18,7 +18,7 @@ import type {
   NormalizedEvasionGuardsOptions,
   RemoveCommentsRuleOptions,
 } from "../../checks/types.js";
-import { normalizeRelativePath } from "../../shared/utils.js";
+import { normalizeRelativePath, uniqueStrings } from "../../shared/utils.js";
 import { normalizeLoggingOptions } from "./logging-options.js";
 
 function assertRemovedKeys(ruleName: string, source: Record<string, unknown>, keys: string[]) {
@@ -297,10 +297,6 @@ function normalizeEvasionGuardsOptions(options: EvasionGuardsOptions | undefined
     runtimeCodeHiding: source.runtimeCodeHiding ?? true,
     severity: normalizeSeverity(source.severity, "evasionGuards"),
   };
-}
-
-function uniqueStrings(values: string[]): string[] {
-  return Array.from(new Set(values));
 }
 
 export {
