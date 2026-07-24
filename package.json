@@ -1,6 +1,6 @@
 {
   "name": "@trebired/code-discipline",
-  "version": "4.2.1",
+  "version": "4.2.2",
   "description": "Configurable codebase discipline checks and rule-driven fixes for Bun and Node.js projects.",
   "license": "AGPL-3.0-only",
   "keywords": [
@@ -12,7 +12,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/Trebired/code-discipline"
+    "url": "git+https://github.com/Trebired/code-discipline.git"
   },
   "bugs": {
     "url": "https://github.com/Trebired/code-discipline/issues"
@@ -31,7 +31,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "code-discipline": "./dist/cli.js"
+    "code-discipline": "dist/cli.js"
   },
   "exports": {
     ".": {

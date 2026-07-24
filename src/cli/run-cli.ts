@@ -9,6 +9,7 @@ import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
 import { loadResolvedCodeDisciplineConfig } from "../config/index.js";
 import { runGatedCommand } from "../runtime/gate-command.js";
 import { isDirectExecution } from "../shared/utils.js";
+import { createDefaultCliLogger, writeLogText } from "./logging.js";
 import { createCliScanObserver, formatDuration, withLoadingAnimation } from "./progress.js";
 
 type CliRunOptions = {
@@ -340,8 +341,17 @@ async function runGateCommand(args: {
 async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliRunResult> {
   const cwd = options.cwd ?? process.cwd();
   const now = options.now ?? new Date();
-  const stdout = options.stdout ?? ((text: string) => process.stdout.write(text));
-  const stderr = options.stderr ?? ((text: string) => process.stderr.write(text));
+  const useDefaultLogger = !options.stdout && !options.stderr;
+  const logger = useDefaultLogger ? createDefaultCliLogger() : null;
+  const stdout = options.stdout ?? (useDefaultLogger
+    ? ((text: string) => writeLogText(logger!, "info", text))
+    : ((text: string) => process.stdout.write(text)));
+  const stderr = options.stderr ?? (useDefaultLogger
+    ? ((text: string) => writeLogText(logger!, "info", text))
+    : ((text: string) => process.stderr.write(text)));
+  const fail = options.stderr ?? (useDefaultLogger
+    ? ((text: string) => writeLogText(logger!, "fail", text))
+    : ((text: string) => process.stderr.write(text)));
   const showLoadingAnimation = !options.stderr && Boolean(process.stderr.isTTY) && !process.env.CI;
   const [command, ...rest] = argv;
 
@@ -377,11 +387,11 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
       return await runGateCommand(commandArgs);
     }
 
-    stderr(`Unknown command: ${command}\n`);
+    fail(`Unknown command: ${command}\n`);
     stderr(renderHelp());
     return { exitCode: 1 };
   } catch (error) {
-    stderr(`${error instanceof Error ? error.message : String(error)}\n`);
+    fail(`${error instanceof Error ? error.message : String(error)}\n`);
     return { exitCode: 1 };
   }
 }

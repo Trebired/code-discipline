@@ -1,8 +1,9 @@
 import { expect, test } from "bun:test";
+import path from "node:path";
 
 import { runCli } from "../../src/cli.js";
 import { resetNativeBindingForTests } from "../../src/index.js";
-import { fileExists, readFile, tempProject, writeFile } from "./helpers.js";
+import { fileExists, packageRoot, readFile, runCommand, tempProject, writeErroringCliFixture, writeFile } from "./helpers.js";
 
 function writeMaxFileLinesConfig(projectRoot: string) {
   writeFile(projectRoot, "discipline.config.mjs", [
@@ -66,6 +67,22 @@ test("auto-discovers a config module for plain cli usage", async () => {
   expect(result.exitCode).toBe(1);
   expect(stderr.join("")).toContain("Total check:");
   expect(stdout.join("")).toContain("Found 1 discipline violation(s).");
+});
+
+test("default cli output uses the Trebired console logger", async () => {
+  const projectRoot = tempProject();
+  const cliPath = path.join(packageRoot, "src", "cli", "run-cli.ts");
+
+  writeErroringCliFixture(projectRoot);
+
+  const result = runCommand("bun", [cliPath, "check"], {
+    cwd: projectRoot,
+  });
+
+  expect(result.status).toBe(1);
+  expect(result.stdout).toContain("[INFO, trebired.code-discipline.cli] max-file-lines src/too-long.ts");
+  expect(result.stdout).toContain("[INFO, trebired.code-discipline.cli] Found 1 discipline violation(s).");
+  expect(result.stdout).toContain("[INFO, trebired.code-discipline.cli] Total check:");
 });
 
 test("runs check through an explicit config module and exits non-zero when violations exist", async () => {
