@@ -7,84 +7,18 @@ import type {
   SourceScanProgressEvent,
 } from "../imports/types.js";
 
-type LoadingAnimation = {
-  pause: () => void;
-  resume: () => void;
-  stop: () => void;
-};
-
 type TimedTaskResult<T> = {
   elapsedMs: number;
   result: T;
 };
 
-const LOADING_FRAMES = ["-", "\\", "|", "/"];
-const disabledAnimationStep = () => undefined;
-
-function createLoadingAnimation(label: string, enabled: boolean): LoadingAnimation {
-  if (!enabled) {
-    return {
-      pause: disabledAnimationStep,
-      resume: disabledAnimationStep,
-      stop: disabledAnimationStep,
-    };
-  }
-
-  let frameIndex = 0;
-  let running = true;
-
-  const render = () => {
-    if (!running) return;
-    process.stderr.write(`\r${label} ${LOADING_FRAMES[frameIndex]}`);
-  };
-
-  const clear = () => {
-    process.stderr.write(`\r${" ".repeat(label.length + 2)}\r`);
-  };
-
-  render();
-  const timer = setInterval(() => {
-    frameIndex = (frameIndex + 1) % LOADING_FRAMES.length;
-    render();
-  }, 120);
-
-  return {
-    pause() {
-      clear();
-    },
-    resume() {
-      render();
-    },
-    stop() {
-      running = false;
-      clearInterval(timer);
-      clear();
-    },
-  };
-}
-
-async function withLoadingAnimation<T>(
-  label: string,
-  enabled: boolean,
-  task: (writeLine: (text: string) => void) => Promise<T>,
-): Promise<TimedTaskResult<T>> {
+async function timeTask<T>(task: () => Promise<T>): Promise<TimedTaskResult<T>> {
   const startedAt = performance.now();
-  const animation = createLoadingAnimation(label, enabled);
-  const writeLine = (text: string) => {
-    animation.pause();
-    process.stderr.write(text);
-    animation.resume();
+  const result = await task();
+  return {
+    elapsedMs: performance.now() - startedAt,
+    result,
   };
-
-  try {
-    const result = await task(writeLine);
-    return {
-      elapsedMs: performance.now() - startedAt,
-      result,
-    };
-  } finally {
-    animation.stop();
-  }
 }
 
 function formatDuration(milliseconds: number): string {
@@ -151,5 +85,5 @@ function createCliScanObserver(writeLine: (text: string) => void) {
   };
 }
 
-export { createCliScanObserver, formatDuration, withLoadingAnimation };
+export { createCliScanObserver, formatDuration, timeTask };
 export type { TimedTaskResult };

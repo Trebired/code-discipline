@@ -90,6 +90,36 @@ test("default cli output uses the Trebired console logger", async () => {
   expect(stripAnsi(result.stdout)).toContain("[INFO, trebired.code-discipline.cli] Total check:");
 });
 
+test("default cli output routes warning violations through the warning logger level", async () => {
+  const projectRoot = tempProject();
+  const cliPath = path.join(packageRoot, "src", "cli", "run-cli.ts");
+
+  writeFile(projectRoot, "src/app.spec.ts", "export const covered = true;\n");
+  writeFile(projectRoot, "code-discipline.ts", [
+    "export default {",
+    "  rules: {",
+    "    bannedFiles: {",
+    "      patterns: [{ glob: \"**/*.spec.ts\" }],",
+    "      severity: \"warning\",",
+    "    },",
+    "  },",
+    "};",
+    "",
+  ].join("\n"));
+
+  const result = runCommand("bun", [cliPath, "check"], {
+    cwd: projectRoot,
+  });
+  const output = stripAnsi(`${result.stdout}\n${result.stderr}`);
+
+  expect(result.status).toBe(0);
+  expect(`${result.stdout}${result.stderr}`).toContain("\x1b[");
+  expect(output).toContain("[WARN, trebired.code-discipline.cli] banned-files src/app.spec.ts");
+  expect(output).toContain("[WARN, trebired.code-discipline.cli] Found 1 discipline warning(s).");
+  expect(output).not.toContain("warning banned-files");
+  expect(output).not.toContain("Scanning codebase");
+});
+
 test("runs check through an explicit config module and exits non-zero when violations exist", async () => {
   const projectRoot = tempProject();
   const stdout: string[] = [];

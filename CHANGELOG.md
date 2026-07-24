@@ -2,6 +2,11 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.2.4
+
+- Removed the CLI loading spinner so progress logs never interleave with `Scanning codebase` frames.
+- Routed warning-only CLI violations and warning-only summaries through the `@trebired/logger` warning level without prefixing violation messages with `warning`.
+
 ## 4.2.3
 
 - Routed TTY progress output through the same `@trebired/logger` CLI writer and restored logger-managed console colors.
