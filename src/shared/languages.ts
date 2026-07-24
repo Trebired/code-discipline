@@ -40,7 +40,7 @@ function isStyleExtension(value: string): boolean {
 }
 
 function supportsSyncImports(value: string): boolean {
-  return isTypeScriptFamilyExtension(value);
+  return isTypeScriptFamilyExtension(value) || isScssExtension(value);
 }
 
 function supportsFolderizationFix(value: string): boolean {

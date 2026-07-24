@@ -3,6 +3,7 @@ import path from "node:path";
 
 import type { NormalizedSyncImportsOptions } from "./types.js";
 import { isInsideDirectory } from "../shared/utils.js";
+import { isScssExtension } from "../shared/languages.js";
 
 type ResolveRelativeImportOptions = Pick<NormalizedSyncImportsOptions, "sourceExtensions" | "sourceRoot">;
 
@@ -57,6 +58,37 @@ async function resolveFileCandidate(candidatePath: string, sourceExtensions: str
   return null;
 }
 
+function buildSassFileCandidates(candidatePath: string): string[] {
+  const candidates: string[] = [];
+  const extension = path.extname(candidatePath).toLowerCase();
+  const dirname = path.dirname(candidatePath);
+  const basename = path.basename(candidatePath);
+  const partialPath = path.join(dirname, `_${basename}`);
+
+  if (extension === ".scss") {
+    pushUniqueCandidate(candidates, candidatePath);
+    pushUniqueCandidate(candidates, path.join(dirname, `_${basename}`));
+    return candidates;
+  }
+
+  pushUniqueCandidate(candidates, `${candidatePath}.scss`);
+  pushUniqueCandidate(candidates, `${partialPath}.scss`);
+  pushUniqueCandidate(candidates, path.join(candidatePath, "index.scss"));
+  pushUniqueCandidate(candidates, path.join(candidatePath, "_index.scss"));
+  return candidates;
+}
+
+async function resolveSassFileCandidate(candidatePath: string): Promise<string | null> {
+  for (const filePath of buildSassFileCandidates(candidatePath)) {
+    try {
+      const stat = await fs.stat(filePath);
+      if (stat.isFile()) return filePath;
+    } catch {}
+  }
+
+  return null;
+}
+
 async function resolveProjectPathTarget(targetPath: string, sourceExtensions: string[]): Promise<string | null> {
   return resolveFileCandidate(targetPath, sourceExtensions);
 }
@@ -69,7 +101,9 @@ async function resolveRelativeImport(
   if (!isRelativeImportSpecifier(specifier)) return null;
 
   const basePath = path.resolve(path.dirname(sourceFile), specifier);
-  const resolved = await resolveFileCandidate(basePath, options.sourceExtensions);
+  const resolved = isScssExtension(sourceFile)
+    ? await resolveSassFileCandidate(basePath)
+    : await resolveFileCandidate(basePath, options.sourceExtensions);
 
   if (!resolved) return null;
   if (!isInsideDirectory(resolved, options.sourceRoot)) return null;
@@ -77,4 +111,11 @@ async function resolveRelativeImport(
   return resolved;
 }
 
-export { buildFileCandidates, isRelativeImportSpecifier, resolveFileCandidate, resolveProjectPathTarget, resolveRelativeImport };
+export {
+  buildFileCandidates,
+  buildSassFileCandidates,
+  isRelativeImportSpecifier,
+  resolveFileCandidate,
+  resolveProjectPathTarget,
+  resolveRelativeImport,
+};

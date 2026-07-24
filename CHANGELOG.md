@@ -2,6 +2,12 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.1.0
+
+- Added SCSS participation to `sync-imports`, including alias generation/reuse and rewrites for eligible `@use`, `@forward`, and quoted Sass `@import` specifiers.
+- Preserved Sass namespace clauses and ignored comments, CSS `url(...)`, remote URLs, and arbitrary strings while rewriting SCSS imports.
+- Kept generated package `imports` metadata synced with SCSS aliases so bundlers can resolve the same hash import map used by JS and TS files.
+
 ## 4.0.1
 
 - Kept this repository's own `dry` rule enforced during self-checks and removed the duplicate helper groups introduced around the 4.0.0 release.

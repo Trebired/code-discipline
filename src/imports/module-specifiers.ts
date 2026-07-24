@@ -3,6 +3,7 @@ import path from "node:path";
 import ts from "typescript";
 
 import { ParseFailureError } from "../shared/errors.js";
+import { isScssExtension } from "../shared/languages.js";
 import { formatDiagnostics } from "../shared/utils.js";
 
 type ModuleSpecifierOccurrence = {
@@ -15,6 +16,14 @@ type TextReplacement = {
   start: number;
   end: number;
   value: string;
+};
+
+type TextScannerState = {
+  escaping: boolean;
+  inBlockComment: boolean;
+  inLineComment: boolean;
+  inString: boolean;
+  quote: string;
 };
 
 function resolveScriptKind(filePath: string): ts.ScriptKind {
@@ -41,7 +50,7 @@ function parseSource(text: string, filePath: string): ts.SourceFile {
   return sourceFile;
 }
 
-function collectModuleSpecifiers(text: string, filePath: string): ModuleSpecifierOccurrence[] {
+function collectTypeScriptModuleSpecifiers(text: string, filePath: string): ModuleSpecifierOccurrence[] {
   const sourceFile = parseSource(text, filePath);
   const occurrences: ModuleSpecifierOccurrence[] = [];
 
@@ -79,6 +88,175 @@ function collectModuleSpecifiers(text: string, filePath: string): ModuleSpecifie
   return occurrences;
 }
 
+function createTextScannerState(): TextScannerState {
+  return {
+    escaping: false,
+    inBlockComment: false,
+    inLineComment: false,
+    inString: false,
+    quote: "",
+  };
+}
+
+function isIdentifierCharacter(value: string): boolean {
+  return /[a-zA-Z0-9_-]/.test(value);
+}
+
+function advanceTextScannerState(state: TextScannerState, char: string, next?: string): { skip: number } {
+  if (state.inLineComment) {
+    if (char === "\n" || char === "\r") state.inLineComment = false;
+    return { skip: 0 };
+  }
+
+  if (state.inBlockComment) {
+    if (char === "*" && next === "/") {
+      state.inBlockComment = false;
+      return { skip: 1 };
+    }
+    return { skip: 0 };
+  }
+
+  if (state.inString) {
+    if (state.escaping) state.escaping = false;
+    else if (char === "\\") state.escaping = true;
+    else if (char === state.quote) {
+      state.inString = false;
+      state.quote = "";
+    }
+    return { skip: 0 };
+  }
+
+  if (char === "/" && next === "/") {
+    state.inLineComment = true;
+    return { skip: 1 };
+  }
+
+  if (char === "/" && next === "*") {
+    state.inBlockComment = true;
+    return { skip: 1 };
+  }
+
+  if (char === "\"" || char === "'") {
+    state.inString = true;
+    state.quote = char;
+  }
+
+  return { skip: 0 };
+}
+
+function matchSassDirective(text: string, index: number): "forward" | "import" | "use" | "" {
+  if (text[index] !== "@") return "";
+  for (const directive of ["forward", "import", "use"] as const) {
+    const start = index + 1;
+    const end = start + directive.length;
+    if (text.slice(start, end) === directive && !isIdentifierCharacter(text[end] || "")) return directive;
+  }
+  return "";
+}
+
+function findDirectiveEnd(text: string, index: number): number {
+  let quote = "";
+  let escaping = false;
+  let parenDepth = 0;
+
+  for (let cursor = index; cursor < text.length; cursor += 1) {
+    const char = text[cursor]!;
+    if (quote) {
+      if (escaping) escaping = false;
+      else if (char === "\\") escaping = true;
+      else if (char === quote) quote = "";
+      continue;
+    }
+
+    if (char === "\"" || char === "'") {
+      quote = char;
+      continue;
+    }
+
+    if (char === "(") parenDepth += 1;
+    else if (char === ")" && parenDepth > 0) parenDepth -= 1;
+    else if (char === ";" && parenDepth === 0) return cursor;
+  }
+
+  return text.length;
+}
+
+function isInsideUrlFunction(segment: string, quoteIndex: number): boolean {
+  let cursor = quoteIndex - 1;
+  while (cursor >= 0 && /\s/.test(segment[cursor]!)) cursor -= 1;
+  if (segment[cursor] !== "(") return false;
+  cursor -= 1;
+  while (cursor >= 0 && /\s/.test(segment[cursor]!)) cursor -= 1;
+
+  const end = cursor + 1;
+  while (cursor >= 0 && /[a-zA-Z-]/.test(segment[cursor]!)) cursor -= 1;
+  return segment.slice(cursor + 1, end).toLowerCase() === "url";
+}
+
+function collectQuotedSassSpecifiers(segment: string, baseOffset: number): ModuleSpecifierOccurrence[] {
+  const occurrences: ModuleSpecifierOccurrence[] = [];
+  let quote = "";
+  let specifierStart = -1;
+  let escaping = false;
+
+  for (let index = 0; index < segment.length; index += 1) {
+    const char = segment[index]!;
+    if (quote) {
+      if (escaping) escaping = false;
+      else if (char === "\\") escaping = true;
+      else if (char === quote) {
+        occurrences.push({
+          specifier: segment.slice(specifierStart, index),
+          start: baseOffset + specifierStart,
+          end: baseOffset + index,
+        });
+        quote = "";
+        specifierStart = -1;
+      }
+      continue;
+    }
+
+    if ((char === "\"" || char === "'") && !isInsideUrlFunction(segment, index)) {
+      quote = char;
+      specifierStart = index + 1;
+    }
+  }
+
+  return occurrences;
+}
+
+function collectScssModuleSpecifiers(text: string): ModuleSpecifierOccurrence[] {
+  const occurrences: ModuleSpecifierOccurrence[] = [];
+  const state = createTextScannerState();
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index]!;
+    const next = text[index + 1];
+    if (!state.inLineComment && !state.inBlockComment && !state.inString) {
+      const directive = matchSassDirective(text, index);
+      if (directive) {
+        const directiveEnd = findDirectiveEnd(text, index);
+        const directiveStart = index + directive.length + 1;
+        const segment = text.slice(directiveStart, directiveEnd);
+        const specifiers = collectQuotedSassSpecifiers(segment, directiveStart);
+        occurrences.push(...(directive === "import" ? specifiers : specifiers.slice(0, 1)));
+        index = directiveEnd;
+        continue;
+      }
+    }
+
+    index += advanceTextScannerState(state, char, next).skip;
+  }
+
+  return occurrences;
+}
+
+function collectModuleSpecifiers(text: string, filePath: string): ModuleSpecifierOccurrence[] {
+  return isScssExtension(filePath)
+    ? collectScssModuleSpecifiers(text)
+    : collectTypeScriptModuleSpecifiers(text, filePath);
+}
+
 function applyTextReplacements(text: string, replacements: TextReplacement[]): { text: string; count: number } {
   if (replacements.length === 0) {
     return { text, count: 0 };
@@ -97,5 +275,5 @@ function applyTextReplacements(text: string, replacements: TextReplacement[]): {
   };
 }
 
-export { applyTextReplacements, collectModuleSpecifiers, parseSource };
+export { applyTextReplacements, collectModuleSpecifiers, collectScssModuleSpecifiers, parseSource };
 export type { ModuleSpecifierOccurrence, TextReplacement };
