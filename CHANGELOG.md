@@ -2,6 +2,10 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.3.2
+
+- Changed the default `minDeclarationName.min` from `3` to `2`, allowing two-character declaration names while still reporting one-character names.
+
 ## 4.3.1
 
 - Added `minDeclarationName`, defaulting to `min: 3`, to report too-short JavaScript and TypeScript function declarations and const identifiers.

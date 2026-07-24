@@ -24,7 +24,7 @@ import { normalizeRuleExclusions } from "./exclusions.js";
 import { normalizeLoggingOptions } from "./logging-options.js";
 
 const DEFAULT_MIN_FILE_LINES = 1;
-const DEFAULT_MIN_DECLARATION_NAME = 3;
+const DEFAULT_MIN_DECLARATION_NAME = 2;
 const DEFAULT_MAX_CHARACTERS_PER_LINE = 150;
 
 function assertRemovedKeys(ruleName: string, source: Record<string, unknown>, keys: string[]) {

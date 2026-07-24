@@ -133,7 +133,7 @@ export default defineCodeDisciplineConfig({
       ],
     },
     minDeclarationName: {
-      min: 3,
+      min: 2,
     },
     maxFileLines: {
       max: 500,
@@ -363,7 +363,7 @@ Reports files whose code line count is at or below `min`, defaulting to `1` when
 
 ### `minDeclarationName`
 
-Reports JavaScript and TypeScript `function` declarations and simple `const` identifiers whose names are shorter than `min`, defaulting to `3` when the rule is configured.
+Reports JavaScript and TypeScript `function` declarations and simple `const` identifiers whose names are shorter than `min`, defaulting to `2` when the rule is configured.
 
 ### `maxCharactersPerLine`
 

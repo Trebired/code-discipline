@@ -6,6 +6,7 @@ import { tempProject, writeFile } from "./helpers.js";
 function writeDefaultNameFixture(projectRoot: string): void {
   writeFile(projectRoot, "src/app.ts", [
     "const t = 1;",
+    "const ok = 2;",
     "const total = 2;",
     "function f() {",
     "  return total;",
@@ -21,15 +22,15 @@ function writeDefaultNameFixture(projectRoot: string): void {
 }
 
 const defaultNameViolationMessages = [
-  "const t has 1 character and is below the minimum name length of 3",
-  "function f has 1 character and is below the minimum name length of 3",
-  "const i has 1 character and is below the minimum name length of 3",
+  "const t has 1 character and is below the minimum name length of 2",
+  "function f has 1 character and is below the minimum name length of 2",
+  "const i has 1 character and is below the minimum name length of 2",
 ];
 
 const defaultNameViolationDetails = [
-  expect.objectContaining({ declarationKind: "const", declarationName: "t", length: 1, min: 3 }),
-  expect.objectContaining({ declarationKind: "function", declarationName: "f", length: 1, min: 3 }),
-  expect.objectContaining({ declarationKind: "const", declarationName: "i", length: 1, min: 3 }),
+  expect.objectContaining({ declarationKind: "const", declarationName: "t", length: 1, min: 2 }),
+  expect.objectContaining({ declarationKind: "function", declarationName: "f", length: 1, min: 2 }),
+  expect.objectContaining({ declarationKind: "const", declarationName: "i", length: 1, min: 2 }),
 ];
 
 test("reports short function and const names with the default minimum", async () => {
