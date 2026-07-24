@@ -102,8 +102,9 @@ test("merges directory excludes from .gitignore when explicitly enabled", async 
 
   const enabled = await checkCodeDiscipline({
     projectRoot,
-    excludeDirs: {
-      gitignore: true,
+    ignore: {
+      entries: [],
+      use_gitignore: true,
     },
     rules: {
       maxFileLines: {
@@ -263,7 +264,7 @@ test("supports css files in source scanning and removable comments", async () =>
   }));
 });
 
-test("combines default excludeDirs, explicit excludeDirs, and opt-in .gitignore excludes", async () => {
+test("combines default ignores, explicit ignore entries, and opt-in .gitignore excludes", async () => {
   const projectRoot = tempProject();
 
   writeFile(projectRoot, ".gitignore", "src/generated/\n");
@@ -274,9 +275,9 @@ test("combines default excludeDirs, explicit excludeDirs, and opt-in .gitignore 
 
   const additive = await checkCodeDiscipline({
     projectRoot,
-    excludeDirs: {
+    ignore: {
       entries: [{ type: "folder", pattern: "tmp" }],
-      gitignore: true,
+      use_gitignore: true,
     },
     rules: {
       maxFileLines: {
@@ -290,7 +291,7 @@ test("combines default excludeDirs, explicit excludeDirs, and opt-in .gitignore 
 
   const explicitOnly = await checkCodeDiscipline({
     projectRoot,
-    excludeDirs: {
+    ignore: {
       entries: [{ type: "folder", pattern: "tmp" }],
     },
     rules: {
@@ -307,7 +308,7 @@ test("combines default excludeDirs, explicit excludeDirs, and opt-in .gitignore 
   ]);
 });
 
-test("supports top-level excludeDirs folder names, file globs, and folder globs", async () => {
+test("supports top-level ignore folder names, file globs, and folder globs", async () => {
   const projectRoot = tempProject();
 
   writeFile(projectRoot, "src/app.ts", "one\n2\n3\n");
@@ -317,7 +318,7 @@ test("supports top-level excludeDirs folder names, file globs, and folder globs"
 
   const result = await checkCodeDiscipline({
     projectRoot,
-    excludeDirs: {
+    ignore: {
       entries: [
         { type: "file", pattern: "**/*.client.ts" },
         { type: "folder", pattern: "generated" },

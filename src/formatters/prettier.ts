@@ -5,7 +5,6 @@ import * as prettier from "prettier";
 
 import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
 import { matchesGlob } from "../shared/globs.js";
-import { readGitignoreIgnorePatterns } from "../shared/gitignore.js";
 import { isInsideDirectory, normalizeRelativePath, toPosixPath, uniqueStrings } from "../shared/utils.js";
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "../checks/progress.js";
 import type { NormalizedCheckCodeDisciplineOptions, NormalizedPrettierFormatter } from "../checks/types.js";
@@ -39,18 +38,20 @@ function normalizePatterns(patterns: string[]): string[] {
   return uniqueStrings(patterns.map((pattern) => normalizeRelativePath(pattern.trim())).filter(Boolean));
 }
 
-async function resolvePrettierIgnorePatterns(
+function resolvePrettierIgnorePatterns(
   options: NormalizedCheckCodeDisciplineOptions,
   formatter: NormalizedPrettierFormatter,
-): Promise<string[]> {
-  const gitignorePatterns = formatter.ignore.gitignore
-    ? await readGitignoreIgnorePatterns(options.gitignorePath)
+): string[] {
+  const codeDisciplinePatterns = formatter.ignore
+    ? [
+        ...(options.ignore?.entries ?? []).map((entry) => entry.pattern),
+        ...(options.ignore?.gitignorePatterns ?? []),
+      ]
     : [];
 
   return normalizePatterns([
     ...DEFAULT_PRETTIER_IGNORE,
-    ...formatter.ignore.entries,
-    ...gitignorePatterns,
+    ...codeDisciplinePatterns,
   ]);
 }
 
@@ -116,7 +117,7 @@ async function collectPrettierFiles(
 ): Promise<{ files: PrettierFile[]; violations: CodeDisciplineViolation[] }> {
   const files: PrettierFile[] = [];
   const violations: CodeDisciplineViolation[] = [];
-  const ignorePatterns = await resolvePrettierIgnorePatterns(options, formatter);
+  const ignorePatterns = resolvePrettierIgnorePatterns(options, formatter);
 
   for (const target of formatter.targets) {
     const absoluteTarget = path.resolve(options.projectRoot, target);

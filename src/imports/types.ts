@@ -115,13 +115,24 @@ type ExcludeDirsOptions = {
   gitignore?: boolean;
 };
 
+type CodeDisciplineIgnoreOptions = {
+  entries?: ExcludeDirEntry[];
+  use_gitignore?: boolean;
+};
+
+type NormalizedCodeDisciplineIgnore = {
+  entries: ExcludeDirEntry[];
+  use_gitignore: boolean;
+  gitignorePatterns: string[];
+};
+
 type SyncImportsOptions = {
   projectRoot: string;
   configPath?: string;
   sourceRoot?: string;
   tsconfigPath?: string;
   excludeSourceExtensions?: string[];
-  excludeDirs?: ExcludeDirsOptions;
+  ignore?: CodeDisciplineIgnoreOptions;
   gitignorePath?: string;
   fix?: boolean;
   alias?: {
@@ -158,6 +169,7 @@ type SourceScanOptions = {
   excludeDirs: ExcludeDirEntry[];
   excludeGitignoreDirs: boolean;
   gitignorePath: string;
+  ignore?: NormalizedCodeDisciplineIgnore;
   scanObserver?: SourceScanObserver;
 };
 
@@ -233,12 +245,14 @@ export type {
   AliasStrategyInput,
   AllowRelativeContext,
   AllowRelativeFn,
+  CodeDisciplineIgnoreOptions,
   ExcludeDirEntry,
   ExcludeDirEntryType,
   ExcludeDirsOptions,
   GeneratedTsconfigSyncOptions,
   ImportsFolderSyncOptions,
   NormalizedSyncImportsOptions,
+  NormalizedCodeDisciplineIgnore,
   RewriteFileResult,
   RewriteResult,
   ScannedSourceFile,

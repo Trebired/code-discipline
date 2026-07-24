@@ -8,10 +8,14 @@ function writePrettierConfig(projectRoot: string): void {
   writeFile(projectRoot, "code-discipline.ts", [
     "export default {",
     "  sourceRoot: '.',",
+    "  ignore: {",
+    "    entries: [{ type: 'folder', pattern: 'ignored' }],",
+    "    use_gitignore: false,",
+    "  },",
     "  formatters: {",
     "    prettier: {",
     "      targets: ['src'],",
-    "      ignore: ['ignored'],",
+    "      ignore: true,",
     "      options: {",
     "        parser: 'typescript',",
     "        printWidth: 80,",
@@ -37,6 +41,7 @@ test("check prettier reports files that need formatting", async () => {
     formatters: {
       prettier: {
         targets: ["."],
+        ignore: false,
         options: {
           parser: "typescript",
           semi: true,
@@ -65,11 +70,16 @@ test("fix prettier formats configured targets and honors ignore patterns", async
   const result = await fixCodeDiscipline({
     projectRoot,
     sourceRoot: ".",
+    ignore: {
+      entries: [
+        { type: "folder", pattern: "ignored" },
+      ],
+    },
     onlyRules: ["prettier"],
     formatters: {
       prettier: {
         targets: ["."],
-        ignore: ["ignored"],
+        ignore: true,
         options: {
           parser: "typescript",
           semi: true,
@@ -86,7 +96,7 @@ test("fix prettier formats configured targets and honors ignore patterns", async
   expect(readFile(projectRoot, "src/ignored/app.ts")).toBe("const value={message:\"ignored\"}\n");
 });
 
-test("prettier ignore can reuse gitignore patterns", async () => {
+test("prettier ignore can reuse code-discipline ignore and gitignore patterns", async () => {
   const projectRoot = tempProject();
 
   writeFile(projectRoot, ".gitignore", "generated\n*.min.js\n");
@@ -98,14 +108,17 @@ test("prettier ignore can reuse gitignore patterns", async () => {
   const result = await fixCodeDiscipline({
     projectRoot,
     sourceRoot: ".",
+    ignore: {
+      entries: [
+        { type: "folder", pattern: "ignored" },
+      ],
+      use_gitignore: true,
+    },
     onlyRules: ["prettier"],
     formatters: {
       prettier: {
         targets: ["."],
-        ignore: {
-          entries: ["ignored"],
-          gitignore: true,
-        },
+        ignore: true,
         options: {
           parser: "typescript",
           semi: true,
@@ -123,6 +136,38 @@ test("prettier ignore can reuse gitignore patterns", async () => {
   expect(readFile(projectRoot, "src/app.min.js")).toBe("const value={message:\"minified\"}\n");
 });
 
+test("prettier ignore false does not reuse code-discipline ignore", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/ignored/app.ts", "const value={message:\"ignored\"}\n");
+
+  const result = await fixCodeDiscipline({
+    projectRoot,
+    sourceRoot: ".",
+    ignore: {
+      entries: [
+        { type: "folder", pattern: "ignored" },
+      ],
+    },
+    onlyRules: ["prettier"],
+    formatters: {
+      prettier: {
+        targets: ["."],
+        ignore: false,
+        options: {
+          parser: "typescript",
+          semi: true,
+          singleQuote: true,
+        },
+      },
+    },
+  });
+
+  expect(result.ok).toBe(true);
+  expect(result.formatted_files).toBe(1);
+  expect(readFile(projectRoot, "src/ignored/app.ts")).toBe("const value = { message: 'ignored' };\n");
+});
+
 test("plain fix runs prettier after configured structural fixes", async () => {
   const projectRoot = tempProject();
 
@@ -134,6 +179,7 @@ test("plain fix runs prettier after configured structural fixes", async () => {
     formatters: {
       prettier: {
         targets: ["."],
+        ignore: false,
         options: {
           parser: "typescript",
           semi: true,

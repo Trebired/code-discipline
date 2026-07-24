@@ -123,6 +123,38 @@ test("rejects removed enabled key for prettier formatter", async () => {
   });
 });
 
+test("rejects removed ignore gitignore spelling and prettier ignore object", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
+
+  await expect(checkCodeDiscipline({
+    projectRoot,
+    ignore: {
+      // @ts-expect-error renamed config
+      gitignore: true,
+    },
+    rules: {
+      maxFileLines: {
+        max: 2,
+      },
+    },
+  })).rejects.toThrow("ignore.gitignore is no longer supported; use ignore.use_gitignore");
+
+  await expect(checkCodeDiscipline({
+    projectRoot,
+    formatters: {
+      prettier: {
+        // @ts-expect-error prettier ignore is boolean now
+        ignore: {
+          entries: ["dist"],
+          gitignore: true,
+        },
+      },
+    },
+  })).rejects.toThrow("formatters.prettier.ignore must be boolean when provided");
+});
+
 test("rejects invalid severity values", async () => {
   const projectRoot = tempProject();
 
@@ -252,7 +284,7 @@ test("rejects removed sourceExtensions config in favor of excludeSourceExtension
   });
 });
 
-test("rejects removed top-level excludeFolders config in favor of excludeDirs", async () => {
+test("rejects removed top-level excludeFolders and excludeDirs config in favor of ignore", async () => {
   const projectRoot = tempProject();
 
   writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
@@ -268,7 +300,20 @@ test("rejects removed top-level excludeFolders config in favor of excludeDirs", 
         max: 2,
       },
     },
-  })).rejects.toThrow("excludeFolders is no longer supported; use excludeDirs");
+  })).rejects.toThrow("excludeFolders is no longer supported; use ignore");
+
+  await expect(checkCodeDiscipline({
+    projectRoot,
+    // @ts-expect-error removed config
+    excludeDirs: {
+      entries: [{ type: "folder", pattern: "generated" }],
+    },
+    rules: {
+      maxFileLines: {
+        max: 2,
+      },
+    },
+  })).rejects.toThrow("excludeDirs is no longer supported; use ignore");
 });
 
 test("rejects removed evasionGuards config", async () => {

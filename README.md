@@ -109,12 +109,14 @@ import { defineCodeDisciplineConfig } from "@trebired/code-discipline";
 export default defineCodeDisciplineConfig({
   sourceRoot: "src",
   excludeSourceExtensions: [".scss"],
-  excludeDirs: {
+  ignore: {
     entries: [
       { type: "folder", pattern: "coverage" },
       { type: "file", pattern: "**/*.client.ts" },
+      { type: "file", pattern: "*.min.js" },
+      { type: "file", pattern: "*.min.css" },
     ],
-    gitignore: true,
+    use_gitignore: true,
   },
   tsconfigPaths: {
     normalize: "relative-dot-prefix",
@@ -127,20 +129,7 @@ export default defineCodeDisciplineConfig({
   },
   formatters: {
     prettier: {
-      targets: ["."],
-      ignore: {
-        entries: [
-          "dist",
-          "build",
-          "coverage",
-          ".next",
-          ".nuxt",
-          ".output",
-          "*.min.js",
-          "*.min.css",
-        ],
-        gitignore: true,
-      },
+      ignore: true,
       options: {
         printWidth: 100,
         tabWidth: 2,
@@ -216,7 +205,7 @@ Source scanning covers every built-in supported source family by default:
 
 - exclude specific extensions with `excludeSourceExtensions`
 - built-in excluded directories are always included
-- root `.gitignore` directory entries are included only when `excludeDirs.gitignore: true`
+- top-level `ignore.entries` and root `.gitignore` entries are included when `ignore.use_gitignore: true`
 
 So you get the full supported scan set automatically and only opt out when needed.
 
@@ -229,12 +218,14 @@ export default defineCodeDisciplineConfig({
   // Skip specific built-in file types when needed.
   excludeSourceExtensions: [".scss"],
 
-  // Add extra ignored directories on top of the built-in set.
-  excludeDirs: {
-    dirs: ["coverage"],
+  // Add extra ignored entries on top of the built-in set.
+  ignore: {
+    entries: [
+      { type: "folder", pattern: "coverage" },
+    ],
 
-    // Opt into reusing root .gitignore directory entries.
-    gitignore: true,
+    // Opt into reusing root .gitignore entries.
+    use_gitignore: true,
   },
 
   rules: {
@@ -278,18 +269,14 @@ Formatter selectors such as `prettier` are enabled by top-level `formatters` con
 
 Formatters are configured at top level under `formatters`, not under `rules`. Presence enables a formatter; there is no `enabled: true` key.
 
-`formatters.prettier` uses Prettier as the formatting engine and keeps `code-discipline.ts` as the formatting policy source. `check prettier` validates formatting without modifying files, while `fix prettier` writes formatted files. Running `code-discipline fix` with no selectors runs configured Prettier formatting last after structural, import, and comment fixes.
+`formatters.prettier` uses Prettier as the formatting engine and keeps `code-discipline.ts` as the formatting policy source. `check prettier` validates formatting without modifying files, while `fix prettier` writes formatted files. Running `code-discipline fix` with no selectors runs configured Prettier formatting last after structural, import, and comment fixes. Set `formatters.prettier.ignore: true` to reuse the shared top-level `ignore`.
 
 Example:
 
 ```ts
 formatters: {
   prettier: {
-    targets: ["."],
-    ignore: {
-      entries: ["dist", "build", "coverage", ".next", "*.min.js", "*.min.css"],
-      gitignore: true,
-    },
+    ignore: true,
     options: {
       printWidth: 100,
       tabWidth: 2,
@@ -457,14 +444,17 @@ When `syncImports` sees a relative import that resolves nowhere, check mode repo
 
 When `importsFolder.enabled` is true, sorted JSON files such as `imports/1.json` become the alias source of truth. `code-discipline fix` migrates root `tsconfig.json` paths and managed `package.json#imports` entries into that folder, splits entries by `maxEntriesPerFile`, recreates the generated tsconfig projection, removes inline root `compilerOptions.paths`, and makes root `tsconfig.json` extend the generated file. Keep `packageJsonImports.enabled` false for dev-only aliases; set it true for dist/runtime workflows that need Node package imports materialized.
 
-`excludeDirs` now groups scan exclusions in one place, so you can add explicit directories through `excludeDirs.dirs` and opt into root `.gitignore` directory entries through `excludeDirs.gitignore`.
+Top-level `ignore` groups shared scan and formatter exclusions in one place, so you can add explicit entries through `ignore.entries` and opt into root `.gitignore` entries through `ignore.use_gitignore`.
 
 Example:
 
 ```ts
-excludeDirs: {
-  dirs: ["coverage", "tmp"],
-  gitignore: true,
+ignore: {
+  entries: [
+    { type: "folder", pattern: "coverage" },
+    { type: "folder", pattern: "tmp" },
+  ],
+  use_gitignore: true,
 },
 ```
 

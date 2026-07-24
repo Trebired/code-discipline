@@ -36,10 +36,16 @@ function assertValidSyncImportsOptions(options: SyncImportsOptions): void {
 
   for (const key of ["excludeFiles", "excludeFolders"] as const) {
     if (key in (options as Record<string, unknown>)) {
-      throw new InvalidCodeDisciplineConfigError(`${key} is no longer supported; use excludeDirs.entries with type "file" or "folder"`, {
+      throw new InvalidCodeDisciplineConfigError(`${key} is no longer supported; use ignore.entries with type "file" or "folder"`, {
         key,
       });
     }
+  }
+
+  if ("excludeDirs" in (options as Record<string, unknown>)) {
+    throw new InvalidCodeDisciplineConfigError("excludeDirs is no longer supported; use ignore", {
+      key: "excludeDirs",
+    });
   }
 }
 

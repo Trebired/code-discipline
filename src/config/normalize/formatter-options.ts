@@ -36,39 +36,14 @@ function normalizeStringList(value: unknown, fallback: string[], label: string, 
   return uniqueStrings(normalized);
 }
 
-function normalizePrettierIgnore(value: PrettierFormatterOptions["ignore"]) {
-  if (value === undefined) {
-    return {
-      entries: [],
-      gitignore: false,
-    };
-  }
+function normalizePrettierIgnore(value: PrettierFormatterOptions["ignore"]): boolean {
+  if (value === undefined) return true;
+  if (typeof value === "boolean") return value;
 
-  if (Array.isArray(value)) {
-    return {
-      entries: normalizeStringList(value, [], "formatters.prettier.ignore", true),
-      gitignore: false,
-    };
-  }
-
-  if (!value || typeof value !== "object") {
-    throw new InvalidCodeDisciplineConfigError("formatters.prettier.ignore must be an array or { entries, gitignore } object", {
-      key: "formatters.prettier.ignore",
-      value,
-    });
-  }
-
-  if (value.gitignore !== undefined && typeof value.gitignore !== "boolean") {
-    throw new InvalidCodeDisciplineConfigError("formatters.prettier.ignore.gitignore must be boolean when provided", {
-      key: "formatters.prettier.ignore.gitignore",
-      value: value.gitignore,
-    });
-  }
-
-  return {
-    entries: normalizeStringList(value.entries, [], "formatters.prettier.ignore.entries", true),
-    gitignore: value.gitignore === true,
-  };
+  throw new InvalidCodeDisciplineConfigError("formatters.prettier.ignore must be boolean when provided", {
+    key: "formatters.prettier.ignore",
+    value,
+  });
 }
 
 function normalizePrettierFormatter(rule: PrettierFormatterOptions | undefined): NormalizedPrettierFormatter | undefined {

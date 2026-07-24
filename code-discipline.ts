@@ -2,8 +2,9 @@ import { defineCodeDisciplineConfig } from "./src/index.js";
 
 export default defineCodeDisciplineConfig({
   sourceRoot: ".",
-  excludeDirs: {
-    gitignore: true,
+  ignore: {
+    entries: [],
+    use_gitignore: true,
   },
   rules: {
     maxFileLines: { max: 350 },

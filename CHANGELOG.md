@@ -2,6 +2,11 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.4.2
+
+- Replaced top-level `excludeDirs` with shared `ignore.entries` and `ignore.use_gitignore` configuration.
+- Simplified `formatters.prettier.ignore` to a boolean that reuses the shared code-discipline ignore when `true`.
+
 ## 4.4.1
 
 - Added `formatters.prettier.ignore.gitignore` support, with `ignore.entries` for explicit formatter ignore patterns.

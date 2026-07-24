@@ -1,8 +1,8 @@
 import type { LoggingOptions } from "../shared/logging-types.js";
 import type { Options as PrettierOptions } from "prettier";
 import type {
+  CodeDisciplineIgnoreOptions,
   ExcludeDirEntry,
-  ExcludeDirsOptions,
   PackageJsonImportsSyncOptions,
   SourceProgressObserver,
   SourceScanObserver,
@@ -109,13 +109,8 @@ type CodeDisciplineRules = {
 
 type PrettierFormatterOptions = {
   targets?: string[];
-  ignore?: string[] | PrettierFormatterIgnoreOptions;
+  ignore?: boolean;
   options?: PrettierOptions;
-};
-
-type PrettierFormatterIgnoreOptions = {
-  entries?: string[];
-  gitignore?: boolean;
 };
 
 type CodeDisciplineFormatters = {
@@ -152,7 +147,7 @@ type CheckCodeDisciplineOptions = {
   configPath?: string;
   sourceRoot?: string;
   excludeSourceExtensions?: string[];
-  excludeDirs?: ExcludeDirsOptions;
+  ignore?: CodeDisciplineIgnoreOptions;
   gitignorePath?: string;
   logging?: LoggingOptions;
   formatters?: CodeDisciplineFormatters;
@@ -242,10 +237,7 @@ type NormalizedRemoveCommentsRule = {
 
 type NormalizedPrettierFormatter = {
   targets: string[];
-  ignore: {
-    entries: string[];
-    gitignore: boolean;
-  };
+  ignore: boolean;
   options: PrettierOptions;
 };
 
@@ -335,7 +327,6 @@ export type {
   MinDeclarationNameRuleOptions,
   MinFileLinesRuleOptions,
   NormalizedPrettierFormatter,
-  PrettierFormatterIgnoreOptions,
   NormalizedBannedFileRuleEntry,
   NormalizedBannedFilesRule,
   NormalizedBannedPatternRuleEntry,

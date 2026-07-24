@@ -70,7 +70,7 @@ test("rejects removed syncImports config keys", async () => {
     excludeFolders: {
       folders: ["generated"],
     },
-  })).rejects.toThrow("excludeFolders is no longer supported; use excludeDirs");
+  })).rejects.toThrow("excludeFolders is no longer supported; use ignore.entries");
 });
 
 test("generates aliases and rewrites imports when fix is true", async () => {
