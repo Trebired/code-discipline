@@ -2,6 +2,10 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.3.1
+
+- Added `minDeclarationName`, defaulting to `min: 3`, to report too-short JavaScript and TypeScript function declarations and const identifiers.
+
 ## 4.3.0
 
 - Collapsed rule-local and top-level exclusions into `excludeDirs` with typed `{ type: "file" | "folder", pattern }` entries, and removed the `excludeFiles`/`excludeFolders` compatibility keys.

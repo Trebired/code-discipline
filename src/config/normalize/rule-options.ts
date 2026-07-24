@@ -12,6 +12,7 @@ import type {
   MaxCharactersPerLineRuleOptions,
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
+  MinDeclarationNameRuleOptions,
   MinFileLinesRuleOptions,
   NormalizedBannedPatternsRule,
   NormalizedBannedFilesRule,
@@ -23,6 +24,7 @@ import { normalizeRuleExclusions } from "./exclusions.js";
 import { normalizeLoggingOptions } from "./logging-options.js";
 
 const DEFAULT_MIN_FILE_LINES = 1;
+const DEFAULT_MIN_DECLARATION_NAME = 3;
 const DEFAULT_MAX_CHARACTERS_PER_LINE = 150;
 
 function assertRemovedKeys(ruleName: string, source: Record<string, unknown>, keys: string[]) {
@@ -83,6 +85,18 @@ function normalizeMinFileLinesRule(rule: MinFileLinesRuleOptions | undefined) {
     ...normalizeRuleExclusions("minFileLines", source),
     min: normalizeThreshold(rule.min, DEFAULT_MIN_FILE_LINES, "minFileLines.min"),
     severity: normalizeSeverity(rule.severity, "minFileLines"),
+  };
+}
+
+function normalizeMinDeclarationNameRule(rule: MinDeclarationNameRuleOptions | undefined) {
+  if (!rule) return undefined;
+  const source = rule as Record<string, unknown>;
+  assertRemovedKeys("minDeclarationName", source, ["enabled", "stop", "fix"]);
+
+  return {
+    ...normalizeRuleExclusions("minDeclarationName", source),
+    min: normalizeThreshold(rule.min, DEFAULT_MIN_DECLARATION_NAME, "minDeclarationName.min"),
+    severity: normalizeSeverity(rule.severity, "minDeclarationName"),
   };
 }
 
@@ -316,6 +330,7 @@ export {
   normalizeMaxCharactersPerLineRule,
   normalizeMaxFileLinesRule,
   normalizeMaxFunctionLinesRule,
+  normalizeMinDeclarationNameRule,
   normalizeMinFileLinesRule,
   normalizeRemoveCommentsRule,
   normalizeSyncImportsRule,

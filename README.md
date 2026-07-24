@@ -132,6 +132,9 @@ export default defineCodeDisciplineConfig({
         { type: "file", pattern: "**/*.client.ts" },
       ],
     },
+    minDeclarationName: {
+      min: 3,
+    },
     maxFileLines: {
       max: 500,
       severity: "warning",
@@ -357,6 +360,10 @@ Reports files whose total line count exceeds `max`.
 Reports files whose code line count is at or below `min`, defaulting to `1` when the rule is configured. This catches tiny legacy compatibility shims that only re-export or re-import another module.
 
 `code-discipline fix min-file-lines` can delete tiny redirect shims when the file is clearly a single JavaScript/TypeScript `export ... from "..."` statement or a single SCSS `@forward "..."` directive. Importers of that shim are rewritten to the forwarded target before the shim file is removed.
+
+### `minDeclarationName`
+
+Reports JavaScript and TypeScript `function` declarations and simple `const` identifiers whose names are shorter than `min`, defaulting to `3` when the rule is configured.
 
 ### `maxCharactersPerLine`
 

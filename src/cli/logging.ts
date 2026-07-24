@@ -17,6 +17,7 @@ const RULE_SLUGS = new Set([
   "banned-patterns",
   "banned-files",
   "min-file-lines",
+  "min-declaration-name",
   "max-file-lines",
   "max-characters-per-line",
   "max-function-lines",

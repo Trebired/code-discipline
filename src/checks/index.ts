@@ -20,6 +20,7 @@ import { runMaxFileLinesRule } from "./rules/max/file-lines.js";
 import { runMaxFunctionLinesRule } from "./rules/max/function-lines.js";
 import { fixMinFileLinesRule } from "./rules/min/file/lines/fix.js";
 import { runMinFileLinesRule } from "./rules/min/file/lines.js";
+import { runMinDeclarationNameRule } from "./rules/min/declaration-name.js";
 import { collectRemoveCommentsViolations, fixRemoveCommentsRule } from "./rules/remove-comments.js";
 import { buildNormalizedSyncOptions } from "./sync-options.js";
 import type {
@@ -58,6 +59,8 @@ function resolveConfiguredSeverity(
       return options.rules.bannedFiles?.severity ?? "fail";
     case "min-file-lines":
       return options.rules.minFileLines?.severity ?? "fail";
+    case "min-declaration-name":
+      return options.rules.minDeclarationName?.severity ?? "fail";
     case "max-file-lines":
       return options.rules.maxFileLines?.severity ?? "fail";
     case "max-characters-per-line":
@@ -164,6 +167,10 @@ async function collectViolations(options: NormalizedCheckCodeDisciplineOptions):
 
   if (options.rules.minFileLines && shouldRunRule("min-file-lines", options.onlyRules)) {
     violations.push(...await runMinFileLinesRule(filterSourceFilesForRule(sourceFiles, options.rules.minFileLines), options));
+  }
+
+  if (options.rules.minDeclarationName && shouldRunRule("min-declaration-name", options.onlyRules)) {
+    violations.push(...await runMinDeclarationNameRule(filterSourceFilesForRule(sourceFiles, options.rules.minDeclarationName), options));
   }
 
   if (options.rules.maxFileLines && shouldRunRule("max-file-lines", options.onlyRules)) {

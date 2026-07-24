@@ -48,6 +48,11 @@ type MinFileLinesRuleOptions = RuleExclusionOptions & {
   severity?: CodeDisciplineRuleSeverity;
 };
 
+type MinDeclarationNameRuleOptions = RuleExclusionOptions & {
+  min?: number;
+  severity?: CodeDisciplineRuleSeverity;
+};
+
 type MaxFileLinesRuleOptions = RuleExclusionOptions & {
   max?: number;
   severity?: CodeDisciplineRuleSeverity;
@@ -89,6 +94,7 @@ type CodeDisciplineRules = {
   bannedFiles?: BannedFilesRuleOptions;
   bannedPatterns?: BannedPatternsRuleOptions;
   minFileLines?: MinFileLinesRuleOptions;
+  minDeclarationName?: MinDeclarationNameRuleOptions;
   maxFileLines?: MaxFileLinesRuleOptions;
   maxCharactersPerLine?: MaxCharactersPerLineRuleOptions;
   maxFunctionLines?: MaxFunctionLinesRuleOptions;
@@ -173,6 +179,12 @@ type NormalizedMinFileLinesRule = {
   severity: CodeDisciplineRuleSeverity;
 };
 
+type NormalizedMinDeclarationNameRule = {
+  excludeDirs: ExcludeDirEntry[];
+  min: number;
+  severity: CodeDisciplineRuleSeverity;
+};
+
 type NormalizedMaxFileLinesRule = {
   excludeDirs: ExcludeDirEntry[];
   max: number;
@@ -219,6 +231,7 @@ type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
     bannedFiles?: NormalizedBannedFilesRule;
     bannedPatterns?: NormalizedBannedPatternsRule;
     minFileLines?: NormalizedMinFileLinesRule;
+    minDeclarationName?: NormalizedMinDeclarationNameRule;
     maxFileLines?: NormalizedMaxFileLinesRule;
     maxCharactersPerLine?: NormalizedMaxCharactersPerLineRule;
     maxFunctionLines?: NormalizedMaxFunctionLinesRule;
@@ -281,6 +294,7 @@ export type {
   MaxCharactersPerLineRuleOptions,
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
+  MinDeclarationNameRuleOptions,
   MinFileLinesRuleOptions,
   NormalizedBannedFileRuleEntry,
   NormalizedBannedFilesRule,
@@ -294,6 +308,7 @@ export type {
   NormalizedMaxCharactersPerLineRule,
   NormalizedMaxFileLinesRule,
   NormalizedMaxFunctionLinesRule,
+  NormalizedMinDeclarationNameRule,
   NormalizedMinFileLinesRule,
   NormalizedRemoveCommentsRule,
   TsconfigPathsNormalizeMode,
