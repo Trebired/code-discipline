@@ -41,6 +41,10 @@ function expectChunkedScanLogs(stdout: string[], stderr: string[]) {
   expect(stderr.join("")).toContain("Total check:");
 }
 
+function stripAnsi(text: string): string {
+  return text.replace(/\x1b\[[0-9;]*m/g, "");
+}
+
 test("auto-discovers a config module for plain cli usage", async () => {
   const projectRoot = tempProject();
   const stdout: string[] = [];
@@ -80,9 +84,10 @@ test("default cli output uses the Trebired console logger", async () => {
   });
 
   expect(result.status).toBe(1);
-  expect(result.stdout).toContain("[INFO, trebired.code-discipline.cli] max-file-lines src/too-long.ts");
-  expect(result.stdout).toContain("[INFO, trebired.code-discipline.cli] Found 1 discipline violation(s).");
-  expect(result.stdout).toContain("[INFO, trebired.code-discipline.cli] Total check:");
+  expect(result.stdout).toContain("\x1b[");
+  expect(stripAnsi(result.stdout)).toContain("[INFO, trebired.code-discipline.cli] max-file-lines src/too-long.ts");
+  expect(stripAnsi(result.stdout)).toContain("[INFO, trebired.code-discipline.cli] Found 1 discipline violation(s).");
+  expect(stripAnsi(result.stdout)).toContain("[INFO, trebired.code-discipline.cli] Total check:");
 });
 
 test("runs check through an explicit config module and exits non-zero when violations exist", async () => {

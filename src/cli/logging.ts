@@ -7,7 +7,6 @@ type CliLogLevel = "fail" | "info";
 function createDefaultCliLogger(): LogInstance {
   return createLog({
     console: {
-      colors: false,
       metadata: false,
       timestamp: false,
     },

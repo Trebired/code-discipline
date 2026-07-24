@@ -235,8 +235,8 @@ async function runCheckCommand(args: {
     throw new Error("Command separator -- is only supported with gate");
   }
 
-  const timed = await withLoadingAnimation("Scanning codebase", args.showLoadingAnimation, (writeLine) => {
-    const progressObserver = createCliScanObserver(args.showLoadingAnimation ? writeLine : args.stderr);
+  const timed = await withLoadingAnimation("Scanning codebase", args.showLoadingAnimation, () => {
+    const progressObserver = createCliScanObserver(args.stderr);
     return codeDiscipline({
       ...args.config,
       configPath: args.configPath,
@@ -270,8 +270,8 @@ async function runFixCommand(args: {
     throw new Error("Command separator -- is only supported with gate");
   }
 
-  const timed = await withLoadingAnimation("Fixing codebase", args.showLoadingAnimation, (writeLine) => {
-    const progressObserver = createCliScanObserver(args.showLoadingAnimation ? writeLine : args.stderr);
+  const timed = await withLoadingAnimation("Fixing codebase", args.showLoadingAnimation, () => {
+    const progressObserver = createCliScanObserver(args.stderr);
     return codeDiscipline({
       ...args.config,
       configPath: args.configPath,
@@ -312,8 +312,8 @@ async function runGateCommand(args: {
     throw new Error("Missing child command after --");
   }
 
-  const timed = await withLoadingAnimation("Scanning codebase", args.showLoadingAnimation, (writeLine) => {
-    const progressObserver = createCliScanObserver(args.showLoadingAnimation ? writeLine : args.stderr);
+  const timed = await withLoadingAnimation("Scanning codebase", args.showLoadingAnimation, () => {
+    const progressObserver = createCliScanObserver(args.stderr);
     return codeDiscipline({
       ...args.config,
       configPath: args.configPath,

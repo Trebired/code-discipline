@@ -2,6 +2,10 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.2.3
+
+- Routed TTY progress output through the same `@trebired/logger` CLI writer and restored logger-managed console colors.
+
 ## 4.2.2
 
 - Routed default CLI progress, summaries, violations, and errors through the package-owned `@trebired/logger` console logger without configuring a log directory.
