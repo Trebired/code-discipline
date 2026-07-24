@@ -3,20 +3,20 @@ import type {
   CodeDisciplineMode,
   CodeDisciplineRuleSlug,
   CodeDisciplineRules,
-  EvasionGuardsOptions,
   FixableRuleSlug,
 } from "./types.js";
 
 const ALL_RULE_SLUGS: CodeDisciplineRuleSlug[] = [
   "banned-patterns",
   "banned-files",
+  "min-file-lines",
   "max-file-lines",
+  "max-characters-per-line",
   "max-function-lines",
   "folderize-compound-files",
   "sync-imports",
   "remove-comments",
   "dry",
-  "evasion-guards",
 ];
 
 const FIXABLE_RULE_SLUGS: FixableRuleSlug[] = [
@@ -31,15 +31,16 @@ const RULE_SLUG_BY_CONFIG_KEY = {
   bannedPatterns: "banned-patterns",
   dry: "dry",
   folderizeCompoundFiles: "folderize-compound-files",
+  maxCharactersPerLine: "max-characters-per-line",
   maxFileLines: "max-file-lines",
   maxFunctionLines: "max-function-lines",
+  minFileLines: "min-file-lines",
   removeComments: "remove-comments",
   syncImports: "sync-imports",
 } as const;
 
 function resolveEnabledRuleSlugs(
   rules: CodeDisciplineRules | undefined,
-  evasionGuards?: EvasionGuardsOptions,
 ): Set<CodeDisciplineRuleSlug> {
   const enabled = new Set<CodeDisciplineRuleSlug>();
 
@@ -51,10 +52,6 @@ function resolveEnabledRuleSlugs(
     }
   }
 
-  if (evasionGuards) {
-    enabled.add("evasion-guards");
-  }
-
   return enabled;
 }
 
@@ -62,12 +59,11 @@ function normalizeOnlyRules(
   mode: CodeDisciplineMode,
   onlyRules: readonly string[] | undefined,
   rules: CodeDisciplineRules | undefined,
-  evasionGuards?: EvasionGuardsOptions,
 ): CodeDisciplineRuleSlug[] | FixableRuleSlug[] | undefined {
   if (!onlyRules || onlyRules.length === 0) return undefined;
 
   const allowedRules = new Set<string>(mode === "fix" ? FIXABLE_RULE_SLUGS : ALL_RULE_SLUGS);
-  const enabledRules = resolveEnabledRuleSlugs(rules, evasionGuards);
+  const enabledRules = resolveEnabledRuleSlugs(rules);
   const normalized: CodeDisciplineRuleSlug[] = [];
 
   for (const rule of onlyRules) {

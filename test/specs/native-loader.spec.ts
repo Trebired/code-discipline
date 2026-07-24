@@ -124,22 +124,20 @@ test("native and TS max-file-lines results agree", async () => {
   expect(nativeResult).toEqual(fallbackResult);
 });
 
-test("native and TS evasion guard results agree", async () => {
+test("native and TS max-characters-per-line results agree", async () => {
   const projectRoot = tempProject();
 
-  writeFile(projectRoot, "src/checkout.ts", "export function checkout(cart) { const total = cart.items.reduce((sum, item) => sum + item.price, 0); if (!cart.user) throw new Error(\"login\"); const tax = total * 0.2; const discount = cart.coupon ? total * 0.1 : 0; return total + tax - discount; }\n");
-  writeFile(projectRoot, "src/runtime.ts", "export const patch = new Function(\"db\", \"db.users.deleteMany({ role: 'test' })\");\n");
+  writeFile(projectRoot, "src/long-line.ts", `export const value = "${"x".repeat(151)}";\n`);
 
   const { nativeResult, fallbackResult } = await runWithNativeThenFallback(() => checkCodeDiscipline({
     projectRoot,
-    evasionGuards: true,
-    onlyRules: ["evasion-guards"],
+    onlyRules: ["max-characters-per-line"],
+    rules: {
+      maxCharactersPerLine: {},
+    },
   }));
 
-  expect(nativeResult.ok).toBe(fallbackResult.ok);
-  expect(nativeResult.violations.map((violation) => violation.details.kind)).toEqual(expect.arrayContaining(
-    fallbackResult.violations.map((violation) => violation.details.kind),
-  ));
+  expect(nativeResult).toEqual(fallbackResult);
 });
 
 test("native and TS folderize results agree", async () => {

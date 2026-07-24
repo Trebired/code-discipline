@@ -7,6 +7,9 @@ All notable changes to `@trebired/code-discipline` will be documented here.
 - Added SCSS participation to `sync-imports`, including alias generation/reuse and rewrites for eligible `@use`, `@forward`, and quoted Sass `@import` specifiers.
 - Preserved Sass namespace clauses and ignored comments, CSS `url(...)`, remote URLs, and arbitrary strings while rewriting SCSS imports.
 - Kept generated package `imports` metadata synced with SCSS aliases so bundlers can resolve the same hash import map used by JS and TS files.
+- Added `minFileLines`, with a default of `5`, to report files whose code line count is at or below the banned compatibility-shim threshold.
+- Added `maxCharactersPerLine`, with a default of `150`, to report physical lines that exceed the configured character limit.
+- Removed the public `evasionGuards` rule/config surface in favor of ordinary line-discipline rules.
 
 ## 4.0.1
 

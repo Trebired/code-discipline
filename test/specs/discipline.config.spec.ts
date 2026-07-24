@@ -178,6 +178,20 @@ test("rejects removed sourceExtensions config in favor of excludeSourceExtension
   });
 });
 
+test("rejects removed evasionGuards config", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
+
+  await expect(checkCodeDiscipline({
+    projectRoot,
+    // @ts-expect-error removed config
+    evasionGuards: true,
+  })).rejects.toMatchObject({
+    code: "invalid_config",
+  });
+});
+
 test("loads TypeScript config modules with relative local imports", async () => {
   const projectRoot = tempProject();
 

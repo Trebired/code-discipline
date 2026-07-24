@@ -11,8 +11,8 @@ import { isGoExtension, isRustExtension, isTypeScriptFamilyExtension, supportsMa
 import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "../../progress.js";
 import { getEndLine, getStartLine, isFunctionLikeWithBody, resolveFunctionKind, resolveFunctionName } from "../typescript-functions.js";
-import { stripCommentsAndStrings } from "../evasion-guards/strip.js";
 import { countCodeLinesInRange, maskCommentsForLineCounting } from "./code-lines.js";
+import { stripCommentsAndStrings } from "./strip.js";
 
 type FunctionDescriptor = {
   kind: string;

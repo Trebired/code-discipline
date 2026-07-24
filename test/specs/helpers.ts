@@ -123,10 +123,9 @@ function runCommand(command: string, args: string[], options: {
 
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const builtCliPath = path.join(packageRoot, "dist", "cli.js");
-let builtCliReady = false;
 
 function ensureBuiltCli() {
-  if (builtCliReady && fs.existsSync(builtCliPath)) {
+  if (fs.existsSync(builtCliPath)) {
     return;
   }
 
@@ -138,7 +137,6 @@ function ensureBuiltCli() {
     throw new Error(`build failed: ${result.stderr || result.stdout}`);
   }
 
-  builtCliReady = true;
 }
 
 function writeErroringCliFixture(projectRoot: string) {

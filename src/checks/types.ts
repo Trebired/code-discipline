@@ -37,31 +37,23 @@ type BannedFilesRuleOptions = {
   severity?: CodeDisciplineRuleSeverity;
 };
 
+type MinFileLinesRuleOptions = {
+  min?: number;
+  severity?: CodeDisciplineRuleSeverity;
+};
+
 type MaxFileLinesRuleOptions = {
+  max?: number;
+  severity?: CodeDisciplineRuleSeverity;
+};
+
+type MaxCharactersPerLineRuleOptions = {
   max?: number;
   severity?: CodeDisciplineRuleSeverity;
 };
 
 type MaxFunctionLinesRuleOptions = {
   max?: number;
-  severity?: CodeDisciplineRuleSeverity;
-};
-
-type PackedCodeGuardOptions = {
-  minPackedLineColumns?: number;
-  maxSemicolonsPerLine?: number;
-  maxStructuralTokensPerLine?: number;
-  maxPackedFunctionLines?: number;
-  maxPackedFunctionStatements?: number;
-  minPackedFunctionCharacters?: number;
-  maxPackedFileNonEmptyLines?: number;
-  minPackedFileCharacters?: number;
-  minPackedFileStructuralTokens?: number;
-};
-
-type EvasionGuardsOptions = boolean | {
-  packedCode?: boolean | PackedCodeGuardOptions;
-  runtimeCodeHiding?: boolean;
   severity?: CodeDisciplineRuleSeverity;
 };
 
@@ -90,7 +82,9 @@ type CodeDisciplineSyncImportsRuleOptions = Omit<SyncImportsRuleOptions, "fix"> 
 type CodeDisciplineRules = {
   bannedFiles?: BannedFilesRuleOptions;
   bannedPatterns?: BannedPatternsRuleOptions;
+  minFileLines?: MinFileLinesRuleOptions;
   maxFileLines?: MaxFileLinesRuleOptions;
+  maxCharactersPerLine?: MaxCharactersPerLineRuleOptions;
   maxFunctionLines?: MaxFunctionLinesRuleOptions;
   folderizeCompoundFiles?: FolderizeCompoundFilesRuleOptions;
   syncImports?: CodeDisciplineSyncImportsRuleOptions;
@@ -132,7 +126,6 @@ type CheckCodeDisciplineOptions = {
   gitignorePath?: string;
   logging?: LoggingOptions;
   rules?: CodeDisciplineRules;
-  evasionGuards?: EvasionGuardsOptions;
   lifecycle?: CodeDisciplineLifecycleHooks;
   tsconfigPaths?: CodeDisciplineTsconfigPathsOptions;
   onlyRules?: CodeDisciplineRuleSlug[];
@@ -166,7 +159,17 @@ type NormalizedBannedFilesRule = {
   severity: CodeDisciplineRuleSeverity;
 };
 
+type NormalizedMinFileLinesRule = {
+  min: number;
+  severity: CodeDisciplineRuleSeverity;
+};
+
 type NormalizedMaxFileLinesRule = {
+  max: number;
+  severity: CodeDisciplineRuleSeverity;
+};
+
+type NormalizedMaxCharactersPerLineRule = {
   max: number;
   severity: CodeDisciplineRuleSeverity;
 };
@@ -191,14 +194,6 @@ type NormalizedRemoveCommentsRule = {
   exclude: string[];
 };
 
-type NormalizedPackedCodeGuardOptions = Required<PackedCodeGuardOptions>;
-
-type NormalizedEvasionGuardsOptions = {
-  packedCode?: NormalizedPackedCodeGuardOptions;
-  runtimeCodeHiding: boolean;
-  severity: CodeDisciplineRuleSeverity;
-};
-
 type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
   configPath?: string;
   sourceRootRelative: string;
@@ -208,14 +203,15 @@ type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
   rules: {
     bannedFiles?: NormalizedBannedFilesRule;
     bannedPatterns?: NormalizedBannedPatternsRule;
+    minFileLines?: NormalizedMinFileLinesRule;
     maxFileLines?: NormalizedMaxFileLinesRule;
+    maxCharactersPerLine?: NormalizedMaxCharactersPerLineRule;
     maxFunctionLines?: NormalizedMaxFunctionLinesRule;
     folderizeCompoundFiles?: NormalizedFolderizeCompoundFilesRule;
     syncImports?: CodeDisciplineSyncImportsRuleOptions;
     removeComments?: NormalizedRemoveCommentsRule;
     dry?: NormalizedDryRule;
   };
-  evasionGuards?: NormalizedEvasionGuardsOptions;
 };
 
 type CheckCodeDisciplineResult = CodeDisciplineResult;
@@ -262,14 +258,15 @@ export type {
   CodeDisciplineSyncImportsRuleOptions,
   CodeDisciplineTsconfigPathsOptions,
   DryRuleOptions,
-  EvasionGuardsOptions,
   FixableRuleSlug,
   FixCodeDisciplineOptions,
   FixCodeDisciplineResult,
   FixCodeDisciplineRuleResult,
   FolderizeCompoundFilesRuleOptions,
+  MaxCharactersPerLineRuleOptions,
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
+  MinFileLinesRuleOptions,
   NormalizedBannedFileRuleEntry,
   NormalizedBannedFilesRule,
   NormalizedBannedPatternRuleEntry,
@@ -277,12 +274,11 @@ export type {
   RemoveCommentsRuleOptions,
   NormalizedCheckCodeDisciplineOptions,
   NormalizedDryRule,
-  NormalizedEvasionGuardsOptions,
   NormalizedFolderizeCompoundFilesRule,
+  NormalizedMaxCharactersPerLineRule,
   NormalizedMaxFileLinesRule,
   NormalizedMaxFunctionLinesRule,
-  NormalizedPackedCodeGuardOptions,
+  NormalizedMinFileLinesRule,
   NormalizedRemoveCommentsRule,
-  PackedCodeGuardOptions,
   TsconfigPathsNormalizeMode,
 };

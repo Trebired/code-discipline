@@ -103,7 +103,6 @@ function buildCheckOptions(options: Omit<CodeDisciplineOptions, "mode">): CheckC
     onlyRules: options.onlyRules,
     progressObserver: options.progressObserver,
     rules: options.rules,
-    evasionGuards: options.evasionGuards,
     scanObserver: options.scanObserver,
   };
 }
@@ -126,7 +125,6 @@ async function codeDiscipline(options: CodeDisciplineOptions): Promise<CodeDisci
     logging: options.logging,
     onlyRules: options.onlyRules,
     rules: options.rules,
-    evasionGuards: options.evasionGuards,
     excludeSourceExtensions: options.excludeSourceExtensions,
     sourceRoot: options.sourceRoot,
     progressObserver: options.progressObserver,

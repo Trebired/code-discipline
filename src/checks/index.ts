@@ -13,9 +13,10 @@ import { runFolderizeCompoundFilesRule } from "./rules/folderize/compound-files.
 import { collectBannedFileViolations, fixBannedFilesRule } from "./rules/banned/files.js";
 import { collectBannedPatternViolations } from "./rules/banned/patterns.js";
 import { collectDryViolations } from "./rules/dry/index.js";
-import { runEvasionGuardsRule } from "./rules/evasion-guards/index.js";
+import { runMaxCharactersPerLineRule } from "./rules/max/characters-per-line.js";
 import { runMaxFileLinesRule } from "./rules/max/file-lines.js";
 import { runMaxFunctionLinesRule } from "./rules/max/function-lines.js";
+import { runMinFileLinesRule } from "./rules/min/file-lines.js";
 import { collectRemoveCommentsViolations, fixRemoveCommentsRule } from "./rules/remove-comments.js";
 import { buildNormalizedSyncOptions } from "./sync-options.js";
 import type {
@@ -52,8 +53,12 @@ function resolveConfiguredSeverity(
       return options.rules.bannedPatterns?.severity ?? "fail";
     case "banned-files":
       return options.rules.bannedFiles?.severity ?? "fail";
+    case "min-file-lines":
+      return options.rules.minFileLines?.severity ?? "fail";
     case "max-file-lines":
       return options.rules.maxFileLines?.severity ?? "fail";
+    case "max-characters-per-line":
+      return options.rules.maxCharactersPerLine?.severity ?? "fail";
     case "max-function-lines":
       return options.rules.maxFunctionLines?.severity ?? "fail";
     case "folderize-compound-files":
@@ -64,8 +69,6 @@ function resolveConfiguredSeverity(
       return options.rules.removeComments?.severity ?? "fail";
     case "dry":
       return options.rules.dry?.severity ?? "fail";
-    case "evasion-guards":
-      return options.evasionGuards?.severity ?? "fail";
   }
 }
 
@@ -150,8 +153,16 @@ async function collectViolations(options: NormalizedCheckCodeDisciplineOptions):
     violations.push(...collectBannedFileViolations(sourceFiles, options));
   }
 
+  if (options.rules.minFileLines && shouldRunRule("min-file-lines", options.onlyRules)) {
+    violations.push(...await runMinFileLinesRule(sourceFiles, options));
+  }
+
   if (options.rules.maxFileLines && shouldRunRule("max-file-lines", options.onlyRules)) {
     violations.push(...await runMaxFileLinesRule(sourceFiles, options));
+  }
+
+  if (options.rules.maxCharactersPerLine && shouldRunRule("max-characters-per-line", options.onlyRules)) {
+    violations.push(...await runMaxCharactersPerLineRule(sourceFiles, options));
   }
 
   if (options.rules.maxFunctionLines && shouldRunRule("max-function-lines", options.onlyRules)) {
@@ -175,10 +186,6 @@ async function collectViolations(options: NormalizedCheckCodeDisciplineOptions):
 
   if (options.rules.removeComments && shouldRunRule("remove-comments", options.onlyRules)) {
     violations.push(...await collectRemoveCommentsViolations(sourceFiles, options));
-  }
-
-  if (options.evasionGuards && shouldRunRule("evasion-guards", options.onlyRules)) {
-    violations.push(...await runEvasionGuardsRule(sourceFiles, options));
   }
 
   return sortViolations(applyConfiguredSeverity(violations, options));

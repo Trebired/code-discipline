@@ -171,22 +171,3 @@ pub fn fix_remove_comments_rule(request_json: String) -> Result<String> {
 
     serde_json::to_string(&result).map_err(|error| err(error.to_string()))
 }
-
-#[napi]
-pub fn run_evasion_guards_rule(request_json: String) -> Result<String> {
-    let request: EvasionGuardsRequest =
-        serde_json::from_str(&request_json).map_err(|error| err(error.to_string()))?;
-    let mut violations = Vec::new();
-
-    for file in request.source_files.iter() {
-        let text =
-            fs::read_to_string(&file.absolute_path).map_err(|error| err(error.to_string()))?;
-        violations.extend(collect_evasion_guard_violations(
-            file,
-            &text,
-            &request.evasion_guards,
-        ));
-    }
-
-    serde_json::to_string(&violations).map_err(|error| err(error.to_string()))
-}

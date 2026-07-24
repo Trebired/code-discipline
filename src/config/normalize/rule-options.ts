@@ -8,18 +8,21 @@ import type {
   BannedFilesRuleOptions,
   CodeDisciplineSyncImportsRuleOptions,
   DryRuleOptions,
-  EvasionGuardsOptions,
   FolderizeCompoundFilesRuleOptions,
+  MaxCharactersPerLineRuleOptions,
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
+  MinFileLinesRuleOptions,
   NormalizedBannedPatternsRule,
   NormalizedBannedFilesRule,
   NormalizedDryRule,
-  NormalizedEvasionGuardsOptions,
   RemoveCommentsRuleOptions,
 } from "../../checks/types.js";
 import { normalizeRelativePath, uniqueStrings } from "../../shared/utils.js";
 import { normalizeLoggingOptions } from "./logging-options.js";
+
+const DEFAULT_MIN_FILE_LINES = 5;
+const DEFAULT_MAX_CHARACTERS_PER_LINE = 150;
 
 function assertRemovedKeys(ruleName: string, source: Record<string, unknown>, keys: string[]) {
   for (const key of keys) {
@@ -56,6 +59,29 @@ function normalizeMinDuplicateCharacters(value: unknown): number {
   }
 
   return Math.max(0, Math.floor(value as number));
+}
+
+function normalizeThreshold(value: unknown, fallback: number, label: string): number {
+  if (value === undefined) return fallback;
+
+  if (!Number.isFinite(value)) {
+    throw new InvalidCodeDisciplineConfigError(`${label} must be a finite number`, {
+      value,
+    });
+  }
+
+  return Math.max(1, Math.floor(value as number));
+}
+
+function normalizeMinFileLinesRule(rule: MinFileLinesRuleOptions | undefined) {
+  if (!rule) return undefined;
+  const source = rule as Record<string, unknown>;
+  assertRemovedKeys("minFileLines", source, ["enabled", "stop", "fix"]);
+
+  return {
+    min: normalizeThreshold(rule.min, DEFAULT_MIN_FILE_LINES, "minFileLines.min"),
+    severity: normalizeSeverity(rule.severity, "minFileLines"),
+  };
 }
 
 function normalizeMaxFileLinesRule(rule: MaxFileLinesRuleOptions | undefined) {
@@ -151,6 +177,17 @@ function normalizeBannedFilesRule(rule: BannedFilesRuleOptions | undefined): Nor
   return {
     patterns,
     severity: normalizeSeverity(rule.severity, "bannedFiles"),
+  };
+}
+
+function normalizeMaxCharactersPerLineRule(rule: MaxCharactersPerLineRuleOptions | undefined) {
+  if (!rule) return undefined;
+  const source = rule as Record<string, unknown>;
+  assertRemovedKeys("maxCharactersPerLine", source, ["enabled", "stop", "fix"]);
+
+  return {
+    max: normalizeThreshold(rule.max, DEFAULT_MAX_CHARACTERS_PER_LINE, "maxCharactersPerLine.max"),
+    severity: normalizeSeverity(rule.severity, "maxCharactersPerLine"),
   };
 }
 
@@ -261,52 +298,15 @@ function normalizeRemoveCommentsRule(rule: RemoveCommentsRuleOptions | undefined
   };
 }
 
-function normalizeThreshold(value: unknown, fallback: number, label: string): number {
-  if (value === undefined) return fallback;
-
-  if (!Number.isFinite(value)) {
-    throw new InvalidCodeDisciplineConfigError(`${label} must be a finite number`, {
-      value,
-    });
-  }
-
-  return Math.max(1, Math.floor(value as number));
-}
-
-function normalizeEvasionGuardsOptions(options: EvasionGuardsOptions | undefined): NormalizedEvasionGuardsOptions | undefined {
-  if (!options) return undefined;
-
-  const source = typeof options === "object" ? options : {};
-  const packedSource = typeof source.packedCode === "object" ? source.packedCode : {};
-  const packedCode = source.packedCode === false
-    ? undefined
-    : {
-      minPackedLineColumns: normalizeThreshold(packedSource.minPackedLineColumns, 120, "evasionGuards.packedCode.minPackedLineColumns"),
-      maxSemicolonsPerLine: normalizeThreshold(packedSource.maxSemicolonsPerLine, 3, "evasionGuards.packedCode.maxSemicolonsPerLine"),
-      maxStructuralTokensPerLine: normalizeThreshold(packedSource.maxStructuralTokensPerLine, 10, "evasionGuards.packedCode.maxStructuralTokensPerLine"),
-      maxPackedFunctionLines: normalizeThreshold(packedSource.maxPackedFunctionLines, 2, "evasionGuards.packedCode.maxPackedFunctionLines"),
-      maxPackedFunctionStatements: normalizeThreshold(packedSource.maxPackedFunctionStatements, 3, "evasionGuards.packedCode.maxPackedFunctionStatements"),
-      minPackedFunctionCharacters: normalizeThreshold(packedSource.minPackedFunctionCharacters, 100, "evasionGuards.packedCode.minPackedFunctionCharacters"),
-      maxPackedFileNonEmptyLines: normalizeThreshold(packedSource.maxPackedFileNonEmptyLines, 8, "evasionGuards.packedCode.maxPackedFileNonEmptyLines"),
-      minPackedFileCharacters: normalizeThreshold(packedSource.minPackedFileCharacters, 1200, "evasionGuards.packedCode.minPackedFileCharacters"),
-      minPackedFileStructuralTokens: normalizeThreshold(packedSource.minPackedFileStructuralTokens, 25, "evasionGuards.packedCode.minPackedFileStructuralTokens"),
-    };
-
-  return {
-    packedCode,
-    runtimeCodeHiding: source.runtimeCodeHiding ?? true,
-    severity: normalizeSeverity(source.severity, "evasionGuards"),
-  };
-}
-
 export {
   normalizeBannedPatternsRule,
   normalizeBannedFilesRule,
   normalizeDryRule,
-  normalizeEvasionGuardsOptions,
   normalizeFolderizeCompoundFilesRule,
+  normalizeMaxCharactersPerLineRule,
   normalizeMaxFileLinesRule,
   normalizeMaxFunctionLinesRule,
+  normalizeMinFileLinesRule,
   normalizeRemoveCommentsRule,
   normalizeSyncImportsRule,
 };

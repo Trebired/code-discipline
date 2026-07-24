@@ -48,34 +48,6 @@ struct MaxFileLinesRequest {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct PackedCodeGuardOptions {
-    min_packed_line_columns: usize,
-    max_semicolons_per_line: usize,
-    max_structural_tokens_per_line: usize,
-    max_packed_function_lines: usize,
-    max_packed_function_statements: usize,
-    min_packed_function_characters: usize,
-    max_packed_file_non_empty_lines: usize,
-    min_packed_file_characters: usize,
-    min_packed_file_structural_tokens: usize,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct EvasionGuardsOptions {
-    packed_code: Option<PackedCodeGuardOptions>,
-    runtime_code_hiding: bool,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct EvasionGuardsRequest {
-    source_files: Vec<ScannedSourceFile>,
-    evasion_guards: EvasionGuardsOptions,
-}
-
-#[derive(Deserialize)]
-#[serde(rename_all = "camelCase")]
 struct FolderizeRequest {
     source_files: Vec<ScannedSourceFile>,
     separators: Vec<String>,

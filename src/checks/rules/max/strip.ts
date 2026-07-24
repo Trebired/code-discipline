@@ -1,9 +1,3 @@
-type PackedLineStats = {
-  columnCount: number;
-  semicolonCount: number;
-  structuralTokenCount: number;
-};
-
 type StripState = {
   escaped: boolean;
   inBlockComment: boolean;
@@ -94,23 +88,4 @@ function stripCommentsAndStrings(text: string): string {
   return result;
 }
 
-function countStructuralTokens(text: string): number {
-  let count = 0;
-
-  for (const character of text) {
-    if ("{}()[],:?=>".includes(character)) count += 1;
-  }
-
-  return count;
-}
-
-function getPackedLineStats(rawLine: string, strippedLine: string): PackedLineStats {
-  return {
-    columnCount: rawLine.length,
-    semicolonCount: (strippedLine.match(/;/gu) ?? []).length,
-    structuralTokenCount: countStructuralTokens(strippedLine),
-  };
-}
-
-export { countStructuralTokens, getPackedLineStats, stripCommentsAndStrings };
-export type { PackedLineStats };
+export { stripCommentsAndStrings };

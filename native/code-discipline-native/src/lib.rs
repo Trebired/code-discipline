@@ -18,6 +18,5 @@ include!("parts/folderize.rs");
 include!("parts/function_lines.rs");
 include!("parts/function_lines_shared.rs");
 include!("parts/function_lines_typescript.rs");
-include!("parts/evasion_detection.rs");
 include!("parts/api.rs");
 include!("parts/tests.rs");

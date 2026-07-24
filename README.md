@@ -39,7 +39,7 @@ code-discipline gate -- bun run dev
 
 `@trebired/code-discipline` can use a Rust native backend when a matching binary is available, with the TypeScript implementation as the fallback. This follows the same native-fast-path shape as `@trebired/logger`: package users keep the same CLI/API, while hot scanning and rewrite paths can move into Rust.
 
-The current native backend accelerates source scanning, `max-file-lines`, common `max-function-lines` paths, `folderize-compound-files` checks, `remove-comments`, and `evasion-guards`. If no binary is present, the package automatically uses the TypeScript fallback.
+The current native backend accelerates source scanning, `max-file-lines`, common `max-function-lines` paths, `folderize-compound-files` checks, and `remove-comments`. If no binary is present, the package automatically uses the TypeScript fallback.
 
 Useful native controls:
 
@@ -101,8 +101,6 @@ Rules are enabled by presence. If a rule object exists under `rules`, it runs.
 
 Rule severity is optional and now supports only `severity: "warning" | "fail"`. If omitted, the default is `fail`.
 
-`evasionGuards` is a top-level opt-in system because it checks suspicious compliance patterns across rules instead of being a normal style rule.
-
 Example `code-discipline.ts`:
 
 ```ts
@@ -119,16 +117,21 @@ export default defineCodeDisciplineConfig({
     normalize: "relative-dot-prefix",
     restoreAfterRun: true,
   },
-  evasionGuards: true,
   lifecycle: {
     async beforeRun(context) {
       context.state.started = true;
     },
   },
   rules: {
+    minFileLines: {
+      min: 5,
+    },
     maxFileLines: {
       max: 500,
       severity: "warning",
+    },
+    maxCharactersPerLine: {
+      max: 150,
     },
     maxFunctionLines: {
       max: 80,
@@ -219,15 +222,16 @@ Rules use kebab-case public slugs:
 
 - `banned-patterns`
 - `banned-files`
+- `min-file-lines`
 - `max-file-lines`
+- `max-characters-per-line`
 - `max-function-lines`
 - `folderize-compound-files`
 - `sync-imports`
 - `remove-comments`
 - `dry`
-- `evasion-guards`
 
-`fix` only accepts fixable rules. Trying to run `code-discipline fix max-function-lines`, `code-discipline fix dry`, or `code-discipline fix evasion-guards` fails clearly.
+`fix` only accepts fixable rules. Trying to run `code-discipline fix max-function-lines`, `code-discipline fix max-characters-per-line`, or `code-discipline fix dry` fails clearly.
 
 ## Runtime API
 
@@ -342,38 +346,17 @@ bannedFiles: {
 
 Reports files whose total line count exceeds `max`.
 
+### `minFileLines`
+
+Reports files whose code line count is at or below `min`, defaulting to `5` when the rule is configured. This catches tiny legacy compatibility shims that only re-export or re-import another module.
+
+### `maxCharactersPerLine`
+
+Reports physical lines whose character count exceeds `max`, defaulting to `150` when the rule is configured.
+
 ### `maxFunctionLines`
 
 Reports function-like declarations whose total span exceeds `max`.
-
-### `evasionGuards`
-
-Reports suspicious attempts to satisfy discipline rules without actually improving the code. This is mainly for AI agents because they commonly produce this type of shady slop: compressing long files or large functions into one-line/few-line code so max-line checks stop complaining.
-
-Enable it at the top level:
-
-```ts
-export default defineCodeDisciplineConfig({
-  evasionGuards: true,
-  rules: {
-    maxFileLines: {
-      max: 500,
-    },
-    maxFunctionLines: {
-      max: 80,
-    },
-  },
-});
-```
-
-It detects:
-
-- packed files with very few physical lines but lots of code structure
-- packed lines with excessive statement or structural density
-- packed JavaScript/TypeScript functions that dodge line-count limits
-- runtime code hiding through string execution such as `eval`, `new Function`, or `setTimeout("code")`
-
-`evasionGuards` is check-only and disabled unless explicitly configured.
 
 ### `folderizeCompoundFiles`
 
