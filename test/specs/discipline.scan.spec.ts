@@ -102,7 +102,7 @@ test("merges directory excludes from .gitignore when explicitly enabled", async 
 
   const enabled = await checkCodeDiscipline({
     projectRoot,
-    excludeFolders: {
+    excludeDirs: {
       gitignore: true,
     },
     rules: {
@@ -263,7 +263,7 @@ test("supports css files in source scanning and removable comments", async () =>
   }));
 });
 
-test("combines default excludeFolders, explicit excludeFolders, and opt-in .gitignore excludes", async () => {
+test("combines default excludeDirs, explicit excludeDirs, and opt-in .gitignore excludes", async () => {
   const projectRoot = tempProject();
 
   writeFile(projectRoot, ".gitignore", "src/generated/\n");
@@ -274,8 +274,8 @@ test("combines default excludeFolders, explicit excludeFolders, and opt-in .giti
 
   const additive = await checkCodeDiscipline({
     projectRoot,
-    excludeFolders: {
-      folders: ["tmp"],
+    excludeDirs: {
+      entries: [{ type: "folder", pattern: "tmp" }],
       gitignore: true,
     },
     rules: {
@@ -290,8 +290,8 @@ test("combines default excludeFolders, explicit excludeFolders, and opt-in .giti
 
   const explicitOnly = await checkCodeDiscipline({
     projectRoot,
-    excludeFolders: {
-      folders: ["tmp"],
+    excludeDirs: {
+      entries: [{ type: "folder", pattern: "tmp" }],
     },
     rules: {
       maxFileLines: {
@@ -307,17 +307,22 @@ test("combines default excludeFolders, explicit excludeFolders, and opt-in .giti
   ]);
 });
 
-test("supports top-level excludeFolders folder names and globs", async () => {
+test("supports top-level excludeDirs folder names, file globs, and folder globs", async () => {
   const projectRoot = tempProject();
 
   writeFile(projectRoot, "src/app.ts", "one\n2\n3\n");
+  writeFile(projectRoot, "src/app.client.ts", "one\n2\n3\n");
   writeFile(projectRoot, "src/generated/out.ts", "one\n2\n3\n");
   writeFile(projectRoot, "src/features/cache-files/out.ts", "one\n2\n3\n");
 
   const result = await checkCodeDiscipline({
     projectRoot,
-    excludeFolders: {
-      folders: ["generated", "**/*-files"],
+    excludeDirs: {
+      entries: [
+        { type: "file", pattern: "**/*.client.ts" },
+        { type: "folder", pattern: "generated" },
+        { type: "folder", pattern: "**/*-files" },
+      ],
     },
     rules: {
       maxFileLines: {
@@ -350,7 +355,11 @@ test("emits chunked fallback scan progress for larger directory trees", async ()
       projectRoot,
       sourceRoot: `${projectRoot}/src`,
       sourceExtensions: [".ts"],
-      excludeFolders: ["node_modules", "dist", ".git"],
+      excludeDirs: [
+        { type: "folder", pattern: "node_modules" },
+        { type: "folder", pattern: "dist" },
+        { type: "folder", pattern: ".git" },
+      ],
       excludeGitignoreDirs: false,
       gitignorePath: `${projectRoot}/.gitignore`,
       scanObserver: (event) => events.push({ phase: event.phase, backend: event.backend }),

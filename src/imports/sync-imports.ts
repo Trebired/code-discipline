@@ -1,5 +1,6 @@
 import { normalizeSyncImportsOptions } from "../config/normalize/sync-imports-options.js";
 import { syncPackageJsonImportsFromAliasMap, syncPackageJsonImportsFromTsconfigPaths } from "../runtime/imports-sync.js";
+import { ruleLogGroup } from "../shared/log-groups.js";
 import { resolveLogger } from "../shared/logging.js";
 import { filterSourceFilesForRule } from "../shared/rule-exclusions.js";
 import { supportsSyncImports } from "../shared/languages.js";
@@ -19,7 +20,7 @@ function summarizeSyncImportViolations(violations: CodeDisciplineViolation[]) {
 }
 
 function isNormalizedSyncImportsOptions(options: SyncImportsOptions | NormalizedSyncImportsOptions): options is NormalizedSyncImportsOptions {
-  return Array.isArray((options as NormalizedSyncImportsOptions).excludeFolders);
+  return Array.isArray((options as NormalizedSyncImportsOptions).excludeDirs);
 }
 
 function createCheckOnlyResult(args: {
@@ -39,6 +40,7 @@ function createCheckOnlyResult(args: {
 }
 
 function logCheckOnlyResult(result: SyncImportsResult, logger: ReturnType<typeof resolveLogger>): void {
+  const group = ruleLogGroup("sync-imports");
   logger.flush(
     result.violationCount > 0 ? "warn" : "success",
     result.violationCount > 0 ? "sync-drift-detected" : "sync-drift-clear",
@@ -50,6 +52,7 @@ function logCheckOnlyResult(result: SyncImportsResult, logger: ReturnType<typeof
       mutationAllowed: result.mutations_allowed,
       violationCount: result.violationCount,
     },
+    { group },
   );
 }
 
@@ -95,7 +98,7 @@ async function applySyncFixes(
     rewrittenFiles: result.rewritten_files,
     rewrittenImports: result.rewritten_imports,
     packageJsonImportsChanged: packageJsonImportsState?.changed ?? false,
-  });
+  }, { group: ruleLogGroup("sync-imports") });
   return result;
 }
 
@@ -110,7 +113,7 @@ async function syncImports(options: SyncImportsOptions | NormalizedSyncImportsOp
     sourceRoot: normalized.sourceRoot,
     tsconfigPath: normalized.tsconfigPath,
     fix: normalized.fix,
-  });
+  }, { group: ruleLogGroup("sync-imports") });
 
   try {
     const sourceFiles = filterSourceFilesForRule(
@@ -134,7 +137,7 @@ async function syncImports(options: SyncImportsOptions | NormalizedSyncImportsOp
   } catch (error) {
     logger.flush("error", "sync-failed", error instanceof Error ? error.message : "sync failed", {
       cause: error instanceof Error ? error.name : typeof error,
-    });
+    }, { group: ruleLogGroup("sync-imports") });
     throw error;
   }
 }

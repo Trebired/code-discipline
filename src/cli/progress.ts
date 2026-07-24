@@ -6,6 +6,7 @@ import type {
   SourceRuleProgressEvent,
   SourceScanProgressEvent,
 } from "../imports/types.js";
+import type { CliLogContext } from "./logging.js";
 
 type TimedTaskResult<T> = {
   elapsedMs: number;
@@ -54,13 +55,14 @@ function formatRuleProgressDetails(event: SourceRuleProgressEvent | SourceRuleCo
   return details.length > 0 ? `, ${details.join(", ")}` : "";
 }
 
-function createCliScanObserver(writeLine: (text: string) => void) {
+function createCliScanObserver(writeLine: (text: string, context?: CliLogContext) => void) {
   return (event: SourceProgressEvent) => {
     if (event.phase === "chunk") {
       if (!shouldPrintScanChunk(event)) return;
 
       writeLine(
         `Scan ${event.chunkIndex}: ${event.discoveredFiles} files, ${formatDuration(event.elapsedMs)}.\n`,
+        { event: "source-scan-chunk", scanScope: event.backend },
       );
       return;
     }
@@ -68,6 +70,7 @@ function createCliScanObserver(writeLine: (text: string) => void) {
     if (event.phase === "completed") {
       writeLine(
         `Scan: ${event.fileCount} files in ${formatDuration(event.elapsedMs)} (${event.backend}).\n`,
+        { event: "source-scan-completed", scanScope: event.backend },
       );
       return;
     }
@@ -75,12 +78,14 @@ function createCliScanObserver(writeLine: (text: string) => void) {
     if (event.phase === "rule-chunk") {
       writeLine(
         `${event.rule} ${event.stage} ${event.chunkIndex}: ${event.completedItems}/${event.totalItems}${formatRuleProgressDetails(event)}, ${formatDuration(event.elapsedMs)}.\n`,
+        { event: "rule-progress-chunk", rule: event.rule },
       );
       return;
     }
 
     writeLine(
       `${event.rule} ${event.stage}: ${event.totalItems} items${formatRuleProgressDetails(event)} in ${formatDuration(event.elapsedMs)}.\n`,
+      { event: "rule-progress-completed", rule: event.rule },
     );
   };
 }

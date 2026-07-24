@@ -2,6 +2,12 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.3.0
+
+- Collapsed rule-local and top-level exclusions into `excludeDirs` with typed `{ type: "file" | "folder", pattern }` entries, and removed the `excludeFiles`/`excludeFolders` compatibility keys.
+- Updated source scanning and `sync-imports` to honor typed file and folder exclusion entries consistently.
+- Routed CLI logging through `@trebired/logger` with rule-specific groups such as `trebired.code-discipline.rules.dry`, warning-only results on `warn`, passing summaries on `success`, and blocking/gate failures on `fail`.
+
 ## 4.2.5
 
 - Added rule-local `excludeFiles` and `excludeFolders` support for every discipline rule.

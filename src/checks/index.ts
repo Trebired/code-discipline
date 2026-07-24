@@ -5,6 +5,7 @@ import { collectSyncImportViolations } from "../imports/check-sync-imports.js";
 import type { ScannedSourceFile } from "../imports/types.js";
 import { scanSourceFiles } from "../imports/scan.js";
 import { syncImports } from "../imports/sync-imports.js";
+import { runLogGroup } from "../shared/log-groups.js";
 import { resolveLogger } from "../shared/logging.js";
 import { filterSourceFilesForRule } from "../shared/rule-exclusions.js";
 import type { CodeDisciplineResult, CodeDisciplineViolation } from "../shared/discipline-types.js";
@@ -106,15 +107,21 @@ function logSummary(
 ) {
   const blockingCount = result.violations.filter(isBlockingViolation).length;
   if (result.violationCount > 0) {
-    logger.flush("warn", `discipline-${label}-violations`, `${label} found ${blockingCount} blocking violation(s) and ${result.violationCount - blockingCount} warning(s)`, {
+    const warningCount = result.violationCount - blockingCount;
+    const level = blockingCount > 0 ? "fail" : "warn";
+    const message = blockingCount > 0
+      ? `${label} found ${blockingCount} blocking violation(s)${warningCount > 0 ? ` and ${warningCount} warning(s)` : ""}`
+      : `${label} found ${warningCount} warning(s)`;
+
+    logger.flush(level, `discipline-${label}-violations`, message, {
       violationCount: result.violationCount,
-    });
+    }, { group: runLogGroup(label) });
     return;
   }
 
   logger.flush("success", `discipline-${label}-ok`, `${label} completed`, {
     violationCount: 0,
-  });
+  }, { group: runLogGroup(label) });
 }
 
 function attachDisciplineResult<T extends CodeDisciplineResult>(
@@ -329,7 +336,7 @@ function logFixResult(result: FixCodeDisciplineResult, logger: ReturnType<typeof
     rewrittenImports: result.rewritten_imports,
     removedComments: result.removed_comments,
     ruleResults: result.ruleResults,
-  });
+  }, { group: runLogGroup("fix") });
 }
 
 async function checkCodeDiscipline(options: CheckCodeDisciplineOptions): Promise<CheckCodeDisciplineResult> {

@@ -3,6 +3,7 @@ import { createLog, type LogInstance } from "@trebired/logger";
 import { CODE_DISCIPLINE_LOG_GROUP } from "./constants.js";
 import type {
   CodeDisciplineLogAdapterFn,
+  CodeDisciplineLogContext,
   CodeDisciplineLogEvent,
   CodeDisciplineLogLevel,
   LoggingOptions,
@@ -60,6 +61,22 @@ function formatMessage(group: string, message: string): string {
 
 function eventGroup(event: CodeDisciplineLogEvent): string {
   return String(event.group || CODE_DISCIPLINE_LOG_GROUP);
+}
+
+function buildEvent(
+  level: CodeDisciplineLogLevel,
+  event: string,
+  message: string,
+  metadata?: Record<string, unknown>,
+  context?: CodeDisciplineLogContext,
+): CodeDisciplineLogEvent {
+  return {
+    event,
+    group: context?.group,
+    level,
+    message,
+    metadata,
+  };
 }
 
 function writeToConsole(event: CodeDisciplineLogEvent) {
@@ -129,6 +146,7 @@ function createBufferedEventStore(): BufferedEventStore {
     levelCounts: {
       debug: 0,
       error: 0,
+      fail: 0,
       info: 0,
       success: 0,
       warn: 0,
@@ -181,16 +199,17 @@ function createEmitter(args: {
   enabled: boolean;
   getStore: () => BufferedEventStore;
 }) {
-  return (level: CodeDisciplineLogLevel, event: string, message: string, metadata?: Record<string, unknown>) => {
+  return (
+    level: CodeDisciplineLogLevel,
+    event: string,
+    message: string,
+    metadata?: Record<string, unknown>,
+    context?: CodeDisciplineLogContext,
+  ) => {
     const bufferedEvents = args.getStore();
     if (!args.enabled) return;
 
-    bufferEvent(bufferedEvents, {
-      event,
-      level,
-      message,
-      metadata,
-    });
+    bufferEvent(bufferedEvents, buildEvent(level, event, message, metadata, context));
   };
 }
 
@@ -200,7 +219,13 @@ function createFlusher(args: {
   resetStore: () => void;
   writer: (event: CodeDisciplineLogEvent) => void;
 }) {
-  return (level: CodeDisciplineLogLevel, event: string, message: string, metadata?: Record<string, unknown>) => {
+  return (
+    level: CodeDisciplineLogLevel,
+    event: string,
+    message: string,
+    metadata?: Record<string, unknown>,
+    context?: CodeDisciplineLogContext,
+  ) => {
     if (!args.enabled) return;
 
     const bufferedEvents = args.getStore();
@@ -212,12 +237,7 @@ function createFlusher(args: {
       }
       : metadata;
 
-    args.writer({
-      event,
-      level,
-      message,
-      metadata: finalMetadata,
-    });
+    args.writer(buildEvent(level, event, message, finalMetadata, context));
     args.resetStore();
   };
 }

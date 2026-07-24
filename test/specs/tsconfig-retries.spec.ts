@@ -61,6 +61,7 @@ test.serial("retries transiently broken tsconfig reads during initialization", a
   });
   expect(rows[1]).toMatchObject({
     event: "sync-finished",
+    group: "trebired.code-discipline.rules.sync-imports",
     level: "success",
     message: "sync completed",
   });

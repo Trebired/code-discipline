@@ -110,7 +110,10 @@ export default defineCodeDisciplineConfig({
   sourceRoot: "src",
   excludeSourceExtensions: [".scss"],
   excludeDirs: {
-    dirs: ["coverage"],
+    entries: [
+      { type: "folder", pattern: "coverage" },
+      { type: "file", pattern: "**/*.client.ts" },
+    ],
     gitignore: true,
   },
   tsconfigPaths: {
@@ -125,6 +128,9 @@ export default defineCodeDisciplineConfig({
   rules: {
     minFileLines: {
       min: 1,
+      excludeDirs: [
+        { type: "file", pattern: "**/*.client.ts" },
+      ],
     },
     maxFileLines: {
       max: 500,

@@ -6,6 +6,7 @@ import type {
   NormalizedCheckCodeDisciplineOptions,
 } from "./types.js";
 import type { ScannedSourceFile } from "../imports/types.js";
+import { ruleLogGroup } from "../shared/log-groups.js";
 import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
 import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
 import { removeEmptyDirectories } from "../shared/directories.js";
@@ -258,7 +259,7 @@ async function fixFolderization(
   if (!options.rules.folderizeCompoundFiles || moves.length === 0) {
     logger.info("fix-folderization-unchanged", "no folderization moves required", {
       moves: 0,
-    });
+    }, { group: ruleLogGroup("folderize-compound-files") });
     return {
       ok: true,
       violationCount: 0,
@@ -287,7 +288,7 @@ async function fixFolderization(
       movedFiles,
       rewrittenFiles: rewriteState.rewrittenFiles,
       rewrittenImports: rewriteState.rewrittenImports,
-    });
+    }, { group: ruleLogGroup("folderize-compound-files") });
 
     return {
       ok: true,

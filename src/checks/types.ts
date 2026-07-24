@@ -1,6 +1,7 @@
 import type { LoggingOptions } from "../shared/logging-types.js";
 import type {
-  ExcludeFoldersOptions,
+  ExcludeDirEntry,
+  ExcludeDirsOptions,
   PackageJsonImportsSyncOptions,
   SourceProgressObserver,
   SourceScanObserver,
@@ -20,8 +21,7 @@ type CodeDisciplineRuntimeMode = CodeDisciplineMode;
 type CodeDisciplineRuleSeverity = "warning" | "fail";
 
 type RuleExclusionOptions = {
-  excludeFiles?: string[];
-  excludeFolders?: string[];
+  excludeDirs?: ExcludeDirEntry[];
 };
 
 type BannedPatternRuleEntry = string | {
@@ -80,7 +80,7 @@ type DryRuleOptions = RuleExclusionOptions & {
 
 type CodeDisciplinePackageJsonImportsOptions = PackageJsonImportsSyncOptions;
 
-type CodeDisciplineSyncImportsRuleOptions = RuleExclusionOptions & Omit<SyncImportsRuleOptions, "fix" | "excludeFiles" | "excludeFolders"> & {
+type CodeDisciplineSyncImportsRuleOptions = RuleExclusionOptions & Omit<SyncImportsRuleOptions, "fix" | "excludeDirs"> & {
   packageJsonImports?: CodeDisciplinePackageJsonImportsOptions;
   severity?: CodeDisciplineRuleSeverity;
 };
@@ -128,7 +128,7 @@ type CheckCodeDisciplineOptions = {
   configPath?: string;
   sourceRoot?: string;
   excludeSourceExtensions?: string[];
-  excludeFolders?: ExcludeFoldersOptions;
+  excludeDirs?: ExcludeDirsOptions;
   gitignorePath?: string;
   logging?: LoggingOptions;
   rules?: CodeDisciplineRules;
@@ -152,8 +152,7 @@ type NormalizedBannedPatternRuleEntry = {
 };
 
 type NormalizedBannedPatternsRule = {
-  excludeFiles: string[];
-  excludeFolders: string[];
+  excludeDirs: ExcludeDirEntry[];
   patterns: NormalizedBannedPatternRuleEntry[];
   severity: CodeDisciplineRuleSeverity;
 };
@@ -163,57 +162,49 @@ type NormalizedBannedFileRuleEntry = {
 };
 
 type NormalizedBannedFilesRule = {
-  excludeFiles: string[];
-  excludeFolders: string[];
+  excludeDirs: ExcludeDirEntry[];
   patterns: NormalizedBannedFileRuleEntry[];
   severity: CodeDisciplineRuleSeverity;
 };
 
 type NormalizedMinFileLinesRule = {
-  excludeFiles: string[];
-  excludeFolders: string[];
+  excludeDirs: ExcludeDirEntry[];
   min: number;
   severity: CodeDisciplineRuleSeverity;
 };
 
 type NormalizedMaxFileLinesRule = {
-  excludeFiles: string[];
-  excludeFolders: string[];
+  excludeDirs: ExcludeDirEntry[];
   max: number;
   severity: CodeDisciplineRuleSeverity;
 };
 
 type NormalizedMaxCharactersPerLineRule = {
-  excludeFiles: string[];
-  excludeFolders: string[];
+  excludeDirs: ExcludeDirEntry[];
   max: number;
   severity: CodeDisciplineRuleSeverity;
 };
 
 type NormalizedMaxFunctionLinesRule = {
-  excludeFiles: string[];
-  excludeFolders: string[];
+  excludeDirs: ExcludeDirEntry[];
   max: number;
   severity: CodeDisciplineRuleSeverity;
 };
 
 type NormalizedFolderizeCompoundFilesRule = {
-  excludeFiles: string[];
-  excludeFolders: string[];
+  excludeDirs: ExcludeDirEntry[];
   separators: string[];
   severity: CodeDisciplineRuleSeverity;
 };
 
 type NormalizedDryRule = {
-  excludeFiles: string[];
-  excludeFolders: string[];
+  excludeDirs: ExcludeDirEntry[];
   minDuplicateCharacters: number;
   severity: CodeDisciplineRuleSeverity;
 };
 
 type NormalizedRemoveCommentsRule = {
-  excludeFiles: string[];
-  excludeFolders: string[];
+  excludeDirs: ExcludeDirEntry[];
   severity: CodeDisciplineRuleSeverity;
   exclude: string[];
 };

@@ -80,8 +80,10 @@ test("sync-imports respects rule-local file and folder exclusions", async () => 
           strategy: "relative-path-slug",
         },
         allowRelative: ["./"],
-        excludeFiles: ["src/client.ts"],
-        excludeFolders: ["generated"],
+        excludeDirs: [
+          { type: "file", pattern: "src/client.ts" },
+          { type: "folder", pattern: "generated" },
+        ],
       },
     },
   });

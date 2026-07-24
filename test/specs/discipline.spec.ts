@@ -209,7 +209,7 @@ test("supports warning severity on max file lines", async () => {
   });
 });
 
-test("returns violations as ok=false and logs a warning transport event", async () => {
+test("returns violations as ok=false and logs a fail transport event", async () => {
   const projectRoot = tempProject();
   const { logger, rows } = captureTrebiredLogger();
 
@@ -229,7 +229,10 @@ test("returns violations as ok=false and logs a warning transport event", async 
 
   expect(result.ok).toBe(false);
   expect(result.violationCount).toBe(1);
-  expect(rows.map((row) => row.method)).toContain("warn");
+  expect(rows).toContainEqual(expect.objectContaining({
+    group: "trebired.code-discipline.runs.check",
+    method: "fail",
+  }));
 });
 
 test("reports oversized functions with name and line span details", async () => {

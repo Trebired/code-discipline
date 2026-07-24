@@ -3,6 +3,11 @@ import path from "node:path";
 import { DEFAULT_SOURCE_EXTENSIONS } from "../shared/constants.js";
 import { ensureDotExtension, normalizeRelativePath, uniqueStrings } from "../shared/utils.js";
 import type { CodeDisciplineSyncImportsRuleOptions, NormalizedCheckCodeDisciplineOptions } from "./types.js";
+import { mergeExcludeDirEntries } from "../config/normalize/exclusions.js";
+
+function hasExplicitLogging(logging: CodeDisciplineSyncImportsRuleOptions["logging"]): boolean {
+  return Boolean(logging?.adapter || logging?.logger);
+}
 
 async function buildNormalizedSyncOptions(
   options: NormalizedCheckCodeDisciplineOptions,
@@ -23,10 +28,7 @@ async function buildNormalizedSyncOptions(
     ? uniqueStrings(DEFAULT_SOURCE_EXTENSIONS.filter((extension) => !excludedSourceExtensions.has(extension)))
     : options.sourceExtensions;
   const gitignorePath = rule.gitignorePath ?? options.gitignorePath;
-  const excludeFolders = uniqueStrings([
-    ...options.excludeFolders,
-    ...(rule.excludeFolders ?? []),
-  ]);
+  const excludeDirs = mergeExcludeDirEntries(options.excludeDirs, rule.excludeDirs ?? []);
 
   return {
     configPath: options.configPath,
@@ -34,14 +36,13 @@ async function buildNormalizedSyncOptions(
     sourceRoot,
     sourceRootRelative,
     sourceExtensions,
-    excludeFolders,
+    excludeDirs,
     excludeGitignoreDirs: options.excludeGitignoreDirs,
     gitignorePath,
     progressObserver: options.progressObserver,
     scanObserver: options.scanObserver,
     tsconfigPath: rule.tsconfigPath ?? `${options.projectRoot}/tsconfig.json`,
     fix,
-    excludeFiles: rule.excludeFiles ?? [],
     alias: {
       prefix: rule.alias?.prefix ?? "#",
       strategy: rule.alias?.strategy ?? "random",
@@ -58,7 +59,7 @@ async function buildNormalizedSyncOptions(
       path: rule.generatedTsconfig?.path ?? ".code-discipline/generated/tsconfig.paths.json",
     },
     packageJsonImports: rule.packageJsonImports,
-    logging: rule.logging ?? options.logging,
+    logging: hasExplicitLogging(rule.logging) ? rule.logging : options.logging,
   };
 }
 

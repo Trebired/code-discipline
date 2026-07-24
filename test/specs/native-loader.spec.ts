@@ -9,6 +9,7 @@ import {
 } from "../../src/index.js";
 import { stripComments, stripCommentsJs } from "../../src/checks/rules/comments/stripping.js";
 import { scanSourceFiles } from "../../src/imports/scan.js";
+import type { SourceScanOptions } from "../../src/imports/types.js";
 import { tempProject, writeFile } from "./helpers.js";
 
 async function withNativeBackendToggle<T>(run: () => Promise<T> | T): Promise<T> {
@@ -93,11 +94,13 @@ test("native and TS source scanning agree when native is available", async () =>
   writeFile(projectRoot, "src/nested/service.go", "package demo\n");
   writeFile(projectRoot, "src/generated/skip.ts", "export const skip = true;\n");
 
-  const options = {
+  const options: SourceScanOptions = {
     projectRoot,
     sourceRoot: `${projectRoot}/src`,
     sourceExtensions: [".ts", ".go"],
-    excludeFolders: ["generated"],
+    excludeDirs: [
+      { type: "folder", pattern: "generated" },
+    ],
     excludeGitignoreDirs: false,
     gitignorePath: `${projectRoot}/.gitignore`,
   };

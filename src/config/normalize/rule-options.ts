@@ -286,7 +286,7 @@ function normalizeRemoveCommentsRule(rule: RemoveCommentsRuleOptions | undefined
   if (!rule) return undefined;
   const source = rule as Record<string, unknown>;
   assertRemovedKeys("removeComments", source, ["enabled", "stop", "fix"]);
-  const unsupportedKeys = Object.keys(source).filter((key) => !["severity", "exclude", "excludeFiles", "excludeFolders"].includes(key));
+  const unsupportedKeys = Object.keys(source).filter((key) => !["severity", "exclude", "excludeDirs", "excludeFiles", "excludeFolders"].includes(key));
   if (unsupportedKeys.length > 0) {
     throw new InvalidCodeDisciplineConfigError("removeComments does not accept rule options", {
       rule: "removeComments",

@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "../checks/progress.js";
 import { RewriteFailureError } from "../shared/errors.js";
+import { ruleLogGroup } from "../shared/log-groups.js";
 import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
 import { applyTextReplacements, collectModuleSpecifiers } from "./module-specifiers.js";
 import { resolveRelativeImport } from "./resolve.js";
@@ -58,14 +59,14 @@ async function rewriteSourceFile(
           logger.debug("rewrite-removed-unresolved", `removed unresolved import ${occurrence.specifier}`, {
             sourceFile: file.absolutePath,
             specifier: occurrence.specifier,
-          });
+          }, { group: ruleLogGroup("sync-imports") });
           continue;
         }
 
         logger.debug("rewrite-skipped-unresolved", `skipped unresolved import ${occurrence.specifier}`, {
           sourceFile: file.absolutePath,
           specifier: occurrence.specifier,
-        });
+        }, { group: ruleLogGroup("sync-imports") });
         continue;
       }
 

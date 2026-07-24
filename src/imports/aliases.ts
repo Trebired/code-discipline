@@ -8,6 +8,7 @@ import type {
   SyncAliasesResult,
   TsconfigJson,
 } from "./types.js";
+import { ruleLogGroup } from "../shared/log-groups.js";
 import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
 import { resolveProjectPathTarget } from "./resolve.js";
 import { generateAliasId } from "./strategies.js";
@@ -104,7 +105,7 @@ async function readTsconfig(
         logger?.warn("tsconfig-read-recovered", `tsconfig recovered after retries=${attempt - 1}`, {
           tsconfigPath: options.tsconfigPath,
           retries: attempt - 1,
-        });
+        }, { group: ruleLogGroup("sync-imports") });
       }
 
       return {
@@ -119,7 +120,7 @@ async function readTsconfig(
         tsconfigPath: options.tsconfigPath,
         retry: attempt,
         maxRetries: TSCONFIG_READ_RETRY_ATTEMPTS - 1,
-      });
+      }, { group: ruleLogGroup("sync-imports") });
       await wait(TSCONFIG_READ_RETRY_DELAY_MS);
     }
   }
@@ -143,12 +144,12 @@ async function syncTsconfigAliases(
     logger.success("aliases-written", `aliases written count=${result.aliasesCount}`, {
       tsconfigPath: options.tsconfigPath,
       aliasesCount: result.aliasesCount,
-    });
+    }, { group: ruleLogGroup("sync-imports") });
   } else {
     logger.info("aliases-unchanged", `aliases unchanged count=${result.aliasesCount}`, {
       tsconfigPath: options.tsconfigPath,
       aliasesCount: result.aliasesCount,
-    });
+    }, { group: ruleLogGroup("sync-imports") });
   }
 
   return result;

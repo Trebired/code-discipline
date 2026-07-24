@@ -1,4 +1,4 @@
-type CodeDisciplineLogLevel = "debug" | "info" | "warn" | "error" | "success";
+type CodeDisciplineLogLevel = "debug" | "info" | "warn" | "fail" | "error" | "success";
 
 type CodeDisciplineLogEvent = {
   group?: string;
@@ -6,6 +6,10 @@ type CodeDisciplineLogEvent = {
   event: string;
   message: string;
   metadata?: Record<string, unknown>;
+};
+
+type CodeDisciplineLogContext = {
+  group?: string;
 };
 
 type CodeDisciplineLogAdapterFn = (event: CodeDisciplineLogEvent) => void;
@@ -17,12 +21,12 @@ type LoggingOptions = {
 
 type NormalizedCodeDisciplineLogger = {
   enabled: boolean;
-  debug: (event: string, message: string, metadata?: Record<string, unknown>) => void;
-  info: (event: string, message: string, metadata?: Record<string, unknown>) => void;
-  warn: (event: string, message: string, metadata?: Record<string, unknown>) => void;
-  error: (event: string, message: string, metadata?: Record<string, unknown>) => void;
-  success: (event: string, message: string, metadata?: Record<string, unknown>) => void;
-  flush: (level: CodeDisciplineLogLevel, event: string, message: string, metadata?: Record<string, unknown>) => void;
+  debug: (event: string, message: string, metadata?: Record<string, unknown>, context?: CodeDisciplineLogContext) => void;
+  info: (event: string, message: string, metadata?: Record<string, unknown>, context?: CodeDisciplineLogContext) => void;
+  warn: (event: string, message: string, metadata?: Record<string, unknown>, context?: CodeDisciplineLogContext) => void;
+  error: (event: string, message: string, metadata?: Record<string, unknown>, context?: CodeDisciplineLogContext) => void;
+  success: (event: string, message: string, metadata?: Record<string, unknown>, context?: CodeDisciplineLogContext) => void;
+  flush: (level: CodeDisciplineLogLevel, event: string, message: string, metadata?: Record<string, unknown>, context?: CodeDisciplineLogContext) => void;
 };
 
 type SyncImportsLogLevel = CodeDisciplineLogLevel;
@@ -32,6 +36,7 @@ type NormalizedSyncImportsLogger = NormalizedCodeDisciplineLogger;
 
 export type {
   CodeDisciplineLogAdapterFn,
+  CodeDisciplineLogContext,
   CodeDisciplineLogEvent,
   CodeDisciplineLogLevel,
   LoggingOptions,

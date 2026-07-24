@@ -73,12 +73,16 @@ test("supports rule-local file and folder exclusions", async () => {
     rules: {
       minFileLines: {
         min: 2,
-        excludeFiles: ["**/client.ts"],
-        excludeFolders: ["generated"],
+        excludeDirs: [
+          { type: "file", pattern: "**/client.ts" },
+          { type: "folder", pattern: "generated" },
+        ],
       },
       maxFileLines: {
         max: 2,
-        excludeFolders: ["**/generated"],
+        excludeDirs: [
+          { type: "folder", pattern: "**/generated" },
+        ],
       },
     },
   });

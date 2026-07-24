@@ -52,7 +52,10 @@ test("fix runs sync-imports and accepts logger shorthand", async () => {
   expect(result.ok).toBe(true);
   expect(result.ruleResults["sync-imports"]?.ok).toBe(true);
   expect(readFile(projectRoot, "src/feature/app.ts")).toContain('from "#shared-util"');
-  expect(rows.length).toBeGreaterThan(0);
+  expect(rows).toContainEqual(expect.objectContaining({
+    group: "trebired.code-discipline.rules.sync-imports",
+    method: "success",
+  }));
 });
 
 test("runs lifecycle hooks around a direct package-owned command", async () => {

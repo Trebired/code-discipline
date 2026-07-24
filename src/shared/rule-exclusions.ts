@@ -1,12 +1,11 @@
 import path from "node:path";
 
-import type { ScannedSourceFile } from "../imports/types.js";
+import type { ExcludeDirEntry, ScannedSourceFile } from "../imports/types.js";
 import { matchesGlob } from "./globs.js";
 import { normalizeRelativePath } from "./utils.js";
 
 type NormalizedRuleExclusions = {
-  excludeFiles?: string[];
-  excludeFolders?: string[];
+  excludeDirs?: ExcludeDirEntry[];
 };
 
 function matchesExcludedFolder(filePath: string, folderPattern: string): boolean {
@@ -27,19 +26,18 @@ function matchesExcludedFolder(filePath: string, folderPattern: string): boolean
 
 function isRuleExcludedFile(file: ScannedSourceFile, exclusions: NormalizedRuleExclusions): boolean {
   const relativePath = normalizeRelativePath(file.relativeFromProjectRoot);
-  const excludeFiles = exclusions.excludeFiles ?? [];
-  const excludeFolders = exclusions.excludeFolders ?? [];
-  return excludeFiles.some((pattern) => matchesGlob(relativePath, pattern))
-    || excludeFolders.some((pattern) => matchesExcludedFolder(relativePath, pattern));
+  const excludeDirs = exclusions.excludeDirs ?? [];
+  return excludeDirs.some((entry) => entry.type === "file"
+    ? matchesGlob(relativePath, entry.pattern)
+    : matchesExcludedFolder(relativePath, entry.pattern));
 }
 
 function filterSourceFilesForRule<T extends ScannedSourceFile>(
   sourceFiles: T[],
   exclusions: NormalizedRuleExclusions | undefined,
 ): T[] {
-  const excludeFiles = exclusions?.excludeFiles ?? [];
-  const excludeFolders = exclusions?.excludeFolders ?? [];
-  if (excludeFiles.length === 0 && excludeFolders.length === 0) {
+  const excludeDirs = exclusions?.excludeDirs ?? [];
+  if (excludeDirs.length === 0) {
     return sourceFiles;
   }
 

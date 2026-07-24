@@ -13,10 +13,11 @@ test("executes correctly when the built cli file is invoked directly", () => {
   const result = runCommand("node", [builtCliPath, "check"], {
     cwd: projectRoot,
   });
+  const output = `${result.stdout}\n${result.stderr}`;
 
   expect(result.status).toBe(1);
-  expect(result.stdout).toContain("Found 1 discipline violation(s).");
-  expect(result.stdout.trim().length).toBeGreaterThan(0);
+  expect(output).toContain("Found 1 discipline violation(s).");
+  expect(output.trim().length).toBeGreaterThan(0);
 });
 
 test("executes correctly through a symlinked bin path instead of silently no-oping", () => {
@@ -32,10 +33,11 @@ test("executes correctly through a symlinked bin path instead of silently no-opi
   const result = runCommand("node", [symlinkPath, "check"], {
     cwd: projectRoot,
   });
+  const output = `${result.stdout}\n${result.stderr}`;
 
   expect(result.status).toBe(1);
-  expect(result.stdout).toContain("Found 1 discipline violation(s).");
-  expect(result.stdout).not.toBe("");
+  expect(output).toContain("Found 1 discipline violation(s).");
+  expect(output.trim()).not.toBe("");
 });
 
 test("executes correctly through bun with a symlinked bin path", () => {
@@ -51,8 +53,9 @@ test("executes correctly through bun with a symlinked bin path", () => {
   const result = runCommand("bun", [symlinkPath, "check"], {
     cwd: projectRoot,
   });
+  const output = `${result.stdout}\n${result.stderr}`;
 
   expect(result.status).toBe(1);
-  expect(result.stdout).toContain("Found 1 discipline violation(s).");
-  expect(result.stdout).not.toBe("");
+  expect(output).toContain("Found 1 discipline violation(s).");
+  expect(output.trim()).not.toBe("");
 });

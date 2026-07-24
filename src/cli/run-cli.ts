@@ -5,7 +5,7 @@ import type { CodeDisciplineRuleSlug, FixableRuleSlug } from "../checks/types.js
 import { loadResolvedCodeDisciplineConfig } from "../config/index.js";
 import { runGatedCommand } from "../runtime/gate-command.js";
 import { isDirectExecution } from "../shared/utils.js";
-import { createDefaultCliLogger, writeLogText } from "./logging.js";
+import { createDefaultCliLogger, type CliLogContext, writeLogText } from "./logging.js";
 import { writeCheckOutput, writeFixOutput, writeSavedReport } from "./output.js";
 import { createCliScanObserver, formatDuration, timeTask } from "./progress.js";
 
@@ -20,11 +20,15 @@ type CliRunResult = {
   exitCode: number;
 };
 
+type CliWriter = (text: string, context?: CliLogContext) => void;
+
 type CliWriters = {
-  fail: (text: string) => void;
-  stderr: (text: string) => void;
-  stdout: (text: string) => void;
-  warn: (text: string) => void;
+  error: CliWriter;
+  fail: CliWriter;
+  stderr: CliWriter;
+  stdout: CliWriter;
+  success: CliWriter;
+  warn: CliWriter;
 };
 
 function createCliWriters(options: CliRunOptions): CliWriters {
@@ -36,15 +40,22 @@ function createCliWriters(options: CliRunOptions): CliWriters {
   const stderr = options.stderr ?? (useDefaultLogger
     ? ((text: string) => writeLogText(logger!, "info", text))
     : ((text: string) => process.stderr.write(text)));
+  const reportFail = options.stdout ?? (useDefaultLogger
+    ? ((text: string, context?: CliLogContext) => writeLogText(logger!, "fail", text, context))
+    : ((text: string) => process.stdout.write(text)));
 
   return {
-    fail: options.stderr ?? (useDefaultLogger
-      ? ((text: string) => writeLogText(logger!, "fail", text))
+    error: options.stderr ?? (useDefaultLogger
+      ? ((text: string, context?: CliLogContext) => writeLogText(logger!, "fail", text, context))
       : ((text: string) => process.stderr.write(text))),
+    fail: reportFail,
     stderr,
     stdout,
+    success: options.stdout ?? (useDefaultLogger
+      ? ((text: string, context?: CliLogContext) => writeLogText(logger!, "success", text, context))
+      : ((text: string) => process.stdout.write(text))),
     warn: options.stdout ?? (useDefaultLogger
-      ? ((text: string) => writeLogText(logger!, "warn", text))
+      ? ((text: string, context?: CliLogContext) => writeLogText(logger!, "warn", text, context))
       : ((text: string) => process.stdout.write(text))),
   };
 }
@@ -129,11 +140,13 @@ async function runCheckCommand(args: {
   config: Record<string, unknown>;
   configPath: string | undefined;
   cwd: string;
+  fail: CliWriter;
   now: Date;
   parsed: ReturnType<typeof parseArgs>;
-  stderr: (text: string) => void;
-  stdout: (text: string) => void;
-  warn: (text: string) => void;
+  stderr: CliWriter;
+  stdout: CliWriter;
+  success: CliWriter;
+  warn: CliWriter;
 }): Promise<CliRunResult> {
   if (args.parsed.commandArgs.length > 0) {
     throw new Error("Command separator -- is only supported with gate");
@@ -152,9 +165,11 @@ async function runCheckCommand(args: {
     });
   });
   const result = timed.result;
-  args.stderr(`Total check: ${formatDuration(timed.elapsedMs)}.\n`);
+  args.stderr(`Total check: ${formatDuration(timed.elapsedMs)}.\n`, { event: "discipline-check-total" });
   const reportText = writeCheckOutput({
+    fail: args.fail,
     stdout: args.stdout,
+    success: args.success,
     violationCount: result.violationCount,
     violations: result.violations,
     warn: args.warn,
@@ -168,11 +183,13 @@ async function runFixCommand(args: {
   config: Record<string, unknown>;
   configPath: string | undefined;
   cwd: string;
+  fail: CliWriter;
   now: Date;
   parsed: ReturnType<typeof parseArgs>;
-  stderr: (text: string) => void;
-  stdout: (text: string) => void;
-  warn: (text: string) => void;
+  stderr: CliWriter;
+  stdout: CliWriter;
+  success: CliWriter;
+  warn: CliWriter;
 }): Promise<CliRunResult> {
   if (args.parsed.commandArgs.length > 0) {
     throw new Error("Command separator -- is only supported with gate");
@@ -193,11 +210,12 @@ async function runFixCommand(args: {
   const result = timed.result;
   const reportText = writeFixOutput({
     deletedFiles: result.deleted_files,
+    fail: args.fail,
     movedFiles: result.moved_files,
     rewrittenFiles: result.rewritten_files,
     rewrittenImports: result.rewritten_imports,
     removedComments: result.removed_comments ?? 0,
-    stdout: args.stdout,
+    success: args.success,
     violationCount: result.violationCount,
     violations: result.violations,
     warn: args.warn,
@@ -211,11 +229,13 @@ async function runGateCommand(args: {
   config: Record<string, unknown>;
   configPath: string | undefined;
   cwd: string;
+  fail: CliWriter;
   now: Date;
   parsed: ReturnType<typeof parseArgs>;
-  stderr: (text: string) => void;
-  stdout: (text: string) => void;
-  warn: (text: string) => void;
+  stderr: CliWriter;
+  stdout: CliWriter;
+  success: CliWriter;
+  warn: CliWriter;
 }): Promise<CliRunResult> {
   if (args.parsed.commandArgs.length === 0) {
     throw new Error("Missing child command after --");
@@ -234,11 +254,13 @@ async function runGateCommand(args: {
     });
   });
   const result = timed.result;
-  args.stderr(`Total gate check: ${formatDuration(timed.elapsedMs)}.\n`);
+  args.stderr(`Total gate check: ${formatDuration(timed.elapsedMs)}.\n`, { event: "discipline-gate-total" });
 
   if (!result.ok) {
     const reportText = writeCheckOutput({
+      fail: args.fail,
       stdout: args.stdout,
+      success: args.success,
       violationCount: result.violationCount,
       violations: result.violations,
       warn: args.warn,
@@ -254,7 +276,7 @@ async function runGateCommand(args: {
 async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliRunResult> {
   const cwd = options.cwd ?? process.cwd();
   const now = options.now ?? new Date();
-  const { fail, stderr, stdout, warn } = createCliWriters(options);
+  const { error: writeError, fail, stderr, stdout, success, warn } = createCliWriters(options);
   const [command, ...rest] = argv;
 
   if (!command || command === "help" || command === "--help" || command === "-h") {
@@ -270,10 +292,12 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
       config,
       configPath,
       cwd,
+      fail,
       now,
       parsed,
       stderr,
       stdout,
+      success,
       warn,
     };
 
@@ -289,11 +313,15 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
       return await runGateCommand(commandArgs);
     }
 
-    fail(`Unknown command: ${command}\n`);
+    writeError(`Unknown command: ${command}\n`, { event: "cli-command-unknown" });
     stderr(renderHelp());
     return { exitCode: 1 };
-  } catch (error) {
-    fail(`${error instanceof Error ? error.message : String(error)}\n`);
+  } catch (caught) {
+    const message = caught instanceof Error ? caught.message : String(caught);
+    const context = message.startsWith("Selected rule") || message.startsWith("Unknown rule")
+      ? { event: "cli-config-error" }
+      : { event: "cli-error" };
+    writeError(`${message}\n`, context);
     return { exitCode: 1 };
   }
 }

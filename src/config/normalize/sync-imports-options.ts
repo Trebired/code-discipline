@@ -11,7 +11,6 @@ import { InvalidCodeDisciplineConfigError, InvalidTsconfigPathError } from "../.
 import type { NormalizedSyncImportsOptions, SyncImportsOptions } from "../../imports/types.js";
 import { isDirectory } from "../../shared/utils.js";
 import { normalizeLoggingOptions } from "./logging-options.js";
-import { normalizeRuleExclusionList } from "./exclusions.js";
 import { normalizeSourceOptions } from "./source-options.js";
 
 function assertValidSyncImportsOptions(options: SyncImportsOptions): void {
@@ -34,6 +33,14 @@ function assertValidSyncImportsOptions(options: SyncImportsOptions): void {
       key: "severity",
     });
   }
+
+  for (const key of ["excludeFiles", "excludeFolders"] as const) {
+    if (key in (options as Record<string, unknown>)) {
+      throw new InvalidCodeDisciplineConfigError(`${key} is no longer supported; use excludeDirs.entries with type "file" or "folder"`, {
+        key,
+      });
+    }
+  }
 }
 
 async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise<NormalizedSyncImportsOptions> {
@@ -53,7 +60,6 @@ async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise
     configPath: options.configPath,
     tsconfigPath,
     fix: options.fix ?? DEFAULT_RULE_FIX,
-    excludeFiles: normalizeRuleExclusionList(options.excludeFiles, "excludeFiles"),
     alias: {
       prefix: options.alias?.prefix ?? DEFAULT_ALIAS_PREFIX,
       strategy: options.alias?.strategy ?? DEFAULT_ALIAS_STRATEGY,

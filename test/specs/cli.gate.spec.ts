@@ -110,10 +110,12 @@ test("gate blocks the child command when discipline violations exist", () => {
   ], {
     cwd: projectRoot,
   });
+  const output = `${result.stdout}\n${result.stderr}`;
 
   expect(result.status).toBe(1);
-  expect(result.stdout).toContain("Found 1 discipline violation(s).");
-  expect(result.stdout).not.toContain("started");
+  expect(output).toContain("Found 1 discipline violation(s).");
+  expect(output.replace(/\x1b\[[0-9;]*m/g, "")).toContain("[FAIL, trebired.code-discipline.results] Found 1 discipline violation(s).");
+  expect(output).not.toContain("started");
 });
 
 test("gate runs the child command when discipline passes", () => {
@@ -143,7 +145,7 @@ test("gate runs the child command when discipline passes", () => {
 
   expect(result.status).toBe(0);
   expect(result.stdout).toContain("started");
-  expect(result.stdout).not.toContain("Found 1 discipline violation(s).");
+  expect(`${result.stdout}\n${result.stderr}`).not.toContain("Found 1 discipline violation(s).");
 });
 
 test("gate allows warning-only max line results to pass", () => {

@@ -67,10 +67,10 @@ test("rejects removed syncImports config keys", async () => {
   await expect(syncImports({
     projectRoot,
     // @ts-expect-error legacy config
-    excludeDirs: {
-      dirs: ["generated"],
+    excludeFolders: {
+      folders: ["generated"],
     },
-  })).rejects.toThrow("excludeDirs is no longer supported; use excludeFolders");
+  })).rejects.toThrow("excludeFolders is no longer supported; use excludeDirs");
 });
 
 test("generates aliases and rewrites imports when fix is true", async () => {

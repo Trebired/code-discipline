@@ -1,7 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import type { CliLogContext } from "./logging.js";
 import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
+
+type CliOutputWriter = (text: string, context?: CliLogContext) => void;
 
 function padDatePart(value: number): string {
   return String(value).padStart(2, "0");
@@ -99,27 +102,29 @@ function renderCheckOutput(violations: CodeDisciplineViolation[], violationCount
 }
 
 function writeCheckOutput(args: {
-  stdout: (text: string) => void;
-  warn: (text: string) => void;
+  fail: CliOutputWriter;
+  stdout: CliOutputWriter;
+  success: CliOutputWriter;
+  warn: CliOutputWriter;
   violationCount: number;
   violations: CodeDisciplineViolation[];
 }): string {
   const reportText = renderCheckOutput(args.violations, args.violationCount);
 
   if (args.violations.length === 0) {
-    args.stdout(reportText);
+    args.success(reportText, { event: "discipline-check-ok" });
     return reportText;
   }
 
   for (const violation of args.violations) {
-    const writeLine = violation.severity === "warning" ? args.warn : args.stdout;
-    writeLine(`${formatViolation(violation)}\n`);
+    const writeLine = violation.severity === "warning" ? args.warn : args.fail;
+    writeLine(`${formatViolation(violation)}\n`, { event: "discipline-violation", rule: violation.rule });
   }
 
   const blockingCount = countBlockingViolations(args.violations);
   const warningCount = args.violationCount - blockingCount;
   const summary = renderCheckSummary(blockingCount, warningCount);
-  (blockingCount > 0 ? args.stdout : args.warn)(summary);
+  (blockingCount > 0 ? args.fail : args.warn)(summary, { event: "discipline-check-summary" });
   return reportText;
 }
 
@@ -144,19 +149,21 @@ function writeFixOutput(args: {
   rewrittenFiles: number;
   rewrittenImports: number;
   removedComments: number;
-  stdout: (text: string) => void;
+  fail: CliOutputWriter;
+  success: CliOutputWriter;
   violationCount: number;
   violations: CodeDisciplineViolation[];
-  warn: (text: string) => void;
+  warn: CliOutputWriter;
 }): string {
   const reportText = renderFixOutput(args);
 
   for (const violation of args.violations) {
-    const writeLine = violation.severity === "warning" ? args.warn : args.stdout;
-    writeLine(`${formatViolation(violation)}\n`);
+    const writeLine = violation.severity === "warning" ? args.warn : args.fail;
+    writeLine(`${formatViolation(violation)}\n`, { event: "discipline-fix-violation", rule: violation.rule });
   }
 
-  args.stdout(`Fix summary: deleted files ${args.deletedFiles}, moved ${args.movedFiles}, rewritten files ${args.rewrittenFiles}, rewritten imports ${args.rewrittenImports}, removed comments ${args.removedComments}, remaining violations ${args.violationCount}.\n`);
+  const summary = `Fix summary: deleted files ${args.deletedFiles}, moved ${args.movedFiles}, rewritten files ${args.rewrittenFiles}, rewritten imports ${args.rewrittenImports}, removed comments ${args.removedComments}, remaining violations ${args.violationCount}.\n`;
+  (args.violationCount > 0 ? args.fail : args.success)(summary, { event: "discipline-fix-summary" });
   return reportText;
 }
 
