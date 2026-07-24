@@ -2,6 +2,10 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.2.1
+
+- Made `maxCharactersPerLine` ignore SVG files and inline JSX `<svg>...</svg>` regions while still reporting ordinary long lines.
+
 ## 4.2.0
 
 - Changed the configured `minFileLines` default from `5` to `1`.

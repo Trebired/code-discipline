@@ -87,6 +87,54 @@ test("reports physical lines above the max characters per line default", async (
   ]);
 });
 
+test("ignores inline jsx svg regions while checking other max character lines", async () => {
+  const projectRoot = tempProject();
+  const longPath = "M " + "1 ".repeat(90);
+  const longExpression = "x".repeat(151);
+
+  writeFile(projectRoot, "src/logo.tsx", [
+    "function Logo() {",
+    "  return (",
+    "    <span>",
+    `      <svg width="188.73555mm" height="46.200558mm" viewBox="0 0 188.73555 46.200558" version="1.1" xmlns="http://www.w3.org/2000/svg">`,
+    "        <path",
+    "          style={{ fill: \"currentColor\", stroke: \"none\" }}",
+    `          d="${longPath}"`,
+    "        />",
+    "      </svg>",
+    "    </span>",
+    "  );",
+    "}",
+    "",
+    `export const stillChecked = "${longExpression}";`,
+    "",
+  ].join("\n"));
+  writeFile(projectRoot, "src/svg-string.ts", `export const markup = "<svg data-value='${longExpression}'></svg>";\n`);
+
+  const result = await checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      maxCharactersPerLine: {},
+    },
+  });
+
+  expect(result.ok).toBe(false);
+  expect(result.violations).toHaveLength(2);
+  expect(result.violations).toEqual([
+    expect.objectContaining({
+      rule: "max-characters-per-line",
+      filePath: "src/logo.tsx",
+      details: expect.objectContaining({
+        line: 14,
+      }),
+    }),
+    expect.objectContaining({
+      rule: "max-characters-per-line",
+      filePath: "src/svg-string.ts",
+    }),
+  ]);
+});
+
 test("supports max characters per line selectors only when configured", async () => {
   const projectRoot = tempProject();
 
