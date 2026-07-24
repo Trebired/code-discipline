@@ -13,10 +13,12 @@ type CodeDisciplineRuleName =
   | "remove-comments"
   | "dry";
 
+type CodeDisciplineFormatterName = "prettier";
+type CodeDisciplineCheckName = CodeDisciplineRuleName | CodeDisciplineFormatterName;
 type CodeDisciplineViolationSeverity = "fail" | "warning";
 
 type CodeDisciplineViolation = {
-  rule: CodeDisciplineRuleName;
+  rule: CodeDisciplineCheckName;
   fix: boolean;
   filePath: string;
   message: string;
@@ -32,11 +34,13 @@ type CodeDisciplineResult = {
   result?: ResultLike<{
     violationCount: number;
   }, {
-    rules: CodeDisciplineRuleName[];
+    rules: CodeDisciplineCheckName[];
   }>;
 };
 
 export type {
+  CodeDisciplineCheckName,
+  CodeDisciplineFormatterName,
   CodeDisciplineResult,
   CodeDisciplineRuleName,
   CodeDisciplineViolation,

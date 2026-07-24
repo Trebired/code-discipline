@@ -1,6 +1,8 @@
 import { InvalidCodeDisciplineConfigError } from "../shared/errors.js";
 import type {
   CodeDisciplineMode,
+  CodeDisciplineFormatters,
+  CodeDisciplineCheckSelectorSlug,
   CodeDisciplineRuleSlug,
   CodeDisciplineRules,
   FixableRuleSlug,
@@ -26,7 +28,12 @@ const FIXABLE_RULE_SLUGS: FixableRuleSlug[] = [
   "folderize-compound-files",
   "sync-imports",
   "remove-comments",
+  "prettier",
 ];
+
+const FORMATTER_SLUGS = [
+  "prettier",
+] as const;
 
 const RULE_SLUG_BY_CONFIG_KEY = {
   bannedFiles: "banned-files",
@@ -58,16 +65,30 @@ function resolveEnabledRuleSlugs(
   return enabled;
 }
 
+function resolveEnabledFormatterSlugs(
+  formatters: CodeDisciplineFormatters | undefined,
+): Set<CodeDisciplineCheckSelectorSlug> {
+  const enabled = new Set<CodeDisciplineCheckSelectorSlug>();
+
+  if (formatters?.prettier) {
+    enabled.add("prettier");
+  }
+
+  return enabled;
+}
+
 function normalizeOnlyRules(
   mode: CodeDisciplineMode,
   onlyRules: readonly string[] | undefined,
   rules: CodeDisciplineRules | undefined,
-): CodeDisciplineRuleSlug[] | FixableRuleSlug[] | undefined {
+  formatters: CodeDisciplineFormatters | undefined,
+): CodeDisciplineCheckSelectorSlug[] | FixableRuleSlug[] | undefined {
   if (!onlyRules || onlyRules.length === 0) return undefined;
 
-  const allowedRules = new Set<string>(mode === "fix" ? FIXABLE_RULE_SLUGS : ALL_RULE_SLUGS);
+  const allowedRules = new Set<string>(mode === "fix" ? FIXABLE_RULE_SLUGS : [...ALL_RULE_SLUGS, ...FORMATTER_SLUGS]);
   const enabledRules = resolveEnabledRuleSlugs(rules);
-  const normalized: CodeDisciplineRuleSlug[] = [];
+  const enabledFormatters = resolveEnabledFormatterSlugs(formatters);
+  const normalized: CodeDisciplineCheckSelectorSlug[] = [];
 
   for (const rule of onlyRules) {
     if (!allowedRules.has(rule)) {
@@ -79,15 +100,16 @@ function normalizeOnlyRules(
       );
     }
 
-    if (!enabledRules.has(rule as CodeDisciplineRuleSlug)) {
-      throw new InvalidCodeDisciplineConfigError(`Selected rule is not configured: ${rule}`, {
+    if (!enabledRules.has(rule as CodeDisciplineRuleSlug) && !enabledFormatters.has(rule as CodeDisciplineCheckSelectorSlug)) {
+      const knownFormatter = FORMATTER_SLUGS.includes(rule as typeof FORMATTER_SLUGS[number]);
+      throw new InvalidCodeDisciplineConfigError(`${knownFormatter ? "Selected selector" : "Selected rule"} is not configured: ${rule}`, {
         mode,
         rule,
       });
     }
 
-    if (!normalized.includes(rule as CodeDisciplineRuleSlug)) {
-      normalized.push(rule as CodeDisciplineRuleSlug);
+    if (!normalized.includes(rule as CodeDisciplineCheckSelectorSlug)) {
+      normalized.push(rule as CodeDisciplineCheckSelectorSlug);
     }
   }
 
@@ -97,7 +119,7 @@ function normalizeOnlyRules(
 }
 
 function shouldRunRule(
-  rule: CodeDisciplineRuleSlug,
+  rule: CodeDisciplineCheckSelectorSlug,
   onlyRules: readonly string[] | undefined,
 ): boolean {
   return !onlyRules || onlyRules.length === 0 || onlyRules.includes(rule);
@@ -106,8 +128,10 @@ function shouldRunRule(
 export {
   ALL_RULE_SLUGS,
   FIXABLE_RULE_SLUGS,
+  FORMATTER_SLUGS,
   RULE_SLUG_BY_CONFIG_KEY,
   normalizeOnlyRules,
+  resolveEnabledFormatterSlugs,
   resolveEnabledRuleSlugs,
   shouldRunRule,
 };

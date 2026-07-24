@@ -51,6 +51,8 @@ export {
 } from "./shared/errors.js";
 
 export type {
+  CodeDisciplineCheckName,
+  CodeDisciplineFormatterName,
   CodeDisciplineResult,
   CodeDisciplineRuleName,
   CodeDisciplineViolation,
@@ -119,6 +121,9 @@ export type {
   CodeDisciplineLifecycleHookResult,
   CodeDisciplineLifecycleHooks,
   CodeDisciplinePackageJsonImportsOptions,
+  CodeDisciplineCheckSelectorSlug,
+  CodeDisciplineFormatterSlug,
+  CodeDisciplineFormatters,
   CodeDisciplineRuleSlug,
   CodeDisciplineRuntimeMode as SharedCodeDisciplineRuntimeMode,
   CodeDisciplineRules,
@@ -135,6 +140,7 @@ export type {
   MaxFunctionLinesRuleOptions,
   MinDeclarationNameRuleOptions,
   MinFileLinesRuleOptions,
+  NormalizedPrettierFormatter,
   NormalizedBannedFileRuleEntry,
   NormalizedBannedFilesRule,
   NormalizedBannedPatternRuleEntry,
@@ -149,5 +155,6 @@ export type {
   NormalizedMinFileLinesRule,
   NormalizedRemoveCommentsRule,
   RemoveCommentsRuleOptions,
+  PrettierFormatterOptions,
   TsconfigPathsNormalizeMode,
 } from "./checks/types.js";

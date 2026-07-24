@@ -125,6 +125,30 @@ export default defineCodeDisciplineConfig({
       context.state.started = true;
     },
   },
+  formatters: {
+    prettier: {
+      targets: ["."],
+      ignore: [
+        "dist",
+        "build",
+        "coverage",
+        ".next",
+        ".nuxt",
+        ".output",
+        "*.min.js",
+        "*.min.css",
+      ],
+      options: {
+        printWidth: 100,
+        tabWidth: 2,
+        useTabs: false,
+        semi: true,
+        singleQuote: true,
+        trailingComma: "all",
+        endOfLine: "lf",
+      },
+    },
+  },
   rules: {
     minFileLines: {
       min: 1,
@@ -218,13 +242,15 @@ export default defineCodeDisciplineConfig({
 });
 ```
 
-## Rule Selectors
+## Selectors
 
-`check` and `fix` both accept positional rule selectors:
+`check` and `fix` both accept positional selectors:
 
 ```sh
 code-discipline check max-file-lines max-function-lines
 code-discipline fix banned-files min-file-lines sync-imports remove-comments
+code-discipline check prettier
+code-discipline fix prettier
 ```
 
 Rules use kebab-case public slugs:
@@ -232,6 +258,7 @@ Rules use kebab-case public slugs:
 - `banned-patterns`
 - `banned-files`
 - `min-file-lines`
+- `min-declaration-name`
 - `max-file-lines`
 - `max-characters-per-line`
 - `max-function-lines`
@@ -241,6 +268,34 @@ Rules use kebab-case public slugs:
 - `dry`
 
 `fix` only accepts fixable rules. Trying to run `code-discipline fix max-function-lines`, `code-discipline fix max-characters-per-line`, or `code-discipline fix dry` fails clearly.
+
+Formatter selectors such as `prettier` are enabled by top-level `formatters` config, not by `rules`.
+
+## Formatters
+
+Formatters are configured at top level under `formatters`, not under `rules`. Presence enables a formatter; there is no `enabled: true` key.
+
+`formatters.prettier` uses Prettier as the formatting engine and keeps `code-discipline.ts` as the formatting policy source. `check prettier` validates formatting without modifying files, while `fix prettier` writes formatted files. Running `code-discipline fix` with no selectors runs configured Prettier formatting last after structural, import, and comment fixes.
+
+Example:
+
+```ts
+formatters: {
+  prettier: {
+    targets: ["."],
+    ignore: ["dist", "build", "coverage", ".next", "*.min.js", "*.min.css"],
+    options: {
+      printWidth: 100,
+      tabWidth: 2,
+      useTabs: false,
+      semi: true,
+      singleQuote: true,
+      trailingComma: "all",
+      endOfLine: "lf",
+    },
+  },
+},
+```
 
 ## Runtime API
 

@@ -134,12 +134,18 @@ function renderFixOutput(args: {
   rewrittenFiles: number;
   rewrittenImports: number;
   removedComments: number;
+  formattedFiles?: number;
+  unchangedFiles?: number;
   violationCount: number;
   violations: CodeDisciplineViolation[];
 }): string {
+  const formatterSummary = args.formattedFiles === undefined && args.unchangedFiles === undefined
+    ? ""
+    : ` formatted files ${args.formattedFiles ?? 0}, unchanged files ${args.unchangedFiles ?? 0}.`;
+
   return [
     ...args.violations.map((violation) => `${formatViolation(violation)}\n`),
-    `Fix summary: deleted files ${args.deletedFiles}, moved ${args.movedFiles}, rewritten files ${args.rewrittenFiles}, rewritten imports ${args.rewrittenImports}, removed comments ${args.removedComments}, remaining violations ${args.violationCount}.\n`,
+    `Fix summary: deleted files ${args.deletedFiles}, moved ${args.movedFiles}, rewritten files ${args.rewrittenFiles}, rewritten imports ${args.rewrittenImports}, removed comments ${args.removedComments}, remaining violations ${args.violationCount}.${formatterSummary}\n`,
   ].join("");
 }
 
@@ -149,6 +155,8 @@ function writeFixOutput(args: {
   rewrittenFiles: number;
   rewrittenImports: number;
   removedComments: number;
+  formattedFiles?: number;
+  unchangedFiles?: number;
   fail: CliOutputWriter;
   success: CliOutputWriter;
   violationCount: number;
@@ -162,7 +170,10 @@ function writeFixOutput(args: {
     writeLine(`${formatViolation(violation)}\n`, { event: "discipline-fix-violation", rule: violation.rule });
   }
 
-  const summary = `Fix summary: deleted files ${args.deletedFiles}, moved ${args.movedFiles}, rewritten files ${args.rewrittenFiles}, rewritten imports ${args.rewrittenImports}, removed comments ${args.removedComments}, remaining violations ${args.violationCount}.\n`;
+  const formatterSummary = args.formattedFiles === undefined && args.unchangedFiles === undefined
+    ? ""
+    : ` formatted files ${args.formattedFiles ?? 0}, unchanged files ${args.unchangedFiles ?? 0}.`;
+  const summary = `Fix summary: deleted files ${args.deletedFiles}, moved ${args.movedFiles}, rewritten files ${args.rewrittenFiles}, rewritten imports ${args.rewrittenImports}, removed comments ${args.removedComments}, remaining violations ${args.violationCount}.${formatterSummary}\n`;
   (args.violationCount > 0 ? args.fail : args.success)(summary, { event: "discipline-fix-summary" });
   return reportText;
 }

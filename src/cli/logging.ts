@@ -1,7 +1,7 @@
 import { createLog, type LogInstance } from "@trebired/logger";
 
 import { CODE_DISCIPLINE_LOG_GROUP } from "../shared/constants.js";
-import type { CodeDisciplineRuleName } from "../shared/discipline-types.js";
+import type { CodeDisciplineCheckName } from "../shared/discipline-types.js";
 import { buildCodeDisciplineLogGroup, ruleLogGroup, runLogGroup, sourceScanLogGroup } from "../shared/log-groups.js";
 
 type CliLogLevel = "fail" | "info" | "success" | "warn";
@@ -9,7 +9,7 @@ type CliLogLevel = "fail" | "info" | "success" | "warn";
 type CliLogContext = {
   group?: string;
   event?: string;
-  rule?: CodeDisciplineRuleName | string;
+  rule?: CodeDisciplineCheckName | string;
   scanScope?: string;
 };
 
@@ -25,6 +25,7 @@ const RULE_SLUGS = new Set([
   "sync-imports",
   "remove-comments",
   "dry",
+  "prettier",
 ]);
 
 function createDefaultCliLogger(): LogInstance {

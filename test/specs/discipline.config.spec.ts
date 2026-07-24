@@ -104,6 +104,25 @@ test("rejects removed logging boolean config", async () => {
   });
 });
 
+test("rejects removed enabled key for prettier formatter", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
+
+  await expect(checkCodeDiscipline({
+    projectRoot,
+    sourceRoot: ".",
+    formatters: {
+      prettier: {
+        // @ts-expect-error presence enables prettier
+        enabled: true,
+      },
+    },
+  })).rejects.toMatchObject({
+    code: "invalid_config",
+  });
+});
+
 test("rejects invalid severity values", async () => {
   const projectRoot = tempProject();
 

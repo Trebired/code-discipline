@@ -18,6 +18,7 @@ import {
   normalizeRemoveCommentsRule,
   normalizeSyncImportsRule,
 } from "./rule-options.js";
+import { normalizeFormatters } from "./formatter-options.js";
 import { InvalidCodeDisciplineConfigError } from "../../shared/errors.js";
 import { normalizeLoggingOptions } from "./logging-options.js";
 import { normalizeSourceOptions } from "./source-options.js";
@@ -41,8 +42,9 @@ async function normalizeCheckCodeDisciplineOptions(
     ...source,
     configPath: options.configPath,
     logging: normalizeLoggingOptions(options.logging, "logging"),
-    onlyRules: normalizeOnlyRules(mode, options.onlyRules, options.rules),
+    onlyRules: normalizeOnlyRules(mode, options.onlyRules, options.rules, options.formatters),
     progressObserver: options.progressObserver,
+    formatters: normalizeFormatters(options.formatters),
     rules: {
       bannedPatterns: normalizeBannedPatternsRule(options.rules?.bannedPatterns),
       bannedFiles: normalizeBannedFilesRule(options.rules?.bannedFiles),

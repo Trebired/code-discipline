@@ -1,6 +1,6 @@
 {
   "name": "@trebired/code-discipline",
-  "version": "4.3.2",
+  "version": "4.4.0",
   "description": "Configurable codebase discipline checks and rule-driven fixes for Bun and Node.js projects.",
   "license": "AGPL-3.0-only",
   "keywords": [
@@ -62,6 +62,7 @@
   "dependencies": {
     "@trebired/logger": "^2.5.6",
     "@trebired/result": "^0.2.1",
+    "prettier": "3.9.6",
     "typescript": "^6.0.3"
   },
   "devDependencies": {

@@ -2,6 +2,12 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.4.0
+
+- Added top-level `formatters.prettier` configuration, backed by Prettier `3.9.6`, with `check prettier` for formatting validation and `fix prettier` for formatting writes.
+- Made unqualified `fix` run configured Prettier formatting last after structural, import, and comment fixes.
+- Added formatter changed and unchanged counts to fix results and CLI summaries.
+
 ## 4.3.2
 
 - Changed the default `minDeclarationName.min` from `3` to `2`, allowing two-character declaration names while still reporting one-character names.

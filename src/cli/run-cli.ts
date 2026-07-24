@@ -215,6 +215,8 @@ async function runFixCommand(args: {
     rewrittenFiles: result.rewritten_files,
     rewrittenImports: result.rewritten_imports,
     removedComments: result.removed_comments ?? 0,
+    formattedFiles: result.formatted_files,
+    unchangedFiles: result.unchanged_files,
     success: args.success,
     violationCount: result.violationCount,
     violations: result.violations,
@@ -318,7 +320,7 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
     return { exitCode: 1 };
   } catch (caught) {
     const message = caught instanceof Error ? caught.message : String(caught);
-    const context = message.startsWith("Selected rule") || message.startsWith("Unknown rule")
+    const context = message.startsWith("Selected rule") || message.startsWith("Selected selector") || message.startsWith("Unknown rule")
       ? { event: "cli-config-error" }
       : { event: "cli-error" };
     writeError(`${message}\n`, context);

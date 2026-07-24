@@ -1,4 +1,5 @@
 import type { LoggingOptions } from "../shared/logging-types.js";
+import type { Options as PrettierOptions } from "prettier";
 import type {
   ExcludeDirEntry,
   ExcludeDirsOptions,
@@ -15,7 +16,9 @@ import type {
 } from "../shared/discipline-types.js";
 
 type CodeDisciplineRuleSlug = CodeDisciplineRuleName;
-type FixableRuleSlug = "banned-files" | "min-file-lines" | "folderize-compound-files" | "sync-imports" | "remove-comments";
+type CodeDisciplineFormatterSlug = "prettier";
+type CodeDisciplineCheckSelectorSlug = CodeDisciplineRuleSlug | CodeDisciplineFormatterSlug;
+type FixableRuleSlug = "banned-files" | "min-file-lines" | "folderize-compound-files" | "sync-imports" | "remove-comments" | CodeDisciplineFormatterSlug;
 type CodeDisciplineMode = "check" | "fix";
 type CodeDisciplineRuntimeMode = CodeDisciplineMode;
 type CodeDisciplineRuleSeverity = "warning" | "fail";
@@ -104,6 +107,16 @@ type CodeDisciplineRules = {
   dry?: DryRuleOptions;
 };
 
+type PrettierFormatterOptions = {
+  targets?: string[];
+  ignore?: string[];
+  options?: PrettierOptions;
+};
+
+type CodeDisciplineFormatters = {
+  prettier?: PrettierFormatterOptions;
+};
+
 type TsconfigPathsNormalizeMode = "relative-dot-prefix" | "strip-dot-prefix" | "none";
 
 type CodeDisciplineTsconfigPathsOptions = {
@@ -137,10 +150,11 @@ type CheckCodeDisciplineOptions = {
   excludeDirs?: ExcludeDirsOptions;
   gitignorePath?: string;
   logging?: LoggingOptions;
+  formatters?: CodeDisciplineFormatters;
   rules?: CodeDisciplineRules;
   lifecycle?: CodeDisciplineLifecycleHooks;
   tsconfigPaths?: CodeDisciplineTsconfigPathsOptions;
-  onlyRules?: CodeDisciplineRuleSlug[];
+  onlyRules?: CodeDisciplineCheckSelectorSlug[];
   progressObserver?: SourceProgressObserver;
   scanObserver?: SourceScanObserver;
 };
@@ -221,12 +235,21 @@ type NormalizedRemoveCommentsRule = {
   exclude: string[];
 };
 
+type NormalizedPrettierFormatter = {
+  targets: string[];
+  ignore: string[];
+  options: PrettierOptions;
+};
+
 type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
   configPath?: string;
   sourceRootRelative: string;
   logging: LoggingOptions;
-  onlyRules?: CodeDisciplineRuleSlug[] | FixableRuleSlug[];
+  onlyRules?: CodeDisciplineCheckSelectorSlug[] | FixableRuleSlug[];
   progressObserver?: SourceProgressObserver;
+  formatters: {
+    prettier?: NormalizedPrettierFormatter;
+  };
   rules: {
     bannedFiles?: NormalizedBannedFilesRule;
     bannedPatterns?: NormalizedBannedPatternsRule;
@@ -252,6 +275,8 @@ type FixCodeDisciplineRuleResult = {
   rewritten_files?: number;
   rewritten_imports?: number;
   removed_comments?: number;
+  formatted_files?: number;
+  unchanged_files?: number;
   removed_duplicates?: number;
   added_imports?: number;
   deleted_files?: number;
@@ -263,6 +288,8 @@ type FixCodeDisciplineResult = CodeDisciplineResult & {
   rewritten_files: number;
   rewritten_imports: number;
   removed_comments: number;
+  formatted_files: number;
+  unchanged_files: number;
   ruleResults: Partial<Record<FixableRuleSlug, FixCodeDisciplineRuleResult>>;
 };
 
@@ -282,6 +309,9 @@ export type {
   CodeDisciplineRuleSlug,
   CodeDisciplineRuleSeverity,
   CodeDisciplineRuntimeMode,
+  CodeDisciplineCheckSelectorSlug,
+  CodeDisciplineFormatterSlug,
+  CodeDisciplineFormatters,
   CodeDisciplineRules,
   CodeDisciplineSyncImportsRuleOptions,
   CodeDisciplineTsconfigPathsOptions,
@@ -296,12 +326,14 @@ export type {
   MaxFunctionLinesRuleOptions,
   MinDeclarationNameRuleOptions,
   MinFileLinesRuleOptions,
+  NormalizedPrettierFormatter,
   NormalizedBannedFileRuleEntry,
   NormalizedBannedFilesRule,
   NormalizedBannedPatternRuleEntry,
   NormalizedBannedPatternsRule,
   RemoveCommentsRuleOptions,
   RuleExclusionOptions,
+  PrettierFormatterOptions,
   NormalizedCheckCodeDisciplineOptions,
   NormalizedDryRule,
   NormalizedFolderizeCompoundFilesRule,

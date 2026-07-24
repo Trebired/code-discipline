@@ -9,6 +9,7 @@ import { runLogGroup } from "../shared/log-groups.js";
 import { resolveLogger } from "../shared/logging.js";
 import { filterSourceFilesForRule } from "../shared/rule-exclusions.js";
 import type { CodeDisciplineResult, CodeDisciplineViolation } from "../shared/discipline-types.js";
+import { applyPrettierFormatterFix, collectPrettierViolations } from "./prettier.js";
 import { shouldRunRule } from "./rule-slugs.js";
 import { fixFolderization } from "./fix-folderization.js";
 import { runFolderizeCompoundFilesRule } from "./rules/folderize/compound-files.js";
@@ -37,6 +38,8 @@ type FixState = {
   deletedFiles: number;
   movedFiles: number;
   removedComments: number;
+  formattedFiles: number;
+  unchangedFiles: number;
   rewrittenFiles: number;
   rewrittenImports: number;
   ruleResults: Partial<Record<FixableRuleSlug, FixCodeDisciplineRuleResult>>;
@@ -53,28 +56,18 @@ function resolveConfiguredSeverity(
   options: NormalizedCheckCodeDisciplineOptions,
 ): "warning" | "fail" {
   switch (violation.rule) {
-    case "banned-patterns":
-      return options.rules.bannedPatterns?.severity ?? "fail";
-    case "banned-files":
-      return options.rules.bannedFiles?.severity ?? "fail";
-    case "min-file-lines":
-      return options.rules.minFileLines?.severity ?? "fail";
-    case "min-declaration-name":
-      return options.rules.minDeclarationName?.severity ?? "fail";
-    case "max-file-lines":
-      return options.rules.maxFileLines?.severity ?? "fail";
-    case "max-characters-per-line":
-      return options.rules.maxCharactersPerLine?.severity ?? "fail";
-    case "max-function-lines":
-      return options.rules.maxFunctionLines?.severity ?? "fail";
-    case "folderize-compound-files":
-      return options.rules.folderizeCompoundFiles?.severity ?? "fail";
-    case "sync-imports":
-      return options.rules.syncImports?.severity ?? "fail";
-    case "remove-comments":
-      return options.rules.removeComments?.severity ?? "fail";
-    case "dry":
-      return options.rules.dry?.severity ?? "fail";
+    case "banned-patterns": return options.rules.bannedPatterns?.severity ?? "fail";
+    case "banned-files": return options.rules.bannedFiles?.severity ?? "fail";
+    case "min-file-lines": return options.rules.minFileLines?.severity ?? "fail";
+    case "min-declaration-name": return options.rules.minDeclarationName?.severity ?? "fail";
+    case "max-file-lines": return options.rules.maxFileLines?.severity ?? "fail";
+    case "max-characters-per-line": return options.rules.maxCharactersPerLine?.severity ?? "fail";
+    case "max-function-lines": return options.rules.maxFunctionLines?.severity ?? "fail";
+    case "folderize-compound-files": return options.rules.folderizeCompoundFiles?.severity ?? "fail";
+    case "sync-imports": return options.rules.syncImports?.severity ?? "fail";
+    case "remove-comments": return options.rules.removeComments?.severity ?? "fail";
+    case "dry": return options.rules.dry?.severity ?? "fail";
+    case "prettier": return "fail";
   }
 }
 
@@ -204,6 +197,8 @@ async function collectViolations(options: NormalizedCheckCodeDisciplineOptions):
     violations.push(...await collectRemoveCommentsViolations(filterSourceFilesForRule(sourceFiles, options.rules.removeComments), options));
   }
 
+  violations.push(...await collectPrettierViolations(options));
+
   return sortViolations(applyConfiguredSeverity(violations, options));
 }
 
@@ -215,6 +210,8 @@ function mapFixRuleResult(result: {
   rewritten_files?: number;
   rewritten_imports?: number;
   removed_comments?: number;
+  formatted_files?: number;
+  unchanged_files?: number;
   removed_duplicates?: number;
   added_imports?: number;
   deleted_files?: number;
@@ -227,6 +224,8 @@ function mapFixRuleResult(result: {
     rewritten_files: result.rewritten_files,
     rewritten_imports: result.rewritten_imports,
     removed_comments: result.removed_comments,
+    formatted_files: result.formatted_files,
+    unchanged_files: result.unchanged_files,
     removed_duplicates: result.removed_duplicates,
     added_imports: result.added_imports,
     deleted_files: result.deleted_files,
@@ -317,6 +316,18 @@ async function applyRemoveCommentsFix(state: FixState, normalized: NormalizedChe
   state.removedComments += result.removed_comments ?? 0;
 }
 
+async function applyPrettierFix(state: FixState, normalized: NormalizedCheckCodeDisciplineOptions): Promise<void> {
+  const result = await applyPrettierFormatterFix(normalized);
+  if (!result) return;
+
+  const violations = applyConfiguredSeverity(result.violations, normalized);
+  state.ruleResults.prettier = mapFixRuleResult({ ...result.ruleResult, violations });
+  state.violations.push(...violations);
+  state.formattedFiles += result.formattedFiles;
+  state.unchangedFiles += result.unchangedFiles;
+  state.rewrittenFiles += result.rewrittenFiles;
+}
+
 function createFixResult(state: FixState): FixCodeDisciplineResult {
   return {
     ...summarizeViolations(sortViolations(state.violations)),
@@ -325,6 +336,8 @@ function createFixResult(state: FixState): FixCodeDisciplineResult {
     rewritten_files: state.rewrittenFiles,
     rewritten_imports: state.rewrittenImports,
     removed_comments: state.removedComments,
+    formatted_files: state.formattedFiles,
+    unchanged_files: state.unchangedFiles,
     ruleResults: state.ruleResults,
   };
 }
@@ -342,6 +355,8 @@ function logFixResult(result: FixCodeDisciplineResult, logger: ReturnType<typeof
     rewrittenFiles: result.rewritten_files,
     rewrittenImports: result.rewritten_imports,
     removedComments: result.removed_comments,
+    formattedFiles: result.formatted_files,
+    unchangedFiles: result.unchanged_files,
     ruleResults: result.ruleResults,
   }, { group: runLogGroup("fix") });
 }
@@ -363,6 +378,8 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
     deletedFiles: 0,
     movedFiles: 0,
     removedComments: 0,
+    formattedFiles: 0,
+    unchangedFiles: 0,
     rewrittenFiles: 0,
     rewrittenImports: 0,
     ruleResults: {},
@@ -375,6 +392,7 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
   await applyFolderizeFix(state, normalized, logger);
   await applySyncImportsFix(state, normalized);
   await applyRemoveCommentsFix(state, normalized);
+  await applyPrettierFix(state, normalized);
 
   const result = attachDisciplineResult("fix", createFixResult(state));
   logFixResult(result, logger);
