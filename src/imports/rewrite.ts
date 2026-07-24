@@ -49,6 +49,19 @@ async function rewriteSourceFile(
 
       const resolvedFile = await resolveRelativeImport(occurrence.specifier, file.absolutePath, options);
       if (!resolvedFile) {
+        if (occurrence.removalStart !== undefined && occurrence.removalEnd !== undefined) {
+          replacements.push({
+            start: occurrence.removalStart,
+            end: occurrence.removalEnd,
+            value: "",
+          });
+          logger.debug("rewrite-removed-unresolved", `removed unresolved import ${occurrence.specifier}`, {
+            sourceFile: file.absolutePath,
+            specifier: occurrence.specifier,
+          });
+          continue;
+        }
+
         logger.debug("rewrite-skipped-unresolved", `skipped unresolved import ${occurrence.specifier}`, {
           sourceFile: file.absolutePath,
           specifier: occurrence.specifier,

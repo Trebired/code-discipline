@@ -14,7 +14,7 @@ import type {
 } from "../shared/discipline-types.js";
 
 type CodeDisciplineRuleSlug = CodeDisciplineRuleName;
-type FixableRuleSlug = "banned-files" | "folderize-compound-files" | "sync-imports" | "remove-comments";
+type FixableRuleSlug = "banned-files" | "min-file-lines" | "folderize-compound-files" | "sync-imports" | "remove-comments";
 type CodeDisciplineMode = "check" | "fix";
 type CodeDisciplineRuntimeMode = CodeDisciplineMode;
 type CodeDisciplineRuleSeverity = "warning" | "fail";

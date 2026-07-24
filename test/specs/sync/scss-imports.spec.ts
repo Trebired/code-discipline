@@ -100,6 +100,42 @@ $copy: '@use "../core/palette" as palette;';
   expect(readFile(projectRoot, "src/frontend/css/page.scss")).toContain('$copy: \'@use "../core/palette" as palette;\';');
 });
 
+test("removes unresolved SCSS directives without touching urls, comments, or strings", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "tsconfig.json", "{}\n");
+  writeFile(projectRoot, "src/frontend/css/page.scss", `
+// @use "../missing/commented";
+@use "../missing/palette" as palette;
+@forward "../missing/tokens";
+@import url("../missing/background");
+
+$copy: '@use "../missing/string" as missing;';
+
+.page {
+  background: url("../missing/background");
+}
+`);
+
+  const result = await syncImports({
+    projectRoot,
+    fix: true,
+    alias: { strategy: "relative-path-slug" },
+    allowRelative: [],
+  });
+
+  const next = readFile(projectRoot, "src/frontend/css/page.scss");
+  expect(result.ok).toBe(true);
+  expect(result.rewritten_files).toBe(1);
+  expect(result.rewritten_imports).toBe(2);
+  expect(next).not.toContain('@use "../missing/palette"');
+  expect(next).not.toContain('@forward "../missing/tokens"');
+  expect(next).toContain('// @use "../missing/commented";');
+  expect(next).toContain('@import url("../missing/background");');
+  expect(next).toContain('$copy: \'@use "../missing/string" as missing;\';');
+  expect(next).toContain('background: url("../missing/background");');
+});
+
 test("reports and restores generated package imports for SCSS aliases", async () => {
   const projectRoot = tempProject();
 

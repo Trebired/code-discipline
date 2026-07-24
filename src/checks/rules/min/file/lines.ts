@@ -1,12 +1,12 @@
 import fs from "node:fs/promises";
 
-import type { NormalizedCheckCodeDisciplineOptions } from "../../types.js";
-import type { ScannedSourceFile } from "../../../imports/types.js";
-import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
-import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "../../progress.js";
-import { countCodeLines, maskCommentsForLineCounting } from "../max/code-lines.js";
+import type { NormalizedCheckCodeDisciplineOptions } from "../../../types.js";
+import type { ScannedSourceFile } from "../../../../imports/types.js";
+import type { CodeDisciplineViolation } from "../../../../shared/discipline-types.js";
+import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "../../../progress.js";
+import { countCodeLines, maskCommentsForLineCounting } from "../../max/code-lines.js";
 
-async function runMinFileLinesRule(
+async function collectMinFileLineViolations(
   sourceFiles: ScannedSourceFile[],
   options: NormalizedCheckCodeDisciplineOptions,
 ): Promise<CodeDisciplineViolation[]> {
@@ -25,11 +25,12 @@ async function runMinFileLinesRule(
     const lineCount = countCodeLines(maskCommentsForLineCounting(text, file.extension));
 
     if (lineCount <= options.rules.minFileLines.min) {
+      const lineLabel = lineCount === 1 ? "line" : "lines";
       violations.push({
         rule: "min-file-lines",
         fix: false,
         filePath: file.relativeFromProjectRoot,
-        message: `file has ${lineCount} lines and is at or below the banned minimum of ${options.rules.minFileLines.min}`,
+        message: `file has ${lineCount} ${lineLabel} and is at or below the banned minimum of ${options.rules.minFileLines.min}`,
         details: {
           lineCount,
           min: options.rules.minFileLines.min,
@@ -44,4 +45,11 @@ async function runMinFileLinesRule(
   return violations;
 }
 
-export { runMinFileLinesRule };
+async function runMinFileLinesRule(
+  sourceFiles: ScannedSourceFile[],
+  options: NormalizedCheckCodeDisciplineOptions,
+): Promise<CodeDisciplineViolation[]> {
+  return collectMinFileLineViolations(sourceFiles, options);
+}
+
+export { collectMinFileLineViolations, runMinFileLinesRule };

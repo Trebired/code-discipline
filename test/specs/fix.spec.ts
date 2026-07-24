@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 
 import { FileConflictError, fixCodeDiscipline } from "../../src/index.js";
-import { fileExists, readFile, tempProject, writeFile } from "./helpers.js";
+import { fileExists, readFile, readJson, tempProject, writeFile } from "./helpers.js";
 
 test("moves same-directory compound groups and rewrites affected imports", async () => {
   const projectRoot = tempProject();
@@ -125,6 +125,54 @@ test("deletes banned files during fix", async () => {
   expect(fileExists(projectRoot, "src/app.ts")).toBe(true);
   expect(fileExists(projectRoot, "src/app.spec.ts")).toBe(false);
   expect(fileExists(projectRoot, "src/feature/app.spec.tsx")).toBe(false);
+});
+
+test("deletes min-file redirect shims and rewrites importers to the forwarded target", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "tsconfig.json", JSON.stringify({
+    compilerOptions: {
+      paths: {
+        "#legacy": ["./src/legacy.ts"],
+        "#shared-actual": ["./src/shared/actual.ts"],
+      },
+    },
+  }, null, 2));
+  writeFile(projectRoot, "src/legacy.ts", 'export * from "#shared-actual";\n');
+  writeFile(projectRoot, "src/shared/actual.ts", [
+    "export function value() {",
+    "  return true;",
+    "}",
+    "",
+  ].join("\n"));
+  writeFile(projectRoot, "src/app.ts", [
+    'import { value } from "#legacy";',
+    "export const app = value();",
+    "",
+  ].join("\n"));
+
+  const result = await fixCodeDiscipline({
+    projectRoot,
+    rules: {
+      minFileLines: {},
+      syncImports: {
+        alias: {
+          strategy: "relative-path-slug",
+        },
+      },
+    },
+  });
+
+  expect(result.ok).toBe(true);
+  expect(result.deleted_files).toBe(1);
+  expect(result.rewritten_imports).toBe(1);
+  expect(result.ruleResults["min-file-lines"]).toMatchObject({
+    deleted_files: 1,
+    rewritten_imports: 1,
+  });
+  expect(fileExists(projectRoot, "src/legacy.ts")).toBe(false);
+  expect(readFile(projectRoot, "src/app.ts")).toContain('from "#shared-actual"');
+  expect(readJson(projectRoot, "tsconfig.json").compilerOptions.paths).not.toHaveProperty("#legacy");
 });
 
 test("rejects dry as a fix selector", async () => {

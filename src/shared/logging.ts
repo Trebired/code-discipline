@@ -1,4 +1,4 @@
-import { resolveLogger as resolveSharedLogger } from "@trebired/logger-adapter";
+import { createLog, type LogInstance } from "@trebired/logger";
 
 import { CODE_DISCIPLINE_LOG_GROUP } from "./constants.js";
 import type {
@@ -22,6 +22,18 @@ type BufferedEventStore = {
   levelCounts: Record<CodeDisciplineLogLevel, number>;
   totalEvents: number;
 };
+
+let consoleOnlyLogger: LogInstance | null = null;
+
+function getConsoleOnlyLogger(): LogInstance {
+  consoleOnlyLogger ??= createLog({
+    console: true,
+    quiet: true,
+    save: false,
+    source: "@trebired/code-discipline",
+  });
+  return consoleOnlyLogger;
+}
 
 function getMethod(source: unknown, name: string): LogMethod | null {
   if (!source || typeof source !== "object") return null;
@@ -51,35 +63,7 @@ function eventGroup(event: CodeDisciplineLogEvent): string {
 }
 
 function writeToConsole(event: CodeDisciplineLogEvent) {
-  const formatted = formatMessage(eventGroup(event), event.message);
-  const payload = event.metadata ? buildMetadata(event.event, event.metadata) : null;
-
-  if (event.level === "error") {
-    if (payload) {
-      console.error(formatted, payload);
-      return;
-    }
-
-    console.error(formatted);
-    return;
-  }
-
-  if (event.level === "warn") {
-    if (payload) {
-      console.warn(formatted, payload);
-      return;
-    }
-
-    console.warn(formatted);
-    return;
-  }
-
-  if (payload) {
-    console.log(formatted, payload);
-    return;
-  }
-
-  console.log(formatted);
+  writeToTrebiredLogger(getConsoleOnlyLogger(), event);
 }
 
 function writeToGenericLogger(source: unknown, event: CodeDisciplineLogEvent) {
@@ -97,36 +81,15 @@ function writeToGenericLogger(source: unknown, event: CodeDisciplineLogEvent) {
 
 function writeToTrebiredLogger(source: unknown, event: CodeDisciplineLogEvent) {
   const methodName = event.level === "error" ? "fail" : event.level;
-  const method = getMethod(source, methodName) || getMethod(source, event.level) || getMethod(source, "info");
+  const target = source || getConsoleOnlyLogger();
+  const method = getMethod(target, methodName) || getMethod(target, event.level) || getMethod(target, "info");
 
   if (!method) {
-    writeToConsole(event);
+    writeToGenericLogger(console, event);
     return;
   }
 
-  method.call(source, eventGroup(event), event.message, buildMetadata(event.event, event.metadata));
-}
-
-function writeWithSharedAdapter(logger: unknown, event: CodeDisciplineLogEvent) {
-  const shared = resolveSharedLogger({
-    fallback: "console",
-    logger: logger as any,
-    source: "@trebired/code-discipline",
-  });
-  const payload = buildMetadata(event.event, event.metadata);
-  const group = eventGroup(event);
-
-  if (event.level === "warn") {
-    shared.warn(group, event.message, payload);
-    return;
-  }
-
-  if (event.level === "error") {
-    shared.fail(group, event.message, payload);
-    return;
-  }
-
-  shared.info(group, event.message, payload);
+  method.call(target, eventGroup(event), event.message, buildMetadata(event.event, event.metadata));
 }
 
 function resolveWriter(options?: LoggingOptions): (event: CodeDisciplineLogEvent) => void {
@@ -154,7 +117,7 @@ function resolveWriter(options?: LoggingOptions): (event: CodeDisciplineLogEvent
   }
 
   if (logger) {
-    return (event) => writeWithSharedAdapter(logger, event);
+    return (event) => writeToGenericLogger(logger, event);
   }
 
   return () => {};

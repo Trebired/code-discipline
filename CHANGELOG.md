@@ -2,6 +2,13 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.2.0
+
+- Changed the configured `minFileLines` default from `5` to `1`.
+- Made `minFileLines` fixable for tiny redirect shims by deleting the shim file and rewriting imports to its forwarded target.
+- Made `sync-imports` report unresolved relative imports in check mode and remove safe static import/export or Sass directive lines in fix mode.
+- Switched package-owned console logging to `@trebired/logger` with no log directory and `save: false`, so logs stay on the console instead of being written to files.
+
 ## 4.1.0
 
 - Added SCSS participation to `sync-imports`, including alias generation/reuse and rewrites for eligible `@use`, `@forward`, and quoted Sass `@import` specifiers.

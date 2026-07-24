@@ -8,11 +8,13 @@ import type {
 import type { ScannedSourceFile } from "../imports/types.js";
 import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
 import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
+import { removeEmptyDirectories } from "../shared/directories.js";
+import { formatRelativeSpecifier } from "../imports/format.js";
 import { applyTextReplacements, collectModuleSpecifiers } from "../imports/module-specifiers.js";
 import { isRelativeImportSpecifier } from "../imports/resolve.js";
 import { supportsFolderizationFix } from "../shared/languages.js";
 import { FileConflictError, FixFailureError, RewriteFailureError } from "../shared/errors.js";
-import { ensureDotExtension, pathExists, stripKnownExtension, toPosixPath } from "../shared/utils.js";
+import { ensureDotExtension, pathExists } from "../shared/utils.js";
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "./progress.js";
 import { planFolderizeCompoundFiles } from "./rules/folderize/plan.js";
 
@@ -84,32 +86,6 @@ function resolveRelativeFromInventory(
   }
 
   return null;
-}
-
-function formatRelativeSpecifier(
-  originalSpecifier: string,
-  fromAbsolutePath: string,
-  toAbsolutePath: string,
-  sourceExtensions: string[],
-): string {
-  const hadExplicitExtension = sourceExtensions.some((extension) => originalSpecifier.toLowerCase().endsWith(extension.toLowerCase()));
-  let relativePath = toPosixPath(path.relative(path.dirname(fromAbsolutePath), toAbsolutePath));
-  if (!relativePath.startsWith(".")) relativePath = `./${relativePath}`;
-
-  if (hadExplicitExtension) {
-    return relativePath;
-  }
-
-  const withoutExtension = stripKnownExtension(relativePath, sourceExtensions);
-  const targetBasename = path.basename(toAbsolutePath);
-  const originalWithoutExtension = stripKnownExtension(originalSpecifier, sourceExtensions);
-  const originalUsesIndex = /(^|\/)index$/.test(originalWithoutExtension);
-
-  if (targetBasename.startsWith("index.") && !originalUsesIndex) {
-    return withoutExtension.replace(/\/index$/, "") || ".";
-  }
-
-  return withoutExtension;
 }
 
 async function planImportRewritesForFolderizationMoves(
@@ -270,18 +246,6 @@ async function writeFolderizationRewrites(
     rewrittenFiles: entries.length,
     rewrittenImports: totalImports,
   });
-}
-
-async function removeEmptyDirectories(directories: string[]): Promise<void> {
-  const sorted = [...new Set(directories)].sort((left, right) => right.length - left.length);
-
-  for (const directoryPath of sorted) {
-    try {
-      await fs.rmdir(directoryPath);
-    } catch {
-      // The directory still contains files, which is expected in many cases.
-    }
-  }
 }
 
 async function fixFolderization(

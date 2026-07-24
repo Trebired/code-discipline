@@ -10,6 +10,8 @@ type ModuleSpecifierOccurrence = {
   specifier: string;
   start: number;
   end: number;
+  removalEnd?: number;
+  removalStart?: number;
 };
 
 type TextReplacement = {
@@ -50,22 +52,39 @@ function parseSource(text: string, filePath: string): ts.SourceFile {
   return sourceFile;
 }
 
+function expandLineRemovalRange(text: string, start: number, end: number): { start: number; end: number } | null {
+  const lineStart = text.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
+  const lineEndCandidate = text.indexOf("\n", end);
+  const lineEnd = lineEndCandidate === -1 ? text.length : lineEndCandidate + 1;
+  const prefix = text.slice(lineStart, start);
+  const suffix = text.slice(end, lineEndCandidate === -1 ? text.length : lineEndCandidate);
+
+  if (prefix.trim() || suffix.trim()) return null;
+  return { start: lineStart, end: lineEnd };
+}
+
 function collectTypeScriptModuleSpecifiers(text: string, filePath: string): ModuleSpecifierOccurrence[] {
   const sourceFile = parseSource(text, filePath);
   const occurrences: ModuleSpecifierOccurrence[] = [];
 
-  function addLiteral(node: ts.StringLiteralLike) {
+  function removableStatementRange(node: ts.Node): { start: number; end: number } | null {
+    return expandLineRemovalRange(text, node.getStart(sourceFile), node.getEnd());
+  }
+
+  function addLiteral(node: ts.StringLiteralLike, removalRange?: { start: number; end: number } | null) {
     occurrences.push({
       specifier: node.text,
       start: node.getStart(sourceFile) + 1,
       end: node.getEnd() - 1,
+      removalStart: removalRange?.start,
+      removalEnd: removalRange?.end,
     });
   }
 
   function visit(node: ts.Node) {
     if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
       if (node.moduleSpecifier && ts.isStringLiteralLike(node.moduleSpecifier)) {
-        addLiteral(node.moduleSpecifier);
+        addLiteral(node.moduleSpecifier, removableStatementRange(node));
       }
     }
 
@@ -193,7 +212,11 @@ function isInsideUrlFunction(segment: string, quoteIndex: number): boolean {
   return segment.slice(cursor + 1, end).toLowerCase() === "url";
 }
 
-function collectQuotedSassSpecifiers(segment: string, baseOffset: number): ModuleSpecifierOccurrence[] {
+function collectQuotedSassSpecifiers(
+  segment: string,
+  baseOffset: number,
+  removalRange?: { start: number; end: number } | null,
+): ModuleSpecifierOccurrence[] {
   const occurrences: ModuleSpecifierOccurrence[] = [];
   let quote = "";
   let specifierStart = -1;
@@ -209,6 +232,8 @@ function collectQuotedSassSpecifiers(segment: string, baseOffset: number): Modul
           specifier: segment.slice(specifierStart, index),
           start: baseOffset + specifierStart,
           end: baseOffset + index,
+          removalStart: removalRange?.start,
+          removalEnd: removalRange?.end,
         });
         quote = "";
         specifierStart = -1;
@@ -237,9 +262,13 @@ function collectScssModuleSpecifiers(text: string): ModuleSpecifierOccurrence[] 
       if (directive) {
         const directiveEnd = findDirectiveEnd(text, index);
         const directiveStart = index + directive.length + 1;
+        const rangeEnd = directiveEnd < text.length && text[directiveEnd] === ";" ? directiveEnd + 1 : directiveEnd;
+        const removalRange = expandLineRemovalRange(text, index, rangeEnd);
         const segment = text.slice(directiveStart, directiveEnd);
-        const specifiers = collectQuotedSassSpecifiers(segment, directiveStart);
-        occurrences.push(...(directive === "import" ? specifiers : specifiers.slice(0, 1)));
+        const specifiers = collectQuotedSassSpecifiers(segment, directiveStart, removalRange);
+        occurrences.push(...(directive === "import" && specifiers.length > 1
+          ? specifiers.map((specifier) => ({ ...specifier, removalStart: undefined, removalEnd: undefined }))
+          : directive === "import" ? specifiers : specifiers.slice(0, 1)));
         index = directiveEnd;
         continue;
       }

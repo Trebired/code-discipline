@@ -31,7 +31,7 @@ code-discipline check
 code-discipline check save
 code-discipline check max-function-lines dry
 code-discipline fix
-code-discipline fix banned-files sync-imports remove-comments
+code-discipline fix banned-files min-file-lines sync-imports remove-comments
 code-discipline gate -- bun run dev
 ```
 
@@ -124,7 +124,7 @@ export default defineCodeDisciplineConfig({
   },
   rules: {
     minFileLines: {
-      min: 5,
+      min: 1,
     },
     maxFileLines: {
       max: 500,
@@ -215,7 +215,7 @@ export default defineCodeDisciplineConfig({
 
 ```sh
 code-discipline check max-file-lines max-function-lines
-code-discipline fix banned-files sync-imports remove-comments
+code-discipline fix banned-files min-file-lines sync-imports remove-comments
 ```
 
 Rules use kebab-case public slugs:
@@ -348,7 +348,9 @@ Reports files whose total line count exceeds `max`.
 
 ### `minFileLines`
 
-Reports files whose code line count is at or below `min`, defaulting to `5` when the rule is configured. This catches tiny legacy compatibility shims that only re-export or re-import another module.
+Reports files whose code line count is at or below `min`, defaulting to `1` when the rule is configured. This catches tiny legacy compatibility shims that only re-export or re-import another module.
+
+`code-discipline fix min-file-lines` can delete tiny redirect shims when the file is clearly a single JavaScript/TypeScript `export ... from "..."` statement or a single SCSS `@forward "..."` directive. Importers of that shim are rewritten to the forwarded target before the shim file is removed.
 
 ### `maxCharactersPerLine`
 
@@ -375,7 +377,9 @@ Validates and optionally fixes:
 - optional `package.json#imports` drift through `packageJsonImports`
 - optional folder-backed alias maps through `importsFolder`
 
-`syncImports` only rewrites JavaScript and TypeScript module files. Mixed-language repositories can still include Go and Rust under the same `sourceRoot`; those files are ignored by alias syncing instead of causing parser failures.
+`syncImports` rewrites JavaScript, TypeScript, and SCSS module specifiers. Mixed-language repositories can still include Go and Rust under the same `sourceRoot`; those files are ignored by alias syncing instead of causing parser failures.
+
+When `syncImports` sees a relative import that resolves nowhere, check mode reports it. Fix mode removes safe line-isolated static import/export declarations and Sass `@use`, `@forward`, or single-specifier quoted `@import` directives. Dynamic `import(...)`, comments, strings, CSS `url(...)`, and arbitrary CSS values are left alone.
 
 When `importsFolder.enabled` is true, sorted JSON files such as `imports/1.json` become the alias source of truth. `code-discipline fix` migrates root `tsconfig.json` paths and managed `package.json#imports` entries into that folder, splits entries by `maxEntriesPerFile`, recreates the generated tsconfig projection, removes inline root `compilerOptions.paths`, and makes root `tsconfig.json` extend the generated file. Keep `packageJsonImports.enabled` false for dev-only aliases; set it true for dist/runtime workflows that need Node package imports materialized.
 

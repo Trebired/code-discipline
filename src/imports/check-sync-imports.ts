@@ -79,7 +79,18 @@ async function collectSyncImportViolations(
       if (!occurrence.specifier.startsWith(".")) continue;
 
       const resolvedFile = await resolveRelativeImport(occurrence.specifier, file.absolutePath, options);
-      if (!resolvedFile) continue;
+      if (!resolvedFile) {
+        violations.push({
+          rule: "sync-imports",
+          fix: Boolean(occurrence.removalStart !== undefined && occurrence.removalEnd !== undefined),
+          filePath: file.relativeFromProjectRoot,
+          message: `unresolved import ${occurrence.specifier} should be removed`,
+          details: {
+            specifier: occurrence.specifier,
+          },
+        });
+        continue;
+      }
 
       if (isAllowedRelative(occurrence.specifier, file.absolutePath, resolvedFile, options)) continue;
 

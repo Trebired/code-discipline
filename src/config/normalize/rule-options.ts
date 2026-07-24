@@ -21,7 +21,7 @@ import type {
 import { normalizeRelativePath, uniqueStrings } from "../../shared/utils.js";
 import { normalizeLoggingOptions } from "./logging-options.js";
 
-const DEFAULT_MIN_FILE_LINES = 5;
+const DEFAULT_MIN_FILE_LINES = 1;
 const DEFAULT_MAX_CHARACTERS_PER_LINE = 150;
 
 function assertRemovedKeys(ruleName: string, source: Record<string, unknown>, keys: string[]) {

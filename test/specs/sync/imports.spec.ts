@@ -8,7 +8,7 @@ import {
   createRelativePathSlugAlias,
   syncImports,
 } from "../../../src/index.js";
-import { captureCallbackLogger, captureTrebiredLogger, readFile, readJson, tempProject, writeFile } from "../helpers.js";
+import { captureTrebiredLogger, readFile, readJson, tempProject, writeFile } from "../helpers.js";
 
 test("exports stable slug and hash strategies", () => {
   expect(createRelativePathSlugAlias({
@@ -210,42 +210,57 @@ test("returns drift and logs a warning when fix is disabled", async () => {
   expect(rows.map((row) => row.method)).toContain("warn");
 });
 
-test("buffers unresolved rewrite diagnostics into one final report", async () => {
+test("reports and removes unresolved relative import declarations", async () => {
   const projectRoot = tempProject();
-  const { adapter, rows } = captureCallbackLogger();
 
   writeFile(projectRoot, "tsconfig.json", "{}\n");
-  writeFile(projectRoot, "src/feature/app.ts", 'import { one } from "../missing/one";\nimport { two } from "../missing/two";\nexport { one, two };\n');
+  writeFile(projectRoot, "src/feature/app.ts", [
+    'import { one } from "../missing/one";',
+    'export * from "../missing/two";',
+    'const dynamicImport = import("../missing/dynamic");',
+    "export const app = true;",
+    "",
+  ].join("\n"));
   writeFile(projectRoot, "src/shared/util.ts", "export const util = true;\n");
+
+  const checkResult = await syncImports({
+    projectRoot,
+    fix: false,
+    alias: { strategy: "relative-path-slug" },
+  });
+
+  expect(checkResult.ok).toBe(false);
+  expect(checkResult.violations).toContainEqual(expect.objectContaining({
+    filePath: "src/feature/app.ts",
+    message: "unresolved import ../missing/one should be removed",
+    fix: true,
+  }));
+  expect(checkResult.violations).toContainEqual(expect.objectContaining({
+    filePath: "src/feature/app.ts",
+    message: "unresolved import ../missing/two should be removed",
+    fix: true,
+  }));
+  expect(checkResult.violations).toContainEqual(expect.objectContaining({
+    filePath: "src/feature/app.ts",
+    message: "unresolved import ../missing/dynamic should be removed",
+    fix: false,
+  }));
 
   const result = await syncImports({
     projectRoot,
     fix: true,
     alias: { strategy: "relative-path-slug" },
-    logging: {
-      adapter,
-    },
   });
 
   expect(result.ok).toBe(true);
   expect(result.violations).toEqual([]);
-  expect(rows).toHaveLength(2);
-  expect(rows[0]).toMatchObject({
-    event: "package-initialized",
-    group: "trebired.code-discipline.initialize",
-    level: "success",
-  });
-  expect(rows[1]).toMatchObject({
-    event: "sync-finished",
-    level: "success",
-  });
-  const diagnostics = rows[1].metadata?.diagnostics as {
-    events: Array<{ count: number; event: string }>;
-  };
-  expect(diagnostics.events).toContainEqual(expect.objectContaining({
-    event: "rewrite-skipped-unresolved",
-    count: 2,
-  }));
+  expect(result.rewritten_files).toBe(1);
+  expect(result.rewritten_imports).toBe(2);
+  expect(readFile(projectRoot, "src/feature/app.ts")).toBe([
+    'const dynamicImport = import("../missing/dynamic");',
+    "export const app = true;",
+    "",
+  ].join("\n"));
 });
 
 test("supports custom alias strategies", async () => {

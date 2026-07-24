@@ -3,17 +3,10 @@ import { expect, test } from "bun:test";
 import { checkCodeDiscipline, fixCodeDiscipline } from "../../src/index.js";
 import { expectedViolationResult, tempProject, writeFile } from "./helpers.js";
 
-test("reports files with five or fewer code lines through min-file-lines", async () => {
+test("reports files with one or fewer code lines through min-file-lines", async () => {
   const projectRoot = tempProject();
 
-  writeFile(projectRoot, "src/legacy.ts", [
-    "export { userCreate } from \"./users/create.js\";",
-    "export { userDelete } from \"./users/delete.js\";",
-    "export { userList } from \"./users/list.js\";",
-    "export { userUpdate } from \"./users/update.js\";",
-    "export { userView } from \"./users/view.js\";",
-    "",
-  ].join("\n"));
+  writeFile(projectRoot, "src/legacy.ts", "export { legacy } from \"./legacy/index.js\";\n");
 
   const result = await checkCodeDiscipline({
     projectRoot,
@@ -31,10 +24,10 @@ test("reports files with five or fewer code lines through min-file-lines", async
         rule: "min-file-lines",
         fix: false,
         filePath: "src/legacy.ts",
-        message: "file has 5 lines and is at or below the banned minimum of 5",
+        message: "file has 1 line and is at or below the banned minimum of 1",
         details: {
-          lineCount: 5,
-          min: 5,
+          lineCount: 1,
+          min: 1,
         },
       },
     ],

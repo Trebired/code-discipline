@@ -16,7 +16,8 @@ import { collectDryViolations } from "./rules/dry/index.js";
 import { runMaxCharactersPerLineRule } from "./rules/max/characters-per-line.js";
 import { runMaxFileLinesRule } from "./rules/max/file-lines.js";
 import { runMaxFunctionLinesRule } from "./rules/max/function-lines.js";
-import { runMinFileLinesRule } from "./rules/min/file-lines.js";
+import { fixMinFileLinesRule } from "./rules/min/file/lines/fix.js";
+import { runMinFileLinesRule } from "./rules/min/file/lines.js";
 import { collectRemoveCommentsViolations, fixRemoveCommentsRule } from "./rules/remove-comments.js";
 import { buildNormalizedSyncOptions } from "./sync-options.js";
 import type {
@@ -235,6 +236,27 @@ async function applyBannedFilesFix(state: FixState, normalized: NormalizedCheckC
   }
 }
 
+async function applyMinFileLinesFix(
+  state: FixState,
+  normalized: NormalizedCheckCodeDisciplineOptions,
+  logger: ReturnType<typeof resolveLogger>,
+): Promise<void> {
+  if (!normalized.rules.minFileLines || !shouldRunFixRule("min-file-lines", normalized)) return;
+
+  const syncOptions = await buildNormalizedSyncOptions(normalized, true);
+  const result = await fixMinFileLinesRule(state.sourceFiles, normalized, logger, syncOptions);
+  const violations = applyConfiguredSeverity(result.violations, normalized);
+  state.ruleResults["min-file-lines"] = mapFixRuleResult({ ...result, violations });
+  state.violations.push(...violations);
+  state.deletedFiles += result.deleted_files ?? 0;
+  state.rewrittenFiles += result.rewritten_files ?? 0;
+  state.rewrittenImports += result.rewritten_imports ?? 0;
+
+  if ((result.deleted_files ?? 0) > 0 || (result.rewritten_files ?? 0) > 0) {
+    state.sourceFiles = await scanSourceFiles(normalized);
+  }
+}
+
 async function applyFolderizeFix(
   state: FixState,
   normalized: NormalizedCheckCodeDisciplineOptions,
@@ -334,6 +356,7 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
   };
 
   await applyBannedFilesFix(state, normalized);
+  await applyMinFileLinesFix(state, normalized, logger);
   await applyFolderizeFix(state, normalized, logger);
   await applySyncImportsFix(state, normalized);
   await applyRemoveCommentsFix(state, normalized);
