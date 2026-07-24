@@ -109,8 +109,13 @@ type CodeDisciplineRules = {
 
 type PrettierFormatterOptions = {
   targets?: string[];
-  ignore?: string[];
+  ignore?: string[] | PrettierFormatterIgnoreOptions;
   options?: PrettierOptions;
+};
+
+type PrettierFormatterIgnoreOptions = {
+  entries?: string[];
+  gitignore?: boolean;
 };
 
 type CodeDisciplineFormatters = {
@@ -237,7 +242,10 @@ type NormalizedRemoveCommentsRule = {
 
 type NormalizedPrettierFormatter = {
   targets: string[];
-  ignore: string[];
+  ignore: {
+    entries: string[];
+    gitignore: boolean;
+  };
   options: PrettierOptions;
 };
 
@@ -327,6 +335,7 @@ export type {
   MinDeclarationNameRuleOptions,
   MinFileLinesRuleOptions,
   NormalizedPrettierFormatter,
+  PrettierFormatterIgnoreOptions,
   NormalizedBannedFileRuleEntry,
   NormalizedBannedFilesRule,
   NormalizedBannedPatternRuleEntry,

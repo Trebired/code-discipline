@@ -128,16 +128,19 @@ export default defineCodeDisciplineConfig({
   formatters: {
     prettier: {
       targets: ["."],
-      ignore: [
-        "dist",
-        "build",
-        "coverage",
-        ".next",
-        ".nuxt",
-        ".output",
-        "*.min.js",
-        "*.min.css",
-      ],
+      ignore: {
+        entries: [
+          "dist",
+          "build",
+          "coverage",
+          ".next",
+          ".nuxt",
+          ".output",
+          "*.min.js",
+          "*.min.css",
+        ],
+        gitignore: true,
+      },
       options: {
         printWidth: 100,
         tabWidth: 2,
@@ -283,7 +286,10 @@ Example:
 formatters: {
   prettier: {
     targets: ["."],
-    ignore: ["dist", "build", "coverage", ".next", "*.min.js", "*.min.css"],
+    ignore: {
+      entries: ["dist", "build", "coverage", ".next", "*.min.js", "*.min.css"],
+      gitignore: true,
+    },
     options: {
       printWidth: 100,
       tabWidth: 2,

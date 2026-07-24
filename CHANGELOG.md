@@ -2,6 +2,11 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.4.1
+
+- Added `formatters.prettier.ignore.gitignore` support, with `ignore.entries` for explicit formatter ignore patterns.
+- Updated the completed source scan log to report the number of files scanned explicitly.
+
 ## 4.4.0
 
 - Added top-level `formatters.prettier` configuration, backed by Prettier `3.9.6`, with `check prettier` for formatting validation and `fix prettier` for formatting writes.

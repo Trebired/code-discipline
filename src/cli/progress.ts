@@ -69,7 +69,7 @@ function createCliScanObserver(writeLine: (text: string, context?: CliLogContext
 
     if (event.phase === "completed") {
       writeLine(
-        `Scan: ${event.fileCount} files in ${formatDuration(event.elapsedMs)} (${event.backend}).\n`,
+        `Scan: ${event.fileCount} files scanned in ${formatDuration(event.elapsedMs)} (${event.backend}).\n`,
         { event: "source-scan-completed", scanScope: event.backend },
       );
       return;

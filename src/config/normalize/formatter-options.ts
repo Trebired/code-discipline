@@ -36,6 +36,41 @@ function normalizeStringList(value: unknown, fallback: string[], label: string, 
   return uniqueStrings(normalized);
 }
 
+function normalizePrettierIgnore(value: PrettierFormatterOptions["ignore"]) {
+  if (value === undefined) {
+    return {
+      entries: [],
+      gitignore: false,
+    };
+  }
+
+  if (Array.isArray(value)) {
+    return {
+      entries: normalizeStringList(value, [], "formatters.prettier.ignore", true),
+      gitignore: false,
+    };
+  }
+
+  if (!value || typeof value !== "object") {
+    throw new InvalidCodeDisciplineConfigError("formatters.prettier.ignore must be an array or { entries, gitignore } object", {
+      key: "formatters.prettier.ignore",
+      value,
+    });
+  }
+
+  if (value.gitignore !== undefined && typeof value.gitignore !== "boolean") {
+    throw new InvalidCodeDisciplineConfigError("formatters.prettier.ignore.gitignore must be boolean when provided", {
+      key: "formatters.prettier.ignore.gitignore",
+      value: value.gitignore,
+    });
+  }
+
+  return {
+    entries: normalizeStringList(value.entries, [], "formatters.prettier.ignore.entries", true),
+    gitignore: value.gitignore === true,
+  };
+}
+
 function normalizePrettierFormatter(rule: PrettierFormatterOptions | undefined): NormalizedPrettierFormatter | undefined {
   if (!rule) return undefined;
   const source = rule as Record<string, unknown>;
@@ -54,7 +89,7 @@ function normalizePrettierFormatter(rule: PrettierFormatterOptions | undefined):
 
   return {
     targets: normalizeStringList(rule.targets, DEFAULT_PRETTIER_TARGETS, "formatters.prettier.targets"),
-    ignore: normalizeStringList(rule.ignore, [], "formatters.prettier.ignore", true),
+    ignore: normalizePrettierIgnore(rule.ignore),
     options: rule.options ?? {},
   };
 }

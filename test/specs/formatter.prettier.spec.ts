@@ -86,6 +86,43 @@ test("fix prettier formats configured targets and honors ignore patterns", async
   expect(readFile(projectRoot, "src/ignored/app.ts")).toBe("const value={message:\"ignored\"}\n");
 });
 
+test("prettier ignore can reuse gitignore patterns", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, ".gitignore", "generated\n*.min.js\n");
+  writeFile(projectRoot, "src/app.ts", "const value={message:\"hello\"}\n");
+  writeFile(projectRoot, "src/ignored/app.ts", "const value={message:\"ignored\"}\n");
+  writeFile(projectRoot, "src/generated/app.ts", "const value={message:\"generated\"}\n");
+  writeFile(projectRoot, "src/app.min.js", "const value={message:\"minified\"}\n");
+
+  const result = await fixCodeDiscipline({
+    projectRoot,
+    sourceRoot: ".",
+    onlyRules: ["prettier"],
+    formatters: {
+      prettier: {
+        targets: ["."],
+        ignore: {
+          entries: ["ignored"],
+          gitignore: true,
+        },
+        options: {
+          parser: "typescript",
+          semi: true,
+          singleQuote: true,
+        },
+      },
+    },
+  });
+
+  expect(result.ok).toBe(true);
+  expect(result.formatted_files).toBe(1);
+  expect(readFile(projectRoot, "src/app.ts")).toBe("const value = { message: 'hello' };\n");
+  expect(readFile(projectRoot, "src/ignored/app.ts")).toBe("const value={message:\"ignored\"}\n");
+  expect(readFile(projectRoot, "src/generated/app.ts")).toBe("const value={message:\"generated\"}\n");
+  expect(readFile(projectRoot, "src/app.min.js")).toBe("const value={message:\"minified\"}\n");
+});
+
 test("plain fix runs prettier after configured structural fixes", async () => {
   const projectRoot = tempProject();
 

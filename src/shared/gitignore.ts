@@ -64,4 +64,22 @@ async function readGitignoreExcludedDirs(projectRoot: string, gitignorePath: str
   }
 }
 
-export { readGitignoreExcludedDirs };
+async function readGitignoreIgnorePatterns(gitignorePath: string): Promise<string[]> {
+  try {
+    const text = await fs.readFile(gitignorePath, "utf8");
+    const patterns: string[] = [];
+
+    for (const row of text.split(/\r?\n/)) {
+      const trimmed = stripInlineComment(row.trim());
+      if (!trimmed || trimmed.startsWith("!")) continue;
+      const normalized = normalizeRelativePath(trimmed.replace(/^\/+/, "").replace(/\/+$/, ""));
+      if (normalized) patterns.push(normalized);
+    }
+
+    return uniqueStrings(patterns);
+  } catch {
+    return [];
+  }
+}
+
+export { readGitignoreExcludedDirs, readGitignoreIgnorePatterns };

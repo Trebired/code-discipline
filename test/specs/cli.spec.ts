@@ -36,7 +36,7 @@ function restoreScanEnv(previousDisableNative: string | undefined, previousConcu
 function expectChunkedScanLogs(stdout: string[], stderr: string[]) {
   expect(stdout.join("")).toContain("Found 4 discipline violation(s).");
   expect(stderr.join("")).toContain("Scan 1:");
-  expect(stderr.join("")).toContain("Scan: 4 files in");
+  expect(stderr.join("")).toContain("Scan: 4 files scanned in");
   expect(stderr.join("")).toContain("Total check:");
 }
 
