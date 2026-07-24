@@ -11,9 +11,10 @@ import { InvalidCodeDisciplineConfigError, InvalidTsconfigPathError } from "../.
 import type { NormalizedSyncImportsOptions, SyncImportsOptions } from "../../imports/types.js";
 import { isDirectory } from "../../shared/utils.js";
 import { normalizeLoggingOptions } from "./logging-options.js";
+import { normalizeRuleExclusionList } from "./exclusions.js";
 import { normalizeSourceOptions } from "./source-options.js";
 
-async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise<NormalizedSyncImportsOptions> {
+function assertValidSyncImportsOptions(options: SyncImportsOptions): void {
   if ("imports" in (options as Record<string, unknown>)) {
     throw new InvalidCodeDisciplineConfigError("syncImports.imports is no longer supported; use allowRelative instead", {
       key: "imports",
@@ -33,6 +34,10 @@ async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise
       key: "severity",
     });
   }
+}
+
+async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise<NormalizedSyncImportsOptions> {
+  assertValidSyncImportsOptions(options);
 
   const source = await normalizeSourceOptions(options);
   const tsconfigInput = options.tsconfigPath ?? path.join(source.projectRoot, "tsconfig.json");
@@ -48,6 +53,7 @@ async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise
     configPath: options.configPath,
     tsconfigPath,
     fix: options.fix ?? DEFAULT_RULE_FIX,
+    excludeFiles: normalizeRuleExclusionList(options.excludeFiles, "excludeFiles"),
     alias: {
       prefix: options.alias?.prefix ?? DEFAULT_ALIAS_PREFIX,
       strategy: options.alias?.strategy ?? DEFAULT_ALIAS_STRATEGY,

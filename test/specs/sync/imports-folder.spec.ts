@@ -135,6 +135,57 @@ test("imports folder mode reports oversize source files and fix splits them", as
   expect(Object.keys(readJson(projectRoot, "imports/2.json"))).toHaveLength(1);
 });
 
+test("imports folder mode prunes missing targets and repacks generated files", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "tsconfig.json", "{}\n");
+  writeFile(projectRoot, "imports/1.json", JSON.stringify({
+    "#a": "./src/a.ts",
+  }, null, 2));
+  writeFile(projectRoot, "imports/2.json", JSON.stringify({
+    "#missing": "./src/missing.ts",
+    "#b": "./src/b.ts",
+  }, null, 2));
+  writeFile(projectRoot, "imports/3.json", JSON.stringify({
+    "#c": "./src/c.ts",
+  }, null, 2));
+  writeFile(projectRoot, "src/a.ts", "export const a = true;\n");
+  writeFile(projectRoot, "src/b.ts", "export const b = true;\n");
+  writeFile(projectRoot, "src/c.ts", "export const c = true;\n");
+
+  const checkResult = await syncImports({
+    projectRoot,
+    fix: false,
+    importsFolder: {
+      enabled: true,
+      maxEntriesPerFile: 2,
+    },
+  });
+
+  expect(checkResult.ok).toBe(false);
+  expect(checkResult.violations).toContainEqual(expect.objectContaining({
+    message: "imports folder and generated tsconfig are out of sync",
+  }));
+
+  await syncImports({
+    projectRoot,
+    fix: true,
+    importsFolder: {
+      enabled: true,
+      maxEntriesPerFile: 2,
+    },
+  });
+
+  expect(readJson(projectRoot, "imports/1.json")).toEqual({
+    "#a": "./src/a.ts",
+    "#b": "./src/b.ts",
+  });
+  expect(readJson(projectRoot, "imports/2.json")).toEqual({
+    "#c": "./src/c.ts",
+  });
+  expect(fileExists(projectRoot, "imports/3.json")).toBe(false);
+});
+
 test("imports folder mode can materialize package json imports for runtime", async () => {
   const projectRoot = tempProject();
 

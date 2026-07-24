@@ -103,8 +103,8 @@ type AllowRelativeContext = {
 
 type AllowRelativeFn = (specifier: string, context: AllowRelativeContext) => boolean;
 
-type ExcludeDirsOptions = {
-  dirs?: string[];
+type ExcludeFoldersOptions = {
+  folders?: string[];
   gitignore?: boolean;
 };
 
@@ -114,7 +114,8 @@ type SyncImportsOptions = {
   sourceRoot?: string;
   tsconfigPath?: string;
   excludeSourceExtensions?: string[];
-  excludeDirs?: ExcludeDirsOptions;
+  excludeFiles?: string[];
+  excludeFolders?: ExcludeFoldersOptions;
   gitignorePath?: string;
   fix?: boolean;
   alias?: {
@@ -148,7 +149,7 @@ type SourceScanOptions = {
   projectRoot: string;
   sourceRoot: string;
   sourceExtensions: string[];
-  excludeDirs: string[];
+  excludeFolders: string[];
   excludeGitignoreDirs: boolean;
   gitignorePath: string;
   scanObserver?: SourceScanObserver;
@@ -159,6 +160,7 @@ type NormalizedSyncImportsOptions = SourceScanOptions & {
   configPath?: string;
   tsconfigPath: string;
   fix: boolean;
+  excludeFiles: string[];
   alias: {
     prefix: string;
     strategy: "random" | "relative-path-hash" | "relative-path-slug" | AliasStrategyFn;
@@ -226,7 +228,7 @@ export type {
   AliasStrategyInput,
   AllowRelativeContext,
   AllowRelativeFn,
-  ExcludeDirsOptions,
+  ExcludeFoldersOptions,
   GeneratedTsconfigSyncOptions,
   ImportsFolderSyncOptions,
   NormalizedSyncImportsOptions,

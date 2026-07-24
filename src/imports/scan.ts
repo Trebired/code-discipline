@@ -10,6 +10,7 @@ import type {
   SourceScanOptions,
 } from "./types.js";
 import { loadNativeBinding } from "../native/native.js";
+import { matchesGlob } from "../shared/globs.js";
 import { normalizeRelativePath, toPosixPath, uniqueStrings } from "../shared/utils.js";
 
 type DirectoryTask = {
@@ -48,8 +49,8 @@ function resolveScanConcurrency(): number {
   return Math.min(64, Math.max(8, parallelism * 4));
 }
 
-function createExcludeMatcher(excludeDirs: string[]): ExcludeMatcher {
-  const normalizedEntries = uniqueStrings(excludeDirs.map((entry) => normalizeRelativePath(entry)).filter(Boolean));
+function createExcludeMatcher(excludeFolders: string[]): ExcludeMatcher {
+  const normalizedEntries = uniqueStrings(excludeFolders.map((entry) => normalizeRelativePath(entry).replace(/\/+$/g, "")).filter(Boolean));
   const excludedDirectoryNames = new Set(normalizedEntries.filter((entry) => !entry.includes("/")));
   const excludedPaths = normalizedEntries
     .filter((entry) => entry.includes("/"))
@@ -62,6 +63,12 @@ function createExcludeMatcher(excludeDirs: string[]): ExcludeMatcher {
 
       if (excludedDirectoryNames.has(directoryName)) {
         return true;
+      }
+
+      for (const entry of normalizedEntries) {
+        if (matchesGlob(directoryName, entry) || matchesGlob(normalizedRelativeDir, entry) || matchesGlob(normalizedProjectRelativeDir, entry)) {
+          return true;
+        }
       }
 
       for (const entry of excludedPaths) {
@@ -136,7 +143,7 @@ async function scanSourceFilesWithFallback(options: SourceScanOptions): Promise<
   const startedAt = performance.now();
   const concurrency = resolveScanConcurrency();
   const extensionSet = new Set(options.sourceExtensions.map((extension) => extension.toLowerCase()));
-  const excludeMatcher = createExcludeMatcher(options.excludeDirs);
+  const excludeMatcher = createExcludeMatcher(options.excludeFolders);
   const rows: ScannedSourceFile[] = [];
   const queue: DirectoryTask[] = [{ absolutePath: options.sourceRoot, relativeDir: "" }];
   let completedDirectories = 0;
@@ -205,17 +212,22 @@ async function scanSourceFiles(options: SourceScanOptions): Promise<ScannedSourc
       projectRoot: options.projectRoot,
       sourceRoot: options.sourceRoot,
       sourceExtensions: options.sourceExtensions,
-      excludeDirs: options.excludeDirs,
+      excludeDirs: options.excludeFolders,
     }))) as NativeScanResult);
+    const rows = parsed.rows.filter((file) => !createExcludeMatcher(options.excludeFolders).shouldExcludeDirectory(
+      path.dirname(file.relativeFromSourceRoot),
+      path.dirname(file.relativeFromProjectRoot),
+      path.basename(path.dirname(file.relativeFromProjectRoot)),
+    ));
 
     emitScanCompleted(options, "native", parsed.metrics ?? {
       chunkCount: 1,
       directoryCount: 0,
-      fileCount: parsed.rows.length,
+      fileCount: rows.length,
       elapsedMs: performance.now() - startedAt,
       concurrency: 1,
     });
-    return parsed.rows;
+    return rows;
   }
 
   return scanSourceFilesWithFallback(options);

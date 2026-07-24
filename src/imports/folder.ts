@@ -273,18 +273,20 @@ async function planImportsFolderAliases(
     }),
     ...importsFolderState.map,
   });
+  const preservedAliasPathMap: Record<string, string> = {};
   const preservedAliasesByPath = new Map<string, string>();
 
   for (const [aliasId, targetPath] of Object.entries(migratedAliasPathMap)) {
     const resolvedTarget = await resolveAliasTargetToSourcePath(options, targetPath);
     if (resolvedTarget && sourceFilesByPath.has(resolvedTarget) && !preservedAliasesByPath.has(resolvedTarget)) {
       preservedAliasesByPath.set(resolvedTarget, aliasId);
+      preservedAliasPathMap[aliasId] = normalizeDotPrefixedTarget(sourceFilesByPath.get(resolvedTarget)!.relativeFromProjectRoot);
     }
   }
 
-  const reservedIds = new Set<string>(Object.keys(migratedAliasPathMap));
+  const reservedIds = new Set<string>(Object.keys(preservedAliasPathMap));
   const aliasRecords: AliasRecord[] = [];
-  const managedAliasPathMap: Record<string, string> = { ...migratedAliasPathMap };
+  const managedAliasPathMap: Record<string, string> = { ...preservedAliasPathMap };
 
   for (const file of sourceFiles) {
     const preservedAlias = preservedAliasesByPath.get(file.absolutePath);

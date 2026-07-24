@@ -6,6 +6,7 @@ import type { ScannedSourceFile } from "../imports/types.js";
 import { scanSourceFiles } from "../imports/scan.js";
 import { syncImports } from "../imports/sync-imports.js";
 import { resolveLogger } from "../shared/logging.js";
+import { filterSourceFilesForRule } from "../shared/rule-exclusions.js";
 import type { CodeDisciplineResult, CodeDisciplineViolation } from "../shared/discipline-types.js";
 import { shouldRunRule } from "./rule-slugs.js";
 import { fixFolderization } from "./fix-folderization.js";
@@ -147,46 +148,46 @@ async function collectViolations(options: NormalizedCheckCodeDisciplineOptions):
   const violations: CodeDisciplineViolation[] = [];
 
   if (options.rules.bannedPatterns && shouldRunRule("banned-patterns", options.onlyRules)) {
-    violations.push(...await collectBannedPatternViolations(sourceFiles, options));
+    violations.push(...await collectBannedPatternViolations(filterSourceFilesForRule(sourceFiles, options.rules.bannedPatterns), options));
   }
 
   if (options.rules.bannedFiles && shouldRunRule("banned-files", options.onlyRules)) {
-    violations.push(...collectBannedFileViolations(sourceFiles, options));
+    violations.push(...collectBannedFileViolations(filterSourceFilesForRule(sourceFiles, options.rules.bannedFiles), options));
   }
 
   if (options.rules.minFileLines && shouldRunRule("min-file-lines", options.onlyRules)) {
-    violations.push(...await runMinFileLinesRule(sourceFiles, options));
+    violations.push(...await runMinFileLinesRule(filterSourceFilesForRule(sourceFiles, options.rules.minFileLines), options));
   }
 
   if (options.rules.maxFileLines && shouldRunRule("max-file-lines", options.onlyRules)) {
-    violations.push(...await runMaxFileLinesRule(sourceFiles, options));
+    violations.push(...await runMaxFileLinesRule(filterSourceFilesForRule(sourceFiles, options.rules.maxFileLines), options));
   }
 
   if (options.rules.maxCharactersPerLine && shouldRunRule("max-characters-per-line", options.onlyRules)) {
-    violations.push(...await runMaxCharactersPerLineRule(sourceFiles, options));
+    violations.push(...await runMaxCharactersPerLineRule(filterSourceFilesForRule(sourceFiles, options.rules.maxCharactersPerLine), options));
   }
 
   if (options.rules.maxFunctionLines && shouldRunRule("max-function-lines", options.onlyRules)) {
-    violations.push(...await runMaxFunctionLinesRule(sourceFiles, options));
+    violations.push(...await runMaxFunctionLinesRule(filterSourceFilesForRule(sourceFiles, options.rules.maxFunctionLines), options));
   }
 
   if (options.rules.folderizeCompoundFiles && shouldRunRule("folderize-compound-files", options.onlyRules)) {
-    violations.push(...runFolderizeCompoundFilesRule(sourceFiles, options));
+    violations.push(...runFolderizeCompoundFilesRule(filterSourceFilesForRule(sourceFiles, options.rules.folderizeCompoundFiles), options));
   }
 
   if (options.rules.dry && shouldRunRule("dry", options.onlyRules)) {
-    violations.push(...await collectDryViolations(sourceFiles, options));
+    violations.push(...await collectDryViolations(filterSourceFilesForRule(sourceFiles, options.rules.dry), options));
   }
 
   if (options.rules.syncImports && shouldRunRule("sync-imports", options.onlyRules)) {
     const normalizedSyncOptions = await buildNormalizedSyncOptions(options, false);
     if (normalizedSyncOptions) {
-      violations.push(...await collectSyncImportViolations(sourceFiles, normalizedSyncOptions));
+      violations.push(...await collectSyncImportViolations(filterSourceFilesForRule(sourceFiles, options.rules.syncImports), normalizedSyncOptions));
     }
   }
 
   if (options.rules.removeComments && shouldRunRule("remove-comments", options.onlyRules)) {
-    violations.push(...await collectRemoveCommentsViolations(sourceFiles, options));
+    violations.push(...await collectRemoveCommentsViolations(filterSourceFilesForRule(sourceFiles, options.rules.removeComments), options));
   }
 
   return sortViolations(applyConfiguredSeverity(violations, options));
@@ -225,7 +226,7 @@ function shouldRunFixRule(rule: FixableRuleSlug, options: NormalizedCheckCodeDis
 async function applyBannedFilesFix(state: FixState, normalized: NormalizedCheckCodeDisciplineOptions): Promise<void> {
   if (!normalized.rules.bannedFiles || !shouldRunFixRule("banned-files", normalized)) return;
 
-  const result = await fixBannedFilesRule(state.sourceFiles, normalized);
+  const result = await fixBannedFilesRule(filterSourceFilesForRule(state.sourceFiles, normalized.rules.bannedFiles), normalized);
   const violations = applyConfiguredSeverity(result.violations, normalized);
   state.ruleResults["banned-files"] = mapFixRuleResult({ ...result, violations });
   state.violations.push(...violations);
@@ -244,7 +245,7 @@ async function applyMinFileLinesFix(
   if (!normalized.rules.minFileLines || !shouldRunFixRule("min-file-lines", normalized)) return;
 
   const syncOptions = await buildNormalizedSyncOptions(normalized, true);
-  const result = await fixMinFileLinesRule(state.sourceFiles, normalized, logger, syncOptions);
+  const result = await fixMinFileLinesRule(filterSourceFilesForRule(state.sourceFiles, normalized.rules.minFileLines), normalized, logger, syncOptions);
   const violations = applyConfiguredSeverity(result.violations, normalized);
   state.ruleResults["min-file-lines"] = mapFixRuleResult({ ...result, violations });
   state.violations.push(...violations);
@@ -264,7 +265,7 @@ async function applyFolderizeFix(
 ): Promise<void> {
   if (!normalized.rules.folderizeCompoundFiles || !shouldRunFixRule("folderize-compound-files", normalized)) return;
 
-  const result = await fixFolderization(state.sourceFiles, normalized, logger);
+  const result = await fixFolderization(filterSourceFilesForRule(state.sourceFiles, normalized.rules.folderizeCompoundFiles), normalized, logger);
   const violations = applyConfiguredSeverity(result.violations, normalized);
   state.ruleResults["folderize-compound-files"] = mapFixRuleResult({ ...result, violations });
   state.violations.push(...violations);
@@ -294,7 +295,7 @@ async function applySyncImportsFix(state: FixState, normalized: NormalizedCheckC
 async function applyRemoveCommentsFix(state: FixState, normalized: NormalizedCheckCodeDisciplineOptions): Promise<void> {
   if (!normalized.rules.removeComments || !shouldRunFixRule("remove-comments", normalized)) return;
 
-  const result = await fixRemoveCommentsRule(state.sourceFiles, normalized);
+  const result = await fixRemoveCommentsRule(filterSourceFilesForRule(state.sourceFiles, normalized.rules.removeComments), normalized);
   const violations = applyConfiguredSeverity(result.violations, normalized);
   state.ruleResults["remove-comments"] = mapFixRuleResult({ ...result, violations });
   state.violations.push(...violations);

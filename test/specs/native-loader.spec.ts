@@ -97,7 +97,7 @@ test("native and TS source scanning agree when native is available", async () =>
     projectRoot,
     sourceRoot: `${projectRoot}/src`,
     sourceExtensions: [".ts", ".go"],
-    excludeDirs: ["generated"],
+    excludeFolders: ["generated"],
     excludeGitignoreDirs: false,
     gitignorePath: `${projectRoot}/.gitignore`,
   };

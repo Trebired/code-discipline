@@ -59,6 +59,36 @@ test("allows files above the configured minimum code line count", async () => {
   expect(result.violations).toEqual([]);
 });
 
+test("supports rule-local file and folder exclusions", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/client.ts", "export const client = true;\n");
+  writeFile(projectRoot, "src/legacy.ts", "export const legacy = true;\n");
+  writeFile(projectRoot, "src/generated/tiny.ts", "export const generated = true;\n");
+  writeFile(projectRoot, "src/generated/long.ts", "export const a = 1;\nexport const b = 2;\nexport const c = 3;\n");
+  writeFile(projectRoot, "src/long.ts", "export const a = 1;\nexport const b = 2;\nexport const c = 3;\n");
+
+  const result = await checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      minFileLines: {
+        min: 2,
+        excludeFiles: ["**/client.ts"],
+        excludeFolders: ["generated"],
+      },
+      maxFileLines: {
+        max: 2,
+        excludeFolders: ["**/generated"],
+      },
+    },
+  });
+
+  expect(result.violations.map((violation) => `${violation.rule}:${violation.filePath}`)).toEqual([
+    "min-file-lines:src/legacy.ts",
+    "max-file-lines:src/long.ts",
+  ]);
+});
+
 test("reports physical lines above the max characters per line default", async () => {
   const projectRoot = tempProject();
   const longExpression = "x".repeat(151);

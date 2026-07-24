@@ -123,6 +123,32 @@ test("rejects invalid severity values", async () => {
   });
 });
 
+test("rejects invalid rule-local exclusion values", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
+
+  await expect(checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      minFileLines: {
+        // @ts-expect-error invalid excludeFiles
+        excludeFiles: "**/client.ts",
+      },
+    },
+  })).rejects.toThrow("minFileLines.excludeFiles must be an array of strings when provided");
+
+  await expect(checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      syncImports: {
+        // @ts-expect-error invalid excludeFolders
+        excludeFolders: "src/generated",
+      },
+    },
+  })).rejects.toThrow("syncImports.excludeFolders must be an array of strings when provided");
+});
+
 test("rejects non-array removeComments.exclude values", async () => {
   const projectRoot = tempProject();
 
@@ -176,6 +202,25 @@ test("rejects removed sourceExtensions config in favor of excludeSourceExtension
   })).rejects.toMatchObject({
     code: "invalid_config",
   });
+});
+
+test("rejects removed excludeDirs config in favor of excludeFolders", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
+
+  await expect(checkCodeDiscipline({
+    projectRoot,
+    // @ts-expect-error removed config
+    excludeDirs: {
+      dirs: ["generated"],
+    },
+    rules: {
+      maxFileLines: {
+        max: 2,
+      },
+    },
+  })).rejects.toThrow("excludeDirs is no longer supported; use excludeFolders");
 });
 
 test("rejects removed evasionGuards config", async () => {

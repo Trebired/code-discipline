@@ -2,6 +2,12 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.2.5
+
+- Added rule-local `excludeFiles` and `excludeFolders` support for every discipline rule.
+- Renamed top-level source directory exclusion config from `excludeDirs` to `excludeFolders` without legacy compatibility.
+- Made folder exclusions support folder names and glob-style patterns, and made imports-folder sync prune missing alias targets while repacking generated import files.
+
 ## 4.2.4
 
 - Removed the CLI loading spinner so progress logs never interleave with `Scanning codebase` frames.

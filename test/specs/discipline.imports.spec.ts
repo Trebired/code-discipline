@@ -63,6 +63,37 @@ test("allows same-folder relative imports but reports upward imports when alias 
   expect(result.violations.some((violation) => JSON.stringify(violation.details).includes("../shared/util"))).toBe(true);
 });
 
+test("sync-imports respects rule-local file and folder exclusions", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "tsconfig.json", "{}\n");
+  writeFile(projectRoot, "src/feature/app.ts", 'import { util } from "../shared/util";\nexport { util };\n');
+  writeFile(projectRoot, "src/client.ts", 'import { util } from "./shared/util";\nexport { util };\n');
+  writeFile(projectRoot, "src/generated/report.ts", 'import { util } from "../shared/util";\nexport { util };\n');
+  writeFile(projectRoot, "src/shared/util.ts", "export const util = true;\n");
+
+  const result = await checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      syncImports: {
+        alias: {
+          strategy: "relative-path-slug",
+        },
+        allowRelative: ["./"],
+        excludeFiles: ["src/client.ts"],
+        excludeFolders: ["generated"],
+      },
+    },
+  });
+
+  expect(result.violations.some((violation) => violation.filePath === "src/client.ts")).toBe(false);
+  expect(result.violations.some((violation) => violation.filePath === "src/generated/report.ts")).toBe(false);
+  expect(result.violations).toContainEqual(expect.objectContaining({
+    filePath: "src/feature/app.ts",
+    message: "relative import ../shared/util should be rewritten to #shared-util",
+  }));
+});
+
 test("check mode resolves .js specifiers to .ts source files for sync-import violations", async () => {
   const projectRoot = tempProject();
 

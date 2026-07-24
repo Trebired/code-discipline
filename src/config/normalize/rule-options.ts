@@ -19,6 +19,7 @@ import type {
   RemoveCommentsRuleOptions,
 } from "../../checks/types.js";
 import { normalizeRelativePath, uniqueStrings } from "../../shared/utils.js";
+import { normalizeRuleExclusions } from "./exclusions.js";
 import { normalizeLoggingOptions } from "./logging-options.js";
 
 const DEFAULT_MIN_FILE_LINES = 1;
@@ -79,6 +80,7 @@ function normalizeMinFileLinesRule(rule: MinFileLinesRuleOptions | undefined) {
   assertRemovedKeys("minFileLines", source, ["enabled", "stop", "fix"]);
 
   return {
+    ...normalizeRuleExclusions("minFileLines", source),
     min: normalizeThreshold(rule.min, DEFAULT_MIN_FILE_LINES, "minFileLines.min"),
     severity: normalizeSeverity(rule.severity, "minFileLines"),
   };
@@ -97,6 +99,7 @@ function normalizeMaxFileLinesRule(rule: MaxFileLinesRuleOptions | undefined) {
   }
 
   return {
+    ...normalizeRuleExclusions("maxFileLines", source),
     max: Math.max(1, Math.floor(rule!.max as number)),
     severity: normalizeSeverity(rule.severity, "maxFileLines"),
   };
@@ -139,6 +142,7 @@ function normalizeBannedPatternsRule(rule: BannedPatternsRuleOptions | undefined
   });
 
   return {
+    ...normalizeRuleExclusions("bannedPatterns", source),
     patterns,
     severity: normalizeSeverity(rule.severity, "bannedPatterns"),
   };
@@ -175,6 +179,7 @@ function normalizeBannedFilesRule(rule: BannedFilesRuleOptions | undefined): Nor
   });
 
   return {
+    ...normalizeRuleExclusions("bannedFiles", source),
     patterns,
     severity: normalizeSeverity(rule.severity, "bannedFiles"),
   };
@@ -186,6 +191,7 @@ function normalizeMaxCharactersPerLineRule(rule: MaxCharactersPerLineRuleOptions
   assertRemovedKeys("maxCharactersPerLine", source, ["enabled", "stop", "fix"]);
 
   return {
+    ...normalizeRuleExclusions("maxCharactersPerLine", source),
     max: normalizeThreshold(rule.max, DEFAULT_MAX_CHARACTERS_PER_LINE, "maxCharactersPerLine.max"),
     severity: normalizeSeverity(rule.severity, "maxCharactersPerLine"),
   };
@@ -204,6 +210,7 @@ function normalizeMaxFunctionLinesRule(rule: MaxFunctionLinesRuleOptions | undef
   }
 
   return {
+    ...normalizeRuleExclusions("maxFunctionLines", source),
     max: Math.max(1, Math.floor(rule!.max as number)),
     severity: normalizeSeverity(rule.severity, "maxFunctionLines"),
   };
@@ -222,6 +229,7 @@ function normalizeFolderizeCompoundFilesRule(rule: FolderizeCompoundFilesRuleOpt
   }
 
   return {
+    ...normalizeRuleExclusions("folderizeCompoundFiles", source),
     separators,
     severity: normalizeSeverity(rule.severity, "folderizeCompoundFiles"),
   };
@@ -250,10 +258,10 @@ function normalizeSyncImportsRule(rule: CodeDisciplineSyncImportsRuleOptions | u
     sourceRoot: rule?.sourceRoot,
     tsconfigPath: rule?.tsconfigPath,
     excludeSourceExtensions: rule?.excludeSourceExtensions,
-    excludeDirs: rule?.excludeDirs,
     gitignorePath: rule?.gitignorePath,
     alias: rule?.alias,
     allowRelative: rule?.allowRelative ?? DEFAULT_ALLOW_RELATIVE,
+    ...normalizeRuleExclusions("syncImports", source),
     importsFolder: rule?.importsFolder,
     generatedTsconfig: rule?.generatedTsconfig,
     packageJsonImports: rule?.packageJsonImports,
@@ -268,6 +276,7 @@ function normalizeDryRule(rule: DryRuleOptions | undefined): NormalizedDryRule |
   assertRemovedKeys("dry", source, ["enabled", "stop", "fix", "helpers"]);
 
   return {
+    ...normalizeRuleExclusions("dry", source),
     minDuplicateCharacters: normalizeMinDuplicateCharacters(rule.minDuplicateCharacters),
     severity: normalizeSeverity(rule.severity, "dry"),
   };
@@ -277,7 +286,7 @@ function normalizeRemoveCommentsRule(rule: RemoveCommentsRuleOptions | undefined
   if (!rule) return undefined;
   const source = rule as Record<string, unknown>;
   assertRemovedKeys("removeComments", source, ["enabled", "stop", "fix"]);
-  const unsupportedKeys = Object.keys(source).filter((key) => key !== "severity" && key !== "exclude");
+  const unsupportedKeys = Object.keys(source).filter((key) => !["severity", "exclude", "excludeFiles", "excludeFolders"].includes(key));
   if (unsupportedKeys.length > 0) {
     throw new InvalidCodeDisciplineConfigError("removeComments does not accept rule options", {
       rule: "removeComments",
@@ -293,6 +302,7 @@ function normalizeRemoveCommentsRule(rule: RemoveCommentsRuleOptions | undefined
   }
 
   return {
+    ...normalizeRuleExclusions("removeComments", source),
     severity: normalizeSeverity(rule.severity, "removeComments"),
     exclude: uniqueStrings((rule.exclude ?? []).map((pattern) => String(pattern).trim()).filter(Boolean)),
   };

@@ -102,7 +102,7 @@ test("merges directory excludes from .gitignore when explicitly enabled", async 
 
   const enabled = await checkCodeDiscipline({
     projectRoot,
-    excludeDirs: {
+    excludeFolders: {
       gitignore: true,
     },
     rules: {
@@ -263,7 +263,7 @@ test("supports css files in source scanning and removable comments", async () =>
   }));
 });
 
-test("combines default excludeDirs, explicit excludeDirs, and opt-in .gitignore excludes", async () => {
+test("combines default excludeFolders, explicit excludeFolders, and opt-in .gitignore excludes", async () => {
   const projectRoot = tempProject();
 
   writeFile(projectRoot, ".gitignore", "src/generated/\n");
@@ -274,8 +274,8 @@ test("combines default excludeDirs, explicit excludeDirs, and opt-in .gitignore 
 
   const additive = await checkCodeDiscipline({
     projectRoot,
-    excludeDirs: {
-      dirs: ["tmp"],
+    excludeFolders: {
+      folders: ["tmp"],
       gitignore: true,
     },
     rules: {
@@ -290,8 +290,8 @@ test("combines default excludeDirs, explicit excludeDirs, and opt-in .gitignore 
 
   const explicitOnly = await checkCodeDiscipline({
     projectRoot,
-    excludeDirs: {
-      dirs: ["tmp"],
+    excludeFolders: {
+      folders: ["tmp"],
     },
     rules: {
       maxFileLines: {
@@ -304,6 +304,30 @@ test("combines default excludeDirs, explicit excludeDirs, and opt-in .gitignore 
   expect(explicitOnly.violations.map((entry) => entry.filePath)).toEqual([
     "src/app.ts",
     "src/generated/out.ts",
+  ]);
+});
+
+test("supports top-level excludeFolders folder names and globs", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", "one\n2\n3\n");
+  writeFile(projectRoot, "src/generated/out.ts", "one\n2\n3\n");
+  writeFile(projectRoot, "src/features/cache-files/out.ts", "one\n2\n3\n");
+
+  const result = await checkCodeDiscipline({
+    projectRoot,
+    excludeFolders: {
+      folders: ["generated", "**/*-files"],
+    },
+    rules: {
+      maxFileLines: {
+        max: 2,
+      },
+    },
+  });
+
+  expect(result.violations.map((entry) => entry.filePath)).toEqual([
+    "src/app.ts",
   ]);
 });
 
@@ -326,7 +350,7 @@ test("emits chunked fallback scan progress for larger directory trees", async ()
       projectRoot,
       sourceRoot: `${projectRoot}/src`,
       sourceExtensions: [".ts"],
-      excludeDirs: ["node_modules", "dist", ".git"],
+      excludeFolders: ["node_modules", "dist", ".git"],
       excludeGitignoreDirs: false,
       gitignorePath: `${projectRoot}/.gitignore`,
       scanObserver: (event) => events.push({ phase: event.phase, backend: event.backend }),

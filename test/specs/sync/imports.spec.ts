@@ -63,6 +63,14 @@ test("rejects removed syncImports config keys", async () => {
     // @ts-expect-error legacy config
     stop: true,
   })).rejects.toMatchObject({ code: "invalid_config" });
+
+  await expect(syncImports({
+    projectRoot,
+    // @ts-expect-error legacy config
+    excludeDirs: {
+      dirs: ["generated"],
+    },
+  })).rejects.toThrow("excludeDirs is no longer supported; use excludeFolders");
 });
 
 test("generates aliases and rewrites imports when fix is true", async () => {

@@ -1,7 +1,6 @@
 import path from "node:path";
 
-import { DEFAULT_EXCLUDE_DIRS, DEFAULT_SOURCE_EXTENSIONS } from "../shared/constants.js";
-import { readGitignoreExcludedDirs } from "../shared/gitignore.js";
+import { DEFAULT_SOURCE_EXTENSIONS } from "../shared/constants.js";
 import { ensureDotExtension, normalizeRelativePath, uniqueStrings } from "../shared/utils.js";
 import type { CodeDisciplineSyncImportsRuleOptions, NormalizedCheckCodeDisciplineOptions } from "./types.js";
 
@@ -24,16 +23,10 @@ async function buildNormalizedSyncOptions(
     ? uniqueStrings(DEFAULT_SOURCE_EXTENSIONS.filter((extension) => !excludedSourceExtensions.has(extension)))
     : options.sourceExtensions;
   const gitignorePath = rule.gitignorePath ?? options.gitignorePath;
-  const gitignoreDirs = rule.excludeDirs?.gitignore === true
-    ? await readGitignoreExcludedDirs(options.projectRoot, gitignorePath)
-    : [];
-  const excludeDirs = rule.excludeDirs
-    ? uniqueStrings([
-      ...DEFAULT_EXCLUDE_DIRS,
-      ...(rule.excludeDirs.dirs ?? []),
-      ...gitignoreDirs,
-    ])
-    : options.excludeDirs;
+  const excludeFolders = uniqueStrings([
+    ...options.excludeFolders,
+    ...(rule.excludeFolders ?? []),
+  ]);
 
   return {
     configPath: options.configPath,
@@ -41,13 +34,14 @@ async function buildNormalizedSyncOptions(
     sourceRoot,
     sourceRootRelative,
     sourceExtensions,
-    excludeDirs,
-    excludeGitignoreDirs: rule.excludeDirs?.gitignore ?? options.excludeGitignoreDirs,
+    excludeFolders,
+    excludeGitignoreDirs: options.excludeGitignoreDirs,
     gitignorePath,
     progressObserver: options.progressObserver,
     scanObserver: options.scanObserver,
     tsconfigPath: rule.tsconfigPath ?? `${options.projectRoot}/tsconfig.json`,
     fix,
+    excludeFiles: rule.excludeFiles ?? [],
     alias: {
       prefix: rule.alias?.prefix ?? "#",
       strategy: rule.alias?.strategy ?? "random",

@@ -1,6 +1,7 @@
 import { normalizeSyncImportsOptions } from "../config/normalize/sync-imports-options.js";
 import { syncPackageJsonImportsFromAliasMap, syncPackageJsonImportsFromTsconfigPaths } from "../runtime/imports-sync.js";
 import { resolveLogger } from "../shared/logging.js";
+import { filterSourceFilesForRule } from "../shared/rule-exclusions.js";
 import { supportsSyncImports } from "../shared/languages.js";
 import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
 import { planTsconfigAliases, syncTsconfigAliases } from "./aliases.js";
@@ -18,7 +19,7 @@ function summarizeSyncImportViolations(violations: CodeDisciplineViolation[]) {
 }
 
 function isNormalizedSyncImportsOptions(options: SyncImportsOptions | NormalizedSyncImportsOptions): options is NormalizedSyncImportsOptions {
-  return Array.isArray((options as NormalizedSyncImportsOptions).excludeDirs);
+  return Array.isArray((options as NormalizedSyncImportsOptions).excludeFolders);
 }
 
 function createCheckOnlyResult(args: {
@@ -112,7 +113,10 @@ async function syncImports(options: SyncImportsOptions | NormalizedSyncImportsOp
   });
 
   try {
-    const sourceFiles = (await scanSourceFiles(normalized)).filter((file) => supportsSyncImports(file.extension));
+    const sourceFiles = filterSourceFilesForRule(
+      (await scanSourceFiles(normalized)).filter((file) => supportsSyncImports(file.extension)),
+      normalized,
+    );
     const plannedAliases = await planTsconfigAliases(normalized, sourceFiles, logger);
     const driftViolations = await collectSyncImportViolations(sourceFiles, normalized, logger);
 
