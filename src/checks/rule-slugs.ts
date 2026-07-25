@@ -20,6 +20,7 @@ const ALL_RULE_SLUGS: CodeDisciplineRuleSlug[] = [
   "sync-imports",
   "remove-comments",
   "structural-blank-lines",
+  "ts-nocheck-audit",
   "dry",
 ];
 
@@ -30,6 +31,7 @@ const FIXABLE_RULE_SLUGS: FixableRuleSlug[] = [
   "sync-imports",
   "remove-comments",
   "structural-blank-lines",
+  "ts-nocheck-audit",
   "prettier",
 ];
 
@@ -50,6 +52,7 @@ const RULE_SLUG_BY_CONFIG_KEY = {
   removeComments: "remove-comments",
   structuralBlankLines: "structural-blank-lines",
   syncImports: "sync-imports",
+  tsNocheckAudit: "ts-nocheck-audit",
 } as const;
 
 function resolveEnabledRuleSlugs(

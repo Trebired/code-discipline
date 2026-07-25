@@ -15,6 +15,7 @@ import {
   applyRemoveCommentsFix,
   applyStructuralBlankLinesFix,
   applySyncImportsFix,
+  applyTsNocheckAuditFix,
 } from "./apply-fixes.js";
 import type { FixState } from "./apply-fixes.js";
 import { collectPrettierViolations } from "./prettier.js";
@@ -22,6 +23,7 @@ import { shouldRunRule } from "./rule-slugs.js";
 import { collectBannedFileViolations } from "./rules/banned/files.js";
 import { collectBannedPatternViolations } from "./rules/banned/patterns.js";
 import { collectStructuralBlankLinesViolations } from "./rules/blank-lines/index.js";
+import { collectTsNocheckAuditViolations } from "./rules/ts-nocheck-audit/index.js";
 import { collectDryViolations } from "./rules/dry/index.js";
 import { runMaxCharactersPerLineRule } from "./rules/max/characters-per-line.js";
 import { runMaxFileLinesRule } from "./rules/max/file-lines.js";
@@ -157,6 +159,10 @@ async function collectViolations(options: NormalizedCheckCodeDisciplineOptions):
     violations.push(...await collectRemoveCommentsViolations(filterSourceFilesForRule(sourceFiles, options.rules.removeComments), options));
   }
 
+  if (options.rules.tsNocheckAudit && shouldRunRule("ts-nocheck-audit", options.onlyRules)) {
+    violations.push(...await collectTsNocheckAuditViolations(filterSourceFilesForRule(sourceFiles, options.rules.tsNocheckAudit), options));
+  }
+
   if (options.rules.structuralBlankLines && shouldRunRule("structural-blank-lines", options.onlyRules)) {
     violations.push(...await collectStructuralBlankLinesViolations(filterSourceFilesForRule(sourceFiles, options.rules.structuralBlankLines), options));
   }
@@ -230,6 +236,7 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
   await applyFolderizeFix(state, normalized, logger);
   await applySyncImportsFix(state, normalized);
   await applyRemoveCommentsFix(state, normalized);
+  await applyTsNocheckAuditFix(state, normalized);
   await applyStructuralBlankLinesFix(state, normalized);
   await applyPrettierFix(state, normalized);
 

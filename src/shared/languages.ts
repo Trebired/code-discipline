@@ -11,6 +11,13 @@ const TYPESCRIPT_FAMILY_EXTENSIONS = new Set([
   ".tsx",
 ]);
 
+const PURE_TYPESCRIPT_EXTENSIONS = new Set([
+  ".cts",
+  ".mts",
+  ".ts",
+  ".tsx",
+]);
+
 const GO_FAMILY_EXTENSIONS = new Set([".go"]);
 const RUST_FAMILY_EXTENSIONS = new Set([".rs"]);
 const STYLE_FAMILY_EXTENSIONS = new Set([".scss", ".css"]);
@@ -55,8 +62,17 @@ function supportsRemoveComments(value: string): boolean {
   return isTypeScriptFamilyExtension(value) || isGoExtension(value) || isRustExtension(value) || isStyleExtension(value);
 }
 
+function isPureTypeScriptExtension(value: string): boolean {
+  return PURE_TYPESCRIPT_EXTENSIONS.has(normalizeExtension(value));
+}
+
+function supportsTsNocheckAudit(value: string): boolean {
+  return isPureTypeScriptExtension(value);
+}
+
 export {
   isGoExtension,
+  isPureTypeScriptExtension,
   isRustExtension,
   isScssExtension,
   isStyleExtension,
@@ -65,4 +81,5 @@ export {
   supportsMaxFunctionLines,
   supportsRemoveComments,
   supportsSyncImports,
+  supportsTsNocheckAudit,
 };

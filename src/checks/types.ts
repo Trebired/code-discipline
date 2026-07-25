@@ -18,7 +18,7 @@ import type {
 type CodeDisciplineRuleSlug = CodeDisciplineRuleName;
 type CodeDisciplineFormatterSlug = "prettier";
 type CodeDisciplineCheckSelectorSlug = CodeDisciplineRuleSlug | CodeDisciplineFormatterSlug;
-type FixableRuleSlug = "banned-files" | "min-file-lines" | "folderize-compound-files" | "sync-imports" | "remove-comments" | "structural-blank-lines" | CodeDisciplineFormatterSlug;
+type FixableRuleSlug = "banned-files" | "min-file-lines" | "folderize-compound-files" | "sync-imports" | "remove-comments" | "structural-blank-lines" | "ts-nocheck-audit" | CodeDisciplineFormatterSlug;
 type CodeDisciplineMode = "check" | "fix";
 type CodeDisciplineRuntimeMode = CodeDisciplineMode;
 type CodeDisciplineRuleSeverity = "warning" | "fail";
@@ -85,6 +85,11 @@ type StructuralBlankLinesRuleOptions = RuleExclusionOptions & {
   severity?: CodeDisciplineRuleSeverity;
 };
 
+type TsNocheckAuditRuleOptions = RuleExclusionOptions & {
+  tsconfigPath?: string;
+  severity?: CodeDisciplineRuleSeverity;
+};
+
 type DryRuleOptions = RuleExclusionOptions & {
   minDuplicateCharacters?: number;
   severity?: CodeDisciplineRuleSeverity;
@@ -109,6 +114,7 @@ type CodeDisciplineRules = {
   syncImports?: CodeDisciplineSyncImportsRuleOptions;
   removeComments?: RemoveCommentsRuleOptions;
   structuralBlankLines?: StructuralBlankLinesRuleOptions;
+  tsNocheckAudit?: TsNocheckAuditRuleOptions;
   dry?: DryRuleOptions;
 };
 
@@ -245,6 +251,12 @@ type NormalizedStructuralBlankLinesRule = {
   severity: CodeDisciplineRuleSeverity;
 };
 
+type NormalizedTsNocheckAuditRule = {
+  excludeDirs: ExcludeDirEntry[];
+  tsconfigPath?: string;
+  severity: CodeDisciplineRuleSeverity;
+};
+
 type NormalizedPrettierFormatter = {
   targets: string[];
   ignore: boolean;
@@ -272,6 +284,7 @@ type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
     syncImports?: CodeDisciplineSyncImportsRuleOptions;
     removeComments?: NormalizedRemoveCommentsRule;
     structuralBlankLines?: NormalizedStructuralBlankLinesRule;
+    tsNocheckAudit?: NormalizedTsNocheckAuditRule;
     dry?: NormalizedDryRule;
   };
 };
@@ -357,6 +370,8 @@ export type {
   NormalizedMinFileLinesRule,
   NormalizedRemoveCommentsRule,
   NormalizedStructuralBlankLinesRule,
+  NormalizedTsNocheckAuditRule,
   StructuralBlankLinesRuleOptions,
   TsconfigPathsNormalizeMode,
+  TsNocheckAuditRuleOptions,
 };

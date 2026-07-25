@@ -2,6 +2,11 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.6.0
+
+- Added `tsNocheckAudit`, a fixable rule that flags and removes leading `// @ts-nocheck` pragmas that are provably unnecessary: it builds one `ts.Program` per run from the project's `tsconfig.json` (honoring `extends`, including a `syncImports.generatedTsconfig` path-alias projection), strips the pragma from each flagged file in memory, and only reports files where `getSemanticDiagnostics()` comes back empty without it. Files that still have real diagnostics are left untouched.
+- Made unqualified `fix` run `tsNocheckAudit` after `removeComments` and before `structuralBlankLines`.
+
 ## 4.5.0
 
 - Added `structuralBlankLines`, a fixable rule that enforces exactly one blank line at AST-identified structural boundaries (file headers, imports, declaration groups, class members) while leaving compact groups (imports, variables, types, re-exports, execution statements, class fields, directive prologues, function overloads, getter/setter pairs) at zero or one blank line and collapsing two or more blank lines to one.
