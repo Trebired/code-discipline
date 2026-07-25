@@ -19,7 +19,6 @@ import type {
   NormalizedDryRule,
   RemoveCommentsRuleOptions,
   StructuralBlankLinesRuleOptions,
-  TsNocheckAuditRuleOptions,
 } from "../../checks/types.js";
 import { normalizeRelativePath, uniqueStrings } from "../../shared/utils.js";
 import { normalizeRuleExclusions } from "./exclusions.js";
@@ -316,32 +315,6 @@ function normalizeStructuralBlankLinesRule(rule: StructuralBlankLinesRuleOptions
   };
 }
 
-function normalizeTsNocheckAuditRule(rule: TsNocheckAuditRuleOptions | undefined) {
-  if (!rule) return undefined;
-  const source = rule as Record<string, unknown>;
-  assertRemovedKeys("tsNocheckAudit", source, ["enabled", "stop", "fix"]);
-  const unsupportedKeys = Object.keys(source).filter((key) => !["severity", "tsconfigPath", "excludeDirs", "excludeFiles", "excludeFolders"].includes(key));
-  if (unsupportedKeys.length > 0) {
-    throw new InvalidCodeDisciplineConfigError("tsNocheckAudit does not accept rule options", {
-      rule: "tsNocheckAudit",
-      keys: unsupportedKeys,
-    });
-  }
-
-  if (rule.tsconfigPath !== undefined && typeof rule.tsconfigPath !== "string") {
-    throw new InvalidCodeDisciplineConfigError("tsNocheckAudit.tsconfigPath must be a string when provided", {
-      rule: "tsNocheckAudit",
-      value: rule.tsconfigPath,
-    });
-  }
-
-  return {
-    ...normalizeRuleExclusions("tsNocheckAudit", source),
-    tsconfigPath: rule.tsconfigPath,
-    severity: normalizeSeverity(rule.severity, "tsNocheckAudit"),
-  };
-}
-
 function normalizeRemoveCommentsRule(rule: RemoveCommentsRuleOptions | undefined) {
   if (!rule) return undefined;
   const source = rule as Record<string, unknown>;
@@ -381,5 +354,4 @@ export {
   normalizeRemoveCommentsRule,
   normalizeStructuralBlankLinesRule,
   normalizeSyncImportsRule,
-  normalizeTsNocheckAuditRule,
 };

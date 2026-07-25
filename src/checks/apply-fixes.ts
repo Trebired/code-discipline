@@ -11,7 +11,6 @@ import { fixBannedFilesRule } from "./rules/banned/files.js";
 import { fixStructuralBlankLinesRule } from "./rules/blank-lines/index.js";
 import { fixMinFileLinesRule } from "./rules/min/file/lines/fix.js";
 import { fixRemoveCommentsRule } from "./rules/remove-comments.js";
-import { fixTsNocheckAuditRule } from "./rules/ts-nocheck-audit/index.js";
 import { applyConfiguredSeverity } from "./severity.js";
 import { buildNormalizedSyncOptions } from "./sync-options.js";
 import type { FixableRuleSlug, FixCodeDisciplineRuleResult, NormalizedCheckCodeDisciplineOptions } from "./types.js";
@@ -157,16 +156,6 @@ async function applyStructuralBlankLinesFix(state: FixState, normalized: Normali
   state.rewrittenFiles += result.rewritten_files ?? 0;
 }
 
-async function applyTsNocheckAuditFix(state: FixState, normalized: NormalizedCheckCodeDisciplineOptions): Promise<void> {
-  if (!normalized.rules.tsNocheckAudit || !shouldRunFixRule("ts-nocheck-audit", normalized)) return;
-
-  const result = await fixTsNocheckAuditRule(filterSourceFilesForRule(state.sourceFiles, normalized.rules.tsNocheckAudit), normalized);
-  const violations = applyConfiguredSeverity(result.violations, normalized);
-  state.ruleResults["ts-nocheck-audit"] = mapFixRuleResult({ ...result, violations });
-  state.violations.push(...violations);
-  state.rewrittenFiles += result.rewritten_files ?? 0;
-}
-
 async function applyPrettierFix(state: FixState, normalized: NormalizedCheckCodeDisciplineOptions): Promise<void> {
   const result = await applyPrettierFormatterFix(normalized);
   if (!result) return;
@@ -187,6 +176,5 @@ export {
   applyRemoveCommentsFix,
   applyStructuralBlankLinesFix,
   applySyncImportsFix,
-  applyTsNocheckAuditFix,
 };
 export type { FixState };

@@ -18,7 +18,6 @@ import {
   normalizeRemoveCommentsRule,
   normalizeStructuralBlankLinesRule,
   normalizeSyncImportsRule,
-  normalizeTsNocheckAuditRule,
 } from "./rule-options.js";
 import { normalizeFormatters } from "./formatter-options.js";
 import { InvalidCodeDisciplineConfigError } from "../../shared/errors.js";
@@ -60,7 +59,6 @@ async function normalizeCheckCodeDisciplineOptions(
       syncImports: normalizeSyncImportsRule(options.rules?.syncImports),
       removeComments: normalizeRemoveCommentsRule(options.rules?.removeComments),
       structuralBlankLines: normalizeStructuralBlankLinesRule(options.rules?.structuralBlankLines),
-      tsNocheckAudit: normalizeTsNocheckAuditRule(options.rules?.tsNocheckAudit),
     },
   };
 }

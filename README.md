@@ -9,7 +9,6 @@ Configurable repository discipline checks and rule-driven fixes for Bun and Node
 - sync rules such as keeping source imports, `tsconfig.json`, and optional `package.json#imports` aligned
 - source cleanup rules such as removing comments across supported languages
 - structural spacing rules such as normalizing blank lines around JavaScript and TypeScript declarations
-- type-checking hygiene such as auditing `// @ts-nocheck` pragmas that no longer suppress anything
 - native acceleration with a TypeScript fallback for large codebases
 - DRY enforcement through source-tree duplicate function grouping
 
@@ -33,7 +32,7 @@ code-discipline check
 code-discipline check save
 code-discipline check max-function-lines dry
 code-discipline fix
-code-discipline fix banned-files min-file-lines sync-imports remove-comments ts-nocheck-audit structural-blank-lines
+code-discipline fix banned-files min-file-lines sync-imports remove-comments structural-blank-lines
 code-discipline gate -- bun run dev
 ```
 
@@ -244,7 +243,7 @@ export default defineCodeDisciplineConfig({
 
 ```sh
 code-discipline check max-file-lines max-function-lines
-code-discipline fix banned-files min-file-lines sync-imports remove-comments ts-nocheck-audit structural-blank-lines
+code-discipline fix banned-files min-file-lines sync-imports remove-comments structural-blank-lines
 code-discipline check prettier
 code-discipline fix prettier
 ```
@@ -262,7 +261,6 @@ Rules use kebab-case public slugs:
 - `sync-imports`
 - `remove-comments`
 - `structural-blank-lines`
-- `ts-nocheck-audit`
 - `dry`
 
 `fix` only accepts fixable rules. Trying to run `code-discipline fix max-function-lines`, `code-discipline fix max-characters-per-line`, or `code-discipline fix dry` fails clearly.
@@ -273,7 +271,7 @@ Formatter selectors such as `prettier` are enabled by top-level `formatters` con
 
 Formatters are configured at top level under `formatters`, not under `rules`. Presence enables a formatter; there is no `enabled: true` key.
 
-`formatters.prettier` uses Prettier as the formatting engine and keeps `code-discipline.ts` as the formatting policy source. `check prettier` validates formatting without modifying files, while `fix prettier` writes formatted files. Running `code-discipline fix` with no selectors runs configured Prettier formatting last after structural, import, comment, pragma-audit, and blank-line fixes. Set `formatters.prettier.ignore: true` to reuse the shared top-level `ignore`.
+`formatters.prettier` uses Prettier as the formatting engine and keeps `code-discipline.ts` as the formatting policy source. `check prettier` validates formatting without modifying files, while `fix prettier` writes formatted files. Running `code-discipline fix` with no selectors runs configured Prettier formatting last after structural, import, comment, and blank-line fixes. Set `formatters.prettier.ignore: true` to reuse the shared top-level `ignore`.
 
 Example:
 
@@ -513,29 +511,6 @@ Example targeted CLI usage:
 
 ```sh
 code-discipline fix structural-blank-lines
-```
-
-### `tsNocheckAudit`
-
-Reports TypeScript files whose leading `// @ts-nocheck` pragma is provably unnecessary, and removes it when you run `code-discipline fix`.
-
-The check is fully mechanical: for every `.ts`/`.tsx`/`.mts`/`.cts` file starting with `// @ts-nocheck`, it builds a single `ts.Program` from the project's `tsconfig.json` (following `extends`, so a `syncImports.generatedTsconfig` path-alias projection is picked up the same way `tsc` would honor it), strips the pragma from that file in memory, and asks the type checker for `getSemanticDiagnostics()`. Zero diagnostics without the pragma means it was disabling type checking for no benefit, so it gets flagged. Any diagnostics means the file still needs it, and `tsNocheckAudit` leaves it untouched — fixing the underlying type errors is a judgment call for a human, not something this rule attempts.
-
-The `Program` is built once per run, not once per file, so the cost scales with project size rather than with how many files happen to carry the pragma.
-
-- `tsconfigPath` defaults to `tsconfig.json` at the project root; override it if your project's config lives elsewhere
-- `severity` defaults to `"fail"`
-
-```ts
-tsNocheckAudit: {
-  tsconfigPath: "tsconfig.json",
-}
-```
-
-Example targeted CLI usage:
-
-```sh
-code-discipline fix ts-nocheck-audit
 ```
 
 ### `dry`

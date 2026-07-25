@@ -17,7 +17,6 @@ function resolveConfiguredSeverity(
     case "sync-imports": return options.rules.syncImports?.severity ?? "fail";
     case "remove-comments": return options.rules.removeComments?.severity ?? "fail";
     case "structural-blank-lines": return options.rules.structuralBlankLines?.severity ?? "fail";
-    case "ts-nocheck-audit": return options.rules.tsNocheckAudit?.severity ?? "fail";
     case "dry": return options.rules.dry?.severity ?? "fail";
     case "prettier": return "fail";
   }

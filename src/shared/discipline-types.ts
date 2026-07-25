@@ -12,7 +12,6 @@ type CodeDisciplineRuleName =
   | "sync-imports"
   | "remove-comments"
   | "structural-blank-lines"
-  | "ts-nocheck-audit"
   | "dry";
 
 type CodeDisciplineFormatterName = "prettier";

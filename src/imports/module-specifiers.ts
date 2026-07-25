@@ -304,5 +304,5 @@ function applyTextReplacements(text: string, replacements: TextReplacement[]): {
   };
 }
 
-export { applyTextReplacements, collectModuleSpecifiers, collectScssModuleSpecifiers, parseSource, resolveScriptKind };
+export { applyTextReplacements, collectModuleSpecifiers, collectScssModuleSpecifiers, parseSource };
 export type { ModuleSpecifierOccurrence, TextReplacement };

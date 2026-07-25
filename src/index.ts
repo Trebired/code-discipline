@@ -157,10 +157,8 @@ export type {
   NormalizedMinFileLinesRule,
   NormalizedRemoveCommentsRule,
   NormalizedStructuralBlankLinesRule,
-  NormalizedTsNocheckAuditRule,
   RemoveCommentsRuleOptions,
   StructuralBlankLinesRuleOptions,
-  TsNocheckAuditRuleOptions,
   PrettierFormatterOptions,
   TsconfigPathsNormalizeMode,
 } from "./checks/types.js";
