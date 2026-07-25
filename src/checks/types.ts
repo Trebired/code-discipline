@@ -18,7 +18,7 @@ import type {
 type CodeDisciplineRuleSlug = CodeDisciplineRuleName;
 type CodeDisciplineFormatterSlug = "prettier";
 type CodeDisciplineCheckSelectorSlug = CodeDisciplineRuleSlug | CodeDisciplineFormatterSlug;
-type FixableRuleSlug = "banned-files" | "min-file-lines" | "folderize-compound-files" | "sync-imports" | "remove-comments" | CodeDisciplineFormatterSlug;
+type FixableRuleSlug = "banned-files" | "min-file-lines" | "folderize-compound-files" | "sync-imports" | "remove-comments" | "structural-blank-lines" | CodeDisciplineFormatterSlug;
 type CodeDisciplineMode = "check" | "fix";
 type CodeDisciplineRuntimeMode = CodeDisciplineMode;
 type CodeDisciplineRuleSeverity = "warning" | "fail";
@@ -81,6 +81,10 @@ type RemoveCommentsRuleOptions = RuleExclusionOptions & {
   exclude?: string[];
 };
 
+type StructuralBlankLinesRuleOptions = RuleExclusionOptions & {
+  severity?: CodeDisciplineRuleSeverity;
+};
+
 type DryRuleOptions = RuleExclusionOptions & {
   minDuplicateCharacters?: number;
   severity?: CodeDisciplineRuleSeverity;
@@ -104,6 +108,7 @@ type CodeDisciplineRules = {
   folderizeCompoundFiles?: FolderizeCompoundFilesRuleOptions;
   syncImports?: CodeDisciplineSyncImportsRuleOptions;
   removeComments?: RemoveCommentsRuleOptions;
+  structuralBlankLines?: StructuralBlankLinesRuleOptions;
   dry?: DryRuleOptions;
 };
 
@@ -235,6 +240,11 @@ type NormalizedRemoveCommentsRule = {
   exclude: string[];
 };
 
+type NormalizedStructuralBlankLinesRule = {
+  excludeDirs: ExcludeDirEntry[];
+  severity: CodeDisciplineRuleSeverity;
+};
+
 type NormalizedPrettierFormatter = {
   targets: string[];
   ignore: boolean;
@@ -261,6 +271,7 @@ type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
     folderizeCompoundFiles?: NormalizedFolderizeCompoundFilesRule;
     syncImports?: CodeDisciplineSyncImportsRuleOptions;
     removeComments?: NormalizedRemoveCommentsRule;
+    structuralBlankLines?: NormalizedStructuralBlankLinesRule;
     dry?: NormalizedDryRule;
   };
 };
@@ -280,6 +291,8 @@ type FixCodeDisciplineRuleResult = {
   removed_duplicates?: number;
   added_imports?: number;
   deleted_files?: number;
+  inserted_blank_lines?: number;
+  removed_blank_lines?: number;
 };
 
 type FixCodeDisciplineResult = CodeDisciplineResult & {
@@ -343,5 +356,7 @@ export type {
   NormalizedMinDeclarationNameRule,
   NormalizedMinFileLinesRule,
   NormalizedRemoveCommentsRule,
+  NormalizedStructuralBlankLinesRule,
+  StructuralBlankLinesRuleOptions,
   TsconfigPathsNormalizeMode,
 };

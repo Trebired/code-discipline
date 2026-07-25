@@ -2,6 +2,11 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.5.0
+
+- Added `structuralBlankLines`, a fixable rule that enforces exactly one blank line at AST-identified structural boundaries (file headers, imports, declaration groups, class members) while leaving compact groups (imports, variables, types, re-exports, execution statements, class fields, directive prologues, function overloads, getter/setter pairs) at zero or one blank line and collapsing two or more blank lines to one.
+- Made unqualified `fix` run `structuralBlankLines` after `removeComments` and before configured Prettier formatting.
+
 ## 4.4.2
 
 - Replaced top-level `excludeDirs` with shared `ignore.entries` and `ignore.use_gitignore` configuration.

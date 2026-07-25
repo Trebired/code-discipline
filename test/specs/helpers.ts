@@ -4,7 +4,8 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-import type { CodeDisciplineRuleName, SyncImportsLogEvent } from "../../src/index.js";
+import { fixCodeDiscipline } from "../../src/index.js";
+import type { CodeDisciplineRuleName, FixCodeDisciplineOptions, SyncImportsLogEvent } from "../../src/index.js";
 
 type TrebiredLogRow = {
   method: string;
@@ -25,6 +26,15 @@ function writeFile(projectRoot: string, relativePath: string, contents: string) 
 
 function readFile(projectRoot: string, relativePath: string): string {
   return fs.readFileSync(path.join(projectRoot, relativePath), "utf8");
+}
+
+async function fixAndRead(
+  projectRoot: string,
+  relativePath: string,
+  rules: FixCodeDisciplineOptions["rules"],
+): Promise<string> {
+  await fixCodeDiscipline({ projectRoot, rules });
+  return readFile(projectRoot, relativePath);
 }
 
 function readJson(projectRoot: string, relativePath: string): any {
@@ -160,6 +170,7 @@ export {
   ensureBuiltCli,
   expectedViolationResult,
   fileExists,
+  fixAndRead,
   packageRoot,
   readFile,
   readJson,

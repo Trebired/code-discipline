@@ -8,6 +8,7 @@ Configurable repository discipline checks and rule-driven fixes for Bun and Node
 - structural rules such as folderizing compound files
 - sync rules such as keeping source imports, `tsconfig.json`, and optional `package.json#imports` aligned
 - source cleanup rules such as removing comments across supported languages
+- structural spacing rules such as normalizing blank lines around JavaScript and TypeScript declarations
 - native acceleration with a TypeScript fallback for large codebases
 - DRY enforcement through source-tree duplicate function grouping
 
@@ -31,7 +32,7 @@ code-discipline check
 code-discipline check save
 code-discipline check max-function-lines dry
 code-discipline fix
-code-discipline fix banned-files min-file-lines sync-imports remove-comments
+code-discipline fix banned-files min-file-lines sync-imports remove-comments structural-blank-lines
 code-discipline gate -- bun run dev
 ```
 
@@ -242,7 +243,7 @@ export default defineCodeDisciplineConfig({
 
 ```sh
 code-discipline check max-file-lines max-function-lines
-code-discipline fix banned-files min-file-lines sync-imports remove-comments
+code-discipline fix banned-files min-file-lines sync-imports remove-comments structural-blank-lines
 code-discipline check prettier
 code-discipline fix prettier
 ```
@@ -259,6 +260,7 @@ Rules use kebab-case public slugs:
 - `folderize-compound-files`
 - `sync-imports`
 - `remove-comments`
+- `structural-blank-lines`
 - `dry`
 
 `fix` only accepts fixable rules. Trying to run `code-discipline fix max-function-lines`, `code-discipline fix max-characters-per-line`, or `code-discipline fix dry` fails clearly.
@@ -269,7 +271,7 @@ Formatter selectors such as `prettier` are enabled by top-level `formatters` con
 
 Formatters are configured at top level under `formatters`, not under `rules`. Presence enables a formatter; there is no `enabled: true` key.
 
-`formatters.prettier` uses Prettier as the formatting engine and keeps `code-discipline.ts` as the formatting policy source. `check prettier` validates formatting without modifying files, while `fix prettier` writes formatted files. Running `code-discipline fix` with no selectors runs configured Prettier formatting last after structural, import, and comment fixes. Set `formatters.prettier.ignore: true` to reuse the shared top-level `ignore`.
+`formatters.prettier` uses Prettier as the formatting engine and keeps `code-discipline.ts` as the formatting policy source. `check prettier` validates formatting without modifying files, while `fix prettier` writes formatted files. Running `code-discipline fix` with no selectors runs configured Prettier formatting last after structural, import, comment, and blank-line fixes. Set `formatters.prettier.ignore: true` to reuse the shared top-level `ignore`.
 
 Example:
 
@@ -491,6 +493,24 @@ Example targeted CLI usage:
 
 ```sh
 code-discipline fix remove-comments
+```
+
+### `structuralBlankLines`
+
+Reports JavaScript and TypeScript files where the major structural sections aren't visually separated, and normalizes the blank lines between them when you run `code-discipline fix`.
+
+It only enforces blank lines at boundaries the AST clearly identifies as structural: after the file header, between imports and the first non-import statement, between declaration groups (variables, types, functions, classes, enums, namespaces), and between class fields/methods/constructors. Compact groups — consecutive imports, variables, type declarations, re-exports, top-level executable statements, class fields, directive prologues, function overload chains, and getter/setter pairs — allow zero or one blank line and only collapse two or more down to one.
+
+It never touches statements inside function or method bodies, `if`/loop/`try` bodies, object literals, array elements, interface members, type literal members, enum members, or JSX children — spacing choices inside those remain up to the developer.
+
+```ts
+structuralBlankLines: {}
+```
+
+Example targeted CLI usage:
+
+```sh
+code-discipline fix structural-blank-lines
 ```
 
 ### `dry`

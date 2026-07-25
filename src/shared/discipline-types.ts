@@ -11,6 +11,7 @@ type CodeDisciplineRuleName =
   | "folderize-compound-files"
   | "sync-imports"
   | "remove-comments"
+  | "structural-blank-lines"
   | "dry";
 
 type CodeDisciplineFormatterName = "prettier";

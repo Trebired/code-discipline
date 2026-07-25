@@ -19,6 +19,7 @@ const ALL_RULE_SLUGS: CodeDisciplineRuleSlug[] = [
   "folderize-compound-files",
   "sync-imports",
   "remove-comments",
+  "structural-blank-lines",
   "dry",
 ];
 
@@ -28,6 +29,7 @@ const FIXABLE_RULE_SLUGS: FixableRuleSlug[] = [
   "folderize-compound-files",
   "sync-imports",
   "remove-comments",
+  "structural-blank-lines",
   "prettier",
 ];
 
@@ -46,6 +48,7 @@ const RULE_SLUG_BY_CONFIG_KEY = {
   minDeclarationName: "min-declaration-name",
   minFileLines: "min-file-lines",
   removeComments: "remove-comments",
+  structuralBlankLines: "structural-blank-lines",
   syncImports: "sync-imports",
 } as const;
 

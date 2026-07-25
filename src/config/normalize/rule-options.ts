@@ -18,6 +18,7 @@ import type {
   NormalizedBannedFilesRule,
   NormalizedDryRule,
   RemoveCommentsRuleOptions,
+  StructuralBlankLinesRuleOptions,
 } from "../../checks/types.js";
 import { normalizeRelativePath, uniqueStrings } from "../../shared/utils.js";
 import { normalizeRuleExclusions } from "./exclusions.js";
@@ -296,6 +297,24 @@ function normalizeDryRule(rule: DryRuleOptions | undefined): NormalizedDryRule |
   };
 }
 
+function normalizeStructuralBlankLinesRule(rule: StructuralBlankLinesRuleOptions | undefined) {
+  if (!rule) return undefined;
+  const source = rule as Record<string, unknown>;
+  assertRemovedKeys("structuralBlankLines", source, ["enabled", "stop", "fix"]);
+  const unsupportedKeys = Object.keys(source).filter((key) => !["severity", "excludeDirs", "excludeFiles", "excludeFolders"].includes(key));
+  if (unsupportedKeys.length > 0) {
+    throw new InvalidCodeDisciplineConfigError("structuralBlankLines does not accept rule options", {
+      rule: "structuralBlankLines",
+      keys: unsupportedKeys,
+    });
+  }
+
+  return {
+    ...normalizeRuleExclusions("structuralBlankLines", source),
+    severity: normalizeSeverity(rule.severity, "structuralBlankLines"),
+  };
+}
+
 function normalizeRemoveCommentsRule(rule: RemoveCommentsRuleOptions | undefined) {
   if (!rule) return undefined;
   const source = rule as Record<string, unknown>;
@@ -333,5 +352,6 @@ export {
   normalizeMinDeclarationNameRule,
   normalizeMinFileLinesRule,
   normalizeRemoveCommentsRule,
+  normalizeStructuralBlankLinesRule,
   normalizeSyncImportsRule,
 };

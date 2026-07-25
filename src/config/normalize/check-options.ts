@@ -16,6 +16,7 @@ import {
   normalizeMinDeclarationNameRule,
   normalizeMinFileLinesRule,
   normalizeRemoveCommentsRule,
+  normalizeStructuralBlankLinesRule,
   normalizeSyncImportsRule,
 } from "./rule-options.js";
 import { normalizeFormatters } from "./formatter-options.js";
@@ -57,6 +58,7 @@ async function normalizeCheckCodeDisciplineOptions(
       folderizeCompoundFiles: normalizeFolderizeCompoundFilesRule(options.rules?.folderizeCompoundFiles),
       syncImports: normalizeSyncImportsRule(options.rules?.syncImports),
       removeComments: normalizeRemoveCommentsRule(options.rules?.removeComments),
+      structuralBlankLines: normalizeStructuralBlankLinesRule(options.rules?.structuralBlankLines),
     },
   };
 }
