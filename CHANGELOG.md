@@ -2,6 +2,10 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.6.2
+
+- Added a constant-folding pass to `bannedPatterns` for TypeScript/JavaScript files: string concatenation via `+`, template literals with foldable interpolations, `[...literals].join(literalSeparator)`, and same-scope `const` aliases of those are now evaluated at zero runtime cost and checked against configured patterns, closing the "split into literal chunks and glue them" evasion. Expressions touching anything non-literal (a parameter, `process.env`, a function call, a shadowed name) are left unfolded, by design — no guessing, no false positives.
+
 ## 4.6.1
 
 - Removed `tsNocheckAudit` (added in `4.6.0`). The rule is gone entirely: no config surface, no CLI selector, no fix pipeline step.

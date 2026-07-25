@@ -365,6 +365,8 @@ Reports case-insensitive substring matches found in source files.
 - matching is content-based, not whole-word-only
 - `allowedFiles` lets specific project-relative files bypass a specific banned pattern
 - `severity` defaults to `"fail"`
+- for `.ts`/`.tsx`/`.mts`/`.cts`/`.js`/`.jsx`/`.mjs`/`.cjs` files, patterns are also checked against expressions the compiler can constant-fold to a fixed string at zero runtime cost: `+` concatenation of literals, template literals with foldable interpolations, `[...literals].join(literalSeparator)`, and same-scope `const` aliases of those — so `["OPER", "LORN"].join("")` is caught the same as the literal `"OPERLORN"` would be
+- expressions touching anything non-literal (a parameter, `process.env`, a function call, a name shadowed elsewhere in the file) are never folded — this closes the "split into literal chunks" evasion without guessing at genuinely computed values
 
 Example:
 

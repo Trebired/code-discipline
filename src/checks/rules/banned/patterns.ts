@@ -1,9 +1,14 @@
 import fs from "node:fs/promises";
+import path from "node:path";
 
 import type { ScannedSourceFile } from "../../../imports/types.js";
 import type { NormalizedCheckCodeDisciplineOptions } from "../../types.js";
 import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
+import { parseSource } from "../../../imports/module-specifiers.js";
+import { isTypeScriptFamilyExtension } from "../../../shared/languages.js";
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "../../progress.js";
+import { collectFoldedStringMatches } from "./fold.js";
+import type { FoldedStringMatch } from "./fold.js";
 
 function countOccurrences(text: string, pattern: string): number {
   if (!pattern) return 0;
@@ -19,6 +24,32 @@ function countOccurrences(text: string, pattern: string): number {
   }
 
   return count;
+}
+
+function collectFoldedMatchesSafely(text: string, filePath: string): FoldedStringMatch[] {
+  if (!isTypeScriptFamilyExtension(path.extname(filePath).toLowerCase())) return [];
+
+  try {
+    return collectFoldedStringMatches(parseSource(text, filePath));
+  } catch {
+    return [];
+  }
+}
+
+function formatOccurrenceSuffix(count: number): string {
+  return count > 1 ? ` ${count} times` : "";
+}
+
+function buildBannedPatternMessage(patternValue: string, rawOccurrences: number, foldedOccurrences: number): string {
+  if (foldedOccurrences === 0) {
+    return `file contains banned pattern "${patternValue}"${formatOccurrenceSuffix(rawOccurrences)}`;
+  }
+
+  if (rawOccurrences === 0) {
+    return `file contains banned pattern "${patternValue}" via a constant-folded expression${formatOccurrenceSuffix(foldedOccurrences)}`;
+  }
+
+  return `file contains banned pattern "${patternValue}"${formatOccurrenceSuffix(rawOccurrences)} and via a constant-folded expression${formatOccurrenceSuffix(foldedOccurrences)}`;
 }
 
 async function collectBannedPatternViolations(
@@ -39,20 +70,26 @@ async function collectBannedPatternViolations(
     const file = sourceFiles[index]!;
     const text = await fs.readFile(file.absolutePath, "utf8");
     const normalizedText = text.toLowerCase();
+    const foldedMatches = collectFoldedMatchesSafely(text, file.absolutePath);
 
     for (const pattern of rule.patterns) {
       if (pattern.allowedFiles.includes(file.relativeFromProjectRoot)) continue;
-      if (!normalizedText.includes(pattern.normalizedValue)) continue;
 
-      const occurrences = countOccurrences(normalizedText, pattern.normalizedValue);
+      const rawOccurrences = normalizedText.includes(pattern.normalizedValue) ? countOccurrences(normalizedText, pattern.normalizedValue) : 0;
+      const patternFoldedMatches = foldedMatches.filter((match) => match.value.toLowerCase().includes(pattern.normalizedValue));
+
+      if (rawOccurrences === 0 && patternFoldedMatches.length === 0) continue;
+
       violations.push({
         rule: "banned-patterns",
         fix: false,
         filePath: file.relativeFromProjectRoot,
-        message: `file contains banned pattern "${pattern.value}"${occurrences > 1 ? ` ${occurrences} times` : ""}`,
+        message: buildBannedPatternMessage(pattern.value, rawOccurrences, patternFoldedMatches.length),
         details: {
           pattern: pattern.value,
-          occurrences,
+          occurrences: rawOccurrences,
+          foldedOccurrences: patternFoldedMatches.length,
+          foldedMatches: patternFoldedMatches.map((match) => ({ line: match.line, kind: match.kind })),
           allowedFiles: pattern.allowedFiles,
         },
       });
