@@ -2,6 +2,10 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.7.3
+
+- Removed dead test scripts and stale test commands from publish workflows and maintainer docs.
+
 ## 4.7.2
 
 - Removed package test suites and banned committed `*.spec.ts`/`*.spec.tsx` files through Code Discipline.
@@ -25,7 +29,7 @@ All notable changes to `@trebired/code-discipline` will be documented here.
 
 ## 4.6.2
 
-- Added a constant-folding pass to `bannedPatterns` for TypeScript/JavaScript files: string concatenation via `+`, template literals with foldable interpolations, `[...literals].join(literalSeparator)`, and same-scope `const` aliases of those are now evaluated at zero runtime cost and checked against configured patterns, closing the "split into literal chunks and glue them" evasion. Expressions touching anything non-literal (a parameter, `process.env`, a function call, a shadowed name) are left unfolded, by design — no guessing, no false positives.
+- Added a constant-folding pass to `bannedPatterns` for TypeScript/JavaScript files: string concatenation via `+`, template literals with foldable interpolations, `[...literals].join(literalSeparator)`, and same-scope `const` aliases of those are now evaluated at zero runtime cost and checked against configured patterns, closing the "split into literal chunks and glue them" evasion. Expressions touching anything non-literal (a parameter, `process.env`, a function call, a shadowed name) are left unfolded, by design  -  no guessing, no false positives.
 
 ## 4.6.1
 
@@ -201,7 +205,7 @@ All notable changes to `@trebired/code-discipline` will be documented here.
 - Changed `remove-comments` fixes to remove comment-only lines during the same per-file rewrite.
 - Added the Rust native backend with TypeScript fallback and native acceleration for source scanning, `max-file-lines`, common `max-function-lines` paths, `folderize-compound-files` checks, `remove-comments`, and `evasion-guards`.
 - Fixed runtime/CLI forwarding for top-level `evasionGuards`.
-- Enforced code-discipline on its own codebase: the package is now a self devDependency, `bun run test` runs through `code-discipline gate`, and the source and test tree were refactored until `check` reports zero violations.
+- Enforced code-discipline on its own codebase: the package became a self devDependency, the source tree was checked through `code-discipline gate`, and the source and former test tree were refactored until `check` reported zero violations.
 - Fixed Bun and Node config loading for TypeScript config modules: transpiled modules are now written to `node_modules/.cache/code-discipline` instead of `data:` URLs, so relative `.js` specifiers resolving to `.ts` sources, bare package imports, and import cycles keep a real filesystem base.
 - Fixed native build scripts after folderization and exported the native `stripComments` binding so the Rust backend matches the TypeScript native bridge.
 - Fixed CLI error handling so failures inside `check`, `fix`, and `gate` are reported on stderr with exit code 1 instead of escaping as unhandled rejections.
@@ -300,3 +304,5 @@ All notable changes to `@trebired/code-discipline` will be documented here.
 
 - initial public release
 - added source scanning, alias generation, tsconfig path syncing, and in-place import rewriting
+
+- Standardized package metadata ordering and contributing guidance around the Trebired writing style.

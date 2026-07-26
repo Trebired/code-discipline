@@ -1,5 +1,4 @@
 import path from "node:path";
-
 import { DEFAULT_EXCLUDE_DIRS, DEFAULT_SOURCE_EXTENSIONS, DEFAULT_SOURCE_ROOT } from "#ik5y0pee4ah1";
 import { readGitignoreExcludedDirs, readGitignoreIgnorePatterns } from "#0nr05vmcrtql";
 import { InvalidCodeDisciplineConfigError, InvalidProjectRootError, InvalidSourceRootError } from "#4f8hale01wb4";
@@ -15,7 +14,6 @@ import {
   normalizeExcludeDirEntries,
   normalizeFolderExclusionEntries,
 } from "./exclusions.js";
-
 type NormalizedSourceOptions = {
   projectRoot: string;
   sourceRoot: string;
@@ -27,73 +25,61 @@ type NormalizedSourceOptions = {
   ignore: NormalizedCodeDisciplineIgnore;
   scanObserver?: SourceScanObserver;
 };
-
 function assertLegacySourceOptionsRemoved(source: Record<string, unknown>): void {
   if ("sourceRoot" in source) {
     throw new InvalidCodeDisciplineConfigError("sourceRoot is no longer supported; use ignore to narrow scanned files", {
       key: "sourceRoot",
     });
   }
-
   if ("sourceExtensions" in source) {
     throw new InvalidCodeDisciplineConfigError("sourceExtensions is no longer supported; use excludeSourceExtensions", {
       key: "sourceExtensions",
     });
   }
-
   if ("includeDefaultSourceExtensions" in source) {
     throw new InvalidCodeDisciplineConfigError("includeDefaultSourceExtensions is no longer supported; use excludeSourceExtensions", {
       key: "includeDefaultSourceExtensions",
     });
   }
-
   if ("excludeFolders" in source) {
     throw new InvalidCodeDisciplineConfigError("excludeFolders is no longer supported; use ignore", {
       key: "excludeFolders",
     });
   }
-
   if ("excludeDirs" in source) {
     throw new InvalidCodeDisciplineConfigError("excludeDirs is no longer supported; use ignore", {
       key: "excludeDirs",
     });
   }
 }
-
 function normalizeIgnoreOptions(options: { ignore?: CodeDisciplineIgnoreOptions }): CodeDisciplineIgnoreOptions {
   const ignore = options.ignore;
   if (ignore === undefined) return {};
-
   if (!ignore || typeof ignore !== "object" || Array.isArray(ignore)) {
     throw new InvalidCodeDisciplineConfigError("ignore must be an object when provided", {
       key: "ignore",
       value: ignore,
     });
   }
-
   const source = ignore as Record<string, unknown>;
   if ("gitignore" in source) {
     throw new InvalidCodeDisciplineConfigError("ignore.gitignore is no longer supported; use ignore.use_gitignore", {
       key: "ignore.gitignore",
     });
   }
-
   if (ignore.use_gitignore !== undefined && typeof ignore.use_gitignore !== "boolean") {
     throw new InvalidCodeDisciplineConfigError("ignore.use_gitignore must be boolean when provided", {
       key: "ignore.use_gitignore",
       value: ignore.use_gitignore,
     });
   }
-
   return ignore;
 }
-
 function resolveSourceRoot(projectRoot: string, sourceRootInput: string): string {
   return path.isAbsolute(sourceRootInput)
     ? path.resolve(sourceRootInput)
     : path.resolve(projectRoot, sourceRootInput);
 }
-
 async function readNormalizedGitignoreDirs(
   projectRoot: string,
   options: {
@@ -110,10 +96,8 @@ async function readNormalizedGitignoreDirs(
   const gitignorePatterns = useGitignore
     ? await readGitignoreIgnorePatterns(gitignorePath)
     : [];
-
   return { gitignoreDirs, gitignorePath, gitignorePatterns, useGitignore };
 }
-
 async function normalizeSourceOptions(options: {
   projectRoot: string;
   excludeSourceExtensions?: string[];
@@ -123,18 +107,15 @@ async function normalizeSourceOptions(options: {
 }): Promise<NormalizedSourceOptions> {
   const source = options as Record<string, unknown>;
   assertLegacySourceOptionsRemoved(source);
-
   const projectRoot = path.resolve(options.projectRoot);
   if (!await isDirectory(projectRoot)) {
     throw new InvalidProjectRootError(projectRoot);
   }
-
   const sourceRootInput = DEFAULT_SOURCE_ROOT;
   const sourceRoot = resolveSourceRoot(projectRoot, sourceRootInput);
   if (!await isDirectory(sourceRoot) || !isInsideDirectory(sourceRoot, projectRoot)) {
     throw new InvalidSourceRootError(sourceRoot);
   }
-
   const ignore = normalizeIgnoreOptions(options);
   const { gitignoreDirs, gitignorePath, gitignorePatterns, useGitignore } = await readNormalizedGitignoreDirs(projectRoot, {
     ...options,
@@ -148,7 +129,6 @@ async function normalizeSourceOptions(options: {
     ignoreEntries,
     normalizeFolderExclusionEntries(gitignoreDirs),
   );
-
   return {
     projectRoot,
     sourceRoot,
@@ -165,6 +145,5 @@ async function normalizeSourceOptions(options: {
     scanObserver: options.scanObserver,
   };
 }
-
 export { normalizeSourceOptions };
 export type { NormalizedSourceOptions };

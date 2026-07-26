@@ -1,5 +1,4 @@
 import { result as createResult } from "@package/result";
-
 import { normalizeCheckCodeDisciplineOptions } from "#x458f9t6w4a6";
 import { collectSyncImportViolations } from "#ymdyths4ukwp";
 import { scanSourceFiles } from "#ua9whqppp94v";
@@ -39,15 +38,12 @@ import type {
   FixCodeDisciplineResult,
   NormalizedCheckCodeDisciplineOptions,
 } from "./types.js";
-
 function sortViolations(violations: CodeDisciplineViolation[]): CodeDisciplineViolation[] {
   return [...violations].sort((left, right) => left.filePath.localeCompare(right.filePath) || left.rule.localeCompare(right.rule));
 }
-
 function isBlockingViolation(violation: CodeDisciplineViolation): boolean {
   return violation.severity !== "warning";
 }
-
 function summarizeViolations(violations: CodeDisciplineViolation[]): CodeDisciplineResult {
   return {
     ok: violations.every((violation) => !isBlockingViolation(violation)),
@@ -55,7 +51,6 @@ function summarizeViolations(violations: CodeDisciplineViolation[]): CodeDiscipl
     violations,
   };
 }
-
 function logSummary(
   label: "check" | "fix",
   result: CheckCodeDisciplineResult | FixCodeDisciplineResult,
@@ -68,18 +63,15 @@ function logSummary(
     const message = blockingCount > 0
       ? `${label} found ${blockingCount} blocking violation(s)${warningCount > 0 ? ` and ${warningCount} warning(s)` : ""}`
       : `${label} found ${warningCount} warning(s)`;
-
     logger.flush(level, `discipline-${label}-violations`, message, {
       violationCount: result.violationCount,
     }, { group: runLogGroup(label) });
     return;
   }
-
   logger.flush("success", `discipline-${label}-ok`, `${label} completed`, {
     violationCount: 0,
   }, { group: runLogGroup(label) });
 }
-
 function attachDisciplineResult<T extends CodeDisciplineResult>(
   phase: "check" | "fix",
   output: T,
@@ -87,7 +79,6 @@ function attachDisciplineResult<T extends CodeDisciplineResult>(
   const details = {
     rules: [...new Set(output.violations.map((violation) => violation.rule))],
   };
-
   return {
     ...output,
     result: output.violations.some(isBlockingViolation)
@@ -105,67 +96,51 @@ function attachDisciplineResult<T extends CodeDisciplineResult>(
         }),
   };
 }
-
 async function collectViolations(options: NormalizedCheckCodeDisciplineOptions): Promise<CodeDisciplineViolation[]> {
   const sourceFiles = await scanSourceFiles(options);
   const violations: CodeDisciplineViolation[] = [];
-
   if (options.rules.bannedPatterns && shouldRunRule("banned-patterns", options.onlyRules)) {
     violations.push(...await collectBannedPatternViolations(filterSourceFilesForRule(sourceFiles, options.rules.bannedPatterns), options));
   }
-
   if (options.rules.bannedFiles && shouldRunRule("banned-files", options.onlyRules)) {
     violations.push(...collectBannedFileViolations(filterSourceFilesForRule(sourceFiles, options.rules.bannedFiles), options));
   }
-
   if (options.rules.minFileLines && shouldRunRule("min-file-lines", options.onlyRules)) {
     violations.push(...await runMinFileLinesRule(filterSourceFilesForRule(sourceFiles, options.rules.minFileLines), options));
   }
-
   if (options.rules.minDeclarationName && shouldRunRule("min-declaration-name", options.onlyRules)) {
     violations.push(...await runMinDeclarationNameRule(filterSourceFilesForRule(sourceFiles, options.rules.minDeclarationName), options));
   }
-
   if (options.rules.maxFileLines && shouldRunRule("max-file-lines", options.onlyRules)) {
     violations.push(...await runMaxFileLinesRule(filterSourceFilesForRule(sourceFiles, options.rules.maxFileLines), options));
   }
-
   if (options.rules.maxCharactersPerLine && shouldRunRule("max-characters-per-line", options.onlyRules)) {
     violations.push(...await runMaxCharactersPerLineRule(filterSourceFilesForRule(sourceFiles, options.rules.maxCharactersPerLine), options));
   }
-
   if (options.rules.maxFunctionLines && shouldRunRule("max-function-lines", options.onlyRules)) {
     violations.push(...await runMaxFunctionLinesRule(filterSourceFilesForRule(sourceFiles, options.rules.maxFunctionLines), options));
   }
-
   if (options.rules.folderizeCompoundFiles && shouldRunRule("folderize-compound-files", options.onlyRules)) {
     violations.push(...runFolderizeCompoundFilesRule(filterSourceFilesForRule(sourceFiles, options.rules.folderizeCompoundFiles), options));
   }
-
   if (options.rules.dry && shouldRunRule("dry", options.onlyRules)) {
     violations.push(...await collectDryViolations(filterSourceFilesForRule(sourceFiles, options.rules.dry), options));
   }
-
   if (options.rules.syncImports && shouldRunRule("sync-imports", options.onlyRules)) {
     const normalizedSyncOptions = await buildNormalizedSyncOptions(options, false);
     if (normalizedSyncOptions) {
       violations.push(...await collectSyncImportViolations(filterSourceFilesForRule(sourceFiles, options.rules.syncImports), normalizedSyncOptions));
     }
   }
-
   if (options.rules.removeComments && shouldRunRule("remove-comments", options.onlyRules)) {
     violations.push(...await collectRemoveCommentsViolations(filterSourceFilesForRule(sourceFiles, options.rules.removeComments), options));
   }
-
   if (options.rules.structuralBlankLines && shouldRunRule("structural-blank-lines", options.onlyRules)) {
     violations.push(...await collectStructuralBlankLinesViolations(filterSourceFilesForRule(sourceFiles, options.rules.structuralBlankLines), options));
   }
-
   violations.push(...await collectPrettierViolations(options));
-
   return sortViolations(applyConfiguredSeverity(violations, options));
 }
-
 function createFixResult(state: FixState): FixCodeDisciplineResult {
   return {
     ...summarizeViolations(sortViolations(state.violations)),
@@ -179,13 +154,11 @@ function createFixResult(state: FixState): FixCodeDisciplineResult {
     ruleResults: state.ruleResults,
   };
 }
-
 function logFixResult(result: FixCodeDisciplineResult, logger: ReturnType<typeof resolveLogger>): void {
   if (!result.ok || result.violations.length > 0) {
     logSummary("fix", result, logger);
     return;
   }
-
   logger.flush("success", "discipline-fix-ok", "fix completed", {
     violationCount: result.violationCount,
     deletedFiles: result.deleted_files,
@@ -198,17 +171,14 @@ function logFixResult(result: FixCodeDisciplineResult, logger: ReturnType<typeof
     ruleResults: result.ruleResults,
   }, { group: runLogGroup("fix") });
 }
-
 async function checkCodeDiscipline(options: CheckCodeDisciplineOptions): Promise<CheckCodeDisciplineResult> {
   const normalized = await normalizeCheckCodeDisciplineOptions(options, "check");
   const logger = resolveLogger(normalized.logging);
   const violations = await collectViolations(normalized);
   const result: CheckCodeDisciplineResult = attachDisciplineResult("check", summarizeViolations(violations));
-
   logSummary("check", result, logger);
   return result;
 }
-
 async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<FixCodeDisciplineResult> {
   const normalized = await normalizeCheckCodeDisciplineOptions(options, "fix");
   const logger = resolveLogger(normalized.logging);
@@ -224,7 +194,6 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
     sourceFiles: await scanSourceFiles(normalized),
     violations: [],
   };
-
   await applyBannedFilesFix(state, normalized);
   await applyMinFileLinesFix(state, normalized, logger);
   await applyFolderizeFix(state, normalized, logger);
@@ -232,10 +201,8 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
   await applyRemoveCommentsFix(state, normalized);
   await applyStructuralBlankLinesFix(state, normalized);
   await applyPrettierFix(state, normalized);
-
   const result = attachDisciplineResult("fix", createFixResult(state));
   logFixResult(result, logger);
   return result;
 }
-
 export { buildNormalizedSyncOptions, checkCodeDiscipline, fixCodeDiscipline };

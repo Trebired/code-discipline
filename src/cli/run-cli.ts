@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 import { codeDiscipline } from "#9epcrzq92bsw";
 import type { CodeDisciplineRuleSlug, FixableRuleSlug } from "#uqbg4indzud7";
 import { loadResolvedCodeDisciplineConfig } from "#rqu2hcvfcs4c";
@@ -8,20 +7,16 @@ import { isDirectExecution } from "#ntve5i5a0mol";
 import { createDefaultCliLogger, type CliLogContext, writeLogText } from "./logging.js";
 import { writeCheckOutput, writeFixOutput, writeSavedReport } from "./output.js";
 import { createCliScanObserver, formatDuration, timeTask } from "./progress.js";
-
 type CliRunOptions = {
   cwd?: string;
   now?: Date;
   stdout?: (text: string) => void;
   stderr?: (text: string) => void;
 };
-
 type CliRunResult = {
   exitCode: number;
 };
-
 type CliWriter = (text: string, context?: CliLogContext) => void;
-
 type CliWriters = {
   error: CliWriter;
   fail: CliWriter;
@@ -30,7 +25,6 @@ type CliWriters = {
   success: CliWriter;
   warn: CliWriter;
 };
-
 function createCliWriters(options: CliRunOptions): CliWriters {
   const useDefaultLogger = !options.stdout && !options.stderr;
   const logger = useDefaultLogger ? createDefaultCliLogger() : null;
@@ -43,7 +37,6 @@ function createCliWriters(options: CliRunOptions): CliWriters {
   const reportFail = options.stdout ?? (useDefaultLogger
     ? ((text: string, context?: CliLogContext) => writeLogText(logger!, "fail", text, context))
     : ((text: string) => process.stdout.write(text)));
-
   return {
     error: options.stderr ?? (useDefaultLogger
       ? ((text: string, context?: CliLogContext) => writeLogText(logger!, "fail", text, context))
@@ -59,7 +52,6 @@ function createCliWriters(options: CliRunOptions): CliWriters {
       : ((text: string) => process.stdout.write(text))),
   };
 }
-
 function renderHelp(): string {
   return [
     "Usage: code-discipline <command> [rule-slug...] [save] [--config <path>]",
@@ -85,7 +77,6 @@ function renderHelp(): string {
     "",
   ].join("\n");
 }
-
 function parseArgs(args: string[]): {
   configPath?: string;
   saveOutput: boolean;
@@ -96,46 +87,36 @@ function parseArgs(args: string[]): {
   let saveOutput = false;
   const selectors: string[] = [];
   let commandArgs: string[] = [];
-
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
-
     if (arg === "--") {
       commandArgs = args.slice(index + 1);
       break;
     }
-
     if (arg === "--config") {
       const value = args[index + 1];
       if (!value) {
         throw new Error("Missing value for --config");
       }
-
       configPath = value;
       index += 1;
       continue;
     }
-
     if (arg.startsWith("--")) {
       if (arg === "--save") {
         saveOutput = true;
         continue;
       }
-
       throw new Error(`Unexpected argument: ${arg}`);
     }
-
     if (arg === "save") {
       saveOutput = true;
       continue;
     }
-
     selectors.push(arg);
   }
-
   return { configPath, saveOutput, selectors, commandArgs };
 }
-
 async function runCheckCommand(args: {
   config: Record<string, unknown>;
   configPath: string | undefined;
@@ -151,7 +132,6 @@ async function runCheckCommand(args: {
   if (args.parsed.commandArgs.length > 0) {
     throw new Error("Command separator -- is only supported with gate");
   }
-
   const timed = await timeTask(() => {
     const progressObserver = createCliScanObserver(args.stderr);
     return codeDiscipline({
@@ -174,11 +154,9 @@ async function runCheckCommand(args: {
     violations: result.violations,
     warn: args.warn,
   });
-
   await writeSavedReport({ ...args, reportText, saveOutput: args.parsed.saveOutput });
   return { exitCode: result.ok ? 0 : 1 };
 }
-
 async function runFixCommand(args: {
   config: Record<string, unknown>;
   configPath: string | undefined;
@@ -194,7 +172,6 @@ async function runFixCommand(args: {
   if (args.parsed.commandArgs.length > 0) {
     throw new Error("Command separator -- is only supported with gate");
   }
-
   const timed = await timeTask(() => {
     const progressObserver = createCliScanObserver(args.stderr);
     return codeDiscipline({
@@ -222,11 +199,9 @@ async function runFixCommand(args: {
     violations: result.violations,
     warn: args.warn,
   });
-
   await writeSavedReport({ ...args, reportText, saveOutput: args.parsed.saveOutput });
   return { exitCode: result.ok ? 0 : 1 };
 }
-
 async function runGateCommand(args: {
   config: Record<string, unknown>;
   configPath: string | undefined;
@@ -242,7 +217,6 @@ async function runGateCommand(args: {
   if (args.parsed.commandArgs.length === 0) {
     throw new Error("Missing child command after --");
   }
-
   const timed = await timeTask(() => {
     const progressObserver = createCliScanObserver(args.stderr);
     return codeDiscipline({
@@ -257,7 +231,6 @@ async function runGateCommand(args: {
   });
   const result = timed.result;
   args.stderr(`Total gate check: ${formatDuration(timed.elapsedMs)}.\n`, { event: "discipline-gate-total" });
-
   if (!result.ok) {
     const reportText = writeCheckOutput({
       fail: args.fail,
@@ -270,25 +243,20 @@ async function runGateCommand(args: {
     await writeSavedReport({ ...args, reportText, saveOutput: args.parsed.saveOutput });
     return { exitCode: 1 };
   }
-
   const [childCommand, ...childArgs] = args.parsed.commandArgs;
   return runGatedCommand({ args: childArgs, command: childCommand, cwd: args.cwd });
 }
-
 async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliRunResult> {
   const cwd = options.cwd ?? process.cwd();
   const now = options.now ?? new Date();
   const { error: writeError, fail, stderr, stdout, success, warn } = createCliWriters(options);
   const [command, ...rest] = argv;
-
   if (!command || command === "help" || command === "--help" || command === "-h") {
     stdout(renderHelp());
     return { exitCode: 0 };
   }
-
   try {
     const parsed = parseArgs(rest);
-
     const { config, configPath } = await loadResolvedCodeDisciplineConfig(cwd, parsed.configPath);
     const commandArgs = {
       config,
@@ -302,19 +270,15 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
       success,
       warn,
     };
-
     if (command === "check") {
       return await runCheckCommand(commandArgs);
     }
-
     if (command === "fix") {
       return await runFixCommand(commandArgs);
     }
-
     if (command === "gate") {
       return await runGateCommand(commandArgs);
     }
-
     writeError(`Unknown command: ${command}\n`, { event: "cli-command-unknown" });
     stderr(renderHelp());
     return { exitCode: 1 };
@@ -327,11 +291,9 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
     return { exitCode: 1 };
   }
 }
-
 if (await isDirectExecution(import.meta.url, process.argv[1])) {
   const result = await runCli(process.argv.slice(2));
   process.exitCode = result.exitCode;
 }
-
 export { runCli };
 export type { CliRunOptions, CliRunResult };
