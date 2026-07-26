@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
+import { CODE_DISCIPLINE_PACKAGE_NAME } from "#ik5y0pee4ah1";
 
 type NativeBinding = {
   collectRemoveCommentsViolations(requestJson: string): string;
@@ -85,8 +86,8 @@ function resetNativeBindingForTests(): void {
 
 function activeNativeBackendNotice(): string {
   return loadNativeBinding()
-    ? "@package/code-discipline using native backend"
-    : "@package/code-discipline using TS fallback backend";
+    ? `${CODE_DISCIPLINE_PACKAGE_NAME} using native backend`
+    : `${CODE_DISCIPLINE_PACKAGE_NAME} using TS fallback backend`;
 }
 
 export {

@@ -15,8 +15,9 @@ type CodeDisciplineLogContext = {
 type CodeDisciplineLogAdapterFn = (event: CodeDisciplineLogEvent) => void;
 
 type LoggingOptions = {
-  logger?: unknown;
   adapter?: "logger" | "generic" | "console" | CodeDisciplineLogAdapterFn;
+  logger?: unknown;
+  warnings?: boolean;
 };
 
 type NormalizedCodeDisciplineLogger = {
@@ -26,7 +27,13 @@ type NormalizedCodeDisciplineLogger = {
   warn: (event: string, message: string, metadata?: Record<string, unknown>, context?: CodeDisciplineLogContext) => void;
   error: (event: string, message: string, metadata?: Record<string, unknown>, context?: CodeDisciplineLogContext) => void;
   success: (event: string, message: string, metadata?: Record<string, unknown>, context?: CodeDisciplineLogContext) => void;
-  flush: (level: CodeDisciplineLogLevel, event: string, message: string, metadata?: Record<string, unknown>, context?: CodeDisciplineLogContext) => void;
+  flush: (
+    level: CodeDisciplineLogLevel,
+    event: string,
+    message: string,
+    metadata?: Record<string, unknown>,
+    context?: CodeDisciplineLogContext,
+  ) => void;
 };
 
 type SyncImportsLogLevel = CodeDisciplineLogLevel;

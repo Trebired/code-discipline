@@ -12,9 +12,17 @@ function normalizeLoggingOptions(options: LoggingOptions | undefined, label: str
     }
   }
 
+  if (options?.warnings !== undefined && typeof options.warnings !== "boolean") {
+    throw new InvalidCodeDisciplineConfigError(`${label}.warnings must be boolean when provided`, {
+      key: "warnings",
+      value: options.warnings,
+    });
+  }
+
   return {
-    logger: options?.logger,
     adapter: options?.adapter,
+    logger: options?.logger,
+    warnings: options?.warnings ?? true,
   };
 }
 

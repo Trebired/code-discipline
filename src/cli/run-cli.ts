@@ -3,7 +3,7 @@ import { codeDiscipline } from "#9epcrzq92bsw";
 import type { CodeDisciplineRuleSlug, FixableRuleSlug } from "#uqbg4indzud7";
 import { loadResolvedCodeDisciplineConfig } from "#rqu2hcvfcs4c";
 import { runGatedCommand } from "#arhoe19ayg60";
-import { isDirectExecution } from "#ntve5i5a0mol";
+import { isDirectExecution, isPlainRecord } from "#ntve5i5a0mol";
 import { createDefaultCliLogger, type CliLogContext, writeLogText } from "./logging.js";
 import { writeCheckOutput, writeFixOutput, writeSavedReport } from "./output.js";
 import { createCliScanObserver, formatDuration, timeTask } from "./progress.js";
@@ -25,6 +25,10 @@ type CliWriters = {
   success: CliWriter;
   warn: CliWriter;
 };
+function shouldShowWarnings(config: Record<string, unknown>): boolean {
+  const logging = config.logging;
+  return !isPlainRecord(logging) || logging.warnings !== false;
+}
 function createCliWriters(options: CliRunOptions): CliWriters {
   const useDefaultLogger = !options.stdout && !options.stderr;
   const logger = useDefaultLogger ? createDefaultCliLogger() : null;
@@ -145,6 +149,7 @@ async function runCheckCommand(args: {
     });
   });
   const result = timed.result;
+  const warnings = shouldShowWarnings(args.config);
   args.stderr(`Total check: ${formatDuration(timed.elapsedMs)}.\n`, { event: "discipline-check-total" });
   const reportText = writeCheckOutput({
     fail: args.fail,
@@ -153,6 +158,7 @@ async function runCheckCommand(args: {
     violationCount: result.violationCount,
     violations: result.violations,
     warn: args.warn,
+    warnings,
   });
   await writeSavedReport({ ...args, reportText, saveOutput: args.parsed.saveOutput });
   return { exitCode: result.ok ? 0 : 1 };
@@ -185,6 +191,7 @@ async function runFixCommand(args: {
     });
   });
   const result = timed.result;
+  const warnings = shouldShowWarnings(args.config);
   const reportText = writeFixOutput({
     deletedFiles: result.deleted_files,
     fail: args.fail,
@@ -198,6 +205,7 @@ async function runFixCommand(args: {
     violationCount: result.violationCount,
     violations: result.violations,
     warn: args.warn,
+    warnings,
   });
   await writeSavedReport({ ...args, reportText, saveOutput: args.parsed.saveOutput });
   return { exitCode: result.ok ? 0 : 1 };
@@ -230,6 +238,7 @@ async function runGateCommand(args: {
     });
   });
   const result = timed.result;
+  const warnings = shouldShowWarnings(args.config);
   args.stderr(`Total gate check: ${formatDuration(timed.elapsedMs)}.\n`, { event: "discipline-gate-total" });
   if (!result.ok) {
     const reportText = writeCheckOutput({
@@ -239,6 +248,7 @@ async function runGateCommand(args: {
       violationCount: result.violationCount,
       violations: result.violations,
       warn: args.warn,
+      warnings,
     });
     await writeSavedReport({ ...args, reportText, saveOutput: args.parsed.saveOutput });
     return { exitCode: 1 };

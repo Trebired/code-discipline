@@ -1,6 +1,6 @@
 import { createLog, type LogInstance } from "@package/logger";
 
-import { CODE_DISCIPLINE_LOG_GROUP } from "./constants.js";
+import { CODE_DISCIPLINE_LOG_GROUP, CODE_DISCIPLINE_PACKAGE_NAME } from "./constants.js";
 import type {
   CodeDisciplineLogAdapterFn,
   CodeDisciplineLogContext,
@@ -31,7 +31,7 @@ function getConsoleOnlyLogger(): LogInstance {
     console: true,
     quiet: true,
     save: false,
-    source: "@package/code-discipline",
+    source: CODE_DISCIPLINE_PACKAGE_NAME,
   });
   return consoleOnlyLogger;
 }
@@ -190,7 +190,7 @@ function writeInitializedEvent(enabled: boolean, writer: (event: CodeDisciplineL
       event: "package-initialized",
       group: `${CODE_DISCIPLINE_LOG_GROUP}.initialize`,
       level: "success",
-      message: "@package/code-discipline initialized",
+      message: `${CODE_DISCIPLINE_PACKAGE_NAME} initialized`,
     });
   }
 }
@@ -198,6 +198,7 @@ function writeInitializedEvent(enabled: boolean, writer: (event: CodeDisciplineL
 function createEmitter(args: {
   enabled: boolean;
   getStore: () => BufferedEventStore;
+  warnings: boolean;
 }) {
   return (
     level: CodeDisciplineLogLevel,
@@ -208,6 +209,7 @@ function createEmitter(args: {
   ) => {
     const bufferedEvents = args.getStore();
     if (!args.enabled) return;
+    if (!args.warnings && level === "warn") return;
 
     bufferEvent(bufferedEvents, buildEvent(level, event, message, metadata, context));
   };
@@ -217,6 +219,7 @@ function createFlusher(args: {
   enabled: boolean;
   getStore: () => BufferedEventStore;
   resetStore: () => void;
+  warnings: boolean;
   writer: (event: CodeDisciplineLogEvent) => void;
 }) {
   return (
@@ -227,6 +230,10 @@ function createFlusher(args: {
     context?: CodeDisciplineLogContext,
   ) => {
     if (!args.enabled) return;
+    if (!args.warnings && level === "warn") {
+      args.resetStore();
+      return;
+    }
 
     const bufferedEvents = args.getStore();
     const diagnostics = summarizeBufferedEvents(bufferedEvents);
@@ -244,14 +251,15 @@ function createFlusher(args: {
 
 function resolveLogger(options?: LoggingOptions): NormalizedCodeDisciplineLogger {
   const enabled = Boolean(options?.logger || options?.adapter);
+  const warnings = options?.warnings !== false;
   const writer = resolveWriter(options);
   let bufferedEvents = createBufferedEventStore();
   const getStore = () => bufferedEvents;
   const resetStore = () => {
     bufferedEvents = createBufferedEventStore();
   };
-  const emit = createEmitter({ enabled, getStore });
-  const flush = createFlusher({ enabled, getStore, resetStore, writer });
+  const emit = createEmitter({ enabled, getStore, warnings });
+  const flush = createFlusher({ enabled, getStore, resetStore, warnings, writer });
 
   writeInitializedEvent(enabled, writer);
 

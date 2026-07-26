@@ -82,13 +82,13 @@ function attachDisciplineResult<T extends CodeDisciplineResult>(
   return {
     ...output,
     result: output.violations.some(isBlockingViolation)
-      ? createResult.error(409, `discipline-${phase}-violations`, {
+      ? createResult.error(`discipline-${phase}-violations`, 409, {
           data: {
             violationCount: output.violationCount,
           },
           details,
         })
-      : createResult.ok(`${phase} completed.`, {
+      : createResult.ok(`discipline-${phase}-ok`, {
           data: {
             violationCount: output.violationCount,
           },

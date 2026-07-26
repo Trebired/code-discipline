@@ -1,4 +1,5 @@
 {
+  "#0kr9612e2xqc": "./src/shared/package-metadata.ts",
   "#0nr05vmcrtql": "./src/shared/gitignore.ts",
   "#27pccnhol1ci": "./src/imports/module-specifiers.ts",
   "#28sf21fupcan": "./src/checks/rules/dry/candidates.ts",

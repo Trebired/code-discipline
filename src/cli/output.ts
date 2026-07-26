@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
+import { isPlainRecord } from "#ntve5i5a0mol";
 import type { CliLogContext } from "./logging.js";
 import type { CodeDisciplineViolation } from "#bsmch74up4fm";
 
@@ -18,10 +19,6 @@ function createSavedReportFilename(now: Date): string {
   const minutes = padDatePart(now.getMinutes());
   const seconds = padDatePart(now.getSeconds());
   return `cd-report-${year}-${month}-${day}-${hours}-${minutes}-${seconds}.txt`;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
 function formatDryConfidence(value: unknown): string {
@@ -48,7 +45,7 @@ function formatDryFunctionName(value: unknown): string {
 }
 
 function formatDryFunctionDetail(value: unknown): string {
-  const detail = isRecord(value) ? value : {};
+  const detail = isPlainRecord(value) ? value : {};
   const filePath = typeof detail.filePath === "string" && detail.filePath.trim() ? detail.filePath.trim() : "unknown file";
   const line = formatDryFunctionLine(detail.line);
   const location = line ? `${filePath}:${line}` : filePath;
@@ -60,7 +57,11 @@ function formatDryViolation(violation: CodeDisciplineViolation): string {
   const details = violation.details;
   const functions = Array.isArray(details.functions) ? details.functions : [];
   const functionLabel = functions.length === 1 ? "function" : "functions";
-  const header = `${violation.rule} ${violation.message}: ${functions.length} ${functionLabel}, confidence ${formatDryConfidence(details.confidence)}, signals: ${formatDrySignals(details.signals)}`;
+  const header = [
+    `${violation.rule} ${violation.message}: ${functions.length} ${functionLabel}`,
+    `confidence ${formatDryConfidence(details.confidence)}`,
+    `signals: ${formatDrySignals(details.signals)}`,
+  ].join(", ");
   const functionLines = functions.map(formatDryFunctionDetail);
 
   return functionLines.length > 0 ? [header, ...functionLines].join("\n") : header;
@@ -75,6 +76,13 @@ function formatViolation(violation: CodeDisciplineViolation): string {
 
 function countBlockingViolations(violations: CodeDisciplineViolation[]): number {
   return violations.filter((violation) => violation.severity !== "warning").length;
+}
+
+function filterVisibleViolations(
+  violations: CodeDisciplineViolation[],
+  warnings: boolean,
+): CodeDisciplineViolation[] {
+  return warnings ? violations : violations.filter((violation) => violation.severity !== "warning");
 }
 
 function renderCheckSummary(blockingCount: number, warningCount: number): string {
@@ -106,23 +114,25 @@ function writeCheckOutput(args: {
   stdout: CliOutputWriter;
   success: CliOutputWriter;
   warn: CliOutputWriter;
+  warnings: boolean;
   violationCount: number;
   violations: CodeDisciplineViolation[];
 }): string {
-  const reportText = renderCheckOutput(args.violations, args.violationCount);
+  const visibleViolations = filterVisibleViolations(args.violations, args.warnings);
+  const reportText = renderCheckOutput(visibleViolations, visibleViolations.length);
 
-  if (args.violations.length === 0) {
+  if (visibleViolations.length === 0) {
     args.success(reportText, { event: "discipline-check-ok" });
     return reportText;
   }
 
-  for (const violation of args.violations) {
+  for (const violation of visibleViolations) {
     const writeLine = violation.severity === "warning" ? args.warn : args.fail;
     writeLine(`${formatViolation(violation)}\n`, { event: "discipline-violation", rule: violation.rule });
   }
 
-  const blockingCount = countBlockingViolations(args.violations);
-  const warningCount = args.violationCount - blockingCount;
+  const blockingCount = countBlockingViolations(visibleViolations);
+  const warningCount = visibleViolations.length - blockingCount;
   const summary = renderCheckSummary(blockingCount, warningCount);
   (blockingCount > 0 ? args.fail : args.warn)(summary, { event: "discipline-check-summary" });
   return reportText;
@@ -142,10 +152,18 @@ function renderFixOutput(args: {
   const formatterSummary = args.formattedFiles === undefined && args.unchangedFiles === undefined
     ? ""
     : ` formatted files ${args.formattedFiles ?? 0}, unchanged files ${args.unchangedFiles ?? 0}.`;
+  const summary = [
+    `Fix summary: deleted files ${args.deletedFiles}`,
+    `moved ${args.movedFiles}`,
+    `rewritten files ${args.rewrittenFiles}`,
+    `rewritten imports ${args.rewrittenImports}`,
+    `removed comments ${args.removedComments}`,
+    `remaining violations ${args.violationCount}.${formatterSummary}`,
+  ].join(", ");
 
   return [
     ...args.violations.map((violation) => `${formatViolation(violation)}\n`),
-    `Fix summary: deleted files ${args.deletedFiles}, moved ${args.movedFiles}, rewritten files ${args.rewrittenFiles}, rewritten imports ${args.rewrittenImports}, removed comments ${args.removedComments}, remaining violations ${args.violationCount}.${formatterSummary}\n`,
+    `${summary}\n`,
   ].join("");
 }
 
@@ -162,10 +180,16 @@ function writeFixOutput(args: {
   violationCount: number;
   violations: CodeDisciplineViolation[];
   warn: CliOutputWriter;
+  warnings: boolean;
 }): string {
-  const reportText = renderFixOutput(args);
+  const visibleViolations = filterVisibleViolations(args.violations, args.warnings);
+  const reportText = renderFixOutput({
+    ...args,
+    violationCount: visibleViolations.length,
+    violations: visibleViolations,
+  });
 
-  for (const violation of args.violations) {
+  for (const violation of visibleViolations) {
     const writeLine = violation.severity === "warning" ? args.warn : args.fail;
     writeLine(`${formatViolation(violation)}\n`, { event: "discipline-fix-violation", rule: violation.rule });
   }
@@ -173,8 +197,15 @@ function writeFixOutput(args: {
   const formatterSummary = args.formattedFiles === undefined && args.unchangedFiles === undefined
     ? ""
     : ` formatted files ${args.formattedFiles ?? 0}, unchanged files ${args.unchangedFiles ?? 0}.`;
-  const summary = `Fix summary: deleted files ${args.deletedFiles}, moved ${args.movedFiles}, rewritten files ${args.rewrittenFiles}, rewritten imports ${args.rewrittenImports}, removed comments ${args.removedComments}, remaining violations ${args.violationCount}.${formatterSummary}\n`;
-  (args.violationCount > 0 ? args.fail : args.success)(summary, { event: "discipline-fix-summary" });
+  const summary = [
+    `Fix summary: deleted files ${args.deletedFiles}`,
+    `moved ${args.movedFiles}`,
+    `rewritten files ${args.rewrittenFiles}`,
+    `rewritten imports ${args.rewrittenImports}`,
+    `removed comments ${args.removedComments}`,
+    `remaining violations ${visibleViolations.length}.${formatterSummary}\n`,
+  ].join(", ");
+  (visibleViolations.length > 0 ? args.fail : args.success)(summary, { event: "discipline-fix-summary" });
   return reportText;
 }
 

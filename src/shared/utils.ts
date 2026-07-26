@@ -28,6 +28,10 @@ function ensureDotExtension(value: string): string {
   return value.startsWith(".") ? value.toLowerCase() : `.${value.toLowerCase()}`;
 }
 
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
 function uniqueStrings(values: string[]): string[] {
   return Array.from(new Set(values));
 }
@@ -168,6 +172,7 @@ export {
   ensureDotExtension,
   flattenDiagnosticMessage,
   formatDiagnostics,
+  isPlainRecord,
   isDirectExecution,
   isAliasIdValid,
   isDirectory,

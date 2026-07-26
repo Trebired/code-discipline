@@ -1,3 +1,5 @@
+import { buildPackageLogGroup, PACKAGE_NAME } from "./package-metadata.js";
+
 const DEFAULT_SOURCE_ROOT = ".";
 const DEFAULT_SOURCE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".mts", ".cts", ".cjs", ".go", ".rs", ".scss", ".css"];
 const DEFAULT_EXCLUDE_DIRS = [".git", "node_modules", "dist", ".vite", ".code-discipline"];
@@ -7,7 +9,8 @@ const DEFAULT_ALIAS_RANDOM_LENGTH = 12;
 const DEFAULT_RULE_FIX = false;
 const DEFAULT_ALLOW_RELATIVE = ["./"];
 const DEFAULT_FOLDERIZE_COMPOUND_FILE_SEPARATORS = ["_", "-"];
-const CODE_DISCIPLINE_LOG_GROUP = "package.code-discipline";
+const CODE_DISCIPLINE_LOG_GROUP = buildPackageLogGroup();
+const CODE_DISCIPLINE_PACKAGE_NAME = PACKAGE_NAME;
 const RANDOM_ALIAS_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
 const HASH_ALIAS_LENGTH = 12;
 
@@ -24,4 +27,5 @@ export {
   HASH_ALIAS_LENGTH,
   RANDOM_ALIAS_ALPHABET,
   CODE_DISCIPLINE_LOG_GROUP,
+  CODE_DISCIPLINE_PACKAGE_NAME,
 };

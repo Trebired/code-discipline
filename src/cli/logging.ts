@@ -1,6 +1,6 @@
 import { createLog, type LogInstance } from "@package/logger";
 
-import { CODE_DISCIPLINE_LOG_GROUP } from "#ik5y0pee4ah1";
+import { CODE_DISCIPLINE_LOG_GROUP, CODE_DISCIPLINE_PACKAGE_NAME } from "#ik5y0pee4ah1";
 import type { CodeDisciplineCheckName } from "#bsmch74up4fm";
 import { buildCodeDisciplineLogGroup, ruleLogGroup, runLogGroup, sourceScanLogGroup } from "#foa3t3ao5irq";
 
@@ -36,7 +36,7 @@ function createDefaultCliLogger(): LogInstance {
     },
     quiet: true,
     save: false,
-    source: "@package/code-discipline",
+    source: CODE_DISCIPLINE_PACKAGE_NAME,
   });
 }
 

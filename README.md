@@ -124,6 +124,9 @@ export default defineCodeDisciplineConfig({
       context.state.started = true;
     },
   },
+  logging: {
+    warnings: true,
+  },
   formatters: {
     prettier: {
       ignore: true,
@@ -255,6 +258,18 @@ Rules use kebab-case public slugs:
 `fix` only accepts fixable rules. Trying to run `code-discipline fix max-function-lines`, `code-discipline fix max-characters-per-line`, or `code-discipline fix dry` fails clearly.
 
 Formatter selectors such as `prettier` are enabled by top-level `formatters` config, not by `rules`.
+
+## Logging
+
+Code Discipline uses logger levels directly: passing summaries use `success`, blocking findings use `fail`, and warning findings use `warn`.
+
+```ts
+logging: {
+  warnings: false,
+}
+```
+
+Set `logging.warnings: false` to hide warning-level CLI output and warning-only report rows. The default is `true`.
 
 ## Formatters
 

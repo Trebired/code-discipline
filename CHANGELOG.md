@@ -2,6 +2,11 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.7.4
+
+- Added `logging.warnings`, defaulting to `true`, so warning-level CLI output can be hidden without restoring the removed `quiet` option.
+- Derived package-owned Code Discipline log groups and package notices from `package.json` `config.organization.name` instead of source literals.
+
 ## 4.7.3
 
 - Removed dead test scripts and stale test commands from publish workflows and maintainer docs.
