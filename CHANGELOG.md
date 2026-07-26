@@ -2,6 +2,11 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.7.5
+
+- Added the opt-in `presets.nodeProcessBoundary` config, which expands into `bannedPatterns` entries for direct Node `process` access while honoring separate environment and runtime boundary files.
+- Kept manual `bannedPatterns` compatible when the preset is configured, including shared severity, exclusions, and allowed file handling.
+
 ## 4.7.4
 
 - Added `logging.warnings`, defaulting to `true`, so warning-level CLI output can be hidden without restoring the removed `quiet` option.

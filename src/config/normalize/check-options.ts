@@ -22,6 +22,7 @@ import {
 import { normalizeFormatters } from "./formatter-options.js";
 import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
 import { normalizeLoggingOptions } from "./logging-options.js";
+import { applyCodeDisciplinePresets } from "./presets.js";
 import { normalizeSourceOptions } from "./source-options.js";
 
 function assertRemovedCheckOptions(options: Record<string, unknown>): void {
@@ -44,27 +45,28 @@ async function normalizeCheckCodeDisciplineOptions(
 ): Promise<NormalizedCheckCodeDisciplineOptions> {
   assertRemovedCheckOptions(options as Record<string, unknown>);
   const source = await normalizeSourceOptions(options);
+  const rules = applyCodeDisciplinePresets(options.rules, options.presets);
 
   return {
     ...source,
     configPath: options.configPath,
     logging: normalizeLoggingOptions(options.logging, "logging"),
-    onlyRules: normalizeOnlyRules(mode, options.onlyRules, options.rules, options.formatters),
+    onlyRules: normalizeOnlyRules(mode, options.onlyRules, rules, options.formatters),
     progressObserver: options.progressObserver,
     formatters: normalizeFormatters(options.formatters),
     rules: {
-      bannedPatterns: normalizeBannedPatternsRule(options.rules?.bannedPatterns),
-      bannedFiles: normalizeBannedFilesRule(options.rules?.bannedFiles),
-      dry: normalizeDryRule(options.rules?.dry),
-      minFileLines: normalizeMinFileLinesRule(options.rules?.minFileLines),
-      minDeclarationName: normalizeMinDeclarationNameRule(options.rules?.minDeclarationName),
-      maxFileLines: normalizeMaxFileLinesRule(options.rules?.maxFileLines),
-      maxCharactersPerLine: normalizeMaxCharactersPerLineRule(options.rules?.maxCharactersPerLine),
-      maxFunctionLines: normalizeMaxFunctionLinesRule(options.rules?.maxFunctionLines),
-      folderizeCompoundFiles: normalizeFolderizeCompoundFilesRule(options.rules?.folderizeCompoundFiles),
-      syncImports: normalizeSyncImportsRule(options.rules?.syncImports),
-      removeComments: normalizeRemoveCommentsRule(options.rules?.removeComments),
-      structuralBlankLines: normalizeStructuralBlankLinesRule(options.rules?.structuralBlankLines),
+      bannedPatterns: normalizeBannedPatternsRule(rules?.bannedPatterns),
+      bannedFiles: normalizeBannedFilesRule(rules?.bannedFiles),
+      dry: normalizeDryRule(rules?.dry),
+      minFileLines: normalizeMinFileLinesRule(rules?.minFileLines),
+      minDeclarationName: normalizeMinDeclarationNameRule(rules?.minDeclarationName),
+      maxFileLines: normalizeMaxFileLinesRule(rules?.maxFileLines),
+      maxCharactersPerLine: normalizeMaxCharactersPerLineRule(rules?.maxCharactersPerLine),
+      maxFunctionLines: normalizeMaxFunctionLinesRule(rules?.maxFunctionLines),
+      folderizeCompoundFiles: normalizeFolderizeCompoundFilesRule(rules?.folderizeCompoundFiles),
+      syncImports: normalizeSyncImportsRule(rules?.syncImports),
+      removeComments: normalizeRemoveCommentsRule(rules?.removeComments),
+      structuralBlankLines: normalizeStructuralBlankLinesRule(rules?.structuralBlankLines),
     },
   };
 }

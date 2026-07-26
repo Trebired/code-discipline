@@ -73,6 +73,7 @@
   "#r4k0t5wqgwq6": "./src/imports/format.ts",
   "#rqu2hcvfcs4c": "./src/config/index.ts",
   "#rv3slybxi6wc": "./src/checks/rules/blank-lines/types.ts",
+  "#stk5e1hvpp7o": "./src/config/normalize/presets.ts",
   "#t7940ar28d6y": "./src/config/normalize/source-options.ts",
   "#to4c9s3qr330": "./src/imports/rewrite.ts",
   "#ua9whqppp94v": "./src/imports/scan.ts",

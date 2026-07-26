@@ -127,6 +127,15 @@ export default defineCodeDisciplineConfig({
   logging: {
     warnings: true,
   },
+  presets: {
+    nodeProcessBoundary: {
+      envBoundaryFiles: ["src/backend/core/env.ts"],
+      processBoundaryFiles: [
+        "src/backend/shared/process/index.ts",
+        "src/backend/shared/process/cjs.cjs",
+      ],
+    },
+  },
   formatters: {
     prettier: {
       ignore: true,
@@ -228,6 +237,28 @@ export default defineCodeDisciplineConfig({
   },
 });
 ```
+
+## Presets
+
+### `nodeProcessBoundary`
+
+`nodeProcessBoundary` is opt-in. It expands into ordinary `bannedPatterns` entries so projects can keep direct Node `process` access inside explicit boundary files.
+
+```ts
+presets: {
+  nodeProcessBoundary: {
+    envBoundaryFiles: ["src/backend/core/env.ts"],
+    processBoundaryFiles: [
+      "src/backend/shared/process/index.ts",
+      "src/backend/shared/process/cjs.cjs",
+    ],
+  },
+}
+```
+
+`envBoundaryFiles` allows `process.env`. `processBoundaryFiles` allows the other runtime process APIs covered by the preset, including `process.argv`, `process.cwd(`, `process.exit(`, `process.pid`, `process.platform`, `process.arch`, `process.memoryUsage(`, and standard stream access.
+
+Manual `rules.bannedPatterns` entries still work normally. If both are configured, the preset patterns are appended to the manual list and share the same `bannedPatterns` severity and exclusions.
 
 ## Selectors
 

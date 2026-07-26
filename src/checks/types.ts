@@ -33,6 +33,13 @@ type BannedPatternsRuleOptions = RuleExclusionOptions & {
   patterns: BannedPatternRuleEntry[];
   severity?: CodeDisciplineRuleSeverity;
 };
+type NodeProcessBoundaryPresetOptions = {
+  envBoundaryFiles?: string[];
+  processBoundaryFiles?: string[];
+};
+type CodeDisciplinePresets = {
+  nodeProcessBoundary?: NodeProcessBoundaryPresetOptions;
+};
 type BannedFileRuleEntry = string | {
   glob: string;
 };
@@ -122,6 +129,7 @@ type CheckCodeDisciplineOptions = {
   ignore?: CodeDisciplineIgnoreOptions;
   gitignorePath?: string;
   logging?: LoggingOptions;
+  presets?: CodeDisciplinePresets;
   formatters?: CodeDisciplineFormatters;
   rules?: CodeDisciplineRules;
   lifecycle?: CodeDisciplineLifecycleHooks;
@@ -263,6 +271,7 @@ export type {
   CodeDisciplineLifecycleHookResult,
   CodeDisciplineLifecycleHooks,
   CodeDisciplineMode,
+  CodeDisciplinePresets,
   CodeDisciplineRuleSlug,
   CodeDisciplineRuleSeverity,
   CodeDisciplineRuntimeMode,
@@ -299,6 +308,7 @@ export type {
   NormalizedMinDeclarationNameRule,
   NormalizedMinFileLinesRule,
   NormalizedRemoveCommentsRule,
+  NodeProcessBoundaryPresetOptions,
   NormalizedStructuralBlankLinesRule,
   StructuralBlankLinesRuleOptions,
   TsconfigPathsNormalizeMode,
