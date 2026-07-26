@@ -4,8 +4,8 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-import { fixCodeDiscipline } from "../../src/index.js";
-import type { CodeDisciplineRuleName, FixCodeDisciplineOptions, SyncImportsLogEvent } from "../../src/index.js";
+import { fixCodeDiscipline } from "#co5e63fhc1wb";
+import type { CodeDisciplineRuleName, FixCodeDisciplineOptions, SyncImportsLogEvent } from "#co5e63fhc1wb";
 
 type TrebiredLogRow = {
   method: string;
@@ -151,7 +151,7 @@ function ensureBuiltCli() {
 
 function writeErroringCliFixture(projectRoot: string) {
   writeFile(projectRoot, "src/too-long.ts", "one\n2\n3\n");
-  writeFile(projectRoot, "code-discipline.ts", [
+  writeFile(projectRoot, ".code-discipline/config.ts", [
     "export default {",
     "  rules: {",
     "    maxFileLines: {",

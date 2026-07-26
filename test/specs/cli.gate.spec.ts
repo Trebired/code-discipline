@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { runCli } from "../../src/cli.js";
+import { runCli } from "#9al58tn2ibde";
 import { builtCliPath, ensureBuiltCli, runCommand, tempProject, writeFile } from "./helpers.js";
 
 test("prints a clear error when no config module can be found", async () => {
@@ -20,7 +20,7 @@ test("rejects the removed sync command", async () => {
   const projectRoot = tempProject();
   const stderr: string[] = [];
 
-  writeFile(projectRoot, "code-discipline.ts", "export default { rules: {} };\n");
+  writeFile(projectRoot, ".code-discipline/config.ts", "export default { rules: {} };\n");
 
   const result = await runCli(["sync"], {
     cwd: projectRoot,
@@ -44,7 +44,7 @@ test("narrows check to a selected rule slug", async () => {
     "};",
     "",
   ].join("\n"));
-  writeFile(projectRoot, "code-discipline.ts", [
+  writeFile(projectRoot, ".code-discipline/config.ts", [
     "export default {",
     "  rules: {",
     "    maxFileLines: { max: 100 },",
@@ -68,7 +68,7 @@ test("fails clearly when fix targets a non-fixable rule", async () => {
   const stderr: string[] = [];
 
   writeFile(projectRoot, "src/functions.ts", "export const longThing = () => {\n  return 1;\n};\n");
-  writeFile(projectRoot, "code-discipline.ts", [
+  writeFile(projectRoot, ".code-discipline/config.ts", [
     "export default {",
     "  rules: {",
     "    maxFunctionLines: { max: 1 },",
@@ -91,7 +91,7 @@ test("gate blocks the child command when discipline violations exist", () => {
   ensureBuiltCli();
 
   writeFile(projectRoot, "src/too-long.ts", "one\n2\n3\n");
-  writeFile(projectRoot, "code-discipline.ts", [
+  writeFile(projectRoot, ".code-discipline/config.ts", [
     "export default {",
     "  rules: {",
     "    maxFileLines: { max: 2 },",
@@ -123,7 +123,7 @@ test("gate runs the child command when discipline passes", () => {
   ensureBuiltCli();
 
   writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
-  writeFile(projectRoot, "code-discipline.ts", [
+  writeFile(projectRoot, ".code-discipline/config.ts", [
     "export default {",
     "  rules: {",
     "    maxFileLines: { max: 20 },",
@@ -160,7 +160,7 @@ test("gate allows warning-only max line results to pass", () => {
     "};",
     "",
   ].join("\n"));
-  writeFile(projectRoot, "code-discipline.ts", [
+  writeFile(projectRoot, ".code-discipline/config.ts", [
     "export default {",
     "  rules: {",
     "    maxFileLines: { max: 3 },",
@@ -188,7 +188,7 @@ test("gate fails clearly when the child command is missing", async () => {
   const projectRoot = tempProject();
   const stderr: string[] = [];
 
-  writeFile(projectRoot, "code-discipline.ts", "export default { rules: {} };\n");
+  writeFile(projectRoot, ".code-discipline/config.ts", "export default { rules: {} };\n");
 
   const result = await runCli(["gate"], {
     cwd: projectRoot,

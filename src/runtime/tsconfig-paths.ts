@@ -1,10 +1,10 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import type { CodeDisciplineTsconfigPathsOptions } from "../checks/types.js";
-import { InvalidTsconfigPathError } from "../shared/errors.js";
-import { parseTsconfigJson, pathExists, stableSerialize, toPosixPath, toStableJson } from "../shared/utils.js";
-import type { TsconfigJson } from "../imports/types.js";
+import type { SyncImportsRuntimeOptions } from "#pkb9x3eo56l7";
+import { InvalidTsconfigPathError } from "#4f8hale01wb4";
+import { parseTsconfigJson, pathExists, stableSerialize, toPosixPath, toStableJson } from "#ntve5i5a0mol";
+import type { TsconfigJson } from "#pkb9x3eo56l7";
 
 type PreparedTsconfigPathsResult = {
   changed: boolean;
@@ -27,7 +27,7 @@ function resolveTsconfigPath(projectRoot: string, tsconfigPath?: string): string
   return path.isAbsolute(input) ? path.resolve(input) : path.resolve(projectRoot, input);
 }
 
-function normalizePathsValue(value: string, mode: NonNullable<CodeDisciplineTsconfigPathsOptions["normalize"]>): string {
+function normalizePathsValue(value: string, mode: NonNullable<SyncImportsRuntimeOptions["normalize"]>): string {
   if (mode === "none") return value;
   if (path.isAbsolute(value)) return toPosixPath(value);
 
@@ -48,7 +48,7 @@ function normalizePathsValue(value: string, mode: NonNullable<CodeDisciplineTsco
 
 function rewriteCompilerPaths(
   config: TsconfigJson,
-  mode: NonNullable<CodeDisciplineTsconfigPathsOptions["normalize"]>,
+  mode: NonNullable<SyncImportsRuntimeOptions["normalize"]>,
 ): TsconfigJson {
   const compilerOptions = { ...(config.compilerOptions || {}) };
   const existingPaths = compilerOptions.paths;
@@ -80,7 +80,7 @@ function rewriteCompilerPaths(
 
 async function prepareTsconfigPaths(
   projectRoot: string,
-  options: CodeDisciplineTsconfigPathsOptions | undefined,
+  options: SyncImportsRuntimeOptions | undefined,
   mode: "check" | "fix",
 ): Promise<PreparedTsconfigPathsResult | null> {
   const normalize = options?.normalize || "none";

@@ -8,12 +8,13 @@ import type {
   SyncAliasesResult,
   TsconfigJson,
 } from "./types.js";
-import { ruleLogGroup } from "../shared/log-groups.js";
-import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
+import { ruleLogGroup } from "#foa3t3ao5irq";
+import type { NormalizedCodeDisciplineLogger } from "#uljkt8i26p4t";
 import { resolveProjectPathTarget } from "./resolve.js";
 import { generateAliasId } from "./strategies.js";
-import { isInsideDirectory, parseTsconfigJson, pathExists, stableSerialize, toPosixPath, toStableJson, wait } from "../shared/utils.js";
-import { planImportsFolderAliases, writeImportsFolderAliases } from "./folder.js";
+import { isInsideDirectory, parseTsconfigJson, pathExists, stableSerialize, toPosixPath, toStableJson, wait } from "#ntve5i5a0mol";
+import { planImportsFolderAliases, readAliasMapAliasPaths, removeAliasMapState, writeImportsFolderAliases } from "./folder.js";
+import { collectPackageJsonAliasImports } from "#51kcncizdqcz";
 
 const TSCONFIG_READ_RETRY_ATTEMPTS = 20;
 const TSCONFIG_READ_RETRY_DELAY_MS = 50;
@@ -136,8 +137,12 @@ async function syncTsconfigAliases(
   const result = await planTsconfigAliases(options, sourceFiles, logger);
 
   if (result.aliasesChanged) {
-    if (options.importsFolder.enabled && result.aliasPathMap) {
+    if (options.output.type === "alias-map" && result.aliasPathMap) {
       await writeImportsFolderAliases(options, result.aliasPathMap);
+    }
+
+    if (options.output.type === "project-manifests") {
+      await removeAliasMapState(options);
     }
 
     await fs.writeFile(options.tsconfigPath, toStableJson(result.tsconfig));
@@ -160,14 +165,28 @@ async function planTsconfigAliases(
   sourceFiles: ScannedSourceFile[],
   logger?: NormalizedCodeDisciplineLogger,
 ): Promise<SyncAliasesResult> {
-  if (options.importsFolder.enabled) {
+  if (options.output.type === "alias-map") {
     return planImportsFolderAliases(options, sourceFiles, logger);
   }
 
   const { config, originalConfig } = await readTsconfig(options, logger);
+  const aliasMapAliasPaths = await readAliasMapAliasPaths(options);
+  const packageJsonAliasPaths = await collectPackageJsonAliasImports({
+    configPath: options.configPath,
+    options: options.packageJsonImports,
+    projectRoot: options.projectRoot,
+  });
   const sourceFilesByPath = new Map(sourceFiles.map((file) => [file.absolutePath, file]));
   const compilerOptions = { ...(config.compilerOptions ?? {}) };
-  const existingPaths = compilerOptions.paths ?? {};
+  const existingPaths = {
+    ...Object.fromEntries(
+      Object.entries(aliasMapAliasPaths).map(([aliasId, target]) => [aliasId, [target]]),
+    ),
+    ...Object.fromEntries(
+      Object.entries(packageJsonAliasPaths).map(([aliasId, target]) => [aliasId, [target]]),
+    ),
+    ...(compilerOptions.paths ?? {}),
+  };
   const existingState = await extractExistingPaths(options, sourceFilesByPath, existingPaths);
   const reservedIds = new Set<string>([
     ...Object.keys(existingState.passthroughPaths),
@@ -208,12 +227,16 @@ async function planTsconfigAliases(
     compilerOptions: nextCompilerOptions,
   };
 
-  const aliasesChanged = stableSerialize(originalConfig) !== stableSerialize(nextConfig);
+  const aliasMapStateChanged = Object.keys(aliasMapAliasPaths).length > 0;
+  const aliasesChanged = stableSerialize(originalConfig) !== stableSerialize(nextConfig) || aliasMapStateChanged;
 
   return {
     aliasesChanged,
     aliasesCount: aliasRecords.length,
     aliasRecords,
+    drift: {
+      aliasMapStateChanged,
+    },
     tsconfig: nextConfig,
   };
 }

@@ -1,5 +1,5 @@
-import { loadNativeBinding } from "../../../native/native.js";
-import { isStyleExtension } from "../../../shared/languages.js";
+import { loadNativeBinding } from "#q6u4pcd984qa";
+import { isStyleExtension } from "#87jyjzn68rrk";
 import { collectCommentRanges } from "./ranges.js";
 import type { CommentRange } from "./ranges.js";
 

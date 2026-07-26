@@ -1,9 +1,9 @@
 import fs from "node:fs/promises";
 
-import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "../checks/progress.js";
-import { RewriteFailureError } from "../shared/errors.js";
-import { ruleLogGroup } from "../shared/log-groups.js";
-import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
+import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls019o";
+import { RewriteFailureError } from "#4f8hale01wb4";
+import { ruleLogGroup } from "#foa3t3ao5irq";
+import type { NormalizedCodeDisciplineLogger } from "#uljkt8i26p4t";
 import { applyTextReplacements, collectModuleSpecifiers } from "./module-specifiers.js";
 import { resolveRelativeImport } from "./resolve.js";
 import type {

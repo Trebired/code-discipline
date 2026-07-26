@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { checkCodeDiscipline, resetNativeBindingForTests, scanSourceFiles } from "../../src/index.js";
+import { checkCodeDiscipline, resetNativeBindingForTests, scanSourceFiles } from "#co5e63fhc1wb";
 import { expectedViolationResult, tempProject, writeFile } from "./helpers.js";
 
 function forceTypeScriptRulePath(event: unknown): void {
@@ -130,6 +130,26 @@ test("merges directory excludes from .gitignore when explicitly enabled", async 
       },
     ],
   });
+});
+
+test("excludes generated alias-map imports by default", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", "one\n2\n3\n");
+  writeFile(projectRoot, ".code-discipline/imports/generated.ts", "one\n2\n3\n4\n");
+
+  const result = await checkCodeDiscipline({
+    projectRoot,
+    rules: {
+      maxFileLines: {
+        max: 2,
+      },
+    },
+  });
+
+  expect(result.violations.map((entry) => entry.filePath)).toEqual([
+    "src/app.ts",
+  ]);
 });
 
 test("filters default source extensions through excludeSourceExtensions", async () => {

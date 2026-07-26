@@ -3,19 +3,19 @@ import path from "node:path";
 
 import ts from "typescript";
 
-import type { NormalizedSyncImportsOptions, ScannedSourceFile } from "../../../../../imports/types.js";
-import type { NormalizedCodeDisciplineLogger } from "../../../../../shared/logging-types.js";
-import type { CodeDisciplineViolation } from "../../../../../shared/discipline-types.js";
-import type { FixCodeDisciplineRuleResult, NormalizedCheckCodeDisciplineOptions } from "../../../../types.js";
-import { FixFailureError, RewriteFailureError } from "../../../../../shared/errors.js";
-import { applyTextReplacements, collectModuleSpecifiers, parseSource } from "../../../../../imports/module-specifiers.js";
-import { formatRelativeSpecifier } from "../../../../../imports/format.js";
-import { isRelativeImportSpecifier, resolveRelativeImport } from "../../../../../imports/resolve.js";
-import { planTsconfigAliases } from "../../../../../imports/aliases.js";
-import { removeEmptyDirectories } from "../../../../../shared/directories.js";
-import { supportsSyncImports } from "../../../../../shared/languages.js";
-import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "../../../../progress.js";
-import { collectMinFileLineViolations } from "../lines.js";
+import type { NormalizedSyncImportsOptions, ScannedSourceFile } from "#pkb9x3eo56l7";
+import type { NormalizedCodeDisciplineLogger } from "#uljkt8i26p4t";
+import type { CodeDisciplineViolation } from "#bsmch74up4fm";
+import type { FixCodeDisciplineRuleResult, NormalizedCheckCodeDisciplineOptions } from "#uqbg4indzud7";
+import { FixFailureError, RewriteFailureError } from "#4f8hale01wb4";
+import { applyTextReplacements, collectModuleSpecifiers, parseSource } from "#27pccnhol1ci";
+import { formatRelativeSpecifier } from "#r4k0t5wqgwq6";
+import { isRelativeImportSpecifier, resolveRelativeImport } from "#ay5rr8vjr5fh";
+import { planTsconfigAliases } from "#vgknapauto04";
+import { removeEmptyDirectories } from "#2gohqj1pb29e";
+import { supportsSyncImports } from "#87jyjzn68rrk";
+import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls019o";
+import { collectMinFileLineViolations } from "#n4snuy1yfjwq";
 
 type RedirectPlan = {
   file: ScannedSourceFile;

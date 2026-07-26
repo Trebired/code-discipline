@@ -7,8 +7,8 @@ import {
   createRelativePathHashAlias,
   createRelativePathSlugAlias,
   syncImports,
-} from "../../../src/index.js";
-import { captureTrebiredLogger, readFile, readJson, tempProject, writeFile } from "../helpers.js";
+} from "#co5e63fhc1wb";
+import { captureTrebiredLogger, readFile, readJson, tempProject, writeFile } from "#ycf29mcwtaq4";
 
 test("exports stable slug and hash strategies", () => {
   expect(createRelativePathSlugAlias({
@@ -100,11 +100,11 @@ test("generates aliases and rewrites imports when fix is true", async () => {
     rewritten_imports: 1,
   });
   expect(readJson(projectRoot, "tsconfig.json").compilerOptions.paths).toEqual({
-    "#feature-app": ["./src/feature/app.ts"],
-    "#feature-local": ["./src/feature/local.ts"],
-    "#shared-util": ["./src/shared/util.ts"],
+    "#src-feature-app": ["./src/feature/app.ts"],
+    "#src-feature-local": ["./src/feature/local.ts"],
+    "#src-shared-util": ["./src/shared/util.ts"],
   });
-  expect(readFile(projectRoot, "src/feature/app.ts")).toContain('from "#shared-util"');
+  expect(readFile(projectRoot, "src/feature/app.ts")).toContain('from "#src-shared-util"');
   expect(readFile(projectRoot, "src/feature/app.ts")).toContain('from "./local"');
 });
 
@@ -127,10 +127,10 @@ test("ignores Go and Rust files while syncing JavaScript and TypeScript imports"
   expect(result.ok).toBe(true);
   expect(result.aliases_count).toBe(2);
   expect(readJson(projectRoot, "tsconfig.json").compilerOptions.paths).toEqual({
-    "#feature-app": ["./src/feature/app.ts"],
-    "#shared-util": ["./src/shared/util.ts"],
+    "#src-feature-app": ["./src/feature/app.ts"],
+    "#src-shared-util": ["./src/shared/util.ts"],
   });
-  expect(readFile(projectRoot, "src/feature/app.ts")).toContain('from "#shared-util"');
+  expect(readFile(projectRoot, "src/feature/app.ts")).toContain('from "#src-shared-util"');
 });
 
 test("returns drift without mutating when fix is disabled", async () => {
@@ -175,10 +175,10 @@ test("resolves .js relative specifiers to .ts source files for drift detection a
   expect(checkResult.import_violations).toBe(2);
   expect(checkResult.violations).toContainEqual(expect.objectContaining({
     filePath: "src/feature/auth.ts",
-    message: "relative import ../shared/credentials.js should be rewritten to #shared-credentials",
+    message: "relative import ../shared/credentials.js should be rewritten to #src-shared-credentials",
     details: expect.objectContaining({
       specifier: "../shared/credentials.js",
-      aliasId: "#shared-credentials",
+      aliasId: "#src-shared-credentials",
       resolvedFile: "src/shared/credentials.ts",
     }),
   }));
@@ -193,7 +193,7 @@ test("resolves .js relative specifiers to .ts source files for drift detection a
   expect(fixResult.ok).toBe(true);
   expect(fixResult.rewritten_files).toBe(1);
   expect(fixResult.rewritten_imports).toBe(1);
-  expect(readFile(projectRoot, "src/feature/auth.ts")).toContain('from "#shared-credentials"');
+  expect(readFile(projectRoot, "src/feature/auth.ts")).toContain('from "#src-shared-credentials"');
 });
 
 test("returns drift and logs a warning when fix is disabled", async () => {
@@ -289,7 +289,7 @@ test("supports custom alias strategies", async () => {
 
   const tsconfig = readJson(projectRoot, "tsconfig.json");
   expect(tsconfig.compilerOptions.paths).toEqual({
-    "@shared__util": ["./src/shared/util.ts"],
+    "@src__shared__util": ["./src/shared/util.ts"],
   });
 });
 
@@ -311,7 +311,7 @@ test("writes dot-prefixed tsconfig path targets so baseUrl is not required", asy
 
   const tsconfig = readJson(projectRoot, "tsconfig.json");
   expect(tsconfig.compilerOptions.paths).toEqual({
-    "#feature-app": ["./src/feature/app.ts"],
+    "#src-feature-app": ["./src/feature/app.ts"],
   });
   expect(tsconfig.compilerOptions.baseUrl).toBeUndefined();
 });

@@ -1,4 +1,4 @@
-import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
+import type { CodeDisciplineViolation } from "#bsmch74up4fm";
 import type { NormalizedCheckCodeDisciplineOptions } from "./types.js";
 
 function resolveConfiguredSeverity(

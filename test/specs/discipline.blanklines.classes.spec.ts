@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { checkCodeDiscipline, fixCodeDiscipline } from "../../src/index.js";
+import { checkCodeDiscipline, fixCodeDiscipline } from "#co5e63fhc1wb";
 import { fixAndRead, readFile, tempProject, writeFile } from "./helpers.js";
 
 test("handles getter/setter pairs as one logical member", async () => {

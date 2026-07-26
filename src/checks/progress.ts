@@ -1,6 +1,6 @@
 import { performance } from "node:perf_hooks";
 
-import type { SourceProgressObserver } from "../imports/types.js";
+import type { SourceProgressObserver } from "#pkb9x3eo56l7";
 
 const DEFAULT_RULE_PROGRESS_CHUNK_SIZE = 250;
 

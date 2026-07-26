@@ -1,6 +1,6 @@
 [package]
 name = "code_discipline_native"
-version = "4.4.2"
+version = "4.7.0"
 edition = "2021"
 
 [lib]

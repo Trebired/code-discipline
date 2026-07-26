@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { codeDiscipline, createCodeDiscipline } from "../../src/index.js";
+import { codeDiscipline, createCodeDiscipline } from "#co5e63fhc1wb";
 import { captureTrebiredLogger, readFile, readJson, tempProject, writeFile } from "./helpers.js";
 
 test("dispatches check through one package-owned entrypoint", async () => {
@@ -32,7 +32,6 @@ test("fix runs sync-imports and accepts logger shorthand", async () => {
   writeFile(projectRoot, "src/shared/util.ts", "export const util = true;\n");
 
   const discipline = createCodeDiscipline({
-    sourceRoot: "src",
     rules: {
       syncImports: {
         alias: {
@@ -51,7 +50,7 @@ test("fix runs sync-imports and accepts logger shorthand", async () => {
 
   expect(result.ok).toBe(true);
   expect(result.ruleResults["sync-imports"]?.ok).toBe(true);
-  expect(readFile(projectRoot, "src/feature/app.ts")).toContain('from "#shared-util"');
+  expect(readFile(projectRoot, "src/feature/app.ts")).toContain('from "#src-shared-util"');
   expect(rows).toContainEqual(expect.objectContaining({
     group: "trebired.code-discipline.rules.sync-imports",
     method: "success",
@@ -113,16 +112,18 @@ test("temporarily normalizes tsconfig compilerOptions.paths for a run and restor
   await codeDiscipline({
     mode: "check",
     projectRoot,
-    tsconfigPaths: {
-      normalize: "relative-dot-prefix",
-      restoreAfterRun: true,
-    },
     lifecycle: {
       beforeMode() {
         capturedPaths = readJson(projectRoot, "tsconfig.json").compilerOptions.paths;
       },
     },
     rules: {
+      syncImports: {
+        runtime: {
+          normalize: "relative-dot-prefix",
+          restoreAfterRun: true,
+        },
+      },
       maxFileLines: {
         max: 50,
       },
@@ -168,10 +169,6 @@ test("fix syncs package.json imports from tsconfig paths and preserves unrelated
           prefix: "#",
           strategy: "relative-path-slug",
         },
-        packageJsonImports: {
-          enabled: true,
-          aliasPrefix: "#",
-        },
       },
     },
   });
@@ -181,6 +178,6 @@ test("fix syncs package.json imports from tsconfig paths and preserves unrelated
     "#app": "./src/app.ts",
     "#external": "./vendor/external.js",
     "#pages/*": "./src/pages/*",
-    "#pages-home": "./src/pages/home.ts",
+    "#src-pages-home": "./src/pages/home.ts",
   });
 });

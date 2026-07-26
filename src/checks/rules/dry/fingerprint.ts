@@ -1,6 +1,6 @@
 import ts from "typescript";
 
-import { stableSerialize } from "../../../shared/utils.js";
+import { stableSerialize } from "#ntve5i5a0mol";
 import { createBehaviorFingerprint } from "./behavior/index.js";
 import { serializeFunctionLike } from "./serialize/bindings.js";
 import { createSerializeContext } from "./serialize/context.js";

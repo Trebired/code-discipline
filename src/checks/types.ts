@@ -1,19 +1,20 @@
-import type { LoggingOptions } from "../shared/logging-types.js";
+import type { LoggingOptions } from "#uljkt8i26p4t";
 import type { Options as PrettierOptions } from "prettier";
 import type {
   CodeDisciplineIgnoreOptions,
   ExcludeDirEntry,
-  PackageJsonImportsSyncOptions,
   SourceProgressObserver,
   SourceScanObserver,
   SourceScanOptions,
   SyncImportsRuleOptions,
-} from "../imports/types.js";
+  SyncImportsRuntimeNormalizeMode,
+  SyncImportsRuntimeOptions,
+} from "#pkb9x3eo56l7";
 import type {
   CodeDisciplineResult,
   CodeDisciplineRuleName,
   CodeDisciplineViolation,
-} from "../shared/discipline-types.js";
+} from "#bsmch74up4fm";
 
 type CodeDisciplineRuleSlug = CodeDisciplineRuleName;
 type CodeDisciplineFormatterSlug = "prettier";
@@ -90,10 +91,7 @@ type DryRuleOptions = RuleExclusionOptions & {
   severity?: CodeDisciplineRuleSeverity;
 };
 
-type CodeDisciplinePackageJsonImportsOptions = PackageJsonImportsSyncOptions;
-
 type CodeDisciplineSyncImportsRuleOptions = RuleExclusionOptions & Omit<SyncImportsRuleOptions, "fix" | "excludeDirs"> & {
-  packageJsonImports?: CodeDisciplinePackageJsonImportsOptions;
   severity?: CodeDisciplineRuleSeverity;
 };
 
@@ -122,13 +120,7 @@ type CodeDisciplineFormatters = {
   prettier?: PrettierFormatterOptions;
 };
 
-type TsconfigPathsNormalizeMode = "relative-dot-prefix" | "strip-dot-prefix" | "none";
-
-type CodeDisciplineTsconfigPathsOptions = {
-  tsconfigPath?: string;
-  normalize?: TsconfigPathsNormalizeMode;
-  restoreAfterRun?: boolean;
-};
+type TsconfigPathsNormalizeMode = SyncImportsRuntimeNormalizeMode;
 
 type CodeDisciplineLifecycleContext = {
   mode: CodeDisciplineRuntimeMode;
@@ -150,7 +142,6 @@ type CodeDisciplineLifecycleHooks = {
 type CheckCodeDisciplineOptions = {
   projectRoot: string;
   configPath?: string;
-  sourceRoot?: string;
   excludeSourceExtensions?: string[];
   ignore?: CodeDisciplineIgnoreOptions;
   gitignorePath?: string;
@@ -158,7 +149,6 @@ type CheckCodeDisciplineOptions = {
   formatters?: CodeDisciplineFormatters;
   rules?: CodeDisciplineRules;
   lifecycle?: CodeDisciplineLifecycleHooks;
-  tsconfigPaths?: CodeDisciplineTsconfigPathsOptions;
   onlyRules?: CodeDisciplineCheckSelectorSlug[];
   progressObserver?: SourceProgressObserver;
   scanObserver?: SourceScanObserver;
@@ -318,7 +308,6 @@ export type {
   CodeDisciplineLifecycleHookResult,
   CodeDisciplineLifecycleHooks,
   CodeDisciplineMode,
-  CodeDisciplinePackageJsonImportsOptions,
   CodeDisciplineRuleSlug,
   CodeDisciplineRuleSeverity,
   CodeDisciplineRuntimeMode,
@@ -327,7 +316,6 @@ export type {
   CodeDisciplineFormatters,
   CodeDisciplineRules,
   CodeDisciplineSyncImportsRuleOptions,
-  CodeDisciplineTsconfigPathsOptions,
   DryRuleOptions,
   FixableRuleSlug,
   FixCodeDisciplineOptions,

@@ -2,6 +2,16 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.7.0
+
+- Changed config auto-discovery to `code-discipline.config.ts` and `.code-discipline/config.ts`, and stopped auto-discovering root `code-discipline.ts`.
+- Removed top-level `sourceRoot` and `tsconfigPaths`; scanning now starts at the project root and `compilerOptions.paths` runtime normalization lives under `rules.syncImports.runtime`.
+- Replaced `syncImports.importsFolder`, `syncImports.generatedTsconfig`, and `syncImports.packageJsonImports` with `syncImports.output`.
+- Added `output: { type: "project-manifests" }`, which writes root `tsconfig.json` aliases and matching `package.json#imports`.
+- Added `output: { type: "alias-map" }`, which writes `.code-discipline/imports/*.json`, the fixed `.code-discipline/generated/tsconfig.paths.json` projection, and keeps managed aliases out of `package.json#imports`.
+- Made `sync-imports fix` migrate managed aliases between `project-manifests` and `alias-map` output models while preserving unrelated `tsconfig.json` and `package.json#imports` entries.
+- Added `.code-discipline` to the built-in scan exclusions, so tool-owned config, generated tsconfig, and alias-map output do not need to be manually ignored.
+
 ## 4.6.2
 
 - Added a constant-folding pass to `bannedPatterns` for TypeScript/JavaScript files: string concatenation via `+`, template literals with foldable interpolations, `[...literals].join(literalSeparator)`, and same-scope `const` aliases of those are now evaluated at zero runtime cost and checked against configured patterns, closing the "split into literal chunks and glue them" evasion. Expressions touching anything non-literal (a parameter, `process.env`, a function call, a shadowed name) are left unfolded, by design — no guessing, no false positives.

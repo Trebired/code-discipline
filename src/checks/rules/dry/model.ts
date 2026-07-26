@@ -1,7 +1,7 @@
 import ts from "typescript";
 
-import type { ScannedSourceFile } from "../../../imports/types.js";
-import { isTypeScriptFamilyExtension } from "../../../shared/languages.js";
+import type { ScannedSourceFile } from "#pkb9x3eo56l7";
+import { isTypeScriptFamilyExtension } from "#87jyjzn68rrk";
 
 type DryFunctionDescriptor = {
   absolutePath: string;

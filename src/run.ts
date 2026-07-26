@@ -95,7 +95,6 @@ function buildCheckOptions(options: Omit<CodeDisciplineOptions, "mode">): CheckC
   return {
     configPath: options.configPath,
     projectRoot: options.projectRoot,
-    sourceRoot: options.sourceRoot,
     excludeSourceExtensions: options.excludeSourceExtensions,
     ignore: options.ignore,
     gitignorePath: options.gitignorePath,
@@ -128,10 +127,8 @@ async function codeDiscipline(options: CodeDisciplineOptions): Promise<CodeDisci
     onlyRules: options.onlyRules,
     rules: options.rules,
     excludeSourceExtensions: options.excludeSourceExtensions,
-    sourceRoot: options.sourceRoot,
     progressObserver: options.progressObserver,
     scanObserver: options.scanObserver,
-    tsconfigPaths: options.tsconfigPaths,
   };
 
   return orchestrateCodeDisciplineRun({

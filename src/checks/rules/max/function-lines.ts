@@ -3,14 +3,14 @@ import path from "node:path";
 
 import ts from "typescript";
 
-import type { NormalizedCheckCodeDisciplineOptions } from "../../types.js";
-import type { ScannedSourceFile } from "../../../imports/types.js";
-import { loadNativeBinding } from "../../../native/native.js";
-import { parseSource } from "../../../imports/module-specifiers.js";
-import { isGoExtension, isRustExtension, isTypeScriptFamilyExtension, supportsMaxFunctionLines } from "../../../shared/languages.js";
-import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
-import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "../../progress.js";
-import { getEndLine, getStartLine, isFunctionLikeWithBody, resolveFunctionKind, resolveFunctionName } from "../typescript-functions.js";
+import type { NormalizedCheckCodeDisciplineOptions } from "#uqbg4indzud7";
+import type { ScannedSourceFile } from "#pkb9x3eo56l7";
+import { loadNativeBinding } from "#q6u4pcd984qa";
+import { parseSource } from "#27pccnhol1ci";
+import { isGoExtension, isRustExtension, isTypeScriptFamilyExtension, supportsMaxFunctionLines } from "#87jyjzn68rrk";
+import type { CodeDisciplineViolation } from "#bsmch74up4fm";
+import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls019o";
+import { getEndLine, getStartLine, isFunctionLikeWithBody, resolveFunctionKind, resolveFunctionName } from "#hrlcdim1gtmi";
 import { countCodeLinesInRange, maskCommentsForLineCounting } from "./code-lines.js";
 import { stripCommentsAndStrings } from "./strip.js";
 

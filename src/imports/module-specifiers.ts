@@ -2,9 +2,9 @@ import path from "node:path";
 
 import ts from "typescript";
 
-import { ParseFailureError } from "../shared/errors.js";
-import { isScssExtension } from "../shared/languages.js";
-import { formatDiagnostics } from "../shared/utils.js";
+import { ParseFailureError } from "#4f8hale01wb4";
+import { isScssExtension } from "#87jyjzn68rrk";
+import { formatDiagnostics } from "#ntve5i5a0mol";
 
 type ModuleSpecifierOccurrence = {
   specifier: string;

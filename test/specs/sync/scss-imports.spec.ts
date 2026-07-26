@@ -1,17 +1,13 @@
 import { expect, test } from "bun:test";
 
-import { syncImports } from "../../../src/index.js";
-import { readFile, readJson, tempProject, writeFile } from "../helpers.js";
+import { syncImports } from "#co5e63fhc1wb";
+import { readFile, readJson, tempProject, writeFile } from "#ycf29mcwtaq4";
 
 function syncScssOptions(projectRoot: string) {
   return {
     projectRoot,
     alias: { strategy: "relative-path-slug" as const },
     allowRelative: [],
-    packageJsonImports: {
-      enabled: true,
-      aliasPrefix: "#",
-    },
   };
 }
 
@@ -40,15 +36,15 @@ test("reports and rewrites eligible SCSS @use, @forward, and @import specifiers"
   expect(checkResult.ok).toBe(false);
   expect(checkResult.violations).toContainEqual(expect.objectContaining({
     filePath: "src/frontend/css/page.scss",
-    message: "relative import ../core/palette should be rewritten to #frontend-core-palette",
+    message: "relative import ../core/palette should be rewritten to #src-frontend-core-palette",
     details: expect.objectContaining({
-      aliasId: "#frontend-core-palette",
+      aliasId: "#src-frontend-core-palette",
       resolvedFile: "src/frontend/core/_palette.scss",
     }),
   }));
   expect(checkResult.violations).toContainEqual(expect.objectContaining({
     filePath: "src/frontend/css/index.scss",
-    message: "relative import ../core/palette should be rewritten to #frontend-core-palette",
+    message: "relative import ../core/palette should be rewritten to #src-frontend-core-palette",
   }));
 
   const fixResult = await syncImports({ ...syncScssOptions(projectRoot), fix: true });
@@ -57,12 +53,12 @@ test("reports and rewrites eligible SCSS @use, @forward, and @import specifiers"
   expect(fixResult.aliases_count).toBe(4);
   expect(fixResult.rewritten_files).toBe(2);
   expect(fixResult.rewritten_imports).toBe(3);
-  expect(readFile(projectRoot, "src/frontend/css/page.scss")).toContain('@use "#frontend-core-palette" as palette;');
-  expect(readFile(projectRoot, "src/frontend/css/page.scss")).toContain('@import "#frontend-core-legacy";');
-  expect(readFile(projectRoot, "src/frontend/css/index.scss")).toContain('@forward "#frontend-core-palette";');
+  expect(readFile(projectRoot, "src/frontend/css/page.scss")).toContain('@use "#src-frontend-core-palette" as palette;');
+  expect(readFile(projectRoot, "src/frontend/css/page.scss")).toContain('@import "#src-frontend-core-legacy";');
+  expect(readFile(projectRoot, "src/frontend/css/index.scss")).toContain('@forward "#src-frontend-core-palette";');
   expect(readJson(projectRoot, "package.json").imports).toMatchObject({
-    "#frontend-core-legacy": "./src/frontend/core/_legacy.scss",
-    "#frontend-core-palette": "./src/frontend/core/_palette.scss",
+    "#src-frontend-core-legacy": "./src/frontend/core/_legacy.scss",
+    "#src-frontend-core-palette": "./src/frontend/core/_palette.scss",
   });
 
   expect((await syncImports({ ...syncScssOptions(projectRoot), fix: false })).ok).toBe(true);
@@ -146,7 +142,7 @@ test("reports and restores generated package imports for SCSS aliases", async ()
 
   await syncImports({ ...syncScssOptions(projectRoot), fix: true });
   const packageJson = readJson(projectRoot, "package.json");
-  delete packageJson.imports["#frontend-core-palette"];
+  delete packageJson.imports["#src-frontend-core-palette"];
   writeFile(projectRoot, "package.json", JSON.stringify(packageJson, null, 2));
 
   const checkResult = await syncImports({ ...syncScssOptions(projectRoot), fix: false });
@@ -157,5 +153,5 @@ test("reports and restores generated package imports for SCSS aliases", async ()
   }));
 
   await syncImports({ ...syncScssOptions(projectRoot), fix: true });
-  expect(readJson(projectRoot, "package.json").imports["#frontend-core-palette"]).toBe("./src/frontend/core/_palette.scss");
+  expect(readJson(projectRoot, "package.json").imports["#src-frontend-core-palette"]).toBe("./src/frontend/core/_palette.scss");
 });

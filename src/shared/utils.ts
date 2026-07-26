@@ -7,7 +7,7 @@ import ts from "typescript";
 
 import { RANDOM_ALIAS_ALPHABET } from "./constants.js";
 import { ParseFailureError } from "./errors.js";
-import type { TsconfigJson } from "../imports/types.js";
+import type { TsconfigJson } from "#pkb9x3eo56l7";
 
 export function toPosixPath(value: string): string {
   return value.split(path.sep).join("/");

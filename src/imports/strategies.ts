@@ -1,10 +1,10 @@
 import {
   DEFAULT_ALIAS_RANDOM_LENGTH,
   HASH_ALIAS_LENGTH,
-} from "../shared/constants.js";
-import { AliasCollisionError, InvalidAliasError } from "../shared/errors.js";
+} from "#ik5y0pee4ah1";
+import { AliasCollisionError, InvalidAliasError } from "#4f8hale01wb4";
 import type { AliasStrategyFn, AliasStrategyInput, NormalizedSyncImportsOptions, ScannedSourceFile } from "./types.js";
-import { createHashToken, createRandomToken, createSlugToken, isAliasIdValid, stripKnownExtension } from "../shared/utils.js";
+import { createHashToken, createRandomToken, createSlugToken, isAliasIdValid, stripKnownExtension } from "#ntve5i5a0mol";
 
 function buildStrategyInput(file: ScannedSourceFile, existingIds: string[], prefix: string, sourceExtensions: string[]): AliasStrategyInput {
   return {

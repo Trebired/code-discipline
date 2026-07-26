@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { checkCodeDiscipline } from "../../src/index.js";
+import { checkCodeDiscipline } from "#co5e63fhc1wb";
 import { readFile, readJson, tempProject, writeFile } from "./helpers.js";
 
 test("check mode validates sync import policy without mutating files", async () => {
@@ -92,7 +92,7 @@ test("sync-imports respects rule-local file and folder exclusions", async () => 
   expect(result.violations.some((violation) => violation.filePath === "src/generated/report.ts")).toBe(false);
   expect(result.violations).toContainEqual(expect.objectContaining({
     filePath: "src/feature/app.ts",
-    message: "relative import ../shared/util should be rewritten to #shared-util",
+    message: "relative import ../shared/util should be rewritten to #src-shared-util",
   }));
 });
 
@@ -117,7 +117,7 @@ test("check mode resolves .js specifiers to .ts source files for sync-import vio
 
   expect(result.violations).toContainEqual(expect.objectContaining({
     filePath: "src/feature/auth.ts",
-    message: "relative import ../shared/credentials.js should be rewritten to #shared-credentials",
+    message: "relative import ../shared/credentials.js should be rewritten to #src-shared-credentials",
     details: expect.objectContaining({
       specifier: "../shared/credentials.js",
       resolvedFile: "src/shared/credentials.ts",

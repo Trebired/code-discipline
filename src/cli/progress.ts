@@ -5,7 +5,7 @@ import type {
   SourceRuleCompletedEvent,
   SourceRuleProgressEvent,
   SourceScanProgressEvent,
-} from "../imports/types.js";
+} from "#pkb9x3eo56l7";
 import type { CliLogContext } from "./logging.js";
 
 type TimedTaskResult<T> = {

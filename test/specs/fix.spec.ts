@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { FileConflictError, fixCodeDiscipline } from "../../src/index.js";
+import { FileConflictError, fixCodeDiscipline } from "#co5e63fhc1wb";
 import { fileExists, readFile, readJson, tempProject, writeFile } from "./helpers.js";
 
 test("moves same-directory compound groups and rewrites affected imports", async () => {

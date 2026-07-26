@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 
-import { runCli } from "../../src/cli.js";
-import { resetNativeBindingForTests } from "../../src/index.js";
+import { runCli } from "#9al58tn2ibde";
+import { resetNativeBindingForTests } from "#co5e63fhc1wb";
 import { fileExists, readFile, tempProject, writeFile } from "./helpers.js";
 
 function writeMaxFileLinesConfig(projectRoot: string) {
@@ -34,9 +34,9 @@ function restoreScanEnv(previousDisableNative: string | undefined, previousConcu
 }
 
 function expectChunkedScanLogs(stdout: string[], stderr: string[]) {
-  expect(stdout.join("")).toContain("Found 4 discipline violation(s).");
+  expect(stdout.join("")).toContain("Found 5 discipline violation(s).");
   expect(stderr.join("")).toContain("Scan 1:");
-  expect(stderr.join("")).toContain("Scan: 4 files scanned in");
+  expect(stderr.join("")).toContain("Scan: 5 files scanned in");
   expect(stderr.join("")).toContain("Total check:");
 }
 
@@ -46,7 +46,7 @@ test("auto-discovers a config module for plain cli usage", async () => {
   const stderr: string[] = [];
 
   writeFile(projectRoot, "src/too-long.ts", "one\n2\n3\n");
-  writeFile(projectRoot, "code-discipline.ts", [
+  writeFile(projectRoot, ".code-discipline/config.ts", [
     "export default {",
     "  rules: {",
     "    maxFileLines: {",
@@ -93,7 +93,7 @@ test("runs check through an explicit config module and exits non-zero when viola
 
   expect(result.exitCode).toBe(1);
   expect(stderr.join("")).toContain("Total check:");
-  expect(stdout.join("")).toContain("Found 1 discipline violation(s).");
+  expect(stdout.join("")).toContain("Found 2 discipline violation(s).");
 });
 
 test("logs chunked scan progress and completion timing to stderr", async () => {
@@ -149,7 +149,7 @@ test("runs check through an explicit config module and prints concise violations
 
   expect(result.exitCode).toBe(1);
   expect(stdout.join("")).toContain("max-file-lines src/too-long.ts");
-  expect(stdout.join("")).toContain("Found 1 discipline violation(s).");
+  expect(stdout.join("")).toContain("Found 2 discipline violation(s).");
 });
 
 test("prints human-readable DRY duplicate function groups", async () => {
@@ -218,7 +218,7 @@ test("runs fix sync-imports through an explicit config module", async () => {
   });
 
   expect(result.exitCode).toBe(0);
-  expect(readFile(projectRoot, "src/feature/app.ts")).toContain('from "#shared-util"');
+  expect(readFile(projectRoot, "src/feature/app.ts")).toContain('from "#src-shared-util"');
   expect(stdout.join("")).toContain("Fix summary: deleted files 0, moved 0, rewritten files 1, rewritten imports 1, removed comments 0, remaining violations 0.");
 });
 
@@ -283,7 +283,7 @@ test("saves check output to a top-level report file", async () => {
   const reportName = "cd-report-2026-05-26-19-00-00.txt";
 
   writeFile(projectRoot, "src/too-long.ts", "one\n2\n3\n");
-  writeFile(projectRoot, "code-discipline.ts", [
+  writeFile(projectRoot, ".code-discipline/config.ts", [
     "export default {",
     "  rules: {",
     "    maxFileLines: { max: 2 },",

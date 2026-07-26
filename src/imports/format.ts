@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { stripKnownExtension, toPosixPath } from "../shared/utils.js";
+import { stripKnownExtension, toPosixPath } from "#ntve5i5a0mol";
 
 function formatRelativeSpecifier(
   originalSpecifier: string,

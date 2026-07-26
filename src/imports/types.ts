@@ -1,5 +1,5 @@
-import type { LoggingOptions } from "../shared/logging-types.js";
-import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
+import type { LoggingOptions } from "#uljkt8i26p4t";
+import type { CodeDisciplineViolation } from "#bsmch74up4fm";
 
 type SourceScanBackend = "native" | "ts";
 
@@ -73,15 +73,32 @@ type PackageJsonImportsSyncOptions = {
   packageJsonPath?: string;
 };
 
-type ImportsFolderSyncOptions = {
-  enabled?: boolean;
-  dir?: string;
-  maxEntriesPerFile?: number;
-};
+type SyncImportsOutputOptions =
+  | {
+    type?: "project-manifests";
+  }
+  | {
+    type: "alias-map";
+    maxEntriesPerFile?: number;
+  };
 
-type GeneratedTsconfigSyncOptions = {
-  enabled?: boolean;
-  path?: string;
+type NormalizedSyncImportsOutput =
+  | {
+    type: "project-manifests";
+  }
+  | {
+    type: "alias-map";
+    dir: string;
+    generatedTsconfigPath: string;
+    maxEntriesPerFile: number;
+  };
+
+type SyncImportsRuntimeNormalizeMode = "relative-dot-prefix" | "strip-dot-prefix" | "none";
+
+type SyncImportsRuntimeOptions = {
+  tsconfigPath?: string;
+  normalize?: SyncImportsRuntimeNormalizeMode;
+  restoreAfterRun?: boolean;
 };
 
 type AliasStrategyInput = {
@@ -129,8 +146,6 @@ type NormalizedCodeDisciplineIgnore = {
 type SyncImportsOptions = {
   projectRoot: string;
   configPath?: string;
-  sourceRoot?: string;
-  tsconfigPath?: string;
   excludeSourceExtensions?: string[];
   ignore?: CodeDisciplineIgnoreOptions;
   gitignorePath?: string;
@@ -141,9 +156,8 @@ type SyncImportsOptions = {
     randomLength?: number;
   };
   allowRelative?: string[] | AllowRelativeFn;
-  importsFolder?: ImportsFolderSyncOptions;
-  generatedTsconfig?: GeneratedTsconfigSyncOptions;
-  packageJsonImports?: PackageJsonImportsSyncOptions;
+  output?: SyncImportsOutputOptions;
+  runtime?: SyncImportsRuntimeOptions;
   logging?: LoggingOptions;
   progressObserver?: SourceProgressObserver;
 };
@@ -184,9 +198,8 @@ type NormalizedSyncImportsOptions = SourceScanOptions & {
     randomLength: number;
   };
   allowRelative: string[] | AllowRelativeFn;
-  importsFolder: Required<ImportsFolderSyncOptions>;
-  generatedTsconfig: Required<GeneratedTsconfigSyncOptions>;
-  packageJsonImports?: PackageJsonImportsSyncOptions;
+  output: NormalizedSyncImportsOutput;
+  packageJsonImports: PackageJsonImportsSyncOptions;
   logging: LoggingOptions;
   progressObserver?: SourceProgressObserver;
 };
@@ -223,6 +236,7 @@ type SyncAliasesResult = {
     generatedTsconfigChanged?: boolean;
     importsFolderChanged?: boolean;
     inlineTsconfigPaths?: boolean;
+    aliasMapStateChanged?: boolean;
     maxEntriesExceeded?: Array<{ filePath: string; count: number; max: number }>;
     rootExtendsChanged?: boolean;
   };
@@ -249,8 +263,6 @@ export type {
   ExcludeDirEntry,
   ExcludeDirEntryType,
   ExcludeDirsOptions,
-  GeneratedTsconfigSyncOptions,
-  ImportsFolderSyncOptions,
   NormalizedSyncImportsOptions,
   NormalizedCodeDisciplineIgnore,
   RewriteFileResult,
@@ -266,10 +278,14 @@ export type {
   SourceProgressObserver,
   SourceRuleCompletedEvent,
   SourceRuleProgressEvent,
+  NormalizedSyncImportsOutput,
   PackageJsonImportsSyncOptions,
   SyncAliasesResult,
   SyncImportsOptions,
+  SyncImportsOutputOptions,
   SyncImportsResult,
   SyncImportsRuleOptions,
+  SyncImportsRuntimeNormalizeMode,
+  SyncImportsRuntimeOptions,
   TsconfigJson,
 };

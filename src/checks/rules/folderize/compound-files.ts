@@ -1,8 +1,8 @@
-import type { NormalizedCheckCodeDisciplineOptions } from "../../types.js";
-import type { ScannedSourceFile } from "../../../imports/types.js";
-import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
-import { loadNativeBinding } from "../../../native/native.js";
-import { createRuleProgress, emitRuleCompleted } from "../../progress.js";
+import type { NormalizedCheckCodeDisciplineOptions } from "#uqbg4indzud7";
+import type { ScannedSourceFile } from "#pkb9x3eo56l7";
+import type { CodeDisciplineViolation } from "#bsmch74up4fm";
+import { loadNativeBinding } from "#q6u4pcd984qa";
+import { createRuleProgress, emitRuleCompleted } from "#efe33sls019o";
 import { planFolderizeCompoundFiles } from "./plan.js";
 
 function runFolderizeCompoundFilesRule(

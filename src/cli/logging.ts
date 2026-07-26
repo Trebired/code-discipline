@@ -1,8 +1,8 @@
 import { createLog, type LogInstance } from "@trebired/logger";
 
-import { CODE_DISCIPLINE_LOG_GROUP } from "../shared/constants.js";
-import type { CodeDisciplineCheckName } from "../shared/discipline-types.js";
-import { buildCodeDisciplineLogGroup, ruleLogGroup, runLogGroup, sourceScanLogGroup } from "../shared/log-groups.js";
+import { CODE_DISCIPLINE_LOG_GROUP } from "#ik5y0pee4ah1";
+import type { CodeDisciplineCheckName } from "#bsmch74up4fm";
+import { buildCodeDisciplineLogGroup, ruleLogGroup, runLogGroup, sourceScanLogGroup } from "#foa3t3ao5irq";
 
 type CliLogLevel = "fail" | "info" | "success" | "warn";
 

@@ -5,14 +5,15 @@ import { pathToFileURL } from "node:url";
 
 import ts from "typescript";
 
-import type { CodeDisciplineConfig } from "../checks/types.js";
-import { applyTextReplacements, collectModuleSpecifiers } from "../imports/module-specifiers.js";
-import { resolveFileCandidate } from "../imports/resolve.js";
-import { InvalidCodeDisciplineConfigError } from "../shared/errors.js";
-import { pathExists } from "../shared/utils.js";
+import type { CodeDisciplineConfig } from "#uqbg4indzud7";
+import { applyTextReplacements, collectModuleSpecifiers } from "#27pccnhol1ci";
+import { resolveFileCandidate } from "#ay5rr8vjr5fh";
+import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
+import { pathExists } from "#ntve5i5a0mol";
 
 const DEFAULT_CONFIG_FILENAMES = [
-  "code-discipline.ts",
+  "code-discipline.config.ts",
+  ".code-discipline/config.ts",
 ];
 
 const NODE_TRANSPILE_EXTENSIONS = new Set([

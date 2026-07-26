@@ -1,15 +1,15 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import type { CodeDisciplinePackageJsonImportsOptions } from "../checks/types.js";
-import { InvalidCodeDisciplineConfigError } from "../shared/errors.js";
+import type { PackageJsonImportsSyncOptions } from "#pkb9x3eo56l7";
+import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
 import {
   parseTsconfigJson,
   normalizeDotPrefixedTarget,
   pathExists,
   stableSerialize,
   toStableJson,
-} from "../shared/utils.js";
+} from "#ntve5i5a0mol";
 
 type RuntimeImportsSyncResult = {
   changed: boolean;
@@ -35,10 +35,10 @@ function resolvePackageJsonPath(
   configPath: string | undefined,
   packageJsonPath?: string,
 ): string {
+  void configPath;
   const input = packageJsonPath || "package.json";
   if (path.isAbsolute(input)) return path.resolve(input);
-  const baseDir = configPath ? path.dirname(configPath) : projectRoot;
-  return path.resolve(baseDir, input);
+  return path.resolve(projectRoot, input);
 }
 
 function normalizeAliasPrefixes(value: string | string[] | undefined): string[] {
@@ -48,9 +48,7 @@ function normalizeAliasPrefixes(value: string | string[] | undefined): string[] 
 
 async function readPackageJson(packageJsonPath: string): Promise<PackageJsonWithImports> {
   if (!await pathExists(packageJsonPath)) {
-    throw new InvalidCodeDisciplineConfigError("packageJsonImports package.json was not found", {
-      filePath: packageJsonPath,
-    });
+    return {};
   }
 
   const text = await fs.readFile(packageJsonPath, "utf8");
@@ -67,7 +65,7 @@ async function readPackageJson(packageJsonPath: string): Promise<PackageJsonWith
 
 async function readPackageJsonImportsContext(args: {
   configPath?: string;
-  options: CodeDisciplinePackageJsonImportsOptions;
+  options: PackageJsonImportsSyncOptions;
   projectRoot: string;
   tsconfigPath: string;
 }): Promise<PackageJsonImportsContext> {
@@ -120,7 +118,7 @@ function buildPackageJsonImports(context: PackageJsonImportsContext): {
 
 async function collectPackageJsonAliasImports(args: {
   configPath?: string;
-  options: CodeDisciplinePackageJsonImportsOptions | undefined;
+  options: PackageJsonImportsSyncOptions | undefined;
   projectRoot: string;
 }): Promise<Record<string, string>> {
   const packageJsonPath = resolvePackageJsonPath(args.projectRoot, args.configPath, args.options?.packageJsonPath);
@@ -177,7 +175,7 @@ function buildPackageJsonImportsFromAliasMap(args: {
 
 async function collectPackageJsonImportsSyncState(args: {
   configPath?: string;
-  options: CodeDisciplinePackageJsonImportsOptions | undefined;
+  options: PackageJsonImportsSyncOptions | undefined;
   projectRoot: string;
   tsconfigPath: string;
 }): Promise<RuntimeImportsSyncResult | null> {
@@ -186,10 +184,13 @@ async function collectPackageJsonImportsSyncState(args: {
 
   const context = await readPackageJsonImportsContext({ ...args, options });
   const { managedImports, nextImports } = buildPackageJsonImports(context);
-  const nextPackageJson: PackageJsonWithImports = {
-    ...context.packageJson,
-    imports: nextImports,
-  };
+  const nextPackageJson: PackageJsonWithImports = { ...context.packageJson };
+
+  if (Object.keys(nextImports).length > 0) {
+    nextPackageJson.imports = nextImports;
+  } else {
+    delete nextPackageJson.imports;
+  }
 
   return {
     changed: stableSerialize(context.packageJson) !== stableSerialize(nextPackageJson),
@@ -203,7 +204,7 @@ async function collectPackageJsonImportsSyncStateFromAliasMap(args: {
   aliasPathMap: Record<string, string>;
   cleanWhenDisabled?: boolean;
   configPath?: string;
-  options: CodeDisciplinePackageJsonImportsOptions | undefined;
+  options: PackageJsonImportsSyncOptions | undefined;
   projectRoot: string;
 }): Promise<RuntimeImportsSyncResult | null> {
   const enabled = args.options?.enabled === true;
@@ -243,7 +244,7 @@ async function collectPackageJsonImportsSyncStateFromAliasMap(args: {
 
 async function syncPackageJsonImportsFromTsconfigPaths(args: {
   configPath?: string;
-  options: CodeDisciplinePackageJsonImportsOptions | undefined;
+  options: PackageJsonImportsSyncOptions | undefined;
   projectRoot: string;
   tsconfigPath: string;
 }): Promise<RuntimeImportsSyncResult | null> {
@@ -251,10 +252,13 @@ async function syncPackageJsonImportsFromTsconfigPaths(args: {
   if (!state || !state.changed) return state;
 
   const packageJson = await readPackageJson(state.packageJsonPath);
-  const nextPackageJson: PackageJsonWithImports = {
-    ...packageJson,
-    imports: state.nextImports,
-  };
+  const nextPackageJson: PackageJsonWithImports = { ...packageJson };
+
+  if (Object.keys(state.nextImports).length > 0) {
+    nextPackageJson.imports = state.nextImports;
+  } else {
+    delete nextPackageJson.imports;
+  }
 
   await fs.writeFile(state.packageJsonPath, toStableJson(nextPackageJson));
   return state;
@@ -264,7 +268,7 @@ async function syncPackageJsonImportsFromAliasMap(args: {
   aliasPathMap: Record<string, string>;
   cleanWhenDisabled?: boolean;
   configPath?: string;
-  options: CodeDisciplinePackageJsonImportsOptions | undefined;
+  options: PackageJsonImportsSyncOptions | undefined;
   projectRoot: string;
 }): Promise<RuntimeImportsSyncResult | null> {
   const state = await collectPackageJsonImportsSyncStateFromAliasMap(args);

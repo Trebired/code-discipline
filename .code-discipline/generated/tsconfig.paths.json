@@ -1,0 +1,372 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "#0nr05vmcrtql": [
+        "../../src/shared/gitignore.ts"
+      ],
+      "#27pccnhol1ci": [
+        "../../src/imports/module-specifiers.ts"
+      ],
+      "#28sf21fupcan": [
+        "../../src/checks/rules/dry/candidates.ts"
+      ],
+      "#2gohqj1pb29e": [
+        "../../src/shared/directories.ts"
+      ],
+      "#2z5qe6gxtgnl": [
+        "../../src/config/normalize/logging-options.ts"
+      ],
+      "#3lwz5k2vshy1": [
+        "../../src/checks/rules/banned/fold.ts"
+      ],
+      "#49ihfa399fpp": [
+        "../../src/shared/globs.ts"
+      ],
+      "#4f8hale01wb4": [
+        "../../src/shared/errors.ts"
+      ],
+      "#51kcncizdqcz": [
+        "../../src/runtime/imports-sync.ts"
+      ],
+      "#5433afgggxit": [
+        "../../src/checks/rules/dry/fingerprint.ts"
+      ],
+      "#5koja8ae2wwn": [
+        "../../src/shared/logging.ts"
+      ],
+      "#5psaq7gip1rb": [
+        "../../src/cli/output.ts"
+      ],
+      "#5xd7wrzcdwjb": [
+        "../../src/checks/rules/dry/behavior/expressions.ts"
+      ],
+      "#6ik5b9zxir3a": [
+        "../../src/checks/rules/dry/serialize/expressions.ts"
+      ],
+      "#6l076wpmwb3u": [
+        "../../test/specs/discipline.bannedpatterns.fold.spec.ts"
+      ],
+      "#6pztke9qvozs": [
+        "../../test/specs/discipline.spec.ts"
+      ],
+      "#6vx9xvxrvnwj": [
+        "../../src/imports/sync-imports.ts"
+      ],
+      "#6wirketkaktr": [
+        "../../src/checks/rules/blank-lines/rewrite.ts"
+      ],
+      "#6yp73unwii53": [
+        "../../src/imports/strategies.ts"
+      ],
+      "#7a2tx0nghmnf": [
+        "../../test/specs/discipline.names.spec.ts"
+      ],
+      "#81qf83olyj49": [
+        "../../src/checks/rules/dry/index.ts"
+      ],
+      "#849rgiok22y8": [
+        "../../scripts/build/native/matrix.mjs"
+      ],
+      "#87jyjzn68rrk": [
+        "../../src/shared/languages.ts"
+      ],
+      "#8o81qd3i7f6p": [
+        "../../test/specs/discipline.blanklines.spec.ts"
+      ],
+      "#9al58tn2ibde": [
+        "../../src/cli.ts"
+      ],
+      "#9cs5z6nffer3": [
+        "../../src/checks/rules/comments/ranges.ts"
+      ],
+      "#9dyva8dlmitp": [
+        "../../src/checks/rules/folderize/compound-files.ts"
+      ],
+      "#9epcrzq92bsw": [
+        "../../src/run.ts"
+      ],
+      "#9sccgd75qe7n": [
+        "../../src/config/normalize/sync-imports-options.ts"
+      ],
+      "#9tcp2jgf8qlj": [
+        "../../src/checks/rules/max/function-lines.ts"
+      ],
+      "#a7oezxedltn1": [
+        "../../test/specs/discipline.dry.behavior.spec.ts"
+      ],
+      "#acssryfqaxuo": [
+        "../../test/specs/fix.spec.ts"
+      ],
+      "#arhoe19ayg60": [
+        "../../src/runtime/gate-command.ts"
+      ],
+      "#auqsaumiy1g0": [
+        "../../test/specs/cli.logging.spec.ts"
+      ],
+      "#ay5rr8vjr5fh": [
+        "../../src/imports/resolve.ts"
+      ],
+      "#azin2l86pnk4": [
+        "../../src/checks/rules/max/strip.ts"
+      ],
+      "#b4hfygxeeu1b": [
+        "../../src/checks/rules/banned/files.ts"
+      ],
+      "#bsmch74up4fm": [
+        "../../src/shared/discipline-types.ts"
+      ],
+      "#cbb7jrf5wadz": [
+        "../../src/checks/rules/dry/serialize/context.ts"
+      ],
+      "#co5e63fhc1wb": [
+        "../../src/index.ts"
+      ],
+      "#d1ilpf8bdygo": [
+        "../../src/checks/rules/min/file/lines/fix.ts"
+      ],
+      "#d8do6i46yvb5": [
+        "../../src/checks/rules/dry/serialize/node.ts"
+      ],
+      "#deajldp9u80m": [
+        "../../src/cli/logging.ts"
+      ],
+      "#dxx8c7gob0bd": [
+        "../../src/formatters/prettier.ts"
+      ],
+      "#dyqndbdm2ryc": [
+        "../../src/checks/rules/dry/serialize/bindings.ts"
+      ],
+      "#e6my82jdc544": [
+        "../../test/specs/cli.gate.spec.ts"
+      ],
+      "#ee01qo4vt3ej": [
+        "../../src/checks/fix-folderization.ts"
+      ],
+      "#efe33sls019o": [
+        "../../src/checks/progress.ts"
+      ],
+      "#ev3m10ezn5sg": [
+        "../../src/checks/rules/dry/behavior/index.ts"
+      ],
+      "#fh3a3a2p8xzq": [
+        "../../test/specs/discipline.config.spec.ts"
+      ],
+      "#fjcromui093a": [
+        "../../test/specs/progress.spec.ts"
+      ],
+      "#fjxqx1txjvje": [
+        "../../src/checks/rules/dry/serialize/statements.ts"
+      ],
+      "#foa3t3ao5irq": [
+        "../../src/shared/log-groups.ts"
+      ],
+      "#fsp8iau1cv86": [
+        "../../scripts/build/native.mjs"
+      ],
+      "#gbpelbsn3ne5": [
+        "../../src/checks/rules/max/characters-per-line.ts"
+      ],
+      "#gqxxrd6ye9fj": [
+        "../../src/config/normalize/exclusions.ts"
+      ],
+      "#he4e32fcbx5j": [
+        "../../src/checks/apply-fixes.ts"
+      ],
+      "#hrlcdim1gtmi": [
+        "../../src/checks/rules/typescript-functions.ts"
+      ],
+      "#i4retyi98ugg": [
+        "../../src/cli/run-cli.ts"
+      ],
+      "#i7c3hbqqxt2p": [
+        "../../test/specs/discipline.dry.spec.ts"
+      ],
+      "#ik5y0pee4ah1": [
+        "../../src/shared/constants.ts"
+      ],
+      "#ipjl4xy5sfqj": [
+        "../../src/checks/rules/folderize/plan.ts"
+      ],
+      "#jgb3uhcipyc4": [
+        "../../src/runtime/tsconfig-paths.ts"
+      ],
+      "#jizekc8duh4i": [
+        "../../src/shared/rule-exclusions.ts"
+      ],
+      "#k2fzyyvfibd7": [
+        "../../src/checks/prettier.ts"
+      ],
+      "#km96rpkgx3ft": [
+        "../../src/checks/rules/min/declaration-name.ts"
+      ],
+      "#l8reo7vna6c0": [
+        "../../scripts/build/aliases.mjs"
+      ],
+      "#mv1bbdtri77n": [
+        "../../src/checks/rules/max/code-lines.ts"
+      ],
+      "#n2hyqdpstz4i": [
+        "../../scripts/build/native/targets.mjs"
+      ],
+      "#n3dq90fo2kyk": [
+        "../../src/checks/rules/dry/behavior/conditions.ts"
+      ],
+      "#n3og2kora9jm": [
+        "../../test/specs/runtime.spec.ts"
+      ],
+      "#n4snuy1yfjwq": [
+        "../../src/checks/rules/min/file/lines.ts"
+      ],
+      "#ncnkhnek2njq": [
+        "../../src/checks/severity.ts"
+      ],
+      "#ni3zwhsdcu98": [
+        "../../src/runtime/orchestrate.ts"
+      ],
+      "#ntve5i5a0mol": [
+        "../../src/shared/utils.ts"
+      ],
+      "#oanzzk9rytxp": [
+        "../../test/specs/cli.bin.spec.ts"
+      ],
+      "#oeupfbu3w02u": [
+        "../../test/specs/discipline.folderize.spec.ts"
+      ],
+      "#oyrkq9gkr5lm": [
+        "../../src/checks/rules/remove-comments.ts"
+      ],
+      "#p9ktdl3d4nf1": [
+        "../../src/checks/index.ts"
+      ],
+      "#pkb9x3eo56l7": [
+        "../../src/imports/types.ts"
+      ],
+      "#pzy12rn6douq": [
+        "../../src/config/normalize/formatter-options.ts"
+      ],
+      "#q6u4pcd984qa": [
+        "../../src/native/native.ts"
+      ],
+      "#r4a3gbdq12rt": [
+        "../../src/config/normalize/rule-options.ts"
+      ],
+      "#r4k0t5wqgwq6": [
+        "../../src/imports/format.ts"
+      ],
+      "#rqu2hcvfcs4c": [
+        "../../src/config/index.ts"
+      ],
+      "#rsofzrpgjf14": [
+        "../../test/specs/discipline.scan.spec.ts"
+      ],
+      "#rtz31z9jix2j": [
+        "../../test/specs/native-loader.spec.ts"
+      ],
+      "#rv3slybxi6wc": [
+        "../../src/checks/rules/blank-lines/types.ts"
+      ],
+      "#t7940ar28d6y": [
+        "../../src/config/normalize/source-options.ts"
+      ],
+      "#to4c9s3qr330": [
+        "../../src/imports/rewrite.ts"
+      ],
+      "#txyez5krldh6": [
+        "../../test/specs/tsconfig-retries.spec.ts"
+      ],
+      "#u9g3wt7ldcke": [
+        "../../examples/dummy.ts"
+      ],
+      "#ua9whqppp94v": [
+        "../../src/imports/scan.ts"
+      ],
+      "#uaux9bh3my6b": [
+        "../../src/checks/rules/max/file-lines.ts"
+      ],
+      "#ug46qontqfe9": [
+        "../../src/checks/sync-options.ts"
+      ],
+      "#ul38etdfkkej": [
+        "../../src/cli/progress.ts"
+      ],
+      "#uljkt8i26p4t": [
+        "../../src/shared/logging-types.ts"
+      ],
+      "#uqbg4indzud7": [
+        "../../src/checks/types.ts"
+      ],
+      "#usr2l2h45daq": [
+        "../../src/checks/rules/banned/patterns.ts"
+      ],
+      "#uwdekr09z0ix": [
+        "../../test/specs/formatter.prettier.spec.ts"
+      ],
+      "#v3w5gxjzmh9z": [
+        "../../src/checks/rules/blank-lines/index.ts"
+      ],
+      "#vgknapauto04": [
+        "../../src/imports/aliases.ts"
+      ],
+      "#w78tbxf3hewx": [
+        "../../src/checks/rules/dry/matching.ts"
+      ],
+      "#woz8f1r916up": [
+        "../../test/specs/discipline.blanklines.classes.spec.ts"
+      ],
+      "#wqwzv4c1copg": [
+        "../../src/checks/rules/dry/similarity.ts"
+      ],
+      "#wrl4xdfz9zg3": [
+        "../../src/checks/rules/comments/stripping.ts"
+      ],
+      "#ws0c7e58zmtg": [
+        "../../src/checks/rules/blank-lines/comments.ts"
+      ],
+      "#x458f9t6w4a6": [
+        "../../src/config/normalize/check-options.ts"
+      ],
+      "#x5ecj35qfdf3": [
+        "../../src/checks/rules/dry/behavior/statements.ts"
+      ],
+      "#x6dn4can2fic": [
+        "../../src/checks/rules/dry/behavior/model.ts"
+      ],
+      "#x9bniij15ecd": [
+        "../../test/specs/sync/imports-folder.spec.ts"
+      ],
+      "#xwfxez0wzcew": [
+        "../../src/imports/folder.ts"
+      ],
+      "#y7qpadv53f39": [
+        "../../test/specs/cli.spec.ts"
+      ],
+      "#ycf29mcwtaq4": [
+        "../../test/specs/helpers.ts"
+      ],
+      "#ydyygm5y7vgb": [
+        "../../src/checks/rule-slugs.ts"
+      ],
+      "#ymdyths4ukwp": [
+        "../../src/imports/check-sync-imports.ts"
+      ],
+      "#yo4u5axo98hj": [
+        "../../test/specs/sync/imports.spec.ts"
+      ],
+      "#yu3f2gkfd9ha": [
+        "../../test/specs/discipline.line-rules.spec.ts"
+      ],
+      "#zao4pet7bnln": [
+        "../../test/specs/discipline.imports.spec.ts"
+      ],
+      "#zdq4d0mpbk55": [
+        "../../src/checks/rules/blank-lines/classify.ts"
+      ],
+      "#zirsz8l1awz2": [
+        "../../test/specs/sync/scss-imports.spec.ts"
+      ],
+      "#zqg5hww7g6g1": [
+        "../../src/checks/rules/dry/model.ts"
+      ]
+    }
+  }
+}

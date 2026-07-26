@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { checkCodeDiscipline, loadResolvedCodeDisciplineConfig } from "../../src/index.js";
+import { checkCodeDiscipline, loadResolvedCodeDisciplineConfig } from "#co5e63fhc1wb";
 import { tempProject, writeFile } from "./helpers.js";
 
 test("rejects removed enabled keys for line-limit rules", async () => {
@@ -111,7 +111,6 @@ test("rejects removed enabled key for prettier formatter", async () => {
 
   await expect(checkCodeDiscipline({
     projectRoot,
-    sourceRoot: ".",
     formatters: {
       prettier: {
         // @ts-expect-error presence enables prettier
@@ -284,6 +283,37 @@ test("rejects removed sourceExtensions config in favor of excludeSourceExtension
   });
 });
 
+test("rejects removed sourceRoot and top-level tsconfigPaths config", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
+  writeFile(projectRoot, "tsconfig.json", "{}\n");
+
+  await expect(checkCodeDiscipline({
+    projectRoot,
+    // @ts-expect-error removed config
+    sourceRoot: "src",
+    rules: {
+      maxFileLines: {
+        max: 5,
+      },
+    },
+  })).rejects.toThrow("sourceRoot is no longer supported; use ignore to narrow scanned files");
+
+  await expect(checkCodeDiscipline({
+    projectRoot,
+    // @ts-expect-error moved config
+    tsconfigPaths: {
+      normalize: "relative-dot-prefix",
+    },
+    rules: {
+      maxFileLines: {
+        max: 5,
+      },
+    },
+  })).rejects.toThrow("tsconfigPaths is no longer supported; use rules.syncImports.runtime instead");
+});
+
 test("rejects removed top-level excludeFolders and excludeDirs config in favor of ignore", async () => {
   const projectRoot = tempProject();
 
@@ -339,11 +369,10 @@ test("loads TypeScript config modules with relative local imports", async () => 
     "}",
     "",
   ].join("\n"));
-  writeFile(projectRoot, "code-discipline.ts", [
-    "import { defineLocalConfig } from \"./src/config-helper.js\";",
+  writeFile(projectRoot, ".code-discipline/config.ts", [
+    "import { defineLocalConfig } from \"../src/config-helper.js\";",
     "",
     "export default defineLocalConfig({",
-    "  sourceRoot: \"src\",",
     "  rules: {",
     "    maxFileLines: { max: 10 },",
     "  },",
@@ -354,13 +383,38 @@ test("loads TypeScript config modules with relative local imports", async () => 
   const loaded = await loadResolvedCodeDisciplineConfig(projectRoot);
 
   expect(loaded.config).toEqual({
-    sourceRoot: "src",
     rules: {
       maxFileLines: {
         max: 10,
       },
     },
   });
+});
+
+test("auto-discovers root code-discipline.config.ts", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "code-discipline.config.ts", [
+    "export default {",
+    "  rules: {",
+    "    maxFileLines: { max: 10 },",
+    "  },",
+    "};",
+    "",
+  ].join("\n"));
+
+  const loaded = await loadResolvedCodeDisciplineConfig(projectRoot);
+
+  expect(loaded.configPath).toBe(`${projectRoot}/code-discipline.config.ts`);
+  expect(loaded.config.rules?.maxFileLines?.max).toBe(10);
+});
+
+test("does not auto-discover old root code-discipline.ts config", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "code-discipline.ts", "export default { rules: {} };\n");
+
+  await expect(loadResolvedCodeDisciplineConfig(projectRoot)).rejects.toThrow("No code-discipline config module was found");
 });
 
 test("rejects removed keys for folderizeCompoundFiles", async () => {
@@ -427,4 +481,21 @@ test("rejects removed enabled and fix keys for syncImports", async () => {
   })).rejects.toMatchObject({
     code: "invalid_config",
   });
+});
+
+test("rejects removed syncImports output keys", async () => {
+  const projectRoot = tempProject();
+
+  writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
+
+  for (const key of ["sourceRoot", "tsconfigPath", "importsFolder", "generatedTsconfig", "packageJsonImports"] as const) {
+    await expect(checkCodeDiscipline({
+      projectRoot,
+      rules: {
+        syncImports: {
+          [key]: {},
+        },
+      },
+    })).rejects.toThrow(`syncImports.${key} is no longer supported`);
+  }
 });

@@ -1,6 +1,6 @@
 import ts from "typescript";
 
-import { stableSerialize } from "../../../../shared/utils.js";
+import { stableSerialize } from "#ntve5i5a0mol";
 
 type BehaviorExpression = unknown;
 

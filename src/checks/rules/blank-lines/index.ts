@@ -1,12 +1,12 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { parseSource } from "../../../imports/module-specifiers.js";
-import type { ScannedSourceFile } from "../../../imports/types.js";
-import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
-import { isTypeScriptFamilyExtension } from "../../../shared/languages.js";
-import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "../../progress.js";
-import type { FixCodeDisciplineRuleResult, NormalizedCheckCodeDisciplineOptions } from "../../types.js";
+import { parseSource } from "#27pccnhol1ci";
+import type { ScannedSourceFile } from "#pkb9x3eo56l7";
+import type { CodeDisciplineViolation } from "#bsmch74up4fm";
+import { isTypeScriptFamilyExtension } from "#87jyjzn68rrk";
+import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls019o";
+import type { FixCodeDisciplineRuleResult, NormalizedCheckCodeDisciplineOptions } from "#uqbg4indzud7";
 import { rewriteStructuralBlankLines } from "./rewrite.js";
 
 function createStructuralBlankLinesViolation(args: {

@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { checkCodeDiscipline } from "../../src/index.js";
+import { checkCodeDiscipline } from "#co5e63fhc1wb";
 import { fixAndRead, readFile, tempProject, writeFile } from "./helpers.js";
 
 test("inserts a blank line after imports before the first non-import statement", async () => {

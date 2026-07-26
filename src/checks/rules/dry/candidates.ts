@@ -3,10 +3,10 @@ import { performance } from "node:perf_hooks";
 
 import ts from "typescript";
 
-import { parseSource } from "../../../imports/module-specifiers.js";
-import type { ScannedSourceFile, SourceProgressObserver } from "../../../imports/types.js";
-import type { CodeDisciplineViolation } from "../../../shared/discipline-types.js";
-import type { NormalizedDryRule } from "../../types.js";
+import { parseSource } from "#27pccnhol1ci";
+import type { ScannedSourceFile, SourceProgressObserver } from "#pkb9x3eo56l7";
+import type { CodeDisciplineViolation } from "#bsmch74up4fm";
+import type { NormalizedDryRule } from "#uqbg4indzud7";
 import { createFunctionFingerprint, resolveClassification, resolveFunctionDisplayName } from "./fingerprint.js";
 import { collectDuplicateGroups } from "./matching.js";
 import type { DuplicateGroup } from "./matching.js";

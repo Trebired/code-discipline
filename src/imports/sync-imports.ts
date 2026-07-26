@@ -1,10 +1,10 @@
-import { normalizeSyncImportsOptions } from "../config/normalize/sync-imports-options.js";
-import { syncPackageJsonImportsFromAliasMap, syncPackageJsonImportsFromTsconfigPaths } from "../runtime/imports-sync.js";
-import { ruleLogGroup } from "../shared/log-groups.js";
-import { resolveLogger } from "../shared/logging.js";
-import { filterSourceFilesForRule } from "../shared/rule-exclusions.js";
-import { supportsSyncImports } from "../shared/languages.js";
-import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
+import { normalizeSyncImportsOptions } from "#9sccgd75qe7n";
+import { syncPackageJsonImportsFromAliasMap, syncPackageJsonImportsFromTsconfigPaths } from "#51kcncizdqcz";
+import { ruleLogGroup } from "#foa3t3ao5irq";
+import { resolveLogger } from "#5koja8ae2wwn";
+import { filterSourceFilesForRule } from "#jizekc8duh4i";
+import { supportsSyncImports } from "#87jyjzn68rrk";
+import type { CodeDisciplineViolation } from "#bsmch74up4fm";
 import { planTsconfigAliases, syncTsconfigAliases } from "./aliases.js";
 import { collectSyncImportViolations } from "./check-sync-imports.js";
 import { rewriteSourceImports } from "./rewrite.js";
@@ -66,12 +66,15 @@ async function applySyncFixes(
     ? await syncTsconfigAliases(normalized, sourceFiles, logger)
     : plannedAliases;
   const rewriteState = await rewriteSourceImports(sourceFiles, aliasState.aliasRecords, normalized, logger);
-  const packageJsonImportsState = normalized.importsFolder.enabled && aliasState.aliasPathMap
+  const packageJsonImportsState = normalized.output.type === "alias-map" && aliasState.aliasPathMap
     ? await syncPackageJsonImportsFromAliasMap({
       aliasPathMap: aliasState.aliasPathMap,
       cleanWhenDisabled: true,
       configPath: normalized.configPath,
-      options: normalized.packageJsonImports,
+      options: {
+        ...normalized.packageJsonImports,
+        enabled: false,
+      },
       projectRoot: normalized.projectRoot,
     })
     : await syncPackageJsonImportsFromTsconfigPaths({
@@ -112,6 +115,7 @@ async function syncImports(options: SyncImportsOptions | NormalizedSyncImportsOp
     projectRoot: normalized.projectRoot,
     sourceRoot: normalized.sourceRoot,
     tsconfigPath: normalized.tsconfigPath,
+    output: normalized.output.type,
     fix: normalized.fix,
   }, { group: ruleLogGroup("sync-imports") });
 

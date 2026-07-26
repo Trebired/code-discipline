@@ -6,10 +6,10 @@ import {
   nativeAddonCandidatePathsForCurrentPlatform,
   nativeBinaryBasenameForCurrentPlatform,
   resetNativeBindingForTests,
-} from "../../src/index.js";
-import { stripComments, stripCommentsJs } from "../../src/checks/rules/comments/stripping.js";
-import { scanSourceFiles } from "../../src/imports/scan.js";
-import type { SourceScanOptions } from "../../src/imports/types.js";
+} from "#co5e63fhc1wb";
+import { stripComments, stripCommentsJs } from "#wrl4xdfz9zg3";
+import { scanSourceFiles } from "#ua9whqppp94v";
+import type { SourceScanOptions } from "#pkb9x3eo56l7";
 import { tempProject, writeFile } from "./helpers.js";
 
 async function withNativeBackendToggle<T>(run: () => Promise<T> | T): Promise<T> {

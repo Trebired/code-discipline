@@ -1,15 +1,15 @@
 import path from "node:path";
 
-import { DEFAULT_EXCLUDE_DIRS, DEFAULT_SOURCE_EXTENSIONS, DEFAULT_SOURCE_ROOT } from "../../shared/constants.js";
-import { readGitignoreExcludedDirs, readGitignoreIgnorePatterns } from "../../shared/gitignore.js";
-import { InvalidCodeDisciplineConfigError, InvalidProjectRootError, InvalidSourceRootError } from "../../shared/errors.js";
-import { ensureDotExtension, isDirectory, isInsideDirectory, normalizeRelativePath, uniqueStrings } from "../../shared/utils.js";
+import { DEFAULT_EXCLUDE_DIRS, DEFAULT_SOURCE_EXTENSIONS, DEFAULT_SOURCE_ROOT } from "#ik5y0pee4ah1";
+import { readGitignoreExcludedDirs, readGitignoreIgnorePatterns } from "#0nr05vmcrtql";
+import { InvalidCodeDisciplineConfigError, InvalidProjectRootError, InvalidSourceRootError } from "#4f8hale01wb4";
+import { ensureDotExtension, isDirectory, isInsideDirectory, normalizeRelativePath, uniqueStrings } from "#ntve5i5a0mol";
 import type {
   CodeDisciplineIgnoreOptions,
   ExcludeDirEntry,
   NormalizedCodeDisciplineIgnore,
   SourceScanObserver,
-} from "../../imports/types.js";
+} from "#pkb9x3eo56l7";
 import {
   mergeExcludeDirEntries,
   normalizeExcludeDirEntries,
@@ -29,6 +29,12 @@ type NormalizedSourceOptions = {
 };
 
 function assertLegacySourceOptionsRemoved(source: Record<string, unknown>): void {
+  if ("sourceRoot" in source) {
+    throw new InvalidCodeDisciplineConfigError("sourceRoot is no longer supported; use ignore to narrow scanned files", {
+      key: "sourceRoot",
+    });
+  }
+
   if ("sourceExtensions" in source) {
     throw new InvalidCodeDisciplineConfigError("sourceExtensions is no longer supported; use excludeSourceExtensions", {
       key: "sourceExtensions",
@@ -110,7 +116,6 @@ async function readNormalizedGitignoreDirs(
 
 async function normalizeSourceOptions(options: {
   projectRoot: string;
-  sourceRoot?: string;
   excludeSourceExtensions?: string[];
   ignore?: CodeDisciplineIgnoreOptions;
   gitignorePath?: string;
@@ -124,7 +129,7 @@ async function normalizeSourceOptions(options: {
     throw new InvalidProjectRootError(projectRoot);
   }
 
-  const sourceRootInput = options.sourceRoot ?? DEFAULT_SOURCE_ROOT;
+  const sourceRootInput = DEFAULT_SOURCE_ROOT;
   const sourceRoot = resolveSourceRoot(projectRoot, sourceRootInput);
   if (!await isDirectory(sourceRoot) || !isInsideDirectory(sourceRoot, projectRoot)) {
     throw new InvalidSourceRootError(sourceRoot);

@@ -1,5 +1,5 @@
-import { InvalidCodeDisciplineConfigError } from "../../shared/errors.js";
-import type { LoggingOptions } from "../../shared/logging-types.js";
+import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
+import type { LoggingOptions } from "#uljkt8i26p4t";
 
 function normalizeLoggingOptions(options: LoggingOptions | undefined, label: string): LoggingOptions {
   const source = (options ?? {}) as Record<string, unknown>;

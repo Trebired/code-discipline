@@ -1,6 +1,6 @@
-import { InvalidCodeDisciplineConfigError } from "../../shared/errors.js";
-import { normalizeRelativePath, uniqueStrings } from "../../shared/utils.js";
-import type { ExcludeDirEntry, ExcludeDirEntryType } from "../../imports/types.js";
+import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
+import { normalizeRelativePath, uniqueStrings } from "#ntve5i5a0mol";
+import type { ExcludeDirEntry, ExcludeDirEntryType } from "#pkb9x3eo56l7";
 
 function assertRemovedExclusionKeys(source: Record<string, unknown>, label: string): void {
   for (const key of ["excludeFiles", "excludeFolders"] as const) {

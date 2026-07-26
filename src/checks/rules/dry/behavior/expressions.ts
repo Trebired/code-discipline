@@ -1,6 +1,6 @@
 import ts from "typescript";
 
-import { SAFE_GLOBAL_IDENTIFIERS } from "../serialize/context.js";
+import { SAFE_GLOBAL_IDENTIFIERS } from "#cbb7jrf5wadz";
 import type { BehaviorContext, BehaviorExpression } from "./model.js";
 import {
   isComparisonOperator,

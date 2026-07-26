@@ -1,7 +1,7 @@
 import { performance } from "node:perf_hooks";
 
-import type { SourceProgressObserver } from "../../../imports/types.js";
-import type { NormalizedDryRule } from "../../types.js";
+import type { SourceProgressObserver } from "#pkb9x3eo56l7";
+import type { NormalizedDryRule } from "#uqbg4indzud7";
 import type { DryFunctionDescriptor } from "./model.js";
 import {
   collectCandidateIndexes,

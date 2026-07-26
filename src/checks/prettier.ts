@@ -1,5 +1,5 @@
-import { runPrettierFormatter } from "../formatters/prettier.js";
-import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
+import { runPrettierFormatter } from "#dxx8c7gob0bd";
+import type { CodeDisciplineViolation } from "#bsmch74up4fm";
 import { shouldRunRule } from "./rule-slugs.js";
 import type {
   FixCodeDisciplineRuleResult,

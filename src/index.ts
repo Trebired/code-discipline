@@ -92,8 +92,11 @@ export type {
   SourceScanProgressEvent,
   SyncAliasesResult,
   SyncImportsOptions,
+  SyncImportsOutputOptions,
   SyncImportsResult,
   SyncImportsRuleOptions,
+  SyncImportsRuntimeNormalizeMode,
+  SyncImportsRuntimeOptions,
   TsconfigJson,
 } from "./imports/types.js";
 
@@ -122,7 +125,6 @@ export type {
   CodeDisciplineLifecycleContext,
   CodeDisciplineLifecycleHookResult,
   CodeDisciplineLifecycleHooks,
-  CodeDisciplinePackageJsonImportsOptions,
   CodeDisciplineCheckSelectorSlug,
   CodeDisciplineFormatterSlug,
   CodeDisciplineFormatters,
@@ -130,7 +132,6 @@ export type {
   CodeDisciplineRuntimeMode as SharedCodeDisciplineRuntimeMode,
   CodeDisciplineRules,
   CodeDisciplineSyncImportsRuleOptions,
-  CodeDisciplineTsconfigPathsOptions,
   DryRuleOptions,
   FixableRuleSlug,
   FixCodeDisciplineOptions,

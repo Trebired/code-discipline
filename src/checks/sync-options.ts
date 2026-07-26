@@ -1,9 +1,12 @@
 import path from "node:path";
 
-import { DEFAULT_SOURCE_EXTENSIONS } from "../shared/constants.js";
-import { ensureDotExtension, normalizeRelativePath, uniqueStrings } from "../shared/utils.js";
+import { DEFAULT_ALIAS_PREFIX, DEFAULT_SOURCE_EXTENSIONS } from "#ik5y0pee4ah1";
+import { ensureDotExtension, normalizeRelativePath, uniqueStrings } from "#ntve5i5a0mol";
 import type { CodeDisciplineSyncImportsRuleOptions, NormalizedCheckCodeDisciplineOptions } from "./types.js";
-import { mergeExcludeDirEntries } from "../config/normalize/exclusions.js";
+import { mergeExcludeDirEntries } from "#gqxxrd6ye9fj";
+
+const GENERATED_TSCONFIG_PATH = ".code-discipline/generated/tsconfig.paths.json";
+const IMPORTS_FOLDER_DIR = ".code-discipline/imports";
 
 function hasExplicitLogging(logging: CodeDisciplineSyncImportsRuleOptions["logging"]): boolean {
   return Boolean(logging?.adapter || logging?.logger);
@@ -16,10 +19,7 @@ async function buildNormalizedSyncOptions(
 ) {
   if (!rule) return null;
 
-  const sourceRootInput = rule.sourceRoot ?? options.sourceRoot;
-  const sourceRoot = path.isAbsolute(sourceRootInput)
-    ? path.resolve(sourceRootInput)
-    : path.resolve(options.projectRoot, sourceRootInput);
+  const sourceRoot = options.sourceRoot;
   const sourceRootRelative = normalizeRelativePath(path.relative(options.projectRoot, sourceRoot));
   const excludedSourceExtensions = rule.excludeSourceExtensions
     ? new Set(rule.excludeSourceExtensions.map(ensureDotExtension))
@@ -29,6 +29,15 @@ async function buildNormalizedSyncOptions(
     : options.sourceExtensions;
   const gitignorePath = rule.gitignorePath ?? options.gitignorePath;
   const excludeDirs = mergeExcludeDirEntries(options.excludeDirs, rule.excludeDirs ?? []);
+
+  const output = rule.output?.type === "alias-map"
+    ? {
+      type: "alias-map" as const,
+      dir: IMPORTS_FOLDER_DIR,
+      generatedTsconfigPath: GENERATED_TSCONFIG_PATH,
+      maxEntriesPerFile: Math.max(1, Math.floor(rule.output.maxEntriesPerFile ?? 1000)),
+    }
+    : { type: "project-manifests" as const };
 
   return {
     configPath: options.configPath,
@@ -41,7 +50,9 @@ async function buildNormalizedSyncOptions(
     gitignorePath,
     progressObserver: options.progressObserver,
     scanObserver: options.scanObserver,
-    tsconfigPath: rule.tsconfigPath ?? `${options.projectRoot}/tsconfig.json`,
+    tsconfigPath: rule.runtime?.tsconfigPath
+      ? path.resolve(options.projectRoot, rule.runtime.tsconfigPath)
+      : `${options.projectRoot}/tsconfig.json`,
     fix,
     alias: {
       prefix: rule.alias?.prefix ?? "#",
@@ -49,16 +60,12 @@ async function buildNormalizedSyncOptions(
       randomLength: rule.alias?.randomLength ?? 12,
     },
     allowRelative: rule.allowRelative ?? ["./"],
-    importsFolder: {
-      enabled: rule.importsFolder?.enabled ?? false,
-      dir: rule.importsFolder?.dir ?? "imports",
-      maxEntriesPerFile: Math.max(1, Math.floor(rule.importsFolder?.maxEntriesPerFile ?? 1000)),
+    output,
+    packageJsonImports: {
+      enabled: output.type === "project-manifests",
+      aliasPrefix: DEFAULT_ALIAS_PREFIX,
+      packageJsonPath: "package.json",
     },
-    generatedTsconfig: {
-      enabled: rule.generatedTsconfig?.enabled ?? rule.importsFolder?.enabled ?? false,
-      path: rule.generatedTsconfig?.path ?? ".code-discipline/generated/tsconfig.paths.json",
-    },
-    packageJsonImports: rule.packageJsonImports,
     logging: hasExplicitLogging(rule.logging) ? rule.logging : options.logging,
   };
 }

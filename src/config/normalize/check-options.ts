@@ -3,8 +3,8 @@ import type {
   CodeDisciplineMode,
   FixCodeDisciplineOptions,
   NormalizedCheckCodeDisciplineOptions,
-} from "../../checks/types.js";
-import { normalizeOnlyRules } from "../../checks/rule-slugs.js";
+} from "#uqbg4indzud7";
+import { normalizeOnlyRules } from "#ydyygm5y7vgb";
 import {
   normalizeBannedPatternsRule,
   normalizeBannedFilesRule,
@@ -20,7 +20,7 @@ import {
   normalizeSyncImportsRule,
 } from "./rule-options.js";
 import { normalizeFormatters } from "./formatter-options.js";
-import { InvalidCodeDisciplineConfigError } from "../../shared/errors.js";
+import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
 import { normalizeLoggingOptions } from "./logging-options.js";
 import { normalizeSourceOptions } from "./source-options.js";
 
@@ -28,6 +28,12 @@ function assertRemovedCheckOptions(options: Record<string, unknown>): void {
   if ("evasionGuards" in options) {
     throw new InvalidCodeDisciplineConfigError("evasionGuards is no longer supported; use rules.maxCharactersPerLine instead", {
       key: "evasionGuards",
+    });
+  }
+
+  if ("tsconfigPaths" in options) {
+    throw new InvalidCodeDisciplineConfigError("tsconfigPaths is no longer supported; use rules.syncImports.runtime instead", {
+      key: "tsconfigPaths",
     });
   }
 }

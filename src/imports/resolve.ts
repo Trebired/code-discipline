@@ -2,8 +2,8 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { NormalizedSyncImportsOptions } from "./types.js";
-import { isInsideDirectory } from "../shared/utils.js";
-import { isScssExtension } from "../shared/languages.js";
+import { isInsideDirectory } from "#ntve5i5a0mol";
+import { isScssExtension } from "#87jyjzn68rrk";
 
 type ResolveRelativeImportOptions = Pick<NormalizedSyncImportsOptions, "sourceExtensions" | "sourceRoot">;
 

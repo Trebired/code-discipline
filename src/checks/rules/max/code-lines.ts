@@ -1,4 +1,4 @@
-import { collectCommentRanges } from "../comments/ranges.js";
+import { collectCommentRanges } from "#9cs5z6nffer3";
 
 function countPhysicalLines(text: string): number {
   if (text.length === 0) return 0;

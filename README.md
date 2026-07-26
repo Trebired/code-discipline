@@ -84,11 +84,12 @@ Long check and fix runs emit chunked rule progress in the CLI, including current
 
 ## Config
 
-The CLI auto-discovers a top-level config module in this order:
+The CLI auto-discovers config modules in this order:
 
-- `code-discipline.ts`
+- `code-discipline.config.ts`
+- `.code-discipline/config.ts`
 
-`code-discipline.ts` is the only auto-discovered config filename.
+Those are the only auto-discovered config filenames.
 
 You can still point at an explicit module path:
 
@@ -96,19 +97,18 @@ You can still point at an explicit module path:
 code-discipline check --config ./discipline.config.mjs
 ```
 
-Legacy config filenames are no longer auto-discovered, but they still work when passed explicitly with `--config`.
+Other config filenames are not auto-discovered, but they still work when passed explicitly with `--config`.
 
 Rules are enabled by presence. If a rule object exists under `rules`, it runs.
 
 Rule severity is optional and now supports only `severity: "warning" | "fail"`. If omitted, the default is `fail`.
 
-Example `code-discipline.ts`:
+Example `code-discipline.config.ts` or `.code-discipline/config.ts`:
 
 ```ts
 import { defineCodeDisciplineConfig } from "@trebired/code-discipline";
 
 export default defineCodeDisciplineConfig({
-  sourceRoot: "src",
   excludeSourceExtensions: [".scss"],
   ignore: {
     entries: [
@@ -118,10 +118,6 @@ export default defineCodeDisciplineConfig({
       { type: "file", pattern: "*.min.css" },
     ],
     use_gitignore: true,
-  },
-  tsconfigPaths: {
-    normalize: "relative-dot-prefix",
-    restoreAfterRun: true,
   },
   lifecycle: {
     async beforeRun(context) {
@@ -181,18 +177,13 @@ export default defineCodeDisciplineConfig({
         strategy: "relative-path-slug",
       },
       allowRelative: ["./"],
-      importsFolder: {
-        enabled: true,
-        dir: "imports",
+      output: {
+        type: "alias-map",
         maxEntriesPerFile: 1000,
       },
-      generatedTsconfig: {
-        enabled: true,
-        path: ".code-discipline/generated/tsconfig.paths.json",
-      },
-      packageJsonImports: {
-        enabled: false,
-        aliasPrefix: "#",
+      runtime: {
+        normalize: "relative-dot-prefix",
+        restoreAfterRun: true,
       },
     },
     dry: {
@@ -214,8 +205,6 @@ Example scan configuration:
 
 ```ts
 export default defineCodeDisciplineConfig({
-  sourceRoot: "src",
-
   // Skip specific built-in file types when needed.
   excludeSourceExtensions: [".scss"],
 
@@ -271,7 +260,7 @@ Formatter selectors such as `prettier` are enabled by top-level `formatters` con
 
 Formatters are configured at top level under `formatters`, not under `rules`. Presence enables a formatter; there is no `enabled: true` key.
 
-`formatters.prettier` uses Prettier as the formatting engine and keeps `code-discipline.ts` as the formatting policy source. `check prettier` validates formatting without modifying files, while `fix prettier` writes formatted files. Running `code-discipline fix` with no selectors runs configured Prettier formatting last after structural, import, comment, and blank-line fixes. Set `formatters.prettier.ignore: true` to reuse the shared top-level `ignore`.
+`formatters.prettier` uses Prettier as the formatting engine and keeps `.code-discipline/config.ts` as the formatting policy source. `check prettier` validates formatting without modifying files, while `fix prettier` writes formatted files. Running `code-discipline fix` with no selectors runs configured Prettier formatting last after structural, import, comment, and blank-line fixes. Set `formatters.prettier.ignore: true` to reuse the shared top-level `ignore`.
 
 Example:
 
@@ -322,7 +311,6 @@ You can also bind config once:
 import { createCodeDiscipline } from "@trebired/code-discipline";
 
 const discipline = createCodeDiscipline({
-  sourceRoot: "src",
   rules: {
     bannedPatterns: {
       patterns: [
@@ -439,14 +427,14 @@ Validates and optionally fixes:
 
 - `tsconfig.compilerOptions.paths`
 - relative source imports that should become aliases
-- optional `package.json#imports` drift through `packageJsonImports`
-- optional folder-backed alias maps through `importsFolder`
+- `project-manifests` output drift in root `tsconfig.json` and `package.json#imports`
+- `alias-map` output drift in `.code-discipline/imports/*.json` and the generated tsconfig projection
 
-`syncImports` rewrites JavaScript, TypeScript, and SCSS module specifiers. Mixed-language repositories can still include Go and Rust under the same `sourceRoot`; those files are ignored by alias syncing instead of causing parser failures.
+`syncImports` rewrites JavaScript, TypeScript, and SCSS module specifiers. Mixed-language repositories can still include Go and Rust; those files are ignored by alias syncing instead of causing parser failures.
 
 When `syncImports` sees a relative import that resolves nowhere, check mode reports it. Fix mode removes safe line-isolated static import/export declarations and Sass `@use`, `@forward`, or single-specifier quoted `@import` directives. Dynamic `import(...)`, comments, strings, CSS `url(...)`, and arbitrary CSS values are left alone.
 
-When `importsFolder.enabled` is true, sorted JSON files such as `imports/1.json` become the alias source of truth. `code-discipline fix` migrates root `tsconfig.json` paths and managed `package.json#imports` entries into that folder, splits entries by `maxEntriesPerFile`, recreates the generated tsconfig projection, removes inline root `compilerOptions.paths`, and makes root `tsconfig.json` extend the generated file. Keep `packageJsonImports.enabled` false for dev-only aliases; set it true for dist/runtime workflows that need Node package imports materialized.
+The default `output: { type: "project-manifests" }` writes aliases directly into root `tsconfig.json` and mirrors them into `package.json#imports`. `output: { type: "alias-map" }` uses `.code-discipline/imports/*.json` as the alias source of truth, writes `.code-discipline/generated/tsconfig.paths.json`, makes root `tsconfig.json` extend the generated file, and removes managed project-manifest alias state. `code-discipline fix sync-imports` migrates both directions when the configured output model changes.
 
 Top-level `ignore` groups shared scan and formatter exclusions in one place, so you can add explicit entries through `ignore.entries` and opt into root `.gitignore` entries through `ignore.use_gitignore`.
 
@@ -562,12 +550,16 @@ The hook context includes:
 
 ## Tsconfig Path Normalization
 
-Use `tsconfigPaths` when a run needs temporary `compilerOptions.paths` normalization:
+Use `rules.syncImports.runtime` when a run needs temporary `compilerOptions.paths` normalization:
 
 ```ts
-tsconfigPaths: {
-  normalize: "relative-dot-prefix",
-  restoreAfterRun: true,
+rules: {
+  syncImports: {
+    runtime: {
+      normalize: "relative-dot-prefix",
+      restoreAfterRun: true,
+    },
+  },
 }
 ```
 

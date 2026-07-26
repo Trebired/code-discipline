@@ -2,9 +2,9 @@ import type {
   CodeDisciplineFormatters,
   NormalizedPrettierFormatter,
   PrettierFormatterOptions,
-} from "../../checks/types.js";
-import { InvalidCodeDisciplineConfigError } from "../../shared/errors.js";
-import { normalizeRelativePath, uniqueStrings } from "../../shared/utils.js";
+} from "#uqbg4indzud7";
+import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
+import { normalizeRelativePath, uniqueStrings } from "#ntve5i5a0mol";
 
 const DEFAULT_PRETTIER_TARGETS = ["."];
 

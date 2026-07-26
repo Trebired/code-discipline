@@ -5,7 +5,8 @@ import type {
   CodeDisciplineLifecycleHooks,
   CodeDisciplineRuntimeMode,
   FixCodeDisciplineResult,
-} from "../checks/types.js";
+} from "#uqbg4indzud7";
+import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
 import { prepareTsconfigPaths, restoreTsconfigPaths } from "./tsconfig-paths.js";
 
 type CodeDisciplineOrchestratorOptions = {
@@ -52,9 +53,15 @@ async function orchestrateCodeDisciplineRun(
     projectRoot: options.projectRoot,
   });
   const lifecycle: CodeDisciplineLifecycleHooks | undefined = options.config.lifecycle;
+  if ("tsconfigPaths" in (options.config as Record<string, unknown>)) {
+    throw new InvalidCodeDisciplineConfigError("tsconfigPaths is no longer supported; use rules.syncImports.runtime instead", {
+      key: "tsconfigPaths",
+    });
+  }
+
   const preparedTsconfigPaths = await prepareTsconfigPaths(
     options.projectRoot,
-    options.config.tsconfigPaths,
+    options.config.rules?.syncImports?.runtime,
     options.mode,
   );
 

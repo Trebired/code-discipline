@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { expect, mock, spyOn, test } from "bun:test";
 
-import { syncImports } from "../../src/index.js";
+import { syncImports } from "#co5e63fhc1wb";
 import { captureCallbackLogger, readJson, tempProject, writeFile } from "./helpers.js";
 
 function mockTsconfigReads(tsconfigPath: string, brokenReads: number) {
@@ -49,7 +49,7 @@ test.serial("retries transiently broken tsconfig reads during initialization", a
   const tsconfig = readJson(projectRoot, "tsconfig.json");
   expect(tsconfig.compilerOptions).toEqual({
     paths: {
-      "#app": ["./src/app.ts"],
+      "#src-app": ["./src/app.ts"],
     },
     strict: true,
   });

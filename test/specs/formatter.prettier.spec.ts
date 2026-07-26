@@ -1,13 +1,12 @@
 import { expect, test } from "bun:test";
 
-import { checkCodeDiscipline, fixCodeDiscipline } from "../../src/index.js";
-import { runCli } from "../../src/cli.js";
+import { checkCodeDiscipline, fixCodeDiscipline } from "#co5e63fhc1wb";
+import { runCli } from "#9al58tn2ibde";
 import { readFile, tempProject, writeFile } from "./helpers.js";
 
 function writePrettierConfig(projectRoot: string): void {
-  writeFile(projectRoot, "code-discipline.ts", [
+  writeFile(projectRoot, ".code-discipline/config.ts", [
     "export default {",
-    "  sourceRoot: '.',",
     "  ignore: {",
     "    entries: [{ type: 'folder', pattern: 'ignored' }],",
     "    use_gitignore: false,",
@@ -36,7 +35,6 @@ test("check prettier reports files that need formatting", async () => {
 
   const result = await checkCodeDiscipline({
     projectRoot,
-    sourceRoot: ".",
     onlyRules: ["prettier"],
     formatters: {
       prettier: {
@@ -69,7 +67,6 @@ test("fix prettier formats configured targets and honors ignore patterns", async
 
   const result = await fixCodeDiscipline({
     projectRoot,
-    sourceRoot: ".",
     ignore: {
       entries: [
         { type: "folder", pattern: "ignored" },
@@ -107,7 +104,6 @@ test("prettier ignore can reuse code-discipline ignore and gitignore patterns", 
 
   const result = await fixCodeDiscipline({
     projectRoot,
-    sourceRoot: ".",
     ignore: {
       entries: [
         { type: "folder", pattern: "ignored" },
@@ -143,7 +139,6 @@ test("prettier ignore false does not reuse code-discipline ignore", async () => 
 
   const result = await fixCodeDiscipline({
     projectRoot,
-    sourceRoot: ".",
     ignore: {
       entries: [
         { type: "folder", pattern: "ignored" },
@@ -175,7 +170,6 @@ test("plain fix runs prettier after configured structural fixes", async () => {
 
   const result = await fixCodeDiscipline({
     projectRoot,
-    sourceRoot: ".",
     formatters: {
       prettier: {
         targets: ["."],

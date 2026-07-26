@@ -1,4 +1,4 @@
-import { InvalidCodeDisciplineConfigError } from "../shared/errors.js";
+import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
 import type {
   CodeDisciplineMode,
   CodeDisciplineFormatters,

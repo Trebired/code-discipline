@@ -1,11 +1,11 @@
 import fs from "node:fs/promises";
 
-import type { ScannedSourceFile } from "../../imports/types.js";
-import type { CodeDisciplineViolation } from "../../shared/discipline-types.js";
-import { loadNativeBinding } from "../../native/native.js";
-import { supportsRemoveComments } from "../../shared/languages.js";
-import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "../progress.js";
-import type { FixCodeDisciplineRuleResult, NormalizedCheckCodeDisciplineOptions } from "../types.js";
+import type { ScannedSourceFile } from "#pkb9x3eo56l7";
+import type { CodeDisciplineViolation } from "#bsmch74up4fm";
+import { loadNativeBinding } from "#q6u4pcd984qa";
+import { supportsRemoveComments } from "#87jyjzn68rrk";
+import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls019o";
+import type { FixCodeDisciplineRuleResult, NormalizedCheckCodeDisciplineOptions } from "#uqbg4indzud7";
 import { stripComments } from "./comments/stripping.js";
 
 function createRemoveCommentsViolation(args: {

@@ -1,6 +1,6 @@
 import ts from "typescript";
 
-import { isGoExtension, isRustExtension, isStyleExtension, isTypeScriptFamilyExtension } from "../../../shared/languages.js";
+import { isGoExtension, isRustExtension, isStyleExtension, isTypeScriptFamilyExtension } from "#87jyjzn68rrk";
 
 type CommentKind = "line" | "block";
 

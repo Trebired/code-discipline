@@ -5,17 +5,17 @@ import type {
   FixCodeDisciplineResult,
   NormalizedCheckCodeDisciplineOptions,
 } from "./types.js";
-import type { ScannedSourceFile } from "../imports/types.js";
-import { ruleLogGroup } from "../shared/log-groups.js";
-import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
-import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
-import { removeEmptyDirectories } from "../shared/directories.js";
-import { formatRelativeSpecifier } from "../imports/format.js";
-import { applyTextReplacements, collectModuleSpecifiers } from "../imports/module-specifiers.js";
-import { isRelativeImportSpecifier } from "../imports/resolve.js";
-import { supportsFolderizationFix } from "../shared/languages.js";
-import { FileConflictError, FixFailureError, RewriteFailureError } from "../shared/errors.js";
-import { ensureDotExtension, pathExists } from "../shared/utils.js";
+import type { ScannedSourceFile } from "#pkb9x3eo56l7";
+import { ruleLogGroup } from "#foa3t3ao5irq";
+import type { NormalizedCodeDisciplineLogger } from "#uljkt8i26p4t";
+import type { CodeDisciplineViolation } from "#bsmch74up4fm";
+import { removeEmptyDirectories } from "#2gohqj1pb29e";
+import { formatRelativeSpecifier } from "#r4k0t5wqgwq6";
+import { applyTextReplacements, collectModuleSpecifiers } from "#27pccnhol1ci";
+import { isRelativeImportSpecifier } from "#ay5rr8vjr5fh";
+import { supportsFolderizationFix } from "#87jyjzn68rrk";
+import { FileConflictError, FixFailureError, RewriteFailureError } from "#4f8hale01wb4";
+import { ensureDotExtension, pathExists } from "#ntve5i5a0mol";
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "./progress.js";
 import { planFolderizeCompoundFiles } from "./rules/folderize/plan.js";
 

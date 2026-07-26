@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 
 import type { CliLogContext } from "./logging.js";
-import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
+import type { CodeDisciplineViolation } from "#bsmch74up4fm";
 
 type CliOutputWriter = (text: string, context?: CliLogContext) => void;
 

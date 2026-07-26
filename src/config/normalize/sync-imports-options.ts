@@ -6,12 +6,15 @@ import {
   DEFAULT_ALIAS_STRATEGY,
   DEFAULT_ALLOW_RELATIVE,
   DEFAULT_RULE_FIX,
-} from "../../shared/constants.js";
-import { InvalidCodeDisciplineConfigError, InvalidTsconfigPathError } from "../../shared/errors.js";
-import type { NormalizedSyncImportsOptions, SyncImportsOptions } from "../../imports/types.js";
-import { isDirectory } from "../../shared/utils.js";
+} from "#ik5y0pee4ah1";
+import { InvalidCodeDisciplineConfigError, InvalidTsconfigPathError } from "#4f8hale01wb4";
+import type { NormalizedSyncImportsOptions, SyncImportsOptions } from "#pkb9x3eo56l7";
+import { isDirectory } from "#ntve5i5a0mol";
 import { normalizeLoggingOptions } from "./logging-options.js";
 import { normalizeSourceOptions } from "./source-options.js";
+
+const GENERATED_TSCONFIG_PATH = ".code-discipline/generated/tsconfig.paths.json";
+const IMPORTS_FOLDER_DIR = ".code-discipline/imports";
 
 function assertValidSyncImportsOptions(options: SyncImportsOptions): void {
   if ("imports" in (options as Record<string, unknown>)) {
@@ -20,7 +23,7 @@ function assertValidSyncImportsOptions(options: SyncImportsOptions): void {
     });
   }
 
-  for (const key of ["enabled", "stop", "rewrite", "keepRelative"] as const) {
+  for (const key of ["enabled", "stop", "rewrite", "keepRelative", "sourceRoot", "tsconfigPath", "importsFolder", "generatedTsconfig", "packageJsonImports"] as const) {
     if (key in (options as Record<string, unknown>)) {
       throw new InvalidCodeDisciplineConfigError(`syncImports.${key} is no longer supported`, {
         key,
@@ -49,17 +52,47 @@ function assertValidSyncImportsOptions(options: SyncImportsOptions): void {
   }
 }
 
+function normalizeOutput(output: SyncImportsOptions["output"]): NormalizedSyncImportsOptions["output"] {
+  if (output === undefined) return { type: "project-manifests" };
+
+  if (!output || typeof output !== "object" || Array.isArray(output)) {
+    throw new InvalidCodeDisciplineConfigError("syncImports.output must be an object when provided", {
+      key: "output",
+      value: output,
+    });
+  }
+
+  const type = (output as { type?: unknown }).type;
+  if (type === undefined || type === "project-manifests") {
+    return { type: "project-manifests" };
+  }
+
+  if (type === "alias-map") {
+    return {
+      type: "alias-map",
+      dir: IMPORTS_FOLDER_DIR,
+      generatedTsconfigPath: GENERATED_TSCONFIG_PATH,
+      maxEntriesPerFile: Math.max(1, Math.floor((output as { maxEntriesPerFile?: number }).maxEntriesPerFile ?? 1000)),
+    };
+  }
+
+  throw new InvalidCodeDisciplineConfigError('syncImports.output.type must be "project-manifests" or "alias-map"', {
+    key: "output.type",
+    value: type,
+  });
+}
+
 async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise<NormalizedSyncImportsOptions> {
   assertValidSyncImportsOptions(options);
 
   const source = await normalizeSourceOptions(options);
-  const tsconfigInput = options.tsconfigPath ?? path.join(source.projectRoot, "tsconfig.json");
+  const tsconfigInput = options.runtime?.tsconfigPath ?? path.join(source.projectRoot, "tsconfig.json");
   const tsconfigPath = path.isAbsolute(tsconfigInput) ? path.resolve(tsconfigInput) : path.resolve(source.projectRoot, tsconfigInput);
   if (!await isDirectory(path.dirname(tsconfigPath))) {
     throw new InvalidTsconfigPathError(tsconfigPath);
   }
 
-  const importsFolderEnabled = options.importsFolder?.enabled ?? false;
+  const output = normalizeOutput(options.output);
 
   return {
     ...source,
@@ -72,16 +105,12 @@ async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise
       randomLength: Math.max(1, Math.floor(options.alias?.randomLength ?? DEFAULT_ALIAS_RANDOM_LENGTH)),
     },
     allowRelative: options.allowRelative ?? DEFAULT_ALLOW_RELATIVE,
-    importsFolder: {
-      enabled: importsFolderEnabled,
-      dir: options.importsFolder?.dir ?? "imports",
-      maxEntriesPerFile: Math.max(1, Math.floor(options.importsFolder?.maxEntriesPerFile ?? 1000)),
+    output,
+    packageJsonImports: {
+      enabled: output.type === "project-manifests",
+      aliasPrefix: DEFAULT_ALIAS_PREFIX,
+      packageJsonPath: "package.json",
     },
-    generatedTsconfig: {
-      enabled: options.generatedTsconfig?.enabled ?? importsFolderEnabled,
-      path: options.generatedTsconfig?.path ?? ".code-discipline/generated/tsconfig.paths.json",
-    },
-    packageJsonImports: options.packageJsonImports,
     logging: normalizeLoggingOptions(options.logging, "logging"),
     progressObserver: options.progressObserver,
   };

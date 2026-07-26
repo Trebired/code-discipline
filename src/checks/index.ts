@@ -1,12 +1,12 @@
 import { result as createResult } from "@trebired/result";
 
-import { normalizeCheckCodeDisciplineOptions } from "../config/normalize/check-options.js";
-import { collectSyncImportViolations } from "../imports/check-sync-imports.js";
-import { scanSourceFiles } from "../imports/scan.js";
-import { runLogGroup } from "../shared/log-groups.js";
-import { resolveLogger } from "../shared/logging.js";
-import { filterSourceFilesForRule } from "../shared/rule-exclusions.js";
-import type { CodeDisciplineResult, CodeDisciplineViolation } from "../shared/discipline-types.js";
+import { normalizeCheckCodeDisciplineOptions } from "#x458f9t6w4a6";
+import { collectSyncImportViolations } from "#ymdyths4ukwp";
+import { scanSourceFiles } from "#ua9whqppp94v";
+import { runLogGroup } from "#foa3t3ao5irq";
+import { resolveLogger } from "#5koja8ae2wwn";
+import { filterSourceFilesForRule } from "#jizekc8duh4i";
+import type { CodeDisciplineResult, CodeDisciplineViolation } from "#bsmch74up4fm";
 import {
   applyBannedFilesFix,
   applyFolderizeFix,

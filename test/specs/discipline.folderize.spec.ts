@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { checkCodeDiscipline } from "../../src/index.js";
+import { checkCodeDiscipline } from "#co5e63fhc1wb";
 import { tempProject, writeFile } from "./helpers.js";
 
 test("detects same-directory compound groups", async () => {

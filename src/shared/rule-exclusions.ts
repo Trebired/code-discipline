@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import type { ExcludeDirEntry, ScannedSourceFile } from "../imports/types.js";
+import type { ExcludeDirEntry, ScannedSourceFile } from "#pkb9x3eo56l7";
 import { matchesGlob } from "./globs.js";
 import { normalizeRelativePath } from "./utils.js";
 

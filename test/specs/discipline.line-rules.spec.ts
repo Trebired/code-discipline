@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-import { checkCodeDiscipline, fixCodeDiscipline } from "../../src/index.js";
+import { checkCodeDiscipline, fixCodeDiscipline } from "#co5e63fhc1wb";
 import { expectedViolationResult, tempProject, writeFile } from "./helpers.js";
 
 test("reports files with one or fewer code lines through min-file-lines", async () => {

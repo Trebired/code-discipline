@@ -1,11 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "../checks/progress.js";
-import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
-import type { CodeDisciplineViolation } from "../shared/discipline-types.js";
-import { collectPackageJsonImportsSyncState, collectPackageJsonImportsSyncStateFromAliasMap } from "../runtime/imports-sync.js";
-import { supportsSyncImports } from "../shared/languages.js";
+import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls019o";
+import type { NormalizedCodeDisciplineLogger } from "#uljkt8i26p4t";
+import type { CodeDisciplineViolation } from "#bsmch74up4fm";
+import { collectPackageJsonImportsSyncState, collectPackageJsonImportsSyncStateFromAliasMap } from "#51kcncizdqcz";
+import { supportsSyncImports } from "#87jyjzn68rrk";
 import { planTsconfigAliases } from "./aliases.js";
 import { collectModuleSpecifiers } from "./module-specifiers.js";
 import { resolveRelativeImport } from "./resolve.js";
@@ -31,10 +31,8 @@ async function collectSyncImportViolations(
     violations.push({
       rule: "sync-imports",
       fix: true,
-      filePath: options.importsFolder.enabled
-        ? path.relative(options.projectRoot, options.tsconfigPath) || "tsconfig.json"
-        : path.relative(options.projectRoot, options.tsconfigPath) || "tsconfig.json",
-      message: options.importsFolder.enabled
+      filePath: path.relative(options.projectRoot, options.tsconfigPath) || "tsconfig.json",
+      message: options.output.type === "alias-map"
         ? "imports folder and generated tsconfig are out of sync"
         : "tsconfig paths are out of sync with the current source tree",
       details: {
@@ -44,12 +42,15 @@ async function collectSyncImportViolations(
     });
   }
 
-  const packageJsonSyncState = options.importsFolder.enabled && aliasPlan.aliasPathMap
+  const packageJsonSyncState = options.output.type === "alias-map" && aliasPlan.aliasPathMap
     ? await collectPackageJsonImportsSyncStateFromAliasMap({
       aliasPathMap: aliasPlan.aliasPathMap,
       cleanWhenDisabled: true,
       configPath: options.configPath,
-      options: options.packageJsonImports,
+      options: {
+        ...options.packageJsonImports,
+        enabled: false,
+      },
       projectRoot: options.projectRoot,
     })
     : await collectPackageJsonImportsSyncState({

@@ -33,7 +33,7 @@ test("default cli output routes warning violations through warning level", async
   const projectRoot = tempProject();
 
   writeFile(projectRoot, "src/app.spec.ts", "export const covered = true;\n");
-  writeFile(projectRoot, "code-discipline.ts", [
+  writeFile(projectRoot, ".code-discipline/config.ts", [
     "export default {",
     "  rules: {",
     "    bannedFiles: {",
@@ -63,7 +63,7 @@ test("default cli output routes passing summaries through success level", async 
   const projectRoot = tempProject();
 
   writeFile(projectRoot, "src/app.ts", "export const app = true;\n");
-  writeFile(projectRoot, "code-discipline.ts", [
+  writeFile(projectRoot, ".code-discipline/config.ts", [
     "export default {",
     "  rules: {",
     "    maxFileLines: { max: 10 },",

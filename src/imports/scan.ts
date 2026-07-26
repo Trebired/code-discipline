@@ -10,9 +10,9 @@ import type {
   SourceScanCompletedEvent,
   SourceScanOptions,
 } from "./types.js";
-import { loadNativeBinding } from "../native/native.js";
-import { matchesGlob } from "../shared/globs.js";
-import { normalizeRelativePath, toPosixPath, uniqueStrings } from "../shared/utils.js";
+import { loadNativeBinding } from "#q6u4pcd984qa";
+import { matchesGlob } from "#49ihfa399fpp";
+import { normalizeRelativePath, toPosixPath, uniqueStrings } from "#ntve5i5a0mol";
 
 type DirectoryTask = {
   absolutePath: string;

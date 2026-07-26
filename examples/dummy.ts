@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { syncImports } from "../src/index.js";
+import { syncImports } from "#co5e63fhc1wb";
 
 function writeDemoFile(rootDir: string, relativePath: string, contents: string): void {
   const destination = path.resolve(rootDir, relativePath);

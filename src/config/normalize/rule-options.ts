@@ -1,8 +1,8 @@
 import {
   DEFAULT_ALLOW_RELATIVE,
   DEFAULT_FOLDERIZE_COMPOUND_FILE_SEPARATORS,
-} from "../../shared/constants.js";
-import { InvalidCodeDisciplineConfigError } from "../../shared/errors.js";
+} from "#ik5y0pee4ah1";
+import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
 import type {
   BannedPatternsRuleOptions,
   BannedFilesRuleOptions,
@@ -19,8 +19,8 @@ import type {
   NormalizedDryRule,
   RemoveCommentsRuleOptions,
   StructuralBlankLinesRuleOptions,
-} from "../../checks/types.js";
-import { normalizeRelativePath, uniqueStrings } from "../../shared/utils.js";
+} from "#uqbg4indzud7";
+import { normalizeRelativePath, uniqueStrings } from "#ntve5i5a0mol";
 import { normalizeRuleExclusions } from "./exclusions.js";
 import { normalizeLoggingOptions } from "./logging-options.js";
 
@@ -250,10 +250,50 @@ function normalizeFolderizeCompoundFilesRule(rule: FolderizeCompoundFilesRuleOpt
   };
 }
 
+function normalizeSyncImportsOutput(output: CodeDisciplineSyncImportsRuleOptions["output"]): CodeDisciplineSyncImportsRuleOptions["output"] {
+  if (output === undefined) return undefined;
+
+  if (!output || typeof output !== "object" || Array.isArray(output)) {
+    throw new InvalidCodeDisciplineConfigError("syncImports.output must be an object when provided", {
+      rule: "syncImports",
+      key: "output",
+      value: output,
+    });
+  }
+
+  const type = (output as { type?: unknown }).type;
+  if (type === undefined || type === "project-manifests") {
+    return { type: "project-manifests" };
+  }
+
+  if (type === "alias-map") {
+    return {
+      type: "alias-map",
+      maxEntriesPerFile: (output as { maxEntriesPerFile?: number }).maxEntriesPerFile,
+    };
+  }
+
+  throw new InvalidCodeDisciplineConfigError('syncImports.output.type must be "project-manifests" or "alias-map"', {
+    rule: "syncImports",
+    key: "output.type",
+    value: type,
+  });
+}
+
 function normalizeSyncImportsRule(rule: CodeDisciplineSyncImportsRuleOptions | undefined) {
   if (!rule) return undefined;
   const source = (rule ?? {}) as Record<string, unknown>;
-  assertRemovedKeys("syncImports", source, ["enabled", "stop", "rewrite", "keepRelative"]);
+  assertRemovedKeys("syncImports", source, [
+    "enabled",
+    "stop",
+    "rewrite",
+    "keepRelative",
+    "sourceRoot",
+    "tsconfigPath",
+    "importsFolder",
+    "generatedTsconfig",
+    "packageJsonImports",
+  ]);
 
   if ("imports" in source) {
     throw new InvalidCodeDisciplineConfigError("syncImports.imports is no longer supported; use allowRelative directly under syncImports", {
@@ -270,16 +310,13 @@ function normalizeSyncImportsRule(rule: CodeDisciplineSyncImportsRuleOptions | u
   }
 
   return {
-    sourceRoot: rule?.sourceRoot,
-    tsconfigPath: rule?.tsconfigPath,
     excludeSourceExtensions: rule?.excludeSourceExtensions,
     gitignorePath: rule?.gitignorePath,
     alias: rule?.alias,
     allowRelative: rule?.allowRelative ?? DEFAULT_ALLOW_RELATIVE,
     ...normalizeRuleExclusions("syncImports", source),
-    importsFolder: rule?.importsFolder,
-    generatedTsconfig: rule?.generatedTsconfig,
-    packageJsonImports: rule?.packageJsonImports,
+    output: normalizeSyncImportsOutput(rule.output),
+    runtime: rule.runtime,
     logging: normalizeLoggingOptions(rule?.logging, "syncImports.logging"),
     severity: normalizeSeverity(rule.severity, "syncImports"),
   };

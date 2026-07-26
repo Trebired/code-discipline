@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 
-import { checkCodeDiscipline, fixCodeDiscipline } from "../../src/index.js";
-import type { SourceProgressEvent } from "../../src/index.js";
+import { checkCodeDiscipline, fixCodeDiscipline } from "#co5e63fhc1wb";
+import type { SourceProgressEvent } from "#co5e63fhc1wb";
 import { fileExists, tempProject, writeFile } from "./helpers.js";
 
 test("emits chunked progress while checking configured rules", async () => {

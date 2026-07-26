@@ -1,11 +1,10 @@
 import { expect, test } from "bun:test";
 
-import { checkCodeDiscipline, defineCodeDisciplineConfig } from "../../src/index.js";
+import { checkCodeDiscipline, defineCodeDisciplineConfig } from "#co5e63fhc1wb";
 import { captureTrebiredLogger, expectedViolationResult, tempProject, writeFile } from "./helpers.js";
 
 test("exports defineCodeDisciplineConfig as an identity helper", () => {
   const config = defineCodeDisciplineConfig({
-    sourceRoot: "src",
     rules: {
       maxFileLines: {
         max: 500,
@@ -14,7 +13,6 @@ test("exports defineCodeDisciplineConfig as an identity helper", () => {
   });
 
   expect(config).toEqual({
-    sourceRoot: "src",
     rules: {
       maxFileLines: {
         max: 500,

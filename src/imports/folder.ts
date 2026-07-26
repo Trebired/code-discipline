@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 
-import { collectPackageJsonAliasImports } from "../runtime/imports-sync.js";
+import { collectPackageJsonAliasImports } from "#51kcncizdqcz";
 import {
   isInsideDirectory,
   normalizeDotPrefixedTarget,
@@ -10,7 +10,7 @@ import {
   stableSerialize,
   toPosixPath,
   toStableJson,
-} from "../shared/utils.js";
+} from "#ntve5i5a0mol";
 import { generateAliasId } from "./strategies.js";
 import { resolveProjectPathTarget } from "./resolve.js";
 import { readTsconfig } from "./aliases.js";
@@ -21,7 +21,10 @@ import type {
   SyncAliasesResult,
   TsconfigJson,
 } from "./types.js";
-import type { NormalizedCodeDisciplineLogger } from "../shared/logging-types.js";
+import type { NormalizedCodeDisciplineLogger } from "#uljkt8i26p4t";
+
+const IMPORTS_FOLDER_DIR = ".code-discipline/imports";
+const GENERATED_TSCONFIG_PATH = ".code-discipline/generated/tsconfig.paths.json";
 
 type ImportsFolderState = {
   entryCounts: Array<{ filePath: string; count: number }>;
@@ -30,12 +33,12 @@ type ImportsFolderState = {
 };
 
 function resolveImportsFolderPath(options: NormalizedSyncImportsOptions): string {
-  const input = options.importsFolder.dir;
+  const input = options.output.type === "alias-map" ? options.output.dir : IMPORTS_FOLDER_DIR;
   return path.isAbsolute(input) ? path.resolve(input) : path.resolve(options.projectRoot, input);
 }
 
 function resolveGeneratedTsconfigPath(options: NormalizedSyncImportsOptions): string {
-  const input = options.generatedTsconfig.path;
+  const input = options.output.type === "alias-map" ? options.output.generatedTsconfigPath : GENERATED_TSCONFIG_PATH;
   return path.isAbsolute(input) ? path.resolve(input) : path.resolve(options.projectRoot, input);
 }
 
@@ -197,6 +200,32 @@ async function readGeneratedTsconfig(options: NormalizedSyncImportsOptions): Pro
   return parseTsconfigJson(await fs.readFile(generatedTsconfigPath, "utf8"), generatedTsconfigPath);
 }
 
+function collectGeneratedTsconfigAliasPaths(
+  options: NormalizedSyncImportsOptions,
+  generatedTsconfig: TsconfigJson | null,
+): Record<string, string> {
+  const paths = generatedTsconfig?.compilerOptions?.paths ?? {};
+  const generatedTsconfigPath = resolveGeneratedTsconfigPath(options);
+  const aliasPathMap: Record<string, string> = {};
+
+  for (const [aliasId, targets] of Object.entries(paths).sort(([left], [right]) => left.localeCompare(right))) {
+    const firstTarget = targets[0];
+    if (typeof firstTarget !== "string") continue;
+    aliasPathMap[aliasId] = normalizeDotPrefixedTarget(
+      toPosixPath(path.relative(options.projectRoot, path.resolve(path.dirname(generatedTsconfigPath), firstTarget))),
+    );
+  }
+
+  return sortStringRecord(aliasPathMap);
+}
+
+async function readAliasMapAliasPaths(options: NormalizedSyncImportsOptions): Promise<Record<string, string>> {
+  return sortStringRecord({
+    ...collectGeneratedTsconfigAliasPaths(options, await readGeneratedTsconfig(options)),
+    ...(await readImportsFolderState(options)).map,
+  });
+}
+
 function collectTsconfigAliasPaths(tsconfig: TsconfigJson): Record<string, string> {
   const paths = tsconfig.compilerOptions?.paths ?? {};
   const aliasPathMap: Record<string, string> = {};
@@ -222,7 +251,8 @@ async function writeImportsFolder(
 
   await Promise.all(existingJsonFiles.map((filePath) => fs.unlink(filePath)));
 
-  for (const [filename, entries] of Object.entries(splitAliasPathMap(aliasPathMap, options.importsFolder.maxEntriesPerFile))) {
+  const maxEntriesPerFile = options.output.type === "alias-map" ? options.output.maxEntriesPerFile : 1000;
+  for (const [filename, entries] of Object.entries(splitAliasPathMap(aliasPathMap, maxEntriesPerFile))) {
     await fs.writeFile(path.join(importsFolderPath, filename), toStableJson(entries));
   }
 }
@@ -231,8 +261,6 @@ async function writeGeneratedTsconfig(
   options: NormalizedSyncImportsOptions,
   aliasPathMap: Record<string, string>,
 ): Promise<void> {
-  if (!options.generatedTsconfig.enabled) return;
-
   const generatedTsconfigPath = resolveGeneratedTsconfigPath(options);
   await fs.mkdir(path.dirname(generatedTsconfigPath), { recursive: true });
   await fs.writeFile(generatedTsconfigPath, toStableJson(buildGeneratedTsconfig(options, aliasPathMap)));
@@ -254,6 +282,23 @@ async function writeImportsFolderAliases(
 ): Promise<void> {
   await writeImportsFolder(options, aliasPathMap);
   await writeGeneratedTsconfig(options, aliasPathMap);
+}
+
+async function removeAliasMapState(options: NormalizedSyncImportsOptions): Promise<boolean> {
+  const importsFolderPath = resolveImportsFolderPath(options);
+  const generatedTsconfigPath = resolveGeneratedTsconfigPath(options);
+  const importsFolderExists = await pathExists(importsFolderPath);
+  const generatedTsconfigExists = await pathExists(generatedTsconfigPath);
+
+  if (importsFolderExists) {
+    await fs.rm(importsFolderPath, { recursive: true, force: true });
+  }
+
+  if (generatedTsconfigExists) {
+    await fs.rm(generatedTsconfigPath, { force: true });
+  }
+
+  return importsFolderExists || generatedTsconfigExists;
 }
 
 async function planImportsFolderAliases(
@@ -301,26 +346,23 @@ async function planImportsFolderAliases(
   }
 
   const aliasPathMap = sortStringRecord(managedAliasPathMap);
-  const nextImportsFiles = splitAliasPathMap(aliasPathMap, options.importsFolder.maxEntriesPerFile);
-  const generatedTsconfig = options.generatedTsconfig.enabled ? buildGeneratedTsconfig(options, aliasPathMap) : null;
-  const currentGeneratedTsconfig = options.generatedTsconfig.enabled ? await readGeneratedTsconfig(options) : null;
+  const maxEntriesPerFile = options.output.type === "alias-map" ? options.output.maxEntriesPerFile : 1000;
+  const nextImportsFiles = splitAliasPathMap(aliasPathMap, maxEntriesPerFile);
+  const generatedTsconfig = buildGeneratedTsconfig(options, aliasPathMap);
+  const currentGeneratedTsconfig = await readGeneratedTsconfig(options);
   const rootTsconfigWithoutPaths = removeInlineTsconfigPaths(config);
-  const nextRootTsconfig = options.generatedTsconfig.enabled
-    ? addGeneratedExtends(rootTsconfigWithoutPaths, options.tsconfigPath, resolveGeneratedTsconfigPath(options))
-    : rootTsconfigWithoutPaths;
+  const nextRootTsconfig = addGeneratedExtends(rootTsconfigWithoutPaths, options.tsconfigPath, resolveGeneratedTsconfigPath(options));
   const maxEntriesExceeded = importsFolderState.entryCounts
-    .filter((entry) => entry.count > options.importsFolder.maxEntriesPerFile)
-    .map((entry) => ({ filePath: entry.filePath, count: entry.count, max: options.importsFolder.maxEntriesPerFile }));
+    .filter((entry) => entry.count > maxEntriesPerFile)
+    .map((entry) => ({ filePath: entry.filePath, count: entry.count, max: maxEntriesPerFile }));
   const rootProjectionChanged = stableSerialize(originalConfig) !== stableSerialize(nextRootTsconfig);
   const drift = {
-    generatedTsconfigChanged: options.generatedTsconfig.enabled
-      ? stableSerialize(currentGeneratedTsconfig ?? {}) !== stableSerialize(generatedTsconfig)
-      : false,
+    generatedTsconfigChanged: stableSerialize(currentGeneratedTsconfig ?? {}) !== stableSerialize(generatedTsconfig),
     importsFolderChanged: stableSerialize(importsFolderState.stableFiles) !== stableSerialize(nextImportsFiles),
     inlineTsconfigPaths: Boolean(config.compilerOptions?.paths),
     maxEntriesExceeded,
     rootExtendsChanged: rootProjectionChanged
-      && (options.generatedTsconfig.enabled && !hasGeneratedExtends(config, options.tsconfigPath, resolveGeneratedTsconfigPath(options))
+      && (!hasGeneratedExtends(config, options.tsconfigPath, resolveGeneratedTsconfigPath(options))
         || Boolean(config.compilerOptions?.paths)
         || Boolean(config.compilerOptions?.baseUrl)),
   };
@@ -339,4 +381,4 @@ async function planImportsFolderAliases(
   };
 }
 
-export { planImportsFolderAliases, writeImportsFolderAliases };
+export { planImportsFolderAliases, readAliasMapAliasPaths, removeAliasMapState, writeImportsFolderAliases };
