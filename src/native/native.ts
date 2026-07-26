@@ -85,8 +85,8 @@ function resetNativeBindingForTests(): void {
 
 function activeNativeBackendNotice(): string {
   return loadNativeBinding()
-    ? "@trebired/code-discipline using native backend"
-    : "@trebired/code-discipline using TS fallback backend";
+    ? "@package/code-discipline using native backend"
+    : "@package/code-discipline using TS fallback backend";
 }
 
 export {

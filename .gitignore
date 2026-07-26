@@ -4,38 +4,20 @@ node_modules/
 # Build output
 dist/
 coverage/
-native/*/target/
-native/*.node
 
 # Package artifacts
 *.tgz
 
-# TypeScript and tool caches
-*.tsbuildinfo
-.cache/
-.turbo/
-
-# Logs and runtime output
-*.log
-logs/
-.runtime/
+# Runtime and generated work files
 .tmp/
 tmp/
 cd-report-*.txt
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-bun-debug.log*
 
-# OS and editor noise
-.DS_Store
-Thumbs.db
-.idea/
-.vscode/
-*.swp
-*.swo
+# Native build output
+native/*/target/
+native/*.node
 
-# Environment files
+# Local environment
 .env
 .env.*
 !.env.example

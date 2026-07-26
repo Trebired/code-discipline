@@ -2,6 +2,13 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.7.2
+
+- Removed package test suites and banned committed `*.spec.ts`/`*.spec.tsx` files through Code Discipline.
+- Added Code Discipline enforcement for hardcoded `trebired` strings outside package metadata.
+- Migrated Code Discipline to `.code-discipline/config.ts` with alias-map sync output.
+- Updated package-generated artifact ignores and internal package dependency ranges.
+
 ## 4.7.1
 
 - Updated the package `.gitignore` baseline so generated native build outputs, package artifacts, temp folders, logs, and local reports are ignored through Git rather than local discipline config entries.

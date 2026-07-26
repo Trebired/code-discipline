@@ -7,7 +7,7 @@ const DEFAULT_ALIAS_RANDOM_LENGTH = 12;
 const DEFAULT_RULE_FIX = false;
 const DEFAULT_ALLOW_RELATIVE = ["./"];
 const DEFAULT_FOLDERIZE_COMPOUND_FILE_SEPARATORS = ["_", "-"];
-const CODE_DISCIPLINE_LOG_GROUP = "trebired.code-discipline";
+const CODE_DISCIPLINE_LOG_GROUP = "package.code-discipline";
 const RANDOM_ALIAS_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
 const HASH_ALIAS_LENGTH = 12;
 

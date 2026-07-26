@@ -1,4 +1,4 @@
-import { createLog, type LogInstance } from "@trebired/logger";
+import { createLog, type LogInstance } from "@package/logger";
 
 import { CODE_DISCIPLINE_LOG_GROUP } from "#ik5y0pee4ah1";
 import type { CodeDisciplineCheckName } from "#bsmch74up4fm";
@@ -36,7 +36,7 @@ function createDefaultCliLogger(): LogInstance {
     },
     quiet: true,
     save: false,
-    source: "@trebired/code-discipline",
+    source: "@package/code-discipline",
   });
 }
 

@@ -1,4 +1,4 @@
-import { createLog, type LogInstance } from "@trebired/logger";
+import { createLog, type LogInstance } from "@package/logger";
 
 import { CODE_DISCIPLINE_LOG_GROUP } from "./constants.js";
 import type {
@@ -31,7 +31,7 @@ function getConsoleOnlyLogger(): LogInstance {
     console: true,
     quiet: true,
     save: false,
-    source: "@trebired/code-discipline",
+    source: "@package/code-discipline",
   });
   return consoleOnlyLogger;
 }
@@ -42,7 +42,7 @@ function getMethod(source: unknown, name: string): LogMethod | null {
   return typeof value === "function" ? (value as LogMethod) : null;
 }
 
-function looksLikeTrebiredLogger(source: unknown): boolean {
+function looksLikePackageLogger(source: unknown): boolean {
   return Boolean(
     getMethod(source, "info")
       && getMethod(source, "warn")
@@ -80,7 +80,7 @@ function buildEvent(
 }
 
 function writeToConsole(event: CodeDisciplineLogEvent) {
-  writeToTrebiredLogger(getConsoleOnlyLogger(), event);
+  writeToPackageLogger(getConsoleOnlyLogger(), event);
 }
 
 function writeToGenericLogger(source: unknown, event: CodeDisciplineLogEvent) {
@@ -96,7 +96,7 @@ function writeToGenericLogger(source: unknown, event: CodeDisciplineLogEvent) {
   method.call(source, formatMessage(eventGroup(event), event.message), payload);
 }
 
-function writeToTrebiredLogger(source: unknown, event: CodeDisciplineLogEvent) {
+function writeToPackageLogger(source: unknown, event: CodeDisciplineLogEvent) {
   const methodName = event.level === "error" ? "fail" : event.level;
   const target = source || getConsoleOnlyLogger();
   const method = getMethod(target, methodName) || getMethod(target, event.level) || getMethod(target, "info");
@@ -121,16 +121,16 @@ function resolveWriter(options?: LoggingOptions): (event: CodeDisciplineLogEvent
     return writeToConsole;
   }
 
-  if (adapter === "trebired") {
-    return (event) => writeToTrebiredLogger(logger, event);
+  if (adapter === "logger") {
+    return (event) => writeToPackageLogger(logger, event);
   }
 
   if (adapter === "generic") {
     return (event) => writeToGenericLogger(logger, event);
   }
 
-  if (looksLikeTrebiredLogger(logger)) {
-    return (event) => writeToTrebiredLogger(logger, event);
+  if (looksLikePackageLogger(logger)) {
+    return (event) => writeToPackageLogger(logger, event);
   }
 
   if (logger) {
@@ -190,7 +190,7 @@ function writeInitializedEvent(enabled: boolean, writer: (event: CodeDisciplineL
       event: "package-initialized",
       group: `${CODE_DISCIPLINE_LOG_GROUP}.initialize`,
       level: "success",
-      message: "@trebired/code-discipline initialized",
+      message: "@package/code-discipline initialized",
     });
   }
 }

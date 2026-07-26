@@ -116,6 +116,12 @@ function buildPackageJsonImports(context: PackageJsonImportsContext): {
   };
 }
 
+function isRelativePackageJsonImportTarget(target: unknown): target is string {
+  if (typeof target !== "string") return false;
+  const normalized = target.trim();
+  return normalized.startsWith("./") || normalized.startsWith("../");
+}
+
 async function collectPackageJsonAliasImports(args: {
   configPath?: string;
   options: PackageJsonImportsSyncOptions | undefined;
@@ -132,7 +138,7 @@ async function collectPackageJsonAliasImports(args: {
     : {};
   const aliasPrefixes = normalizeAliasPrefixes(args.options?.aliasPrefix);
   const entries = Object.entries(imports)
-    .filter(([aliasId, target]) => aliasPrefixes.some((prefix) => aliasId.startsWith(prefix)) && typeof target === "string")
+    .filter(([aliasId, target]) => aliasPrefixes.some((prefix) => aliasId.startsWith(prefix)) && isRelativePackageJsonImportTarget(target))
     .sort(([left], [right]) => left.localeCompare(right));
 
   return Object.fromEntries(entries) as Record<string, string>;
@@ -154,7 +160,11 @@ function buildPackageJsonImportsFromAliasMap(args: {
     ? args.packageJson.imports
     : {};
   const preservedImports = Object.fromEntries(
-    Object.entries(existingImports).filter(([aliasId]) => !shouldManageAlias(aliasId)),
+    Object.entries(existingImports).filter(([aliasId, target]) => {
+      if (!shouldManageAlias(aliasId)) return true;
+      if (aliasId in args.aliasPathMap) return false;
+      return !isRelativePackageJsonImportTarget(target);
+    }),
   );
   const managedImports = args.writeManagedImports
     ? Object.fromEntries(

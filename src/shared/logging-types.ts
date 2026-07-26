@@ -16,7 +16,7 @@ type CodeDisciplineLogAdapterFn = (event: CodeDisciplineLogEvent) => void;
 
 type LoggingOptions = {
   logger?: unknown;
-  adapter?: "trebired" | "generic" | "console" | CodeDisciplineLogAdapterFn;
+  adapter?: "logger" | "generic" | "console" | CodeDisciplineLogAdapterFn;
 };
 
 type NormalizedCodeDisciplineLogger = {

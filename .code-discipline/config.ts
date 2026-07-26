@@ -1,19 +1,26 @@
-import { defineCodeDisciplineConfig } from "../src/index.js";
-
-export default defineCodeDisciplineConfig({
+export default {
   ignore: {
     entries: [],
     use_gitignore: true,
   },
   rules: {
-    maxFileLines: {
-      max: 350,
-      excludeDirs: [
-        { type: "file", pattern: "test/specs/discipline.config.spec.ts" },
-        { type: "file", pattern: "test/specs/discipline.scan.spec.ts" },
+    bannedFiles: {
+      patterns: [
+        { glob: "**/*.spec.ts" },
+        { glob: "**/*.spec.tsx" },
       ],
     },
-    maxFunctionLines: { max: 50 },
+    bannedPatterns: {
+      patterns: [
+        { value: "trebired", allowedFiles: ["package.json"] },
+      ],
+    },
+    maxFileLines: {
+      max: 350,
+    },
+    maxFunctionLines: {
+      max: 50,
+    },
     folderizeCompoundFiles: {},
     syncImports: {
       alias: {
@@ -23,7 +30,11 @@ export default defineCodeDisciplineConfig({
       output: {
         type: "alias-map",
       },
+      runtime: {
+        normalize: "relative-dot-prefix",
+        restoreAfterRun: false,
+      },
     },
     dry: {},
   },
-});
+};

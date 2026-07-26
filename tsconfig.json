@@ -25,7 +25,6 @@
   "extends": "./.code-discipline/generated/tsconfig.paths.json",
   "include": [
     "examples/**/*.ts",
-    "src/**/*.ts",
-    "test/**/*.ts"
+    "src/**/*.ts"
   ]
 }

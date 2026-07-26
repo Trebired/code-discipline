@@ -1,4 +1,4 @@
-import { result as createResult } from "@trebired/result";
+import { result as createResult } from "@package/result";
 
 import { normalizeCheckCodeDisciplineOptions } from "#x458f9t6w4a6";
 import { collectSyncImportViolations } from "#ymdyths4ukwp";
@@ -91,7 +91,7 @@ function attachDisciplineResult<T extends CodeDisciplineResult>(
   return {
     ...output,
     result: output.violations.some(isBlockingViolation)
-      ? createResult.error(409, `discipline-${phase}-violations`, `${phase} found ${output.violations.filter(isBlockingViolation).length} violation(s).`, {
+      ? createResult.error(409, `discipline-${phase}-violations`, {
           data: {
             violationCount: output.violationCount,
           },
