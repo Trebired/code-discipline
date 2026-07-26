@@ -19,6 +19,9 @@ native/*.node
 *.log
 logs/
 .runtime/
+.tmp/
+tmp/
+cd-report-*.txt
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

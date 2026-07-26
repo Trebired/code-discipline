@@ -2,6 +2,10 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.7.1
+
+- Updated the package `.gitignore` baseline so generated native build outputs, package artifacts, temp folders, logs, and local reports are ignored through Git rather than local discipline config entries.
+
 ## 4.7.0
 
 - Changed config auto-discovery to `code-discipline.config.ts` and `.code-discipline/config.ts`, and stopped auto-discovering root `code-discipline.ts`.
