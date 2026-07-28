@@ -1,6 +1,6 @@
 {
   "name": "@trebired/code-discipline",
-  "version": "4.7.5",
+  "version": "4.8.0",
   "description": "Configurable codebase discipline checks and rule-driven fixes for Bun and Node.js projects.",
   "type": "module",
   "private": false,
@@ -34,16 +34,19 @@
     "README.md"
   ],
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.build.json && node ./scripts/build/aliases.mjs",
+    "build": "bun run prepare:generated && rm -rf dist && tsc -p tsconfig.build.json && node ./scripts/build/aliases.mjs && chmod +x dist/cli.js dist/cli/run-cli.js",
     "build:native": "node ./scripts/build/native.mjs",
     "build:native:matrix": "node ./scripts/build/native/matrix.mjs",
     "demo": "bun run examples/dummy.ts",
     "discipline": "bun node_modules/@trebired/code-discipline/dist/cli.js check",
     "discipline:fix": "bun node_modules/@trebired/code-discipline/dist/cli.js fix",
-    "prepublishOnly": "bun run typecheck && bun run build",
+    "prepublishOnly": "bun run typecheck && bun run build && bun run verify:max-line-fixer && bun run verify:generated-artifacts",
+    "prepare:generated": "node ./scripts/build/generated/tsconfig.mjs",
     "publish:npm": "bun run build:native:matrix && npm publish",
     "publish:npm:host": "bun run build:native && npm publish",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "bun run prepare:generated && tsc --noEmit",
+    "verify:generated-artifacts": "node ./scripts/verify/generated/artifacts.mjs",
+    "verify:max-line-fixer": "node ./scripts/verify/max/line/fixer.mjs"
   },
   "dependencies": {
     "@package/logger": "npm:@trebired/logger@^2.5.6",

@@ -18,7 +18,7 @@ import type {
 type CodeDisciplineRuleSlug = CodeDisciplineRuleName;
 type CodeDisciplineFormatterSlug = "prettier";
 type CodeDisciplineCheckSelectorSlug = CodeDisciplineRuleSlug | CodeDisciplineFormatterSlug;
-type FixableRuleSlug = "banned-files" | "min-file-lines" | "folderize-compound-files" | "sync-imports" | "remove-comments" | "structural-blank-lines" | CodeDisciplineFormatterSlug;
+type FixableRuleSlug = "banned-files" | "min-file-lines" | "max-characters-per-line" | "folderize-compound-files" | "sync-imports" | "remove-comments" | "structural-blank-lines" | CodeDisciplineFormatterSlug;
 type CodeDisciplineMode = "check" | "fix";
 type CodeDisciplineRuntimeMode = CodeDisciplineMode;
 type CodeDisciplineRuleSeverity = "warning" | "fail";

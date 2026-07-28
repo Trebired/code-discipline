@@ -2,6 +2,14 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.8.0
+
+- Made `maxCharactersPerLine` fixable for safe JavaScript and TypeScript string literal cases, splitting long plain literals into concatenated segments while preserving runtime values and leaving unsafe lines reported.
+- Added `max-characters-per-line` to targeted and unqualified `fix` runs without making Prettier a requirement for the rewrite.
+- Made `sync-imports` alias-map fixes ensure `.code-discipline/generated/` is present in root `.gitignore` without ignoring committed `.code-discipline/imports/*.json` state.
+- Moved saved CLI reports under `.code-discipline/generated/reports/` and kept the CLI output pointed at the relative saved path.
+- Added package verification scripts for the string-literal fixer and generated artifact hygiene, and included them in the publish check.
+
 ## 4.7.5
 
 - Added the opt-in `presets.nodeProcessBoundary` config, which expands into `bannedPatterns` entries for direct Node `process` access while honoring separate environment and runtime boundary files.

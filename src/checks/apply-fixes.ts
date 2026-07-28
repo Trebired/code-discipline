@@ -9,6 +9,7 @@ import { applyPrettierFormatterFix } from "./prettier.js";
 import { shouldRunRule } from "./rule-slugs.js";
 import { fixBannedFilesRule } from "./rules/banned/files.js";
 import { fixStructuralBlankLinesRule } from "./rules/blank-lines/index.js";
+import { fixMaxCharactersPerLineRule } from "./rules/max/characters-per-line/fix.js";
 import { fixMinFileLinesRule } from "./rules/min/file/lines/fix.js";
 import { fixRemoveCommentsRule } from "./rules/remove-comments.js";
 import { applyConfiguredSeverity } from "./severity.js";
@@ -135,6 +136,17 @@ async function applySyncImportsFix(state: FixState, normalized: NormalizedCheckC
   state.rewrittenImports += result.rewritten_imports;
 }
 
+async function applyMaxCharactersPerLineFix(state: FixState, normalized: NormalizedCheckCodeDisciplineOptions): Promise<void> {
+  if (!normalized.rules.maxCharactersPerLine || !shouldRunFixRule("max-characters-per-line", normalized)) return;
+
+  const result = await fixMaxCharactersPerLineRule(filterSourceFilesForRule(state.sourceFiles, normalized.rules.maxCharactersPerLine), normalized);
+  const violations = applyConfiguredSeverity(result.violations, normalized);
+  state.ruleResults["max-characters-per-line"] = mapFixRuleResult({ ...result, violations });
+  state.violations.push(...violations);
+  state.rewrittenFiles += result.rewritten_files ?? 0;
+  state.unchangedFiles += result.unchanged_files ?? 0;
+}
+
 async function applyRemoveCommentsFix(state: FixState, normalized: NormalizedCheckCodeDisciplineOptions): Promise<void> {
   if (!normalized.rules.removeComments || !shouldRunFixRule("remove-comments", normalized)) return;
 
@@ -171,6 +183,7 @@ async function applyPrettierFix(state: FixState, normalized: NormalizedCheckCode
 export {
   applyBannedFilesFix,
   applyFolderizeFix,
+  applyMaxCharactersPerLineFix,
   applyMinFileLinesFix,
   applyPrettierFix,
   applyRemoveCommentsFix,

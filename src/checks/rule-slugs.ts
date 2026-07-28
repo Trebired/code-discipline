@@ -26,6 +26,7 @@ const ALL_RULE_SLUGS: CodeDisciplineRuleSlug[] = [
 const FIXABLE_RULE_SLUGS: FixableRuleSlug[] = [
   "banned-files",
   "min-file-lines",
+  "max-characters-per-line",
   "folderize-compound-files",
   "sync-imports",
   "remove-comments",

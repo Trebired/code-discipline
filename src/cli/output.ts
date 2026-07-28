@@ -4,6 +4,7 @@ import path from "node:path";
 import { isPlainRecord } from "#ntve5i5a0mol";
 import type { CliLogContext } from "./logging.js";
 import type { CodeDisciplineViolation } from "#bsmch74up4fm";
+import { GENERATED_REPORTS_DIR, resolveGeneratedReportsDir } from "#zdy5k79iam8y";
 
 type CliOutputWriter = (text: string, context?: CliLogContext) => void;
 
@@ -211,9 +212,11 @@ function writeFixOutput(args: {
 
 async function saveCliOutput(cwd: string, reportText: string, now: Date): Promise<string> {
   const reportFilename = createSavedReportFilename(now);
-  const reportPath = path.join(cwd, reportFilename);
+  const reportDir = resolveGeneratedReportsDir(cwd);
+  const reportPath = path.join(reportDir, reportFilename);
+  await fs.mkdir(reportDir, { recursive: true });
   await fs.writeFile(reportPath, reportText, "utf8");
-  return reportFilename;
+  return `${GENERATED_REPORTS_DIR}/${reportFilename}`;
 }
 
 async function writeSavedReport(

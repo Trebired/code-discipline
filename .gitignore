@@ -12,6 +12,7 @@ coverage/
 .tmp/
 tmp/
 cd-report-*.txt
+.code-discipline/generated/
 
 # Native build output
 native/*/target/

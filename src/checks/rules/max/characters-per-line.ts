@@ -106,4 +106,4 @@ async function runMaxCharactersPerLineRule(
   return violations;
 }
 
-export { runMaxCharactersPerLineRule };
+export { countCharacters, runMaxCharactersPerLineRule };

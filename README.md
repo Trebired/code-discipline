@@ -32,7 +32,7 @@ code-discipline check
 code-discipline check save
 code-discipline check max-function-lines dry
 code-discipline fix
-code-discipline fix banned-files min-file-lines sync-imports remove-comments structural-blank-lines
+code-discipline fix banned-files min-file-lines max-characters-per-line sync-imports remove-comments structural-blank-lines
 code-discipline gate -- bun run dev
 ```
 
@@ -57,13 +57,13 @@ Top-level `sync` is gone.
 code-discipline fix sync-imports
 ```
 
-If you want the terminal output written to a top-level file too, add `save`:
+If you want the terminal output written to a package-managed report file too, add `save`:
 
 ```sh
 code-discipline check save
 ```
 
-This writes a plain-text report to a timestamped file such as `cd-report-2026-05-26-19-00-00.txt`.
+This writes a plain-text report to a timestamped file such as `.code-discipline/generated/reports/cd-report-2026-05-26-19-00-00.txt`.
 
 Typical `package.json` scripts can stay simple:
 
@@ -266,7 +266,7 @@ Manual `rules.bannedPatterns` entries still work normally. If both are configure
 
 ```sh
 code-discipline check max-file-lines max-function-lines
-code-discipline fix banned-files min-file-lines sync-imports remove-comments structural-blank-lines
+code-discipline fix banned-files min-file-lines max-characters-per-line sync-imports remove-comments structural-blank-lines
 code-discipline check prettier
 code-discipline fix prettier
 ```
@@ -286,7 +286,7 @@ Rules use kebab-case public slugs:
 - `structural-blank-lines`
 - `dry`
 
-`fix` only accepts fixable rules. Trying to run `code-discipline fix max-function-lines`, `code-discipline fix max-characters-per-line`, or `code-discipline fix dry` fails clearly.
+`fix` only accepts fixable rules. Trying to run `code-discipline fix max-function-lines` or `code-discipline fix dry` fails clearly.
 
 Formatter selectors such as `prettier` are enabled by top-level `formatters` config, not by `rules`.
 
@@ -455,6 +455,30 @@ Reports JavaScript and TypeScript `function` declarations and simple `const` ide
 
 Reports physical lines whose character count exceeds `max`, defaulting to `150` when the rule is configured.
 
+`code-discipline fix max-characters-per-line` can split safe JavaScript and TypeScript string literals into concatenated string segments without requiring Prettier. The fixer preserves the exact runtime string value, prefers whitespace split points, keeps the original quote style when practical, and handles common expression positions such as object property values, variable initializers, array elements, call arguments, and return statements.
+
+Example:
+
+```ts
+const messages = {
+  repositoryActionsDescription:
+    "Akce jsou workflow vlastněná repozitářem, nalezená v {{dir}}. Starší shellová workflow stále fungují, zatímco úlohy, artefakty a běhy workflow_dispatch jsou podporovány také zde.",
+};
+```
+
+Becomes:
+
+```ts
+const messages = {
+  repositoryActionsDescription:
+    "Akce jsou workflow vlastněná repozitářem, nalezená v {{dir}}. " +
+    "Starší shellová workflow stále fungují, zatímco úlohy, artefakty " +
+    "a běhy workflow_dispatch jsou podporovány také zde.",
+};
+```
+
+Unsafe cases stay unchanged and remain reported after the fix pass. The fixer intentionally avoids template literals, escaped strings, strings with newlines, import/export specifiers, directive prologues, JSX text and attributes, URLs, long unbroken tokens, generated files, minified files, regex literals, comments, and syntax cases where semantic preservation is uncertain.
+
 ### `maxFunctionLines`
 
 Reports function-like declarations whose total span exceeds `max`.
@@ -480,7 +504,15 @@ Validates and optionally fixes:
 
 When `syncImports` sees a relative import that resolves nowhere, check mode reports it. Fix mode removes safe line-isolated static import/export declarations and Sass `@use`, `@forward`, or single-specifier quoted `@import` directives. Dynamic `import(...)`, comments, strings, CSS `url(...)`, and arbitrary CSS values are left alone.
 
-The default `output: { type: "project-manifests" }` writes aliases directly into root `tsconfig.json` and mirrors them into `package.json#imports`. `output: { type: "alias-map" }` uses `.code-discipline/imports/*.json` as the alias source of truth, writes `.code-discipline/generated/tsconfig.paths.json`, makes root `tsconfig.json` extend the generated file, and removes managed project-manifest alias state. `code-discipline fix sync-imports` migrates both directions when the configured output model changes.
+The default `output: { type: "project-manifests" }` writes aliases directly into root `tsconfig.json` and mirrors them into `package.json#imports`. `output: { type: "alias-map" }` uses `.code-discipline/imports/*.json` as the alias source of truth, writes `.code-discipline/generated/tsconfig.paths.json`, makes root `tsconfig.json` extend the generated file, and removes managed project-manifest alias state. `code-discipline check sync-imports` reports missing or stale generated tsconfig wiring as a fixable violation, and `code-discipline fix sync-imports` migrates both directions when the configured output model changes.
+
+Alias-map output separates committed state from disposable package output:
+
+- commit `.code-discipline/config.ts`
+- commit `.code-discipline/imports/*.json` when stable or random aliases are part of the configured alias-map state
+- do not commit `.code-discipline/generated/`
+- `code-discipline fix sync-imports` creates root `.gitignore` when missing and adds `.code-discipline/generated/` idempotently
+- saved CLI reports are written under `.code-discipline/generated/reports/`
 
 Top-level `ignore` groups shared scan and formatter exclusions in one place, so you can add explicit entries through `ignore.entries` and opt into root `.gitignore` entries through `ignore.use_gitignore`.
 

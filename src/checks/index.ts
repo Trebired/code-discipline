@@ -9,6 +9,7 @@ import type { CodeDisciplineResult, CodeDisciplineViolation } from "#bsmch74up4f
 import {
   applyBannedFilesFix,
   applyFolderizeFix,
+  applyMaxCharactersPerLineFix,
   applyMinFileLinesFix,
   applyPrettierFix,
   applyRemoveCommentsFix,
@@ -198,6 +199,7 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
   await applyMinFileLinesFix(state, normalized, logger);
   await applyFolderizeFix(state, normalized, logger);
   await applySyncImportsFix(state, normalized);
+  await applyMaxCharactersPerLineFix(state, normalized);
   await applyRemoveCommentsFix(state, normalized);
   await applyStructuralBlankLinesFix(state, normalized);
   await applyPrettierFix(state, normalized);

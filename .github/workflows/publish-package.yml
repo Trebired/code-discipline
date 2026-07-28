@@ -126,9 +126,7 @@ jobs:
           ls -la native
 
       - name: Verify and build package
-        run: |
-          bun run typecheck
-          bun run build
+        run: bun run prepublishOnly
 
       - name: Publish to npm
         env:

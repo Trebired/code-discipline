@@ -65,7 +65,7 @@ function renderHelp(): string {
     "  check         run read-only discipline validation",
     "  fix           apply configured discipline fixes",
     "  gate          block a child command when discipline violations exist",
-    "  save          optional token that writes the run output to a timestamped cd-report-YYYY-MM-DD-HH-mm-ss.txt file",
+    "  save          optional token that writes the run output to .code-discipline/generated/reports/cd-report-YYYY-MM-DD-HH-mm-ss.txt",
     "",
     "Rule Selectors:",
     "  check <rule-slug>... narrows validation to the selected configured rules",

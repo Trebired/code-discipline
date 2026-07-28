@@ -4,6 +4,7 @@ import { ruleLogGroup } from "#foa3t3ao5irq";
 import { resolveLogger } from "#5koja8ae2wwn";
 import { filterSourceFilesForRule } from "#jizekc8duh4i";
 import { supportsSyncImports } from "#87jyjzn68rrk";
+import { ensureGeneratedArtifactsGitignore } from "#zdy5k79iam8y";
 import type { CodeDisciplineViolation } from "#bsmch74up4fm";
 import { planTsconfigAliases, syncTsconfigAliases } from "./aliases.js";
 import { collectSyncImportViolations } from "./check-sync-imports.js";
@@ -62,6 +63,15 @@ async function applySyncFixes(
   plannedAliases: Awaited<ReturnType<typeof planTsconfigAliases>>,
   logger: ReturnType<typeof resolveLogger>,
 ): Promise<SyncImportsResult> {
+  if (normalized.output.type === "alias-map") {
+    const gitignore = await ensureGeneratedArtifactsGitignore(normalized.projectRoot);
+    if (gitignore.changed) {
+      logger.success("generated-gitignore-written", "generated artifact ignore entry written", {
+        gitignorePath: gitignore.path,
+      }, { group: ruleLogGroup("sync-imports") });
+    }
+  }
+
   const aliasState = plannedAliases.aliasesChanged
     ? await syncTsconfigAliases(normalized, sourceFiles, logger)
     : plannedAliases;
