@@ -683,7 +683,3 @@ This package does not:
 - replace a formatter, linter, compiler, or build system
 - own application architecture or product naming policy
 - require generated output to be committed
-
-## License
-
-Licensed under AGPL-3.0-only. See [LICENSE](./LICENSE).
