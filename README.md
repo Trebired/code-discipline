@@ -33,53 +33,269 @@ code-discipline fix banned-files min-file-lines max-characters-per-line sync-imp
 code-discipline gate -- bun run dev
 ```
 
-## Native Backend
+## Concepts
 
-`@trebired/code-discipline` can use a Rust native backend when a matching binary is available, with the TypeScript implementation as the fallback. This follows the same native-fast-path shape as `@trebired/logger`: package users keep the same CLI/API, while hot scanning and rewrite paths can move into Rust.
+### Rules
 
-The current native backend accelerates source scanning, `max-file-lines`, common `max-function-lines` paths, `folderize-compound-files` checks, and `remove-comments`. If no binary is present, the package automatically uses the TypeScript fallback.
+#### `bannedPatterns`
 
-Useful native controls:
+Reports case-insensitive substring matches found in source files.
 
-- `bun run build:native` builds the host native addon into `native/<platform>.node`
-- `bun run build:native:matrix` builds the release target matrix
-- `TB_CODE_DISCIPLINE_DISABLE_NATIVE=1` forces the TypeScript fallback
-- `TB_CODE_DISCIPLINE_NATIVE_BINARY=/path/to/addon.node` loads a specific native addon
+- `"test"` matches `test`, `Test`, `contest`, and `"Test runner"`
+- matching is content-based, not whole-word-only
+- `allowedFiles` lets specific project-relative files bypass a specific banned pattern
+- `severity` defaults to `"fail"`
+- for `.ts`/`.tsx`/`.mts`/`.cts`/`.js`/`.jsx`/`.mjs`/`.cjs` files, patterns are also checked against expressions the compiler can constant-fold to a fixed string at zero runtime cost: `+` concatenation of literals, template literals with foldable interpolations, `[...literals].join(literalSeparator)`, and same-scope `const` aliases of those  -  so `["OPER", "LORN"].join("")` is caught the same as the literal `"OPERLORN"` would be
+- expressions touching anything non-literal (a parameter, `process.env`, a function call, a name shadowed elsewhere in the file) are never folded  -  this closes the "split into literal chunks" evasion without guessing at genuinely computed values
 
-Top-level `sync` is gone.
+Example:
 
-`sync-imports` is now just another fixable rule, so targeted sync work is done through:
+```ts
+bannedPatterns: {
+  patterns: [
+    "test",
+    {
+      value: "mock",
+      allowedFiles: ["src/testing/mock-registry.ts"],
+    },
+  ],
+}
+```
+
+#### `bannedFiles`
+
+Reports source files whose project-relative paths match banned glob patterns.
+
+- `**/*.spec.ts` matches root and nested TypeScript spec files
+- `*` matches within a single path segment
+- `**` can cross directory boundaries
+- `code-discipline fix banned-files` deletes matching files
+- `severity` defaults to `"fail"`
+
+Example:
+
+```ts
+bannedFiles: {
+  patterns: [
+    { glob: "**/*.spec.ts" },
+    { glob: "**/*.spec.tsx" },
+  ],
+}
+```
+
+#### `maxFileLines`
+
+Reports files whose total line count exceeds `max`.
+
+#### `minFileLines`
+
+Reports files whose code line count is at or below `min`, defaulting to `1` when the rule is configured. This catches tiny legacy compatibility shims that only re-export or re-import another module.
+
+`code-discipline fix min-file-lines` can delete tiny redirect shims when the file is clearly a single JavaScript/TypeScript `export ... from "..."` statement or a single SCSS `@forward "..."` directive. Importers of that shim are rewritten to the forwarded target before the shim file is removed.
+
+#### `minDeclarationName`
+
+Reports JavaScript and TypeScript `function` declarations and simple `const` identifiers whose names are shorter than `min`, defaulting to `2` when the rule is configured.
+
+#### `maxCharactersPerLine`
+
+Reports physical lines whose character count exceeds `max`, defaulting to `150` when the rule is configured.
+
+`code-discipline fix max-characters-per-line` can split safe JavaScript and TypeScript string literals into concatenated string segments without requiring Prettier. The fixer preserves the exact runtime string value, prefers whitespace split points, keeps the original quote style when practical, and handles common expression positions such as object property values, variable initializers, array elements, call arguments, and return statements.
+
+Example:
+
+```ts
+const messages = {
+  repositoryActionsDescription:
+    "Akce jsou workflow vlastněná repozitářem, nalezená v {{dir}}. Starší shellová workflow stále fungují, zatímco úlohy, artefakty a běhy workflow_dispatch jsou podporovány také zde.",
+};
+```
+
+Becomes:
+
+```ts
+const messages = {
+  repositoryActionsDescription:
+    "Akce jsou workflow vlastněná repozitářem, nalezená v {{dir}}. " +
+    "Starší shellová workflow stále fungují, zatímco úlohy, artefakty " +
+    "a běhy workflow_dispatch jsou podporovány také zde.",
+};
+```
+
+Unsafe cases stay unchanged and remain reported after the fix pass. The fixer intentionally avoids template literals, escaped strings, strings with newlines, import/export specifiers, directive prologues, JSX text and attributes, URLs, long unbroken tokens, generated files, minified files, regex literals, comments, and syntax cases where semantic preservation is uncertain.
+
+#### `maxFunctionLines`
+
+Reports function-like declarations whose total span exceeds `max`.
+
+#### `folderizeCompoundFiles`
+
+Detects flat compound names such as `user_route.ts` and can move them into structural folders such as `user/route.ts`.
+
+The rule config only describes separators now. Whether it mutates is decided by running `code-discipline fix`.
+
+Folderization autofix stays intentionally conservative: move-aware relative import repair is implemented for the JavaScript and TypeScript module family, while Go and Rust files are scanned safely for other rules but are not folderized automatically.
+
+#### `syncImports`
+
+Validates and optionally fixes:
+
+- `tsconfig.compilerOptions.paths`
+- relative source imports that should become aliases
+- `project-manifests` output drift in root `tsconfig.json` and `package.json#imports`
+- `alias-map` output drift in `.code-discipline/imports/*.json` and the generated tsconfig projection
+
+`syncImports` rewrites JavaScript, TypeScript, and SCSS module specifiers. Mixed-language repositories can still include Go and Rust; those files are ignored by alias syncing instead of causing parser failures.
+
+When `syncImports` sees a relative import that resolves nowhere, check mode reports it. Fix mode removes safe line-isolated static import/export declarations and Sass `@use`, `@forward`, or single-specifier quoted `@import` directives. Dynamic `import(...)`, comments, strings, CSS `url(...)`, and arbitrary CSS values are left alone.
+
+The default `output: { type: "project-manifests" }` writes aliases directly into root `tsconfig.json` and mirrors them into `package.json#imports`. `output: { type: "alias-map" }` uses `.code-discipline/imports/*.json` as the alias source of truth, writes `.code-discipline/generated/tsconfig.paths.json`, makes root `tsconfig.json` extend the generated file, and removes managed project-manifest alias state. `code-discipline check sync-imports` reports missing or stale generated tsconfig wiring as a fixable violation, and `code-discipline fix sync-imports` migrates both directions when the configured output model changes.
+
+Alias-map output separates committed state from disposable package output:
+
+- commit `.code-discipline/config.ts`
+- commit `.code-discipline/imports/*.json` when stable or random aliases are part of the configured alias-map state
+- do not commit `.code-discipline/generated/`
+- `code-discipline fix sync-imports` creates root `.gitignore` when missing and adds `.code-discipline/generated/` idempotently
+- saved CLI reports are written under `.code-discipline/generated/reports/`
+
+Top-level `ignore` groups shared scan and formatter exclusions in one place, so you can add explicit entries through `ignore.entries` and opt into root `.gitignore` entries through `ignore.use_gitignore`.
+
+Example:
+
+```ts
+ignore: {
+  entries: [
+    { type: "folder", pattern: "coverage" },
+    { type: "folder", pattern: "tmp" },
+  ],
+  use_gitignore: true,
+},
+```
+
+Example targeted CLI usage:
 
 ```sh
 code-discipline fix sync-imports
 ```
 
-If you want the terminal output written to a package-managed report file too, add `save`:
+#### `removeComments`
 
-```sh
-code-discipline check save
-```
+Reports files that still contain removable comments and strips them when you run `code-discipline fix`.
 
-This writes a plain-text report to a timestamped file such as `.code-discipline/generated/reports/cd-report-2026-05-26-19-00-00.txt`.
+The rule supports the same language families this package currently scans for discipline work:
 
-Typical `package.json` scripts can stay simple:
+- JavaScript and TypeScript
+- Go
+- Rust
+- SCSS and CSS
 
-```json
-{
-  "scripts": {
-    "discipline:check": "code-discipline check",
-    "discipline:fix": "code-discipline fix",
-    "start:app": "bun dist/server.js",
-    "start": "code-discipline gate -- bun run start:app"
-  }
+It keeps string, regex, rune, char, byte-string, and raw-string content intact while removing actual source comments. When a removed comment occupied the whole line, that empty line is removed in the same file rewrite.
+
+You can preserve specific comments by matching plain substrings inside the comment text itself, without hardcoding any comment syntax:
+
+```ts
+removeComments: {
+  exclude: ["@ts-nocheck"],
 }
 ```
 
-`gate` runs the same repo config discovery as `check`. If violations are found, it exits non-zero and does not launch the child command. If the repo is clean, it starts the child command and forwards its exit status.
+In that example, any comment containing `@ts-nocheck` is ignored by both `check` and `fix`.
 
-Long check and fix runs emit chunked rule progress in the CLI, including current violation counts and fix mutation counts where applicable.
+Example targeted CLI usage:
 
-## Config
+```sh
+code-discipline fix remove-comments
+```
+
+#### `structuralBlankLines`
+
+Reports JavaScript and TypeScript files where the major structural sections aren't visually separated, and normalizes the blank lines between them when you run `code-discipline fix`.
+
+It only enforces blank lines at boundaries the AST clearly identifies as structural: after the file header, between imports and the first non-import statement, between declaration groups (variables, types, functions, classes, enums, namespaces), and between class fields/methods/constructors. Compact groups  -  consecutive imports, variables, type declarations, re-exports, top-level executable statements, class fields, directive prologues, function overload chains, and getter/setter pairs  -  allow zero or one blank line and only collapse two or more down to one.
+
+It never touches statements inside function or method bodies, `if`/loop/`try` bodies, object literals, array elements, interface members, type literal members, enum members, or JSX children  -  spacing choices inside those remain up to the developer.
+
+```ts
+structuralBlankLines: {}
+```
+
+Example targeted CLI usage:
+
+```sh
+code-discipline fix structural-blank-lines
+```
+
+#### `dry`
+
+Reports duplicate function groups across the configured source tree.
+
+- exact normalized structure is reported with 100% confidence
+- equivalent normalized behavior in simple pure functions is reported with 100% confidence
+- matching function names are reported with 100% confidence
+- highly similar normalized function structure is reported as a likely duplicate
+- `minDuplicateCharacters` defaults to `0`; raise it if you only want larger duplicate functions
+- whitespace, comments, function names, parameter names, and local identifier names do not matter
+- expression bodies, single-return blocks, simple const-then-return blocks, nullish fallback forms, finite number guards, and object guard branches are normalized when their behavior matches
+- reports are neutral groups, not "file A duplicates file B"
+- `dry` is check-only
+
+```ts
+dry: {
+  minDuplicateCharacters: 0,
+}
+```
+
+Example output:
+
+```txt
+dry duplicate function group: 2 functions, confidence 1, signals: exact-normalized, normalized-behavior, similar-structure
+  - src/one.ts:1 buildUserLabel
+  - src/two.ts:1 formatUserLabel
+```
+
+### Lifecycle Hooks
+
+Hooks remain package-owned and generic:
+
+- `beforeRun(context)`
+- `afterRun(context, result)`
+- `beforeMode(context)`
+- `afterMode(context, result)`
+
+The hook context includes:
+
+- `mode`
+- `projectRoot`
+- `configPath`
+- `config`
+- mutable `state`
+
+### Tsconfig Path Normalization
+
+Use `rules.syncImports.runtime` when a run needs temporary `compilerOptions.paths` normalization:
+
+```ts
+rules: {
+  syncImports: {
+    runtime: {
+      normalize: "relative-dot-prefix",
+      restoreAfterRun: true,
+    },
+  },
+}
+```
+
+Available modes:
+
+- `"relative-dot-prefix"` turns `src/x.ts` into `./src/x.ts`
+- `"strip-dot-prefix"` turns `./src/x.ts` into `src/x.ts`
+- `"none"` leaves values unchanged
+
+## Configuration
+
+### Config
 
 The CLI auto-discovers config modules in this order:
 
@@ -235,9 +451,9 @@ export default defineCodeDisciplineConfig({
 });
 ```
 
-## Presets
+### Presets
 
-### `nodeProcessBoundary`
+#### `nodeProcessBoundary`
 
 `nodeProcessBoundary` is opt-in. It expands into ordinary `bannedPatterns` entries so projects can keep direct Node `process` access inside explicit boundary files.
 
@@ -257,7 +473,7 @@ presets: {
 
 Manual `rules.bannedPatterns` entries still work normally. If both are configured, the preset patterns are appended to the manual list and share the same `bannedPatterns` severity and exclusions.
 
-## Selectors
+### Selectors
 
 `check` and `fix` both accept positional selectors:
 
@@ -287,19 +503,7 @@ Rules use kebab-case public slugs:
 
 Formatter selectors such as `prettier` are enabled by top-level `formatters` config, not by `rules`.
 
-## Logging
-
-Code Discipline uses logger levels directly: passing summaries use `success`, blocking findings use `fail`, and warning findings use `warn`.
-
-```ts
-logging: {
-  warnings: false,
-}
-```
-
-Set `logging.warnings: false` to hide warning-level CLI output and warning-only report rows. The default is `true`.
-
-## Formatters
+### Formatters
 
 Formatters are configured at top level under `formatters`, not under `rules`. Presence enables a formatter; there is no `enabled: true` key.
 
@@ -324,7 +528,69 @@ formatters: {
 },
 ```
 
-## Runtime API
+## Runtime
+
+### Native Backend
+
+`@trebired/code-discipline` can use a Rust native backend when a matching binary is available, with the TypeScript implementation as the fallback. This follows the same native-fast-path shape as `@trebired/logger`: package users keep the same CLI/API, while hot scanning and rewrite paths can move into Rust.
+
+The current native backend accelerates source scanning, `max-file-lines`, common `max-function-lines` paths, `folderize-compound-files` checks, and `remove-comments`. If no binary is present, the package automatically uses the TypeScript fallback.
+
+Useful native controls:
+
+- `bun run build:native` builds the host native addon into `native/<platform>.node`
+- `bun run build:native:matrix` builds the release target matrix
+- `TB_CODE_DISCIPLINE_DISABLE_NATIVE=1` forces the TypeScript fallback
+- `TB_CODE_DISCIPLINE_NATIVE_BINARY=/path/to/addon.node` loads a specific native addon
+
+Top-level `sync` is gone.
+
+`sync-imports` is now just another fixable rule, so targeted sync work is done through:
+
+```sh
+code-discipline fix sync-imports
+```
+
+If you want the terminal output written to a package-managed report file too, add `save`:
+
+```sh
+code-discipline check save
+```
+
+This writes a plain-text report to a timestamped file such as `.code-discipline/generated/reports/cd-report-2026-05-26-19-00-00.txt`.
+
+Typical `package.json` scripts can stay simple:
+
+```json
+{
+  "scripts": {
+    "discipline:check": "code-discipline check",
+    "discipline:fix": "code-discipline fix",
+    "start:app": "bun dist/server.js",
+    "start": "code-discipline gate -- bun run start:app"
+  }
+}
+```
+
+`gate` runs the same repo config discovery as `check`. If violations are found, it exits non-zero and does not launch the child command. If the repo is clean, it starts the child command and forwards its exit status.
+
+Long check and fix runs emit chunked rule progress in the CLI, including current violation counts and fix mutation counts where applicable.
+
+### Logging
+
+Code Discipline uses logger levels directly: passing summaries use `success`, blocking findings use `fail`, and warning findings use `warn`.
+
+```ts
+logging: {
+  warnings: false,
+}
+```
+
+Set `logging.warnings: false` to hide warning-level CLI output and warning-only report rows. The default is `true`.
+
+## Public API
+
+### Runtime API
 
 The package-owned runtime dispatcher now has two modes only:
 
@@ -386,265 +652,7 @@ await discipline.fix({
 
 Every violation is treated uniformly now. Results expose `ok`, `violationCount`, and `violations`, and the CLI prints concise rule/file/message lines instead of large JSON-style payloads.
 
-## Rules
-
-### `bannedPatterns`
-
-Reports case-insensitive substring matches found in source files.
-
-- `"test"` matches `test`, `Test`, `contest`, and `"Test runner"`
-- matching is content-based, not whole-word-only
-- `allowedFiles` lets specific project-relative files bypass a specific banned pattern
-- `severity` defaults to `"fail"`
-- for `.ts`/`.tsx`/`.mts`/`.cts`/`.js`/`.jsx`/`.mjs`/`.cjs` files, patterns are also checked against expressions the compiler can constant-fold to a fixed string at zero runtime cost: `+` concatenation of literals, template literals with foldable interpolations, `[...literals].join(literalSeparator)`, and same-scope `const` aliases of those  -  so `["OPER", "LORN"].join("")` is caught the same as the literal `"OPERLORN"` would be
-- expressions touching anything non-literal (a parameter, `process.env`, a function call, a name shadowed elsewhere in the file) are never folded  -  this closes the "split into literal chunks" evasion without guessing at genuinely computed values
-
-Example:
-
-```ts
-bannedPatterns: {
-  patterns: [
-    "test",
-    {
-      value: "mock",
-      allowedFiles: ["src/testing/mock-registry.ts"],
-    },
-  ],
-}
-```
-
-### `bannedFiles`
-
-Reports source files whose project-relative paths match banned glob patterns.
-
-- `**/*.spec.ts` matches root and nested TypeScript spec files
-- `*` matches within a single path segment
-- `**` can cross directory boundaries
-- `code-discipline fix banned-files` deletes matching files
-- `severity` defaults to `"fail"`
-
-Example:
-
-```ts
-bannedFiles: {
-  patterns: [
-    { glob: "**/*.spec.ts" },
-    { glob: "**/*.spec.tsx" },
-  ],
-}
-```
-
-### `maxFileLines`
-
-Reports files whose total line count exceeds `max`.
-
-### `minFileLines`
-
-Reports files whose code line count is at or below `min`, defaulting to `1` when the rule is configured. This catches tiny legacy compatibility shims that only re-export or re-import another module.
-
-`code-discipline fix min-file-lines` can delete tiny redirect shims when the file is clearly a single JavaScript/TypeScript `export ... from "..."` statement or a single SCSS `@forward "..."` directive. Importers of that shim are rewritten to the forwarded target before the shim file is removed.
-
-### `minDeclarationName`
-
-Reports JavaScript and TypeScript `function` declarations and simple `const` identifiers whose names are shorter than `min`, defaulting to `2` when the rule is configured.
-
-### `maxCharactersPerLine`
-
-Reports physical lines whose character count exceeds `max`, defaulting to `150` when the rule is configured.
-
-`code-discipline fix max-characters-per-line` can split safe JavaScript and TypeScript string literals into concatenated string segments without requiring Prettier. The fixer preserves the exact runtime string value, prefers whitespace split points, keeps the original quote style when practical, and handles common expression positions such as object property values, variable initializers, array elements, call arguments, and return statements.
-
-Example:
-
-```ts
-const messages = {
-  repositoryActionsDescription:
-    "Akce jsou workflow vlastněná repozitářem, nalezená v {{dir}}. Starší shellová workflow stále fungují, zatímco úlohy, artefakty a běhy workflow_dispatch jsou podporovány také zde.",
-};
-```
-
-Becomes:
-
-```ts
-const messages = {
-  repositoryActionsDescription:
-    "Akce jsou workflow vlastněná repozitářem, nalezená v {{dir}}. " +
-    "Starší shellová workflow stále fungují, zatímco úlohy, artefakty " +
-    "a běhy workflow_dispatch jsou podporovány také zde.",
-};
-```
-
-Unsafe cases stay unchanged and remain reported after the fix pass. The fixer intentionally avoids template literals, escaped strings, strings with newlines, import/export specifiers, directive prologues, JSX text and attributes, URLs, long unbroken tokens, generated files, minified files, regex literals, comments, and syntax cases where semantic preservation is uncertain.
-
-### `maxFunctionLines`
-
-Reports function-like declarations whose total span exceeds `max`.
-
-### `folderizeCompoundFiles`
-
-Detects flat compound names such as `user_route.ts` and can move them into structural folders such as `user/route.ts`.
-
-The rule config only describes separators now. Whether it mutates is decided by running `code-discipline fix`.
-
-Folderization autofix stays intentionally conservative: move-aware relative import repair is implemented for the JavaScript and TypeScript module family, while Go and Rust files are scanned safely for other rules but are not folderized automatically.
-
-### `syncImports`
-
-Validates and optionally fixes:
-
-- `tsconfig.compilerOptions.paths`
-- relative source imports that should become aliases
-- `project-manifests` output drift in root `tsconfig.json` and `package.json#imports`
-- `alias-map` output drift in `.code-discipline/imports/*.json` and the generated tsconfig projection
-
-`syncImports` rewrites JavaScript, TypeScript, and SCSS module specifiers. Mixed-language repositories can still include Go and Rust; those files are ignored by alias syncing instead of causing parser failures.
-
-When `syncImports` sees a relative import that resolves nowhere, check mode reports it. Fix mode removes safe line-isolated static import/export declarations and Sass `@use`, `@forward`, or single-specifier quoted `@import` directives. Dynamic `import(...)`, comments, strings, CSS `url(...)`, and arbitrary CSS values are left alone.
-
-The default `output: { type: "project-manifests" }` writes aliases directly into root `tsconfig.json` and mirrors them into `package.json#imports`. `output: { type: "alias-map" }` uses `.code-discipline/imports/*.json` as the alias source of truth, writes `.code-discipline/generated/tsconfig.paths.json`, makes root `tsconfig.json` extend the generated file, and removes managed project-manifest alias state. `code-discipline check sync-imports` reports missing or stale generated tsconfig wiring as a fixable violation, and `code-discipline fix sync-imports` migrates both directions when the configured output model changes.
-
-Alias-map output separates committed state from disposable package output:
-
-- commit `.code-discipline/config.ts`
-- commit `.code-discipline/imports/*.json` when stable or random aliases are part of the configured alias-map state
-- do not commit `.code-discipline/generated/`
-- `code-discipline fix sync-imports` creates root `.gitignore` when missing and adds `.code-discipline/generated/` idempotently
-- saved CLI reports are written under `.code-discipline/generated/reports/`
-
-Top-level `ignore` groups shared scan and formatter exclusions in one place, so you can add explicit entries through `ignore.entries` and opt into root `.gitignore` entries through `ignore.use_gitignore`.
-
-Example:
-
-```ts
-ignore: {
-  entries: [
-    { type: "folder", pattern: "coverage" },
-    { type: "folder", pattern: "tmp" },
-  ],
-  use_gitignore: true,
-},
-```
-
-Example targeted CLI usage:
-
-```sh
-code-discipline fix sync-imports
-```
-
-### `removeComments`
-
-Reports files that still contain removable comments and strips them when you run `code-discipline fix`.
-
-The rule supports the same language families this package currently scans for discipline work:
-
-- JavaScript and TypeScript
-- Go
-- Rust
-- SCSS and CSS
-
-It keeps string, regex, rune, char, byte-string, and raw-string content intact while removing actual source comments. When a removed comment occupied the whole line, that empty line is removed in the same file rewrite.
-
-You can preserve specific comments by matching plain substrings inside the comment text itself, without hardcoding any comment syntax:
-
-```ts
-removeComments: {
-  exclude: ["@ts-nocheck"],
-}
-```
-
-In that example, any comment containing `@ts-nocheck` is ignored by both `check` and `fix`.
-
-Example targeted CLI usage:
-
-```sh
-code-discipline fix remove-comments
-```
-
-### `structuralBlankLines`
-
-Reports JavaScript and TypeScript files where the major structural sections aren't visually separated, and normalizes the blank lines between them when you run `code-discipline fix`.
-
-It only enforces blank lines at boundaries the AST clearly identifies as structural: after the file header, between imports and the first non-import statement, between declaration groups (variables, types, functions, classes, enums, namespaces), and between class fields/methods/constructors. Compact groups  -  consecutive imports, variables, type declarations, re-exports, top-level executable statements, class fields, directive prologues, function overload chains, and getter/setter pairs  -  allow zero or one blank line and only collapse two or more down to one.
-
-It never touches statements inside function or method bodies, `if`/loop/`try` bodies, object literals, array elements, interface members, type literal members, enum members, or JSX children  -  spacing choices inside those remain up to the developer.
-
-```ts
-structuralBlankLines: {}
-```
-
-Example targeted CLI usage:
-
-```sh
-code-discipline fix structural-blank-lines
-```
-
-### `dry`
-
-Reports duplicate function groups across the configured source tree.
-
-- exact normalized structure is reported with 100% confidence
-- equivalent normalized behavior in simple pure functions is reported with 100% confidence
-- matching function names are reported with 100% confidence
-- highly similar normalized function structure is reported as a likely duplicate
-- `minDuplicateCharacters` defaults to `0`; raise it if you only want larger duplicate functions
-- whitespace, comments, function names, parameter names, and local identifier names do not matter
-- expression bodies, single-return blocks, simple const-then-return blocks, nullish fallback forms, finite number guards, and object guard branches are normalized when their behavior matches
-- reports are neutral groups, not "file A duplicates file B"
-- `dry` is check-only
-
-```ts
-dry: {
-  minDuplicateCharacters: 0,
-}
-```
-
-Example output:
-
-```txt
-dry duplicate function group: 2 functions, confidence 1, signals: exact-normalized, normalized-behavior, similar-structure
-  - src/one.ts:1 buildUserLabel
-  - src/two.ts:1 formatUserLabel
-```
-
-## Lifecycle Hooks
-
-Hooks remain package-owned and generic:
-
-- `beforeRun(context)`
-- `afterRun(context, result)`
-- `beforeMode(context)`
-- `afterMode(context, result)`
-
-The hook context includes:
-
-- `mode`
-- `projectRoot`
-- `configPath`
-- `config`
-- mutable `state`
-
-## Tsconfig Path Normalization
-
-Use `rules.syncImports.runtime` when a run needs temporary `compilerOptions.paths` normalization:
-
-```ts
-rules: {
-  syncImports: {
-    runtime: {
-      normalize: "relative-dot-prefix",
-      restoreAfterRun: true,
-    },
-  },
-}
-```
-
-Available modes:
-
-- `"relative-dot-prefix"` turns `src/x.ts` into `./src/x.ts`
-- `"strip-dot-prefix"` turns `./src/x.ts` into `src/x.ts`
-- `"none"` leaves values unchanged
-
-## Advanced Helpers
+### Advanced Helpers
 
 Low-level helpers are still exported for advanced tooling:
 
@@ -659,3 +667,23 @@ Low-level helpers are still exported for advanced tooling:
 - `syncPackageJsonImportsFromTsconfigPaths()`
 
 `syncImports()` remains available as a lower-level helper, but the package CLI no longer exposes a separate `sync` command.
+
+## CLI
+
+### Command Reference
+
+- `code-discipline` runs the package CLI.
+
+The CLI exits with status 1 when it reports a failing violation or runtime error.
+
+## What It Does Not Do
+
+This package does not:
+
+- replace a formatter, linter, compiler, or build system
+- own application architecture or product naming policy
+- require generated output to be committed
+
+## License
+
+Licensed under AGPL-3.0-only. See [LICENSE](./LICENSE).
