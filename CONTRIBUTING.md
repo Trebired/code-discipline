@@ -44,7 +44,7 @@ There is no package test script. Committed `*.spec.ts` and `*.spec.tsx` files ar
 - Preserve valid alias ids instead of churning paths without need.
 - Keep discipline checks actionable and easy to wire into dev or CI.
 - Rewrite imports explicitly and predictably, never by framework convention.
-- Keep the package runtime-agnostic across Bun and Node.js projects.
+- Keep the package aligned with Bun project workflows.
 - Avoid external runtime dependencies unless they remove real complexity.
 
 ## Release Process
@@ -54,7 +54,7 @@ There is no package test script. Committed `*.spec.ts` and `*.spec.tsx` files ar
 3. Publish with:
 
    ```sh
-   npm publish
+   bun publish
    ```
 
-`npm publish` runs `prepublishOnly`, which typechecks and runs the package publish verification path.
+`bun publish` runs `prepublishOnly`, which typechecks and runs the package publish verification path.

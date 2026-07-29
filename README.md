@@ -1,6 +1,6 @@
 # @trebired/code-discipline
 
-Configurable repository discipline checks and rule-driven fixes for Bun and Node.js projects.
+Configurable repository discipline checks and rule-driven fixes for Bun projects.
 
 `@trebired/code-discipline` stays in one lane:
 
@@ -16,16 +16,13 @@ It is not a formatter, linter replacement, or build system.
 
 ## Install
 
-Runtime support:
-
-- Bun 1+
-- Node.js 18+
+Runtime support: Bun 1+.
 
 ```sh
-npm install @trebired/code-discipline
+bun i @trebired/code-discipline
 ```
 
-## Commands
+## Quick Start
 
 ```sh
 code-discipline check
@@ -72,8 +69,8 @@ Typical `package.json` scripts can stay simple:
   "scripts": {
     "discipline:check": "code-discipline check",
     "discipline:fix": "code-discipline fix",
-    "start:app": "node dist/server.js",
-    "start": "code-discipline gate -- npm run start:app"
+    "start:app": "bun dist/server.js",
+    "start": "code-discipline gate -- bun run start:app"
   }
 }
 ```

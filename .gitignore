@@ -12,7 +12,7 @@ coverage/
 .tmp/
 tmp/
 .code-discipline/generated/
-
+cd-report-*.txt
 # Native build output
 native/*/target/
 native/*.node

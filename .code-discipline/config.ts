@@ -1,4 +1,10 @@
-export default {
+import type { CodeDisciplineConfig } from "@trebired/code-discipline";
+
+function defineCodeDisciplineConfig(config: CodeDisciplineConfig): CodeDisciplineConfig {
+  return config;
+}
+
+export default defineCodeDisciplineConfig({
   ignore: {
     entries: [],
     use_gitignore: true,
@@ -12,7 +18,7 @@ export default {
     },
     bannedPatterns: {
       patterns: [
-        { value: "trebired", allowedFiles: ["package.json"] },
+        { value: "trebired", allowedFiles: ["package.json", ".code-discipline/config.ts"] },
       ],
     },
     maxFileLines: {
@@ -37,4 +43,4 @@ export default {
     },
     dry: {},
   },
-};
+});
