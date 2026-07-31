@@ -1,4 +1,4 @@
-type SyncImportsErrorCode =
+type ImportsErrorCode =
   | "invalid_project_root"
   | "invalid_source_root"
   | "invalid_tsconfig_path"
@@ -10,61 +10,61 @@ type SyncImportsErrorCode =
   | "file_conflict"
   | "fix_failure";
 
-class SyncImportsError extends Error {
-  code: SyncImportsErrorCode | string;
+class ImportsError extends Error {
+  code: ImportsErrorCode | string;
   details: Record<string, unknown>;
 
-  constructor(code: SyncImportsErrorCode | string, message: string, details: Record<string, unknown> = {}) {
+  constructor(code: ImportsErrorCode | string, message: string, details: Record<string, unknown> = {}) {
     super(message);
-    this.name = "SyncImportsError";
+    this.name = "ImportsError";
     this.code = code;
     this.details = details;
   }
 }
 
-class InvalidProjectRootError extends SyncImportsError {
+class InvalidProjectRootError extends ImportsError {
   constructor(projectRoot: string) {
     super("invalid_project_root", `Invalid project root: ${projectRoot}`, { projectRoot });
     this.name = "InvalidProjectRootError";
   }
 }
 
-class InvalidSourceRootError extends SyncImportsError {
+class InvalidSourceRootError extends ImportsError {
   constructor(sourceRoot: string) {
     super("invalid_source_root", `Invalid source root: ${sourceRoot}`, { sourceRoot });
     this.name = "InvalidSourceRootError";
   }
 }
 
-class InvalidTsconfigPathError extends SyncImportsError {
+class InvalidTsconfigPathError extends ImportsError {
   constructor(tsconfigPath: string) {
     super("invalid_tsconfig_path", `Invalid tsconfig path: ${tsconfigPath}`, { tsconfigPath });
     this.name = "InvalidTsconfigPathError";
   }
 }
 
-class InvalidCodeDisciplineConfigError extends SyncImportsError {
+class InvalidCodeDisciplineConfigError extends ImportsError {
   constructor(message: string, details: Record<string, unknown> = {}) {
     super("invalid_config", message, details);
     this.name = "InvalidCodeDisciplineConfigError";
   }
 }
 
-class AliasCollisionError extends SyncImportsError {
+class AliasCollisionError extends ImportsError {
   constructor(aliasId: string, details: Record<string, unknown> = {}) {
     super("alias_collision", `Alias collision: ${aliasId}`, { aliasId, ...details });
     this.name = "AliasCollisionError";
   }
 }
 
-class InvalidAliasError extends SyncImportsError {
+class InvalidAliasError extends ImportsError {
   constructor(aliasId: unknown, details: Record<string, unknown> = {}) {
     super("invalid_alias", `Invalid alias id: ${String(aliasId)}`, { aliasId, ...details });
     this.name = "InvalidAliasError";
   }
 }
 
-class RewriteFailureError extends SyncImportsError {
+class RewriteFailureError extends ImportsError {
   constructor(filePath: string, cause?: unknown) {
     super("rewrite_failure", `Failed to rewrite imports in ${filePath}`, {
       filePath,
@@ -74,29 +74,29 @@ class RewriteFailureError extends SyncImportsError {
   }
 }
 
-class ParseFailureError extends SyncImportsError {
+class ParseFailureError extends ImportsError {
   constructor(filePath: string, diagnostics: unknown) {
     super("parse_failure", `Failed to parse ${filePath}`, { filePath, diagnostics });
     this.name = "ParseFailureError";
   }
 }
 
-class FileConflictError extends SyncImportsError {
+class FileConflictError extends ImportsError {
   constructor(filePath: string, details: Record<string, unknown> = {}) {
     super("file_conflict", `File conflict: ${filePath}`, { filePath, ...details });
     this.name = "FileConflictError";
   }
 }
 
-class FixFailureError extends SyncImportsError {
+class FixFailureError extends ImportsError {
   constructor(message: string, details: Record<string, unknown> = {}) {
     super("fix_failure", message, details);
     this.name = "FixFailureError";
   }
 }
 
-function isSyncImportsError(value: unknown): value is SyncImportsError {
-  return value instanceof SyncImportsError;
+function isImportsError(value: unknown): value is ImportsError {
+  return value instanceof ImportsError;
 }
 
 export {
@@ -110,7 +110,7 @@ export {
   InvalidTsconfigPathError,
   ParseFailureError,
   RewriteFailureError,
-  SyncImportsError,
-  isSyncImportsError,
+  ImportsError,
+  isImportsError,
 };
-export type { SyncImportsErrorCode };
+export type { ImportsErrorCode };

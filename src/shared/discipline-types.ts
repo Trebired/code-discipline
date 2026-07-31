@@ -9,7 +9,7 @@ type CodeDisciplineRuleName =
   | "max-characters-per-line"
   | "max-function-lines"
   | "folderize-compound-files"
-  | "sync-imports"
+  | "imports"
   | "remove-comments"
   | "structural-blank-lines"
   | "dry";

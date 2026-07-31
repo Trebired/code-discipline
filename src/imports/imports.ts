@@ -1,18 +1,18 @@
-import { normalizeSyncImportsOptions } from "#9sccgd75qe7n";
+import { normalizeImportsOptions } from "#9sccgd75qe7n";
 import { syncPackageJsonImportsFromAliasMap, syncPackageJsonImportsFromTsconfigPaths } from "#51kcncizdqcz";
 import { ruleLogGroup } from "#foa3t3ao5irq";
 import { resolveLogger } from "#5koja8ae2wwn";
 import { filterSourceFilesForRule } from "#jizekc8duh4i";
-import { supportsSyncImports } from "#87jyjzn68rrk";
+import { supportsImports } from "#87jyjzn68rrk";
 import { ensureGeneratedArtifactsGitignore } from "#zdy5k79iam8y";
 import type { CodeDisciplineViolation } from "#bsmch74up4fm";
 import { planTsconfigAliases, syncTsconfigAliases } from "./aliases.js";
-import { collectSyncImportViolations } from "./check-sync-imports.js";
+import { collectImportViolations } from "./check-imports.js";
 import { rewriteSourceImports } from "./rewrite.js";
 import { scanSourceFiles } from "./scan.js";
-import type { NormalizedSyncImportsOptions, SyncImportsOptions, SyncImportsResult } from "./types.js";
+import type { ImportsOptions, ImportsResult, NormalizedImportsOptions } from "./types.js";
 
-function summarizeSyncImportViolations(violations: CodeDisciplineViolation[]) {
+function summarizeImportViolations(violations: CodeDisciplineViolation[]) {
   return {
     ok: violations.length === 0,
     violationCount: violations.length,
@@ -20,17 +20,17 @@ function summarizeSyncImportViolations(violations: CodeDisciplineViolation[]) {
   };
 }
 
-function isNormalizedSyncImportsOptions(options: SyncImportsOptions | NormalizedSyncImportsOptions): options is NormalizedSyncImportsOptions {
-  return Array.isArray((options as NormalizedSyncImportsOptions).excludeDirs);
+function isNormalizedImportsOptions(options: ImportsOptions | NormalizedImportsOptions): options is NormalizedImportsOptions {
+  return Array.isArray((options as NormalizedImportsOptions).excludeDirs);
 }
 
 function createCheckOnlyResult(args: {
   aliasesChanged: boolean;
   aliasesCount: number;
   violations: CodeDisciplineViolation[];
-}): SyncImportsResult {
+}): ImportsResult {
   return {
-    ...summarizeSyncImportViolations(args.violations),
+    ...summarizeImportViolations(args.violations),
     mutations_allowed: false,
     aliases_changed: args.aliasesChanged,
     aliases_count: args.aliasesCount,
@@ -40,8 +40,8 @@ function createCheckOnlyResult(args: {
   };
 }
 
-function logCheckOnlyResult(result: SyncImportsResult, logger: ReturnType<typeof resolveLogger>): void {
-  const group = ruleLogGroup("sync-imports");
+function logCheckOnlyResult(result: ImportsResult, logger: ReturnType<typeof resolveLogger>): void {
+  const group = ruleLogGroup("imports");
   logger.flush(
     result.violationCount > 0 ? "warn" : "success",
     result.violationCount > 0 ? "sync-drift-detected" : "sync-drift-clear",
@@ -57,18 +57,18 @@ function logCheckOnlyResult(result: SyncImportsResult, logger: ReturnType<typeof
   );
 }
 
-async function applySyncFixes(
-  normalized: NormalizedSyncImportsOptions,
+async function applyImportFixes(
+  normalized: NormalizedImportsOptions,
   sourceFiles: Awaited<ReturnType<typeof scanSourceFiles>>,
   plannedAliases: Awaited<ReturnType<typeof planTsconfigAliases>>,
   logger: ReturnType<typeof resolveLogger>,
-): Promise<SyncImportsResult> {
+): Promise<ImportsResult> {
   if (normalized.output.type === "alias-map") {
     const gitignore = await ensureGeneratedArtifactsGitignore(normalized.projectRoot);
     if (gitignore.changed) {
       logger.success("generated-gitignore-written", "generated artifact ignore entry written", {
         gitignorePath: gitignore.path,
-      }, { group: ruleLogGroup("sync-imports") });
+      }, { group: ruleLogGroup("imports") });
     }
   }
 
@@ -93,7 +93,7 @@ async function applySyncFixes(
       projectRoot: normalized.projectRoot,
       tsconfigPath: normalized.tsconfigPath,
     });
-  const result: SyncImportsResult = {
+  const result: ImportsResult = {
     ok: true,
     violationCount: 0,
     violations: [],
@@ -111,14 +111,14 @@ async function applySyncFixes(
     rewrittenFiles: result.rewritten_files,
     rewrittenImports: result.rewritten_imports,
     packageJsonImportsChanged: packageJsonImportsState?.changed ?? false,
-  }, { group: ruleLogGroup("sync-imports") });
+  }, { group: ruleLogGroup("imports") });
   return result;
 }
 
-async function syncImports(options: SyncImportsOptions | NormalizedSyncImportsOptions): Promise<SyncImportsResult> {
-  const normalized = isNormalizedSyncImportsOptions(options)
+async function imports(options: ImportsOptions | NormalizedImportsOptions): Promise<ImportsResult> {
+  const normalized = isNormalizedImportsOptions(options)
     ? options
-    : await normalizeSyncImportsOptions(options);
+    : await normalizeImportsOptions(options);
   const logger = resolveLogger(normalized.logging);
 
   logger.info("sync-started", "sync started", {
@@ -127,15 +127,15 @@ async function syncImports(options: SyncImportsOptions | NormalizedSyncImportsOp
     tsconfigPath: normalized.tsconfigPath,
     output: normalized.output.type,
     fix: normalized.fix,
-  }, { group: ruleLogGroup("sync-imports") });
+  }, { group: ruleLogGroup("imports") });
 
   try {
     const sourceFiles = filterSourceFilesForRule(
-      (await scanSourceFiles(normalized)).filter((file) => supportsSyncImports(file.extension)),
+      (await scanSourceFiles(normalized)).filter((file) => supportsImports(file.extension)),
       normalized,
     );
     const plannedAliases = await planTsconfigAliases(normalized, sourceFiles, logger);
-    const driftViolations = await collectSyncImportViolations(sourceFiles, normalized, logger);
+    const driftViolations = await collectImportViolations(sourceFiles, normalized, logger);
 
     if (!normalized.fix) {
       const result = createCheckOnlyResult({
@@ -147,13 +147,13 @@ async function syncImports(options: SyncImportsOptions | NormalizedSyncImportsOp
       return result;
     }
 
-    return applySyncFixes(normalized, sourceFiles, plannedAliases, logger);
+    return applyImportFixes(normalized, sourceFiles, plannedAliases, logger);
   } catch (error) {
     logger.flush("error", "sync-failed", error instanceof Error ? error.message : "sync failed", {
       cause: error instanceof Error ? error.name : typeof error,
-    }, { group: ruleLogGroup("sync-imports") });
+    }, { group: ruleLogGroup("imports") });
     throw error;
   }
 }
 
-export { syncImports };
+export { imports };

@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { syncImports } from "#co5e63fhc1wb";
+import { imports } from "#co5e63fhc1wb";
 
 function writeDemoFile(rootDir: string, relativePath: string, contents: string): void {
   const destination = path.resolve(rootDir, relativePath);
@@ -28,7 +28,7 @@ async function run(): Promise<void> {
   writeDemoFile(projectRoot, "src/feature/local.ts", "export const local = true;\n");
   writeDemoFile(projectRoot, "src/shared/util.ts", "export const util = true;\n");
 
-  const result = await syncImports({
+  const result = await imports({
     projectRoot,
     alias: {
       strategy: "relative-path-slug",

@@ -17,7 +17,7 @@ const ALL_RULE_SLUGS: CodeDisciplineRuleSlug[] = [
   "max-characters-per-line",
   "max-function-lines",
   "folderize-compound-files",
-  "sync-imports",
+  "imports",
   "remove-comments",
   "structural-blank-lines",
   "dry",
@@ -28,7 +28,7 @@ const FIXABLE_RULE_SLUGS: FixableRuleSlug[] = [
   "min-file-lines",
   "max-characters-per-line",
   "folderize-compound-files",
-  "sync-imports",
+  "imports",
   "remove-comments",
   "structural-blank-lines",
   "prettier",
@@ -50,7 +50,7 @@ const RULE_SLUG_BY_CONFIG_KEY = {
   minFileLines: "min-file-lines",
   removeComments: "remove-comments",
   structuralBlankLines: "structural-blank-lines",
-  syncImports: "sync-imports",
+  imports: "imports",
 } as const;
 
 function resolveEnabledRuleSlugs(

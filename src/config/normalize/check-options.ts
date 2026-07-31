@@ -17,7 +17,7 @@ import {
   normalizeMinFileLinesRule,
   normalizeRemoveCommentsRule,
   normalizeStructuralBlankLinesRule,
-  normalizeSyncImportsRule,
+  normalizeImportsRule,
 } from "./rule-options.js";
 import { normalizeFormatters } from "./formatter-options.js";
 import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
@@ -33,7 +33,7 @@ function assertRemovedCheckOptions(options: Record<string, unknown>): void {
   }
 
   if ("tsconfigPaths" in options) {
-    throw new InvalidCodeDisciplineConfigError("tsconfigPaths is no longer supported; use rules.syncImports.runtime instead", {
+    throw new InvalidCodeDisciplineConfigError("tsconfigPaths is no longer supported; use rules.imports.runtime instead", {
       key: "tsconfigPaths",
     });
   }
@@ -64,7 +64,7 @@ async function normalizeCheckCodeDisciplineOptions(
       maxCharactersPerLine: normalizeMaxCharactersPerLineRule(rules?.maxCharactersPerLine),
       maxFunctionLines: normalizeMaxFunctionLinesRule(rules?.maxFunctionLines),
       folderizeCompoundFiles: normalizeFolderizeCompoundFilesRule(rules?.folderizeCompoundFiles),
-      syncImports: normalizeSyncImportsRule(rules?.syncImports),
+      imports: normalizeImportsRule(rules?.imports),
       removeComments: normalizeRemoveCommentsRule(rules?.removeComments),
       structuralBlankLines: normalizeStructuralBlankLinesRule(rules?.structuralBlankLines),
     },

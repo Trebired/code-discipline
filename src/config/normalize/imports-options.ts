@@ -5,10 +5,11 @@ import {
   DEFAULT_ALIAS_RANDOM_LENGTH,
   DEFAULT_ALIAS_STRATEGY,
   DEFAULT_ALLOW_RELATIVE,
+  DEFAULT_REMOVE_DEAD_IMPORTS,
   DEFAULT_RULE_FIX,
 } from "#ik5y0pee4ah1";
 import { InvalidCodeDisciplineConfigError, InvalidTsconfigPathError } from "#4f8hale01wb4";
-import type { NormalizedSyncImportsOptions, SyncImportsOptions } from "#pkb9x3eo56l7";
+import type { NormalizedImportsOptions, ImportsOptions } from "#pkb9x3eo56l7";
 import { isDirectory } from "#ntve5i5a0mol";
 import { normalizeLoggingOptions } from "./logging-options.js";
 import { normalizeSourceOptions } from "./source-options.js";
@@ -16,23 +17,23 @@ import { normalizeSourceOptions } from "./source-options.js";
 const GENERATED_TSCONFIG_PATH = ".code-discipline/generated/tsconfig.paths.json";
 const IMPORTS_FOLDER_DIR = ".code-discipline/imports";
 
-function assertValidSyncImportsOptions(options: SyncImportsOptions): void {
+function assertValidImportsOptions(options: ImportsOptions): void {
   if ("imports" in (options as Record<string, unknown>)) {
-    throw new InvalidCodeDisciplineConfigError("syncImports.imports is no longer supported; use allowRelative instead", {
+    throw new InvalidCodeDisciplineConfigError("imports.imports is no longer supported; use allowRelative instead", {
       key: "imports",
     });
   }
 
   for (const key of ["enabled", "stop", "rewrite", "keepRelative", "sourceRoot", "tsconfigPath", "importsFolder", "generatedTsconfig", "packageJsonImports"] as const) {
     if (key in (options as Record<string, unknown>)) {
-      throw new InvalidCodeDisciplineConfigError(`syncImports.${key} is no longer supported`, {
+      throw new InvalidCodeDisciplineConfigError(`imports.${key} is no longer supported`, {
         key,
       });
     }
   }
 
   if ("severity" in (options as Record<string, unknown>)) {
-    throw new InvalidCodeDisciplineConfigError("syncImports.severity is no longer supported", {
+    throw new InvalidCodeDisciplineConfigError("imports.severity is no longer supported", {
       key: "severity",
     });
   }
@@ -52,11 +53,11 @@ function assertValidSyncImportsOptions(options: SyncImportsOptions): void {
   }
 }
 
-function normalizeOutput(output: SyncImportsOptions["output"]): NormalizedSyncImportsOptions["output"] {
+function normalizeOutput(output: ImportsOptions["output"]): NormalizedImportsOptions["output"] {
   if (output === undefined) return { type: "project-manifests" };
 
   if (!output || typeof output !== "object" || Array.isArray(output)) {
-    throw new InvalidCodeDisciplineConfigError("syncImports.output must be an object when provided", {
+    throw new InvalidCodeDisciplineConfigError("imports.output must be an object when provided", {
       key: "output",
       value: output,
     });
@@ -76,14 +77,14 @@ function normalizeOutput(output: SyncImportsOptions["output"]): NormalizedSyncIm
     };
   }
 
-  throw new InvalidCodeDisciplineConfigError('syncImports.output.type must be "project-manifests" or "alias-map"', {
+  throw new InvalidCodeDisciplineConfigError('imports.output.type must be "project-manifests" or "alias-map"', {
     key: "output.type",
     value: type,
   });
 }
 
-async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise<NormalizedSyncImportsOptions> {
-  assertValidSyncImportsOptions(options);
+async function normalizeImportsOptions(options: ImportsOptions): Promise<NormalizedImportsOptions> {
+  assertValidImportsOptions(options);
 
   const source = await normalizeSourceOptions(options);
   const tsconfigInput = options.runtime?.tsconfigPath ?? path.join(source.projectRoot, "tsconfig.json");
@@ -106,6 +107,7 @@ async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise
     },
     allowRelative: options.allowRelative ?? DEFAULT_ALLOW_RELATIVE,
     output,
+    removeDeadImports: options.removeDeadImports ?? DEFAULT_REMOVE_DEAD_IMPORTS,
     packageJsonImports: {
       enabled: output.type === "project-manifests",
       aliasPrefix: DEFAULT_ALIAS_PREFIX,
@@ -116,4 +118,4 @@ async function normalizeSyncImportsOptions(options: SyncImportsOptions): Promise
   };
 }
 
-export { normalizeSyncImportsOptions };
+export { normalizeImportsOptions };

@@ -3,7 +3,7 @@ import path from "node:path";
 
 import type {
   AliasRecord,
-  NormalizedSyncImportsOptions,
+  NormalizedImportsOptions,
   ScannedSourceFile,
   SyncAliasesResult,
   TsconfigJson,
@@ -43,7 +43,7 @@ function sortPathsRecord(pathsMap: Record<string, string[]>): Record<string, str
 }
 
 async function extractExistingPaths(
-  options: NormalizedSyncImportsOptions,
+  options: NormalizedImportsOptions,
   sourceFilesByPath: Map<string, ScannedSourceFile>,
   existingPaths: Record<string, string[]>,
 ): Promise<ExistingPathsState> {
@@ -86,7 +86,7 @@ async function extractExistingPaths(
 }
 
 async function readTsconfig(
-  options: NormalizedSyncImportsOptions,
+  options: NormalizedImportsOptions,
   logger?: NormalizedCodeDisciplineLogger,
 ): Promise<{ config: TsconfigJson; originalConfig: TsconfigJson }> {
   if (!await pathExists(options.tsconfigPath)) {
@@ -106,7 +106,7 @@ async function readTsconfig(
         logger?.warn("tsconfig-read-recovered", `tsconfig recovered after retries=${attempt - 1}`, {
           tsconfigPath: options.tsconfigPath,
           retries: attempt - 1,
-        }, { group: ruleLogGroup("sync-imports") });
+        }, { group: ruleLogGroup("imports") });
       }
 
       return {
@@ -121,7 +121,7 @@ async function readTsconfig(
         tsconfigPath: options.tsconfigPath,
         retry: attempt,
         maxRetries: TSCONFIG_READ_RETRY_ATTEMPTS - 1,
-      }, { group: ruleLogGroup("sync-imports") });
+      }, { group: ruleLogGroup("imports") });
       await wait(TSCONFIG_READ_RETRY_DELAY_MS);
     }
   }
@@ -130,7 +130,7 @@ async function readTsconfig(
 }
 
 async function syncTsconfigAliases(
-  options: NormalizedSyncImportsOptions,
+  options: NormalizedImportsOptions,
   sourceFiles: ScannedSourceFile[],
   logger: NormalizedCodeDisciplineLogger,
 ): Promise<SyncAliasesResult> {
@@ -149,19 +149,19 @@ async function syncTsconfigAliases(
     logger.success("aliases-written", `aliases written count=${result.aliasesCount}`, {
       tsconfigPath: options.tsconfigPath,
       aliasesCount: result.aliasesCount,
-    }, { group: ruleLogGroup("sync-imports") });
+    }, { group: ruleLogGroup("imports") });
   } else {
     logger.info("aliases-unchanged", `aliases unchanged count=${result.aliasesCount}`, {
       tsconfigPath: options.tsconfigPath,
       aliasesCount: result.aliasesCount,
-    }, { group: ruleLogGroup("sync-imports") });
+    }, { group: ruleLogGroup("imports") });
   }
 
   return result;
 }
 
 async function planTsconfigAliases(
-  options: NormalizedSyncImportsOptions,
+  options: NormalizedImportsOptions,
   sourceFiles: ScannedSourceFile[],
   logger?: NormalizedCodeDisciplineLogger,
 ): Promise<SyncAliasesResult> {

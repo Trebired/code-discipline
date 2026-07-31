@@ -39,12 +39,12 @@ function isStyleExtension(value: string): boolean {
   return STYLE_FAMILY_EXTENSIONS.has(normalizeExtension(value));
 }
 
-function supportsSyncImports(value: string): boolean {
+function supportsImports(value: string): boolean {
   return isTypeScriptFamilyExtension(value) || isScssExtension(value);
 }
 
 function supportsFolderizationFix(value: string): boolean {
-  return supportsSyncImports(value);
+  return supportsImports(value);
 }
 
 function supportsMaxFunctionLines(value: string): boolean {
@@ -64,5 +64,5 @@ export {
   supportsFolderizationFix,
   supportsMaxFunctionLines,
   supportsRemoveComments,
-  supportsSyncImports,
+  supportsImports,
 };

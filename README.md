@@ -29,7 +29,7 @@ code-discipline check
 code-discipline check save
 code-discipline check max-function-lines dry
 code-discipline fix
-code-discipline fix banned-files min-file-lines max-characters-per-line sync-imports remove-comments structural-blank-lines
+code-discipline fix banned-files min-file-lines max-characters-per-line imports remove-comments structural-blank-lines
 code-discipline gate -- bun run dev
 ```
 
@@ -137,7 +137,7 @@ The rule config only describes separators now. Whether it mutates is decided by 
 
 Folderization autofix stays intentionally conservative: move-aware relative import repair is implemented for the JavaScript and TypeScript module family, while Go and Rust files are scanned safely for other rules but are not folderized automatically.
 
-#### `syncImports`
+#### `imports`
 
 Validates and optionally fixes:
 
@@ -146,18 +146,20 @@ Validates and optionally fixes:
 - `project-manifests` output drift in root `tsconfig.json` and `package.json#imports`
 - `alias-map` output drift in `.code-discipline/imports/*.json` and the generated tsconfig projection
 
-`syncImports` rewrites JavaScript, TypeScript, and SCSS module specifiers. Mixed-language repositories can still include Go and Rust; those files are ignored by alias syncing instead of causing parser failures.
+`imports` rewrites JavaScript, TypeScript, and SCSS module specifiers. Mixed-language repositories can still include Go and Rust; those files are ignored by alias syncing instead of causing parser failures.
 
-When `syncImports` sees a relative import that resolves nowhere, check mode reports it. Fix mode removes safe line-isolated static import/export declarations and Sass `@use`, `@forward`, or single-specifier quoted `@import` directives. Dynamic `import(...)`, comments, strings, CSS `url(...)`, and arbitrary CSS values are left alone.
+When `imports` sees a relative import that resolves nowhere, check mode reports it. Fix mode removes safe line-isolated static import/export declarations and Sass `@use`, `@forward`, or single-specifier quoted `@import` directives. Dynamic `import(...)`, comments, strings, CSS `url(...)`, and arbitrary CSS values are left alone.
 
-The default `output: { type: "project-manifests" }` writes aliases directly into root `tsconfig.json` and mirrors them into `package.json#imports`. `output: { type: "alias-map" }` uses `.code-discipline/imports/*.json` as the alias source of truth, writes `.code-discipline/generated/tsconfig.paths.json`, makes root `tsconfig.json` extend the generated file, and removes managed project-manifest alias state. `code-discipline check sync-imports` reports missing or stale generated tsconfig wiring as a fixable violation, and `code-discipline fix sync-imports` migrates both directions when the configured output model changes.
+Setting `removeDeadImports: true` also detects and removes unused JavaScript/TypeScript import bindings (default, namespace, and named specifiers, including `import type`). Detection is syntactic: a binding is dead when its local name has no other identifier reference anywhere else in the file. Side-effect-only imports (`import "./x"`) are never touched, and only the unused portion of a multi-binding import is removed, keeping the rest intact. This option is off by default.
+
+The default `output: { type: "project-manifests" }` writes aliases directly into root `tsconfig.json` and mirrors them into `package.json#imports`. `output: { type: "alias-map" }` uses `.code-discipline/imports/*.json` as the alias source of truth, writes `.code-discipline/generated/tsconfig.paths.json`, makes root `tsconfig.json` extend the generated file, and removes managed project-manifest alias state. `code-discipline check imports` reports missing or stale generated tsconfig wiring as a fixable violation, and `code-discipline fix imports` migrates both directions when the configured output model changes.
 
 Alias-map output separates committed state from disposable package output:
 
 - commit `.code-discipline/config.ts`
 - commit `.code-discipline/imports/*.json` when stable or random aliases are part of the configured alias-map state
 - do not commit `.code-discipline/generated/`
-- `code-discipline fix sync-imports` creates root `.gitignore` when missing and adds `.code-discipline/generated/` idempotently
+- `code-discipline fix imports` creates root `.gitignore` when missing and adds `.code-discipline/generated/` idempotently
 - saved CLI reports are written under `.code-discipline/generated/reports/`
 
 Top-level `ignore` groups shared scan and formatter exclusions in one place, so you can add explicit entries through `ignore.entries` and opt into root `.gitignore` entries through `ignore.use_gitignore`.
@@ -177,7 +179,7 @@ ignore: {
 Example targeted CLI usage:
 
 ```sh
-code-discipline fix sync-imports
+code-discipline fix imports
 ```
 
 #### `removeComments`
@@ -274,11 +276,11 @@ The hook context includes:
 
 ### Tsconfig Path Normalization
 
-Use `rules.syncImports.runtime` when a run needs temporary `compilerOptions.paths` normalization:
+Use `rules.imports.runtime` when a run needs temporary `compilerOptions.paths` normalization:
 
 ```ts
 rules: {
-  syncImports: {
+  imports: {
     runtime: {
       normalize: "relative-dot-prefix",
       restoreAfterRun: true,
@@ -396,7 +398,7 @@ export default defineCodeDisciplineConfig({
         { glob: "**/*.spec.tsx" },
       ],
     },
-    syncImports: {
+    imports: {
       alias: {
         prefix: "#",
         strategy: "relative-path-slug",
@@ -479,7 +481,7 @@ Manual `rules.bannedPatterns` entries still work normally. If both are configure
 
 ```sh
 code-discipline check max-file-lines max-function-lines
-code-discipline fix banned-files min-file-lines max-characters-per-line sync-imports remove-comments structural-blank-lines
+code-discipline fix banned-files min-file-lines max-characters-per-line imports remove-comments structural-blank-lines
 code-discipline check prettier
 code-discipline fix prettier
 ```
@@ -494,7 +496,7 @@ Rules use kebab-case public slugs:
 - `max-characters-per-line`
 - `max-function-lines`
 - `folderize-compound-files`
-- `sync-imports`
+- `imports`
 - `remove-comments`
 - `structural-blank-lines`
 - `dry`
@@ -545,10 +547,10 @@ Useful native controls:
 
 Top-level `sync` is gone.
 
-`sync-imports` is now just another fixable rule, so targeted sync work is done through:
+`imports` is now just another fixable rule, so targeted sync work is done through:
 
 ```sh
-code-discipline fix sync-imports
+code-discipline fix imports
 ```
 
 If you want the terminal output written to a package-managed report file too, add `save`:
@@ -603,9 +605,9 @@ import { codeDiscipline } from "@trebired/code-discipline";
 const result = await codeDiscipline({
   mode: "fix",
   projectRoot: process.cwd(),
-  onlyRules: ["sync-imports"],
+  onlyRules: ["imports"],
   rules: {
-    syncImports: {
+    imports: {
       alias: {
         strategy: "relative-path-slug",
       },
@@ -636,7 +638,7 @@ const discipline = createCodeDiscipline({
     maxFunctionLines: {
       max: 80,
     },
-    syncImports: {
+    imports: {
       alias: {
         strategy: "relative-path-slug",
       },
@@ -646,7 +648,7 @@ const discipline = createCodeDiscipline({
 
 await discipline.fix({
   projectRoot: process.cwd(),
-  onlyRules: ["sync-imports"],
+  onlyRules: ["imports"],
 });
 ```
 
@@ -658,7 +660,7 @@ Low-level helpers are still exported for advanced tooling:
 
 - `checkCodeDiscipline()`
 - `fixCodeDiscipline()`
-- `syncImports()`
+- `imports()`
 - `defineCodeDisciplineConfig()`
 - `findCodeDisciplineConfigModule()`
 - `loadResolvedCodeDisciplineConfig()`
@@ -666,7 +668,7 @@ Low-level helpers are still exported for advanced tooling:
 - `restoreTsconfigPaths()`
 - `syncPackageJsonImportsFromTsconfigPaths()`
 
-`syncImports()` remains available as a lower-level helper, but the package CLI no longer exposes a separate `sync` command.
+`imports()` remains available as a lower-level helper, but the package CLI no longer exposes a separate `sync` command.
 
 ## CLI
 

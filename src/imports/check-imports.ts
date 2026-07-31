@@ -5,22 +5,23 @@ import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls0
 import type { NormalizedCodeDisciplineLogger } from "#uljkt8i26p4t";
 import type { CodeDisciplineViolation } from "#bsmch74up4fm";
 import { collectPackageJsonImportsSyncState, collectPackageJsonImportsSyncStateFromAliasMap } from "#51kcncizdqcz";
-import { supportsSyncImports } from "#87jyjzn68rrk";
+import { isTypeScriptFamilyExtension, supportsImports } from "#87jyjzn68rrk";
 import { planTsconfigAliases } from "./aliases.js";
+import { collectDeadImportViolations } from "./dead-imports.js";
 import { collectModuleSpecifiers } from "./module-specifiers.js";
 import { resolveRelativeImport } from "./resolve.js";
 import { isAllowedRelative } from "./rewrite.js";
-import type { NormalizedSyncImportsOptions, ScannedSourceFile } from "./types.js";
+import type { NormalizedImportsOptions, ScannedSourceFile } from "./types.js";
 
-async function collectSyncImportViolations(
+async function collectImportViolations(
   sourceFiles: ScannedSourceFile[],
-  options: NormalizedSyncImportsOptions,
+  options: NormalizedImportsOptions,
   logger?: NormalizedCodeDisciplineLogger,
 ): Promise<CodeDisciplineViolation[]> {
-  const supportedSourceFiles = sourceFiles.filter((file) => supportsSyncImports(file.extension));
+  const supportedSourceFiles = sourceFiles.filter((file) => supportsImports(file.extension));
   const progress = createRuleProgress({
     observer: options.progressObserver,
-    rule: "sync-imports",
+    rule: "imports",
     totalItems: supportedSourceFiles.length,
   });
   const aliasPlan = await planTsconfigAliases(options, supportedSourceFiles, logger);
@@ -29,7 +30,7 @@ async function collectSyncImportViolations(
 
   if (aliasPlan.aliasesChanged) {
     violations.push({
-      rule: "sync-imports",
+      rule: "imports",
       fix: true,
       filePath: path.relative(options.projectRoot, options.tsconfigPath) || "tsconfig.json",
       message: options.output.type === "alias-map"
@@ -62,7 +63,7 @@ async function collectSyncImportViolations(
 
   if (packageJsonSyncState?.changed) {
     violations.push({
-      rule: "sync-imports",
+      rule: "imports",
       fix: true,
       filePath: path.relative(options.projectRoot, packageJsonSyncState.packageJsonPath) || "package.json",
       message: "package.json imports are out of sync with tsconfig paths",
@@ -82,7 +83,7 @@ async function collectSyncImportViolations(
       const resolvedFile = await resolveRelativeImport(occurrence.specifier, file.absolutePath, options);
       if (!resolvedFile) {
         violations.push({
-          rule: "sync-imports",
+          rule: "imports",
           fix: Boolean(occurrence.removalStart !== undefined && occurrence.removalEnd !== undefined),
           filePath: file.relativeFromProjectRoot,
           message: `unresolved import ${occurrence.specifier} should be removed`,
@@ -99,7 +100,7 @@ async function collectSyncImportViolations(
       if (!aliasId) continue;
 
       violations.push({
-        rule: "sync-imports",
+        rule: "imports",
         fix: true,
         filePath: file.relativeFromProjectRoot,
         message: `relative import ${occurrence.specifier} should be rewritten to ${aliasId}`,
@@ -111,6 +112,20 @@ async function collectSyncImportViolations(
       });
     }
 
+    if (options.removeDeadImports && isTypeScriptFamilyExtension(file.extension)) {
+      for (const deadImport of collectDeadImportViolations(text, file.absolutePath)) {
+        violations.push({
+          rule: "imports",
+          fix: true,
+          filePath: file.relativeFromProjectRoot,
+          message: `unused import ${deadImport.name} should be removed`,
+          details: {
+            name: deadImport.name,
+          },
+        });
+      }
+    }
+
     emitRuleChunk(progress, index + 1, violations.length);
   }
 
@@ -118,4 +133,4 @@ async function collectSyncImportViolations(
   return violations;
 }
 
-export { collectSyncImportViolations };
+export { collectImportViolations };

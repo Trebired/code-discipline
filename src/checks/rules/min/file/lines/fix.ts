@@ -3,7 +3,7 @@ import path from "node:path";
 
 import ts from "typescript";
 
-import type { NormalizedSyncImportsOptions, ScannedSourceFile } from "#pkb9x3eo56l7";
+import type { NormalizedImportsOptions, ScannedSourceFile } from "#pkb9x3eo56l7";
 import type { NormalizedCodeDisciplineLogger } from "#uljkt8i26p4t";
 import type { CodeDisciplineViolation } from "#bsmch74up4fm";
 import type { FixCodeDisciplineRuleResult, NormalizedCheckCodeDisciplineOptions } from "#uqbg4indzud7";
@@ -13,7 +13,7 @@ import { formatRelativeSpecifier } from "#r4k0t5wqgwq6";
 import { isRelativeImportSpecifier, resolveRelativeImport } from "#ay5rr8vjr5fh";
 import { planTsconfigAliases } from "#vgknapauto04";
 import { removeEmptyDirectories } from "#2gohqj1pb29e";
-import { supportsSyncImports } from "#87jyjzn68rrk";
+import { supportsImports } from "#87jyjzn68rrk";
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls019o";
 import { collectMinFileLineViolations } from "#n4snuy1yfjwq";
 
@@ -50,11 +50,11 @@ function resolveRedirectSpecifier(text: string, file: ScannedSourceFile): string
 
 async function buildAliasTargetMap(
   sourceFiles: ScannedSourceFile[],
-  syncOptions: NormalizedSyncImportsOptions | null,
+  syncOptions: NormalizedImportsOptions | null,
   logger: NormalizedCodeDisciplineLogger,
 ): Promise<Map<string, string>> {
   if (!syncOptions) return new Map();
-  const plan = await planTsconfigAliases(syncOptions, sourceFiles.filter((file) => supportsSyncImports(file.extension)), logger);
+  const plan = await planTsconfigAliases(syncOptions, sourceFiles.filter((file) => supportsImports(file.extension)), logger);
   return new Map(plan.aliasRecords.map((record) => [record.id, record.absolutePath]));
 }
 
@@ -79,7 +79,7 @@ async function collectRedirectPlans(
   const redirects = new Map<string, RedirectPlan>();
 
   for (const file of sourceFiles) {
-    if (!violatingPaths.has(file.relativeFromProjectRoot) || !supportsSyncImports(file.extension)) continue;
+    if (!violatingPaths.has(file.relativeFromProjectRoot) || !supportsImports(file.extension)) continue;
     const text = await fs.readFile(file.absolutePath, "utf8");
     const targetSpecifier = resolveRedirectSpecifier(text, file);
     if (!targetSpecifier) continue;
@@ -126,7 +126,7 @@ async function planRedirectImportRewrites(args: {
   let rewrittenImports = 0;
 
   for (const file of args.sourceFiles) {
-    if (args.redirects.has(file.absolutePath) || !supportsSyncImports(file.extension)) continue;
+    if (args.redirects.has(file.absolutePath) || !supportsImports(file.extension)) continue;
     const text = await fs.readFile(file.absolutePath, "utf8");
     const replacements = [];
 
@@ -185,7 +185,7 @@ async function fixMinFileLinesRule(
   sourceFiles: ScannedSourceFile[],
   options: NormalizedCheckCodeDisciplineOptions,
   logger: NormalizedCodeDisciplineLogger,
-  syncOptions: NormalizedSyncImportsOptions | null,
+  syncOptions: NormalizedImportsOptions | null,
 ): Promise<FixCodeDisciplineRuleResult> {
   const violations = await collectMinFileLineViolations(sourceFiles, options);
   const aliasTargets = await buildAliasTargetMap(sourceFiles, syncOptions, logger);

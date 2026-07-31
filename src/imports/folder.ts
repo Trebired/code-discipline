@@ -15,7 +15,7 @@ import { resolveProjectPathTarget } from "./resolve.js";
 import { readTsconfig } from "./aliases.js";
 import type {
   AliasRecord,
-  NormalizedSyncImportsOptions,
+  NormalizedImportsOptions,
   ScannedSourceFile,
   SyncAliasesResult,
   TsconfigJson,
@@ -28,11 +28,11 @@ type ImportsFolderState = {
   map: Record<string, string>;
   stableFiles: Record<string, Record<string, string>>;
 };
-function resolveImportsFolderPath(options: NormalizedSyncImportsOptions): string {
+function resolveImportsFolderPath(options: NormalizedImportsOptions): string {
   const input = options.output.type === "alias-map" ? options.output.dir : IMPORTS_FOLDER_DIR;
   return path.isAbsolute(input) ? path.resolve(input) : path.resolve(options.projectRoot, input);
 }
-function resolveGeneratedTsconfigPath(options: NormalizedSyncImportsOptions): string {
+function resolveGeneratedTsconfigPath(options: NormalizedImportsOptions): string {
   const input = options.output.type === "alias-map" ? options.output.generatedTsconfigPath : GENERATED_TSCONFIG_PATH;
   return path.isAbsolute(input) ? path.resolve(input) : path.resolve(options.projectRoot, input);
 }
@@ -95,7 +95,7 @@ function removeInlineTsconfigPaths(tsconfig: TsconfigJson): TsconfigJson {
     compilerOptions,
   };
 }
-function buildGeneratedTsconfig(options: NormalizedSyncImportsOptions, aliasPathMap: Record<string, string>): TsconfigJson {
+function buildGeneratedTsconfig(options: NormalizedImportsOptions, aliasPathMap: Record<string, string>): TsconfigJson {
   const generatedTsconfigPath = resolveGeneratedTsconfigPath(options);
   const paths: Record<string, string[]> = {};
   for (const [aliasId, targetPath] of Object.entries(aliasPathMap).sort(([left], [right]) => left.localeCompare(right))) {
@@ -115,7 +115,7 @@ async function readJsonObject(filePath: string): Promise<Record<string, unknown>
   }
   return parsed as Record<string, unknown>;
 }
-async function readImportsFolderState(options: NormalizedSyncImportsOptions): Promise<ImportsFolderState> {
+async function readImportsFolderState(options: NormalizedImportsOptions): Promise<ImportsFolderState> {
   const importsFolderPath = resolveImportsFolderPath(options);
   const map: Record<string, string> = {};
   const stableFiles: Record<string, Record<string, string>> = {};
@@ -157,13 +157,13 @@ function splitAliasPathMap(
   }
   return files;
 }
-async function readGeneratedTsconfig(options: NormalizedSyncImportsOptions): Promise<TsconfigJson | null> {
+async function readGeneratedTsconfig(options: NormalizedImportsOptions): Promise<TsconfigJson | null> {
   const generatedTsconfigPath = resolveGeneratedTsconfigPath(options);
   if (!await pathExists(generatedTsconfigPath)) return null;
   return parseTsconfigJson(await fs.readFile(generatedTsconfigPath, "utf8"), generatedTsconfigPath);
 }
 function collectGeneratedTsconfigAliasPaths(
-  options: NormalizedSyncImportsOptions,
+  options: NormalizedImportsOptions,
   generatedTsconfig: TsconfigJson | null,
 ): Record<string, string> {
   const paths = generatedTsconfig?.compilerOptions?.paths ?? {};
@@ -178,7 +178,7 @@ function collectGeneratedTsconfigAliasPaths(
   }
   return sortStringRecord(aliasPathMap);
 }
-async function readAliasMapAliasPaths(options: NormalizedSyncImportsOptions): Promise<Record<string, string>> {
+async function readAliasMapAliasPaths(options: NormalizedImportsOptions): Promise<Record<string, string>> {
   return sortStringRecord({
     ...collectGeneratedTsconfigAliasPaths(options, await readGeneratedTsconfig(options)),
     ...(await readImportsFolderState(options)).map,
@@ -194,7 +194,7 @@ function collectTsconfigAliasPaths(tsconfig: TsconfigJson): Record<string, strin
   return aliasPathMap;
 }
 async function writeImportsFolder(
-  options: NormalizedSyncImportsOptions,
+  options: NormalizedImportsOptions,
   aliasPathMap: Record<string, string>,
 ): Promise<void> {
   const importsFolderPath = resolveImportsFolderPath(options);
@@ -209,7 +209,7 @@ async function writeImportsFolder(
   }
 }
 async function writeGeneratedTsconfig(
-  options: NormalizedSyncImportsOptions,
+  options: NormalizedImportsOptions,
   aliasPathMap: Record<string, string>,
 ): Promise<void> {
   const generatedTsconfigPath = resolveGeneratedTsconfigPath(options);
@@ -217,7 +217,7 @@ async function writeGeneratedTsconfig(
   await fs.writeFile(generatedTsconfigPath, toStableJson(buildGeneratedTsconfig(options, aliasPathMap)));
 }
 async function resolveAliasTargetToSourcePath(
-  options: NormalizedSyncImportsOptions,
+  options: NormalizedImportsOptions,
   targetPath: string,
 ): Promise<string | null> {
   const absoluteTarget = path.resolve(options.projectRoot, targetPath);
@@ -226,13 +226,13 @@ async function resolveAliasTargetToSourcePath(
   return resolvedTarget;
 }
 async function writeImportsFolderAliases(
-  options: NormalizedSyncImportsOptions,
+  options: NormalizedImportsOptions,
   aliasPathMap: Record<string, string>,
 ): Promise<void> {
   await writeImportsFolder(options, aliasPathMap);
   await writeGeneratedTsconfig(options, aliasPathMap);
 }
-async function removeAliasMapState(options: NormalizedSyncImportsOptions): Promise<boolean> {
+async function removeAliasMapState(options: NormalizedImportsOptions): Promise<boolean> {
   const importsFolderPath = resolveImportsFolderPath(options);
   const generatedTsconfigPath = resolveGeneratedTsconfigPath(options);
   const importsFolderExists = await pathExists(importsFolderPath);
@@ -246,7 +246,7 @@ async function removeAliasMapState(options: NormalizedSyncImportsOptions): Promi
   return importsFolderExists || generatedTsconfigExists;
 }
 async function planImportsFolderAliases(
-  options: NormalizedSyncImportsOptions,
+  options: NormalizedImportsOptions,
   sourceFiles: ScannedSourceFile[],
   logger?: NormalizedCodeDisciplineLogger,
 ): Promise<SyncAliasesResult> {

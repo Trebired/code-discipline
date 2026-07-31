@@ -6,9 +6,9 @@ import type {
   SourceProgressObserver,
   SourceScanObserver,
   SourceScanOptions,
-  SyncImportsRuleOptions,
-  SyncImportsRuntimeNormalizeMode,
-  SyncImportsRuntimeOptions,
+  ImportsRuleOptions,
+  ImportsRuntimeNormalizeMode,
+  ImportsRuntimeOptions,
 } from "#pkb9x3eo56l7";
 import type {
   CodeDisciplineResult,
@@ -18,7 +18,7 @@ import type {
 type CodeDisciplineRuleSlug = CodeDisciplineRuleName;
 type CodeDisciplineFormatterSlug = "prettier";
 type CodeDisciplineCheckSelectorSlug = CodeDisciplineRuleSlug | CodeDisciplineFormatterSlug;
-type FixableRuleSlug = "banned-files" | "min-file-lines" | "max-characters-per-line" | "folderize-compound-files" | "sync-imports" | "remove-comments" | "structural-blank-lines" | CodeDisciplineFormatterSlug;
+type FixableRuleSlug = "banned-files" | "min-file-lines" | "max-characters-per-line" | "folderize-compound-files" | "imports" | "remove-comments" | "structural-blank-lines" | CodeDisciplineFormatterSlug;
 type CodeDisciplineMode = "check" | "fix";
 type CodeDisciplineRuntimeMode = CodeDisciplineMode;
 type CodeDisciplineRuleSeverity = "warning" | "fail";
@@ -82,7 +82,7 @@ type DryRuleOptions = RuleExclusionOptions & {
   minDuplicateCharacters?: number;
   severity?: CodeDisciplineRuleSeverity;
 };
-type CodeDisciplineSyncImportsRuleOptions = RuleExclusionOptions & Omit<SyncImportsRuleOptions, "fix" | "excludeDirs"> & {
+type CodeDisciplineImportsRuleOptions = RuleExclusionOptions & Omit<ImportsRuleOptions, "fix" | "excludeDirs"> & {
   severity?: CodeDisciplineRuleSeverity;
 };
 type CodeDisciplineRules = {
@@ -94,7 +94,7 @@ type CodeDisciplineRules = {
   maxCharactersPerLine?: MaxCharactersPerLineRuleOptions;
   maxFunctionLines?: MaxFunctionLinesRuleOptions;
   folderizeCompoundFiles?: FolderizeCompoundFilesRuleOptions;
-  syncImports?: CodeDisciplineSyncImportsRuleOptions;
+  imports?: CodeDisciplineImportsRuleOptions;
   removeComments?: RemoveCommentsRuleOptions;
   structuralBlankLines?: StructuralBlankLinesRuleOptions;
   dry?: DryRuleOptions;
@@ -107,7 +107,7 @@ type PrettierFormatterOptions = {
 type CodeDisciplineFormatters = {
   prettier?: PrettierFormatterOptions;
 };
-type TsconfigPathsNormalizeMode = SyncImportsRuntimeNormalizeMode;
+type TsconfigPathsNormalizeMode = ImportsRuntimeNormalizeMode;
 type CodeDisciplineLifecycleContext = {
   mode: CodeDisciplineRuntimeMode;
   projectRoot: string;
@@ -226,7 +226,7 @@ type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
     maxCharactersPerLine?: NormalizedMaxCharactersPerLineRule;
     maxFunctionLines?: NormalizedMaxFunctionLinesRule;
     folderizeCompoundFiles?: NormalizedFolderizeCompoundFilesRule;
-    syncImports?: CodeDisciplineSyncImportsRuleOptions;
+    imports?: CodeDisciplineImportsRuleOptions;
     removeComments?: NormalizedRemoveCommentsRule;
     structuralBlankLines?: NormalizedStructuralBlankLinesRule;
     dry?: NormalizedDryRule;
@@ -279,7 +279,7 @@ export type {
   CodeDisciplineFormatterSlug,
   CodeDisciplineFormatters,
   CodeDisciplineRules,
-  CodeDisciplineSyncImportsRuleOptions,
+  CodeDisciplineImportsRuleOptions,
   DryRuleOptions,
   FixableRuleSlug,
   FixCodeDisciplineOptions,

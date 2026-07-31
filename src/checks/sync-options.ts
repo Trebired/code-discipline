@@ -1,21 +1,21 @@
 import path from "node:path";
 
-import { DEFAULT_ALIAS_PREFIX, DEFAULT_SOURCE_EXTENSIONS } from "#ik5y0pee4ah1";
+import { DEFAULT_ALIAS_PREFIX, DEFAULT_REMOVE_DEAD_IMPORTS, DEFAULT_SOURCE_EXTENSIONS } from "#ik5y0pee4ah1";
 import { ensureDotExtension, normalizeRelativePath, uniqueStrings } from "#ntve5i5a0mol";
-import type { CodeDisciplineSyncImportsRuleOptions, NormalizedCheckCodeDisciplineOptions } from "./types.js";
+import type { CodeDisciplineImportsRuleOptions, NormalizedCheckCodeDisciplineOptions } from "./types.js";
 import { mergeExcludeDirEntries } from "#gqxxrd6ye9fj";
 
 const GENERATED_TSCONFIG_PATH = ".code-discipline/generated/tsconfig.paths.json";
 const IMPORTS_FOLDER_DIR = ".code-discipline/imports";
 
-function hasExplicitLogging(logging: CodeDisciplineSyncImportsRuleOptions["logging"]): boolean {
+function hasExplicitLogging(logging: CodeDisciplineImportsRuleOptions["logging"]): boolean {
   return Boolean(logging?.adapter || logging?.logger);
 }
 
 async function buildNormalizedSyncOptions(
   options: NormalizedCheckCodeDisciplineOptions,
   fix: boolean,
-  rule: CodeDisciplineSyncImportsRuleOptions | undefined = options.rules.syncImports,
+  rule: CodeDisciplineImportsRuleOptions | undefined = options.rules.imports,
 ) {
   if (!rule) return null;
 
@@ -61,6 +61,7 @@ async function buildNormalizedSyncOptions(
     },
     allowRelative: rule.allowRelative ?? ["./"],
     output,
+    removeDeadImports: rule.removeDeadImports ?? DEFAULT_REMOVE_DEAD_IMPORTS,
     packageJsonImports: {
       enabled: output.type === "project-manifests",
       aliasPrefix: DEFAULT_ALIAS_PREFIX,

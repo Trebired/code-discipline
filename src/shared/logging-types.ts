@@ -36,10 +36,10 @@ type NormalizedCodeDisciplineLogger = {
   ) => void;
 };
 
-type SyncImportsLogLevel = CodeDisciplineLogLevel;
-type SyncImportsLogEvent = CodeDisciplineLogEvent;
+type ImportsLogLevel = CodeDisciplineLogLevel;
+type ImportsLogEvent = CodeDisciplineLogEvent;
 type LogAdapterFn = CodeDisciplineLogAdapterFn;
-type NormalizedSyncImportsLogger = NormalizedCodeDisciplineLogger;
+type NormalizedImportsLogger = NormalizedCodeDisciplineLogger;
 
 export type {
   CodeDisciplineLogAdapterFn,
@@ -49,7 +49,7 @@ export type {
   LoggingOptions,
   LogAdapterFn,
   NormalizedCodeDisciplineLogger,
-  NormalizedSyncImportsLogger,
-  SyncImportsLogEvent,
-  SyncImportsLogLevel,
+  NormalizedImportsLogger,
+  ImportsLogEvent,
+  ImportsLogLevel,
 };

@@ -3,7 +3,7 @@ import {
   HASH_ALIAS_LENGTH,
 } from "#ik5y0pee4ah1";
 import { AliasCollisionError, InvalidAliasError } from "#4f8hale01wb4";
-import type { AliasStrategyFn, AliasStrategyInput, NormalizedSyncImportsOptions, ScannedSourceFile } from "./types.js";
+import type { AliasStrategyFn, AliasStrategyInput, NormalizedImportsOptions, ScannedSourceFile } from "./types.js";
 import { createHashToken, createRandomToken, createSlugToken, isAliasIdValid, stripKnownExtension } from "#ntve5i5a0mol";
 
 function buildStrategyInput(file: ScannedSourceFile, existingIds: string[], prefix: string, sourceExtensions: string[]): AliasStrategyInput {
@@ -36,7 +36,7 @@ function validateAliasId(aliasId: unknown, file: ScannedSourceFile) {
 
 function generateAliasId(
   file: ScannedSourceFile,
-  options: NormalizedSyncImportsOptions,
+  options: NormalizedImportsOptions,
   existingIds: string[],
 ): string {
   const input = buildStrategyInput(file, existingIds, options.alias.prefix, options.sourceExtensions);

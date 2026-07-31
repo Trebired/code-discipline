@@ -1,5 +1,5 @@
 import { scanSourceFiles } from "#ua9whqppp94v";
-import { syncImports } from "#6vx9xvxrvnwj";
+import { imports } from "#6vx9xvxrvnwj";
 import type { ScannedSourceFile } from "#pkb9x3eo56l7";
 import { filterSourceFilesForRule } from "#jizekc8duh4i";
 import type { CodeDisciplineViolation } from "#bsmch74up4fm";
@@ -122,15 +122,15 @@ async function applyFolderizeFix(
   }
 }
 
-async function applySyncImportsFix(state: FixState, normalized: NormalizedCheckCodeDisciplineOptions): Promise<void> {
-  if (!normalized.rules.syncImports || !shouldRunFixRule("sync-imports", normalized)) return;
+async function applyImportsFix(state: FixState, normalized: NormalizedCheckCodeDisciplineOptions): Promise<void> {
+  if (!normalized.rules.imports || !shouldRunFixRule("imports", normalized)) return;
 
   const syncOptions = await buildNormalizedSyncOptions(normalized, true);
   if (!syncOptions) return;
 
-  const result = await syncImports(syncOptions);
+  const result = await imports(syncOptions);
   const violations = applyConfiguredSeverity(result.violations, normalized);
-  state.ruleResults["sync-imports"] = mapFixRuleResult({ ...result, violations });
+  state.ruleResults["imports"] = mapFixRuleResult({ ...result, violations });
   state.violations.push(...violations);
   state.rewrittenFiles += result.rewritten_files;
   state.rewrittenImports += result.rewritten_imports;
@@ -188,6 +188,6 @@ export {
   applyPrettierFix,
   applyRemoveCommentsFix,
   applyStructuralBlankLinesFix,
-  applySyncImportsFix,
+  applyImportsFix,
 };
 export type { FixState };

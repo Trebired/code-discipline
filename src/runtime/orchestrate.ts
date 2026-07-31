@@ -54,14 +54,14 @@ async function orchestrateCodeDisciplineRun(
   });
   const lifecycle: CodeDisciplineLifecycleHooks | undefined = options.config.lifecycle;
   if ("tsconfigPaths" in (options.config as Record<string, unknown>)) {
-    throw new InvalidCodeDisciplineConfigError("tsconfigPaths is no longer supported; use rules.syncImports.runtime instead", {
+    throw new InvalidCodeDisciplineConfigError("tsconfigPaths is no longer supported; use rules.imports.runtime instead", {
       key: "tsconfigPaths",
     });
   }
 
   const preparedTsconfigPaths = await prepareTsconfigPaths(
     options.projectRoot,
-    options.config.rules?.syncImports?.runtime,
+    options.config.rules?.imports?.runtime,
     options.mode,
   );
 

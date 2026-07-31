@@ -17,13 +17,13 @@ export {
   findCodeDisciplineConfigModule,
   loadResolvedCodeDisciplineConfig,
 } from "./config/index.js";
-export { normalizeSyncImportsOptions } from "./config/normalize/sync-imports-options.js";
+export { normalizeImportsOptions } from "./config/normalize/imports-options.js";
 export { planTsconfigAliases, syncTsconfigAliases } from "./imports/aliases.js";
 export { resolveRelativeImport } from "./imports/resolve.js";
 export { rewriteSourceImports } from "./imports/rewrite.js";
 export { scanSourceFiles } from "./imports/scan.js";
 export { createRandomAlias, createRelativePathHashAlias, createRelativePathSlugAlias } from "./imports/strategies.js";
-export { syncImports } from "./imports/sync-imports.js";
+export { imports } from "./imports/imports.js";
 export { syncPackageJsonImportsFromTsconfigPaths } from "./runtime/imports-sync.js";
 export { prepareTsconfigPaths, restoreTsconfigPaths } from "./runtime/tsconfig-paths.js";
 export { codeDiscipline, createCodeDiscipline } from "./run.js";
@@ -46,8 +46,8 @@ export {
   InvalidTsconfigPathError,
   ParseFailureError,
   RewriteFailureError,
-  SyncImportsError,
-  isSyncImportsError,
+  ImportsError,
+  isImportsError,
 } from "./shared/errors.js";
 
 export type {
@@ -65,9 +65,9 @@ export type {
   LogAdapterFn,
   LoggingOptions,
   NormalizedCodeDisciplineLogger,
-  NormalizedSyncImportsLogger,
-  SyncImportsLogEvent,
-  SyncImportsLogLevel,
+  NormalizedImportsLogger,
+  ImportsLogEvent,
+  ImportsLogLevel,
 } from "./shared/logging-types.js";
 
 export type {
@@ -77,7 +77,7 @@ export type {
   AllowRelativeContext,
   AllowRelativeFn,
   CodeDisciplineIgnoreOptions,
-  NormalizedSyncImportsOptions,
+  NormalizedImportsOptions,
   NormalizedCodeDisciplineIgnore,
   PackageJsonImportsSyncOptions,
   RewriteFileResult,
@@ -91,12 +91,12 @@ export type {
   SourceScanObserver,
   SourceScanProgressEvent,
   SyncAliasesResult,
-  SyncImportsOptions,
-  SyncImportsOutputOptions,
-  SyncImportsResult,
-  SyncImportsRuleOptions,
-  SyncImportsRuntimeNormalizeMode,
-  SyncImportsRuntimeOptions,
+  ImportsOptions,
+  ImportsOutputOptions,
+  ImportsResult,
+  ImportsRuleOptions,
+  ImportsRuntimeNormalizeMode,
+  ImportsRuntimeOptions,
   TsconfigJson,
 } from "./imports/types.js";
 
@@ -132,7 +132,7 @@ export type {
   CodeDisciplineRuleSlug,
   CodeDisciplineRuntimeMode as SharedCodeDisciplineRuntimeMode,
   CodeDisciplineRules,
-  CodeDisciplineSyncImportsRuleOptions,
+  CodeDisciplineImportsRuleOptions,
   DryRuleOptions,
   FixableRuleSlug,
   FixCodeDisciplineOptions,

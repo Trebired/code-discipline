@@ -22,7 +22,7 @@ const RULE_SLUGS = new Set([
   "max-characters-per-line",
   "max-function-lines",
   "folderize-compound-files",
-  "sync-imports",
+  "imports",
   "remove-comments",
   "dry",
   "prettier",

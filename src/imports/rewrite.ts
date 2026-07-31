@@ -4,22 +4,29 @@ import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls0
 import { RewriteFailureError } from "#4f8hale01wb4";
 import { ruleLogGroup } from "#foa3t3ao5irq";
 import type { NormalizedCodeDisciplineLogger } from "#uljkt8i26p4t";
+import { isTypeScriptFamilyExtension } from "#87jyjzn68rrk";
+import { collectDeadImportRemovals } from "./dead-imports.js";
 import { applyTextReplacements, collectModuleSpecifiers } from "./module-specifiers.js";
+import type { TextReplacement } from "./module-specifiers.js";
 import { resolveRelativeImport } from "./resolve.js";
 import type {
   AliasRecord,
   AllowRelativeFn,
-  NormalizedSyncImportsOptions,
+  NormalizedImportsOptions,
   RewriteFileResult,
   RewriteResult,
   ScannedSourceFile,
 } from "./types.js";
 
+function isWithinRange(start: number, end: number, ranges: TextReplacement[]): boolean {
+  return ranges.some((range) => start >= range.start && end <= range.end);
+}
+
 function isAllowedRelative(
   specifier: string,
   sourceFile: string,
   resolvedFile: string,
-  options: NormalizedSyncImportsOptions,
+  options: NormalizedImportsOptions,
 ): boolean {
   const policy = options.allowRelative;
 
@@ -37,16 +44,20 @@ function isAllowedRelative(
 
 async function rewriteSourceFile(
   file: ScannedSourceFile,
-  options: NormalizedSyncImportsOptions,
+  options: NormalizedImportsOptions,
   aliasIdsByFilePath: Map<string, string>,
   logger: NormalizedCodeDisciplineLogger,
 ): Promise<RewriteFileResult> {
   try {
     const text = await fs.readFile(file.absolutePath, "utf8");
-    const replacements = [];
+    const replacements: TextReplacement[] = [];
+    const deadImportReplacements = options.removeDeadImports && isTypeScriptFamilyExtension(file.extension)
+      ? collectDeadImportRemovals(text, file.absolutePath)
+      : [];
 
     for (const occurrence of collectModuleSpecifiers(text, file.absolutePath)) {
       if (!occurrence.specifier.startsWith(".")) continue;
+      if (isWithinRange(occurrence.start, occurrence.end, deadImportReplacements)) continue;
 
       const resolvedFile = await resolveRelativeImport(occurrence.specifier, file.absolutePath, options);
       if (!resolvedFile) {
@@ -59,14 +70,14 @@ async function rewriteSourceFile(
           logger.debug("rewrite-removed-unresolved", `removed unresolved import ${occurrence.specifier}`, {
             sourceFile: file.absolutePath,
             specifier: occurrence.specifier,
-          }, { group: ruleLogGroup("sync-imports") });
+          }, { group: ruleLogGroup("imports") });
           continue;
         }
 
         logger.debug("rewrite-skipped-unresolved", `skipped unresolved import ${occurrence.specifier}`, {
           sourceFile: file.absolutePath,
           specifier: occurrence.specifier,
-        }, { group: ruleLogGroup("sync-imports") });
+        }, { group: ruleLogGroup("imports") });
         continue;
       }
 
@@ -82,7 +93,14 @@ async function rewriteSourceFile(
       });
     }
 
-    const applied = applyTextReplacements(text, replacements);
+    if (deadImportReplacements.length > 0) {
+      logger.debug("rewrite-removed-dead-imports", `removed ${deadImportReplacements.length} unused import(s)`, {
+        sourceFile: file.absolutePath,
+        count: deadImportReplacements.length,
+      }, { group: ruleLogGroup("imports") });
+    }
+
+    const applied = applyTextReplacements(text, [...replacements, ...deadImportReplacements]);
     if (applied.count === 0) {
       return {
         rewritten: false,
@@ -104,13 +122,13 @@ async function rewriteSourceFile(
 async function rewriteSourceImports(
   sourceFiles: ScannedSourceFile[],
   aliasRecords: AliasRecord[],
-  options: NormalizedSyncImportsOptions,
+  options: NormalizedImportsOptions,
   logger: NormalizedCodeDisciplineLogger,
 ): Promise<RewriteResult> {
   const aliasIdsByFilePath = new Map(aliasRecords.map((record) => [record.absolutePath, record.id]));
   const progress = createRuleProgress({
     observer: options.progressObserver,
-    rule: "sync-imports",
+    rule: "imports",
     stage: "fix",
     totalItems: sourceFiles.length,
   });

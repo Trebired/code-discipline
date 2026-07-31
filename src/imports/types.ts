@@ -73,7 +73,7 @@ type PackageJsonImportsSyncOptions = {
   packageJsonPath?: string;
 };
 
-type SyncImportsOutputOptions =
+type ImportsOutputOptions =
   | {
     type?: "project-manifests";
   }
@@ -82,7 +82,7 @@ type SyncImportsOutputOptions =
     maxEntriesPerFile?: number;
   };
 
-type NormalizedSyncImportsOutput =
+type NormalizedImportsOutput =
   | {
     type: "project-manifests";
   }
@@ -93,11 +93,11 @@ type NormalizedSyncImportsOutput =
     maxEntriesPerFile: number;
   };
 
-type SyncImportsRuntimeNormalizeMode = "relative-dot-prefix" | "strip-dot-prefix" | "none";
+type ImportsRuntimeNormalizeMode = "relative-dot-prefix" | "strip-dot-prefix" | "none";
 
-type SyncImportsRuntimeOptions = {
+type ImportsRuntimeOptions = {
   tsconfigPath?: string;
-  normalize?: SyncImportsRuntimeNormalizeMode;
+  normalize?: ImportsRuntimeNormalizeMode;
   restoreAfterRun?: boolean;
 };
 
@@ -143,7 +143,7 @@ type NormalizedCodeDisciplineIgnore = {
   gitignorePatterns: string[];
 };
 
-type SyncImportsOptions = {
+type ImportsOptions = {
   projectRoot: string;
   configPath?: string;
   excludeSourceExtensions?: string[];
@@ -156,15 +156,16 @@ type SyncImportsOptions = {
     randomLength?: number;
   };
   allowRelative?: string[] | AllowRelativeFn;
-  output?: SyncImportsOutputOptions;
-  runtime?: SyncImportsRuntimeOptions;
+  output?: ImportsOutputOptions;
+  runtime?: ImportsRuntimeOptions;
+  removeDeadImports?: boolean;
   logging?: LoggingOptions;
   progressObserver?: SourceProgressObserver;
 };
 
-type SyncImportsRuleOptions = Omit<SyncImportsOptions, "projectRoot">;
+type ImportsRuleOptions = Omit<ImportsOptions, "projectRoot">;
 
-type SyncImportsResult = {
+type ImportsResult = {
   ok: boolean;
   violationCount: number;
   violations: CodeDisciplineViolation[];
@@ -187,7 +188,7 @@ type SourceScanOptions = {
   scanObserver?: SourceScanObserver;
 };
 
-type NormalizedSyncImportsOptions = SourceScanOptions & {
+type NormalizedImportsOptions = SourceScanOptions & {
   sourceRootRelative: string;
   configPath?: string;
   tsconfigPath: string;
@@ -198,7 +199,8 @@ type NormalizedSyncImportsOptions = SourceScanOptions & {
     randomLength: number;
   };
   allowRelative: string[] | AllowRelativeFn;
-  output: NormalizedSyncImportsOutput;
+  output: NormalizedImportsOutput;
+  removeDeadImports: boolean;
   packageJsonImports: PackageJsonImportsSyncOptions;
   logging: LoggingOptions;
   progressObserver?: SourceProgressObserver;
@@ -263,7 +265,7 @@ export type {
   ExcludeDirEntry,
   ExcludeDirEntryType,
   ExcludeDirsOptions,
-  NormalizedSyncImportsOptions,
+  NormalizedImportsOptions,
   NormalizedCodeDisciplineIgnore,
   RewriteFileResult,
   RewriteResult,
@@ -278,14 +280,14 @@ export type {
   SourceProgressObserver,
   SourceRuleCompletedEvent,
   SourceRuleProgressEvent,
-  NormalizedSyncImportsOutput,
+  NormalizedImportsOutput,
   PackageJsonImportsSyncOptions,
   SyncAliasesResult,
-  SyncImportsOptions,
-  SyncImportsOutputOptions,
-  SyncImportsResult,
-  SyncImportsRuleOptions,
-  SyncImportsRuntimeNormalizeMode,
-  SyncImportsRuntimeOptions,
+  ImportsOptions,
+  ImportsOutputOptions,
+  ImportsResult,
+  ImportsRuleOptions,
+  ImportsRuntimeNormalizeMode,
+  ImportsRuntimeOptions,
   TsconfigJson,
 };

@@ -1,6 +1,6 @@
 import { result as createResult } from "@package/result";
 import { normalizeCheckCodeDisciplineOptions } from "#x458f9t6w4a6";
-import { collectSyncImportViolations } from "#ymdyths4ukwp";
+import { collectImportViolations } from "#ymdyths4ukwp";
 import { scanSourceFiles } from "#ua9whqppp94v";
 import { runLogGroup } from "#foa3t3ao5irq";
 import { resolveLogger } from "#5koja8ae2wwn";
@@ -14,7 +14,7 @@ import {
   applyPrettierFix,
   applyRemoveCommentsFix,
   applyStructuralBlankLinesFix,
-  applySyncImportsFix,
+  applyImportsFix,
 } from "./apply-fixes.js";
 import type { FixState } from "./apply-fixes.js";
 import { collectPrettierViolations } from "./prettier.js";
@@ -127,10 +127,10 @@ async function collectViolations(options: NormalizedCheckCodeDisciplineOptions):
   if (options.rules.dry && shouldRunRule("dry", options.onlyRules)) {
     violations.push(...await collectDryViolations(filterSourceFilesForRule(sourceFiles, options.rules.dry), options));
   }
-  if (options.rules.syncImports && shouldRunRule("sync-imports", options.onlyRules)) {
+  if (options.rules.imports && shouldRunRule("imports", options.onlyRules)) {
     const normalizedSyncOptions = await buildNormalizedSyncOptions(options, false);
     if (normalizedSyncOptions) {
-      violations.push(...await collectSyncImportViolations(filterSourceFilesForRule(sourceFiles, options.rules.syncImports), normalizedSyncOptions));
+      violations.push(...await collectImportViolations(filterSourceFilesForRule(sourceFiles, options.rules.imports), normalizedSyncOptions));
     }
   }
   if (options.rules.removeComments && shouldRunRule("remove-comments", options.onlyRules)) {
@@ -198,7 +198,7 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
   await applyBannedFilesFix(state, normalized);
   await applyMinFileLinesFix(state, normalized, logger);
   await applyFolderizeFix(state, normalized, logger);
-  await applySyncImportsFix(state, normalized);
+  await applyImportsFix(state, normalized);
   await applyMaxCharactersPerLineFix(state, normalized);
   await applyRemoveCommentsFix(state, normalized);
   await applyStructuralBlankLinesFix(state, normalized);

@@ -6,7 +6,7 @@ import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
 import type {
   BannedPatternsRuleOptions,
   BannedFilesRuleOptions,
-  CodeDisciplineSyncImportsRuleOptions,
+  CodeDisciplineImportsRuleOptions,
   DryRuleOptions,
   FolderizeCompoundFilesRuleOptions,
   MaxCharactersPerLineRuleOptions,
@@ -211,11 +211,11 @@ function normalizeFolderizeCompoundFilesRule(rule: FolderizeCompoundFilesRuleOpt
     severity: normalizeSeverity(rule.severity, "folderizeCompoundFiles"),
   };
 }
-function normalizeSyncImportsOutput(output: CodeDisciplineSyncImportsRuleOptions["output"]): CodeDisciplineSyncImportsRuleOptions["output"] {
+function normalizeImportsOutput(output: CodeDisciplineImportsRuleOptions["output"]): CodeDisciplineImportsRuleOptions["output"] {
   if (output === undefined) return undefined;
   if (!output || typeof output !== "object" || Array.isArray(output)) {
-    throw new InvalidCodeDisciplineConfigError("syncImports.output must be an object when provided", {
-      rule: "syncImports",
+    throw new InvalidCodeDisciplineConfigError("imports.output must be an object when provided", {
+      rule: "imports",
       key: "output",
       value: output,
     });
@@ -230,16 +230,16 @@ function normalizeSyncImportsOutput(output: CodeDisciplineSyncImportsRuleOptions
       maxEntriesPerFile: (output as { maxEntriesPerFile?: number }).maxEntriesPerFile,
     };
   }
-  throw new InvalidCodeDisciplineConfigError('syncImports.output.type must be "project-manifests" or "alias-map"', {
-    rule: "syncImports",
+  throw new InvalidCodeDisciplineConfigError('imports.output.type must be "project-manifests" or "alias-map"', {
+    rule: "imports",
     key: "output.type",
     value: type,
   });
 }
-function normalizeSyncImportsRule(rule: CodeDisciplineSyncImportsRuleOptions | undefined) {
+function normalizeImportsRule(rule: CodeDisciplineImportsRuleOptions | undefined) {
   if (!rule) return undefined;
   const source = (rule ?? {}) as Record<string, unknown>;
-  assertRemovedKeys("syncImports", source, [
+  assertRemovedKeys("imports", source, [
     "enabled",
     "stop",
     "rewrite",
@@ -251,14 +251,14 @@ function normalizeSyncImportsRule(rule: CodeDisciplineSyncImportsRuleOptions | u
     "packageJsonImports",
   ]);
   if ("imports" in source) {
-    throw new InvalidCodeDisciplineConfigError("syncImports.imports is no longer supported; use allowRelative directly under syncImports", {
-      rule: "syncImports",
+    throw new InvalidCodeDisciplineConfigError("imports.imports is no longer supported; use allowRelative directly under imports", {
+      rule: "imports",
       key: "imports",
     });
   }
   if ("fix" in source) {
-    throw new InvalidCodeDisciplineConfigError("syncImports.fix is no longer supported in discipline config; use the fix command instead", {
-      rule: "syncImports",
+    throw new InvalidCodeDisciplineConfigError("imports.fix is no longer supported in discipline config; use the fix command instead", {
+      rule: "imports",
       key: "fix",
     });
   }
@@ -267,11 +267,12 @@ function normalizeSyncImportsRule(rule: CodeDisciplineSyncImportsRuleOptions | u
     gitignorePath: rule?.gitignorePath,
     alias: rule?.alias,
     allowRelative: rule?.allowRelative ?? DEFAULT_ALLOW_RELATIVE,
-    ...normalizeRuleExclusions("syncImports", source),
-    output: normalizeSyncImportsOutput(rule.output),
+    ...normalizeRuleExclusions("imports", source),
+    output: normalizeImportsOutput(rule.output),
     runtime: rule.runtime,
-    logging: normalizeLoggingOptions(rule?.logging, "syncImports.logging"),
-    severity: normalizeSeverity(rule.severity, "syncImports"),
+    removeDeadImports: rule.removeDeadImports,
+    logging: normalizeLoggingOptions(rule?.logging, "imports.logging"),
+    severity: normalizeSeverity(rule.severity, "imports"),
   };
 }
 function normalizeDryRule(rule: DryRuleOptions | undefined): NormalizedDryRule | undefined {
@@ -335,5 +336,5 @@ export {
   normalizeMinFileLinesRule,
   normalizeRemoveCommentsRule,
   normalizeStructuralBlankLinesRule,
-  normalizeSyncImportsRule,
+  normalizeImportsRule,
 };
