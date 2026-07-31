@@ -2,6 +2,11 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+## 4.9.2
+
+- Renamed the `syncImports` rule to `imports` (config key, exported functions/types, CLI rule name, log group, rule slug) since it already handled alias syncing, `tsconfig`/`package.json` wiring, and relative-import rewriting well beyond "syncing imports".
+- Added an opt-in `removeDeadImports` option to the `imports` rule that detects and removes unused JavaScript/TypeScript import bindings (default, named, namespace, and `import type`), using syntactic identifier-usage analysis rather than a full type checker. Off by default.
+
 ## 4.8.0
 
 - Made `maxCharactersPerLine` fixable for safe JavaScript and TypeScript string literal cases, splitting long plain literals into concatenated segments while preserving runtime values and leaving unsafe lines reported.
