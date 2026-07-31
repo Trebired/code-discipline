@@ -46,7 +46,7 @@ async function createArtifactProject(name, gitignoreText) {
     "export default {",
     "  ignore: { use_gitignore: true },",
     "  rules: {",
-    "    syncImports: {",
+    "    imports: {",
     "      alias: { strategy: \"relative-path-slug\" },",
     "      allowRelative: [],",
     "      output: { type: \"alias-map\" },",
@@ -67,7 +67,7 @@ function configOptions(projectRoot) {
     projectRoot,
     ignore: { use_gitignore: true },
     rules: {
-      syncImports: {
+      imports: {
         alias: { strategy: "relative-path-slug" },
         allowRelative: [],
         output: { type: "alias-map" },
@@ -81,7 +81,7 @@ async function runSyncFix(projectRoot) {
   return codeDiscipline({
     ...configOptions(projectRoot),
     mode: "fix",
-    onlyRules: ["sync-imports"],
+    onlyRules: ["imports"],
   });
 }
 
@@ -125,9 +125,9 @@ async function verifyGeneratedTsconfigWiring() {
   const check = await codeDiscipline({
     ...configOptions(projectRoot),
     mode: "check",
-    onlyRules: ["sync-imports"],
+    onlyRules: ["imports"],
   });
-  const syncViolation = check.violations.find((violation) => violation.rule === "sync-imports");
+  const syncViolation = check.violations.find((violation) => violation.rule === "imports");
 
   assert.ok(syncViolation);
   assert.equal(syncViolation.fix, true);
