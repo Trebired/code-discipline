@@ -1,6 +1,6 @@
 {
   "name": "@trebired/code-discipline",
-  "version": "4.8.1",
+  "version": "4.9.0",
   "description": "Configurable codebase discipline checks and rule-driven fixes for Bun projects.",
   "type": "module",
   "private": false,
