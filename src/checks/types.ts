@@ -1,15 +1,6 @@
 import type { LoggingOptions } from "#uljkt8i26p4t";
 import type { Options as PrettierOptions } from "prettier";
-import type {
-  CodeDisciplineIgnoreOptions,
-  ExcludeDirEntry,
-  SourceProgressObserver,
-  SourceScanObserver,
-  SourceScanOptions,
-  ImportsRuleOptions,
-  ImportsRuntimeNormalizeMode,
-  ImportsRuntimeOptions,
-} from "#pkb9x3eo56l7";
+import { CodeDisciplineIgnoreOptions, ExcludeDirEntry, SourceProgressObserver, SourceScanObserver, SourceScanOptions, ImportsRuleOptions, ImportsRuntimeNormalizeMode } from "#pkb9x3eo56l7";
 import type {
   CodeDisciplineResult,
   CodeDisciplineRuleName,

@@ -99,6 +99,7 @@
   "#ydyygm5y7vgb": "./src/checks/rule-slugs.ts",
   "#ymdyths4ukwp": "./src/imports/check-imports.ts",
   "#ypw9eb3ob06l": "./scripts/verify/max/line/fixer.mjs",
+  "#yq0tnqjuhm47": "./src/imports/dead-imports.ts",
   "#zdq4d0mpbk55": "./src/checks/rules/blank-lines/classify.ts",
   "#zdy5k79iam8y": "./src/shared/generated-artifacts.ts",
   "#zqg5hww7g6g1": "./src/checks/rules/dry/model.ts"

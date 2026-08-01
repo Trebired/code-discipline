@@ -2,6 +2,13 @@
 
 All notable changes to `@trebired/code-discipline` will be documented here.
 
+This project follows semantic versioning once published.
+
+## 4.9.3
+
+- Updated package metadata and release version for the current imports-rule migration line.
+- Updated Code Discipline log group metadata fallback and internal package dependency ranges to the current published sibling releases.
+
 ## 4.9.2
 
 - Renamed the `syncImports` rule to `imports` (config key, exported functions/types, CLI rule name, log group, rule slug) since it already handled alias syncing, `tsconfig`/`package.json` wiring, and relative-import rewriting well beyond "syncing imports".
