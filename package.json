@@ -1,6 +1,6 @@
 {
   "name": "@trebired/code-discipline",
-  "version": "4.10.0",
+  "version": "4.10.1",
   "description": "Configurable codebase discipline checks and rule-driven fixes for Bun projects.",
   "type": "module",
   "private": false,
@@ -49,8 +49,8 @@
     "verify:max-line-fixer": "bun ./scripts/verify/max/line/fixer.mjs"
   },
   "dependencies": {
-    "@package/logger": "npm:@trebired/logger@^2.5.11",
-    "@package/result": "npm:@trebired/result@^1.1.4",
+    "@package/logger": "npm:@trebired/logger@^2.5.13",
+    "@package/result": "npm:@trebired/result@^1.1.6",
     "prettier": "3.9.6",
     "typescript": "^6.0.3"
   },

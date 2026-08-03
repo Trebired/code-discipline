@@ -4,6 +4,10 @@ All notable changes to `@trebired/code-discipline` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 4.10.1
+
+- Refreshed package dependency ranges and lockfile state with `bun update` after the `.trebired/code-discipline` migration.
+
 ## 4.10.0
 
 - Changed automatic config discovery to `.trebired/code-discipline/config.ts` only; old `code-discipline.config.ts` and `.code-discipline/config.ts` files are no longer auto-discovered.

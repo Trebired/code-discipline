@@ -5,8 +5,8 @@
     "": {
       "name": "@trebired/code-discipline",
       "dependencies": {
-        "@package/logger": "npm:@trebired/logger@^2.5.11",
-        "@package/result": "npm:@trebired/result@^1.1.4",
+        "@package/logger": "npm:@trebired/logger@^2.5.13",
+        "@package/result": "npm:@trebired/result@^1.1.6",
         "prettier": "3.9.6",
         "typescript": "^6.0.3",
       },
@@ -18,11 +18,11 @@
     },
   },
   "packages": {
-    "@package/logger": ["@trebired/logger@2.5.11", "", { "dependencies": { "@package/result": "npm:@trebired/result@^1.1.1", "fflate": "^0.8.3", "tar-stream": "^3.2.0" }, "peerDependencies": { "react": ">=18" }, "optionalPeers": ["react"] }, "sha512-OzHrXSSrxyHA/ViecHtN6ninxDkHtAdj32ifkHKpuvrosEMSaJHWSbP/lT6hdf7oJnmGveKMdQkE9iEiNCS4eQ=="],
+    "@package/logger": ["@trebired/logger@2.5.13", "", { "dependencies": { "@package/result": "npm:@trebired/result@^1.1.4", "fflate": "^0.8.3", "tar-stream": "^3.2.0" }, "peerDependencies": { "react": ">=18" }, "optionalPeers": ["react"] }, "sha512-nXATeIVIWTJLOtSqfBQchZm74F34p36jeD8h/0NsvmZSaQxRed7Ty4jfjmvPehMGnvj5j4mcDpVLaTL38ZC5ig=="],
 
-    "@package/logger-adapter": ["@trebired/logger-adapter@0.2.5", "", {}, "sha512-WO07uG71EjD+87AcHPLxtjzXcIKd/3LHdWMjIwBon6BTTC43esNesFfa6kzpnXk2OCEzibxigAjvw20T+F3TwQ=="],
+    "@package/logger-adapter": ["@trebired/logger-adapter@0.2.12", "", {}, "sha512-QW0DpI2Etscx5amJBs2H4qiFKTbZn+bzkUAdQsEL/dDmZVH9lO7uF0s27eXIiwP49lEAroPMAdla8B2tuOJTVA=="],
 
-    "@package/result": ["@trebired/result@1.1.4", "", { "dependencies": { "@package/logger-adapter": "npm:@trebired/logger-adapter@^0.2.5" } }, "sha512-h6QzscjWYRfSm8/JqOw/MXw5ImL/Y8ON2nfCP8RXwLklKeahCGVqAhk+m19pKQCIH3sAuys7SqneG/gHhCKreg=="],
+    "@package/result": ["@trebired/result@1.1.6", "", { "dependencies": { "@package/logger-adapter": "npm:@trebired/logger-adapter@^0.2.11" } }, "sha512-qRXp1K7q1VhdIXlFEuNSvBMAoHbZljIeCSP5EBVPh0daF7LQ8f6G3+OVkItm5x/xK/L9Xj9dk6XxA5NpsL2saw=="],
 
     "@trebired/code-discipline": ["@trebired/code-discipline@root:", {}],
 
