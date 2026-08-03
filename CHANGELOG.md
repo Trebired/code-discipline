@@ -4,6 +4,12 @@ All notable changes to `@trebired/code-discipline` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 4.10.2
+
+- Added Python source support with comment-aware line counting, removable `#` comment detection, shebang/encoding-comment preservation, triple-string preservation, and indentation-based `maxFunctionLines` detection for `def` and `async def`.
+- Added shell source support for `.sh`, `.bash`, and `.zsh` files, including shebang preservation, heredoc-aware `#` comment handling, and brace-style shell function detection for `maxFunctionLines`.
+- Updated the Rust native backend comment scanner so native-backed runs understand Python and shell comments instead of only matching extensions in the TypeScript fallback.
+
 ## 4.10.1
 
 - Refreshed package dependency ranges and lockfile state with `bun update` after the `.trebired/code-discipline` migration.

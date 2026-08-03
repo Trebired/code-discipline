@@ -1,6 +1,16 @@
 import ts from "typescript";
 
-import { isGoExtension, isRustExtension, isStyleExtension, isTypeScriptFamilyExtension } from "#87jyjzn68rrk";
+import {
+  isGoExtension,
+  isPythonExtension,
+  isRustExtension,
+  isShellExtension,
+  isStyleExtension,
+  isTypeScriptFamilyExtension,
+} from "#87jyjzn68rrk";
+import { collectPythonCommentRanges } from "./python.js";
+import { scanEscapedQuotedLiteral } from "./quoted.js";
+import { collectShellCommentRanges } from "./shell.js";
 
 type CommentKind = "line" | "block";
 
@@ -29,23 +39,6 @@ function collectTypeScriptCommentRanges(text: string, extension: string): Commen
   }
 
   return ranges;
-}
-
-function scanEscapedQuotedLiteral(text: string, start: number, quote: "\"" | "'"): number {
-  let index = start + 1;
-
-  while (index < text.length) {
-    const char = text[index];
-    if (char === "\\") {
-      index += 2;
-      continue;
-    }
-
-    index += 1;
-    if (char === quote) return index;
-  }
-
-  return text.length;
 }
 
 function scanBacktickLiteral(text: string, start: number): number {
@@ -248,6 +241,8 @@ function collectCommentRanges(text: string, extension: string): CommentRange[] {
   if (isTypeScriptFamilyExtension(extension)) return collectTypeScriptCommentRanges(text, extension);
   if (isGoExtension(extension)) return collectGoCommentRanges(text);
   if (isRustExtension(extension)) return collectRustCommentRanges(text);
+  if (isPythonExtension(extension)) return collectPythonCommentRanges(text);
+  if (isShellExtension(extension)) return collectShellCommentRanges(text);
   if (isStyleExtension(extension)) return collectGoCommentRanges(text);
   return [];
 }

@@ -28,6 +28,8 @@ fn supports_remove_comments(extension: &str) -> bool {
     is_ts_family_extension(extension)
         || is_go_extension(extension)
         || is_rust_extension(extension)
+        || is_python_extension(extension)
+        || is_shell_extension(extension)
         || is_style_extension(extension)
 }
 

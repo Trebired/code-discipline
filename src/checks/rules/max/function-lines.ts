@@ -7,11 +7,20 @@ import type { NormalizedCheckCodeDisciplineOptions } from "#uqbg4indzud7";
 import type { ScannedSourceFile } from "#pkb9x3eo56l7";
 import { loadNativeBinding } from "#q6u4pcd984qa";
 import { parseSource } from "#27pccnhol1ci";
-import { isGoExtension, isRustExtension, isTypeScriptFamilyExtension, supportsMaxFunctionLines } from "#87jyjzn68rrk";
+import {
+  isGoExtension,
+  isPythonExtension,
+  isRustExtension,
+  isShellExtension,
+  isTypeScriptFamilyExtension,
+  supportsMaxFunctionLines,
+} from "#87jyjzn68rrk";
 import type { CodeDisciplineViolation } from "#bsmch74up4fm";
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls019o";
 import { getEndLine, getStartLine, isFunctionLikeWithBody, resolveFunctionKind, resolveFunctionName } from "#hrlcdim1gtmi";
 import { countCodeLinesInRange, maskCommentsForLineCounting } from "./code-lines.js";
+import { collectPythonFunctionDescriptors } from "./python.js";
+import { collectShellFunctionDescriptors } from "./shell.js";
 import { stripCommentsAndStrings } from "./strip.js";
 
 type FunctionDescriptor = {
@@ -141,6 +150,14 @@ function collectBlockFunctionDescriptors(text: string, extension: string): Funct
   return descriptors;
 }
 
+function collectLanguageFunctionDescriptors(text: string, extension: string, filePath: string): FunctionDescriptor[] {
+  if (isTypeScriptFamilyExtension(extension)) return collectTypeScriptFunctionDescriptors(parseSource(text, filePath));
+  if (isGoExtension(extension) || isRustExtension(extension)) return collectBlockFunctionDescriptors(text, extension);
+  if (isPythonExtension(extension)) return collectPythonFunctionDescriptors(text);
+  if (isShellExtension(extension)) return collectShellFunctionDescriptors(text);
+  return [];
+}
+
 async function runMaxFunctionLinesRule(
   sourceFiles: ScannedSourceFile[],
   options: NormalizedCheckCodeDisciplineOptions,
@@ -176,11 +193,7 @@ async function runMaxFunctionLinesRule(
     const text = await fs.readFile(file.absolutePath, "utf8");
     const extension = path.extname(file.absolutePath).toLowerCase();
     const maskedText = maskCommentsForLineCounting(text, extension);
-    const functions = isTypeScriptFamilyExtension(extension)
-      ? collectTypeScriptFunctionDescriptors(parseSource(text, file.absolutePath))
-      : (isGoExtension(extension) || isRustExtension(extension))
-        ? collectBlockFunctionDescriptors(text, extension)
-        : [];
+    const functions = collectLanguageFunctionDescriptors(text, extension, file.absolutePath);
 
     for (const descriptor of functions) {
       const codeLineCount = countCodeLinesInRange(maskedText, descriptor.startLine, descriptor.endLine);

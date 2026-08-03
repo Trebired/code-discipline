@@ -1,7 +1,7 @@
 import { buildPackageLogGroup, PACKAGE_NAME } from "./package-metadata.js";
 
 const DEFAULT_SOURCE_ROOT = ".";
-const DEFAULT_SOURCE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".mts", ".cts", ".cjs", ".go", ".rs", ".scss", ".css"];
+const DEFAULT_SOURCE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".mts", ".cts", ".cjs", ".go", ".rs", ".py", ".sh", ".bash", ".zsh", ".scss", ".css"];
 const DEFAULT_EXCLUDE_DIRS = [".git", "node_modules", "dist", ".vite", ".trebired/code-discipline"];
 const DEFAULT_ALIAS_PREFIX = "#";
 const DEFAULT_ALIAS_STRATEGY = "random";

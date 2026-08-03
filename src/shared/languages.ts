@@ -12,7 +12,9 @@ const TYPESCRIPT_FAMILY_EXTENSIONS = new Set([
 ]);
 
 const GO_FAMILY_EXTENSIONS = new Set([".go"]);
+const PYTHON_FAMILY_EXTENSIONS = new Set([".py"]);
 const RUST_FAMILY_EXTENSIONS = new Set([".rs"]);
+const SHELL_FAMILY_EXTENSIONS = new Set([".bash", ".sh", ".zsh"]);
 const STYLE_FAMILY_EXTENSIONS = new Set([".scss", ".css"]);
 
 function normalizeExtension(value: string): string {
@@ -27,8 +29,16 @@ function isGoExtension(value: string): boolean {
   return GO_FAMILY_EXTENSIONS.has(normalizeExtension(value));
 }
 
+function isPythonExtension(value: string): boolean {
+  return PYTHON_FAMILY_EXTENSIONS.has(normalizeExtension(value));
+}
+
 function isRustExtension(value: string): boolean {
   return RUST_FAMILY_EXTENSIONS.has(normalizeExtension(value));
+}
+
+function isShellExtension(value: string): boolean {
+  return SHELL_FAMILY_EXTENSIONS.has(normalizeExtension(value));
 }
 
 function isScssExtension(value: string): boolean {
@@ -48,16 +58,18 @@ function supportsFolderizationFix(value: string): boolean {
 }
 
 function supportsMaxFunctionLines(value: string): boolean {
-  return isTypeScriptFamilyExtension(value) || isGoExtension(value) || isRustExtension(value);
+  return isTypeScriptFamilyExtension(value) || isGoExtension(value) || isRustExtension(value) || isPythonExtension(value) || isShellExtension(value);
 }
 
 function supportsRemoveComments(value: string): boolean {
-  return isTypeScriptFamilyExtension(value) || isGoExtension(value) || isRustExtension(value) || isStyleExtension(value);
+  return isTypeScriptFamilyExtension(value) || isGoExtension(value) || isRustExtension(value) || isPythonExtension(value) || isShellExtension(value) || isStyleExtension(value);
 }
 
 export {
   isGoExtension,
+  isPythonExtension,
   isRustExtension,
+  isShellExtension,
   isScssExtension,
   isStyleExtension,
   isTypeScriptFamilyExtension,

@@ -144,6 +144,14 @@ fn is_rust_extension(extension: &str) -> bool {
     extension == ".rs"
 }
 
+fn is_python_extension(extension: &str) -> bool {
+    extension == ".py"
+}
+
+fn is_shell_extension(extension: &str) -> bool {
+    matches!(extension, ".bash" | ".sh" | ".zsh")
+}
+
 fn is_scss_extension(extension: &str) -> bool {
     extension == ".scss"
 }

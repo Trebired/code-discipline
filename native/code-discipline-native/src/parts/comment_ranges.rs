@@ -47,6 +47,17 @@ fn scan_line_comment(text: &str, start: usize) -> usize {
     index
 }
 
+fn scan_hash_line_comment(text: &str, start: usize) -> usize {
+    let bytes = text.as_bytes();
+    let mut index = start + 1;
+
+    while index < bytes.len() && bytes[index] != b'\n' && bytes[index] != b'\r' {
+        index += 1;
+    }
+
+    index
+}
+
 fn scan_block_comment(text: &str, start: usize, nested: bool) -> usize {
     let bytes = text.as_bytes();
     let mut index = start + 2;
@@ -280,6 +291,14 @@ fn collect_comment_ranges(text: &str, extension: &str) -> Vec<CommentRange> {
 
     if is_rust_extension(extension) {
         return collect_rust_comment_ranges(text);
+    }
+
+    if is_python_extension(extension) {
+        return collect_python_comment_ranges(text);
+    }
+
+    if is_shell_extension(extension) {
+        return collect_shell_comment_ranges(text);
     }
 
     if is_style_extension(extension) {

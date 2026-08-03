@@ -11,6 +11,8 @@ use std::time::Instant;
 include!("parts/support.rs");
 include!("parts/source_scan.rs");
 include!("parts/comment_ranges.rs");
+include!("parts/comment_ranges_python.rs");
+include!("parts/comment_ranges_shell.rs");
 include!("parts/comment_stripping.rs");
 include!("parts/common_violations.rs");
 include!("parts/violation_factories.rs");

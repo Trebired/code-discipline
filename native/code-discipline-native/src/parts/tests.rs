@@ -62,6 +62,56 @@ mod tests {
     }
 
     #[test]
+    fn preserves_python_strings_shebang_and_encoding_comments() {
+        let source = [
+            "#!/usr/bin/env python3",
+            "# coding: utf-8",
+            "value = '# keep literal'",
+            "text = \"\"\"# keep triple string\"\"\"",
+            "# remove this",
+            "result = value + text  # remove inline",
+            "",
+        ]
+        .join("\n");
+
+        let result = strip_comments_internal(&source, ".py", &[]);
+
+        assert!(result.changed);
+        assert_eq!(result.comment_count, 2);
+        assert!(result.text.contains("#!/usr/bin/env python3"));
+        assert!(result.text.contains("# coding: utf-8"));
+        assert!(result.text.contains("'# keep literal'"));
+        assert!(result.text.contains("# keep triple string"));
+        assert!(!result.text.contains("remove this"));
+        assert!(!result.text.contains("remove inline"));
+    }
+
+    #[test]
+    fn preserves_shell_strings_shebang_and_heredocs() {
+        let source = [
+            "#!/usr/bin/env sh",
+            "name='value # keep literal'",
+            "cat <<EOF",
+            "# keep heredoc",
+            "EOF",
+            "# remove this",
+            "echo \"$name\" # remove inline",
+            "",
+        ]
+        .join("\n");
+
+        let result = strip_comments_internal(&source, ".sh", &[]);
+
+        assert!(result.changed);
+        assert_eq!(result.comment_count, 2);
+        assert!(result.text.contains("#!/usr/bin/env sh"));
+        assert!(result.text.contains("value # keep literal"));
+        assert!(result.text.contains("# keep heredoc"));
+        assert!(!result.text.contains("remove this"));
+        assert!(!result.text.contains("remove inline"));
+    }
+
+    #[test]
     fn scans_folderize_candidates_with_suggested_paths() {
         let files = vec![
             file("src/user_route.ts", ".ts"),
