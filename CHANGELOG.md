@@ -4,6 +4,11 @@ All notable changes to `@trebired/code-discipline` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.0.3
+
+- Removed the legacy top-level `formatter` compatibility alias; formatting is configured only through `rules.formatting`.
+- Removed formatter-specific public selector exports now that `format` is a rule slug.
+
 ## 5.0.2
 
 - Moved the primary formatting config surface to `rules.formatting: {}` so formatting is enabled like the other rule-backed checks and fixes.

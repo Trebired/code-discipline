@@ -8,17 +8,9 @@ const DEFAULT_CODE_FORMATTER_LINE_LIMIT = 100;
 
 function normalizeFormatter(
   formatting: FormattingRuleOptions | undefined,
-  legacyFormatter: boolean | undefined,
   defaults: { maxCharactersPerLine?: number } = {},
 ): NormalizedFormattingRule | undefined {
-  if (legacyFormatter !== undefined && typeof legacyFormatter !== "boolean") {
-    throw new InvalidCodeDisciplineConfigError("formatter must be true or false when provided; use rules.formatting for new config", {
-      key: "formatter",
-      value: legacyFormatter,
-    });
-  }
-
-  if (formatting === undefined && !legacyFormatter) return undefined;
+  if (formatting === undefined) return undefined;
 
   if (formatting !== undefined && (!formatting || typeof formatting !== "object" || Array.isArray(formatting))) {
     throw new InvalidCodeDisciplineConfigError("formatting must be an object when configured under rules", {

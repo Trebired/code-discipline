@@ -17,14 +17,14 @@ type CodeFormatterFixApplication = {
 async function collectFormatViolations(
   options: NormalizedCheckCodeDisciplineOptions,
 ): Promise<CodeDisciplineViolation[]> {
-  if (!options.formatter || !shouldRunRule("format", options.onlyRules)) return [];
+  if (!options.rules.formatting || !shouldRunRule("format", options.onlyRules)) return [];
   return (await runCodeFormatter(options, "check")).violations;
 }
 
 async function applyCodeFormatterFix(
   options: NormalizedCheckCodeDisciplineOptions,
 ): Promise<CodeFormatterFixApplication | null> {
-  if (!options.formatter || !shouldRunRule("format", options.onlyRules)) return null;
+  if (!options.rules.formatting || !shouldRunRule("format", options.onlyRules)) return null;
 
   const result = await runCodeFormatter(options, "fix");
 

@@ -34,10 +34,6 @@ const FIXABLE_RULE_SLUGS: FixableRuleSlug[] = [
   "format",
 ];
 
-const FORMATTER_SLUGS = [
-  "format",
-] as const;
-
 const RULE_SLUG_BY_CONFIG_KEY = {
   bannedFiles: "banned-files",
   bannedPatterns: "banned-patterns",
@@ -70,29 +66,15 @@ function resolveEnabledRuleSlugs(
   return enabled;
 }
 
-function resolveEnabledFormatterSlugs(
-  formatter: boolean | undefined,
-): Set<CodeDisciplineCheckSelectorSlug> {
-  const enabled = new Set<CodeDisciplineCheckSelectorSlug>();
-
-  if (formatter) {
-    enabled.add("format");
-  }
-
-  return enabled;
-}
-
 function normalizeOnlyRules(
   mode: CodeDisciplineMode,
   onlyRules: readonly string[] | undefined,
   rules: CodeDisciplineRules | undefined,
-  formatter: boolean | undefined,
 ): CodeDisciplineCheckSelectorSlug[] | FixableRuleSlug[] | undefined {
   if (!onlyRules || onlyRules.length === 0) return undefined;
 
-  const allowedRules = new Set<string>(mode === "fix" ? FIXABLE_RULE_SLUGS : [...ALL_RULE_SLUGS, ...FORMATTER_SLUGS]);
+  const allowedRules = new Set<string>(mode === "fix" ? FIXABLE_RULE_SLUGS : ALL_RULE_SLUGS);
   const enabledRules = resolveEnabledRuleSlugs(rules);
-  const enabledFormatters = resolveEnabledFormatterSlugs(formatter);
   const normalized: CodeDisciplineCheckSelectorSlug[] = [];
 
   for (const rule of onlyRules) {
@@ -105,9 +87,8 @@ function normalizeOnlyRules(
       );
     }
 
-    if (!enabledRules.has(rule as CodeDisciplineRuleSlug) && !enabledFormatters.has(rule as CodeDisciplineCheckSelectorSlug)) {
-      const knownFormatter = FORMATTER_SLUGS.includes(rule as typeof FORMATTER_SLUGS[number]);
-      throw new InvalidCodeDisciplineConfigError(`${knownFormatter ? "Selected selector" : "Selected rule"} is not configured: ${rule}`, {
+    if (!enabledRules.has(rule as CodeDisciplineRuleSlug)) {
+      throw new InvalidCodeDisciplineConfigError(`Selected rule is not configured: ${rule}`, {
         mode,
         rule,
       });
@@ -133,10 +114,8 @@ function shouldRunRule(
 export {
   ALL_RULE_SLUGS,
   FIXABLE_RULE_SLUGS,
-  FORMATTER_SLUGS,
   RULE_SLUG_BY_CONFIG_KEY,
   normalizeOnlyRules,
-  resolveEnabledFormatterSlugs,
   resolveEnabledRuleSlugs,
   shouldRunRule,
 };

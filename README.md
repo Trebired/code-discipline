@@ -501,7 +501,7 @@ The `format` selector is enabled by `rules.formatting`.
 
 ### Formatting
 
-The package-owned Rust formatter is enabled as a rule with `rules.formatting: {}`. Omit `rules.formatting` to leave formatting disabled. The older top-level `formatter: true` switch remains accepted as a compatibility alias, but new config should use `rules.formatting`.
+The package-owned Rust formatter is enabled as a rule with `rules.formatting: {}`. Omit `rules.formatting` to leave formatting disabled.
 
 `check format` validates formatting without modifying files, while `fix format` writes formatted files. Running `code-discipline fix` with no selectors runs configured formatting after structural, import, comment, and blank-line fixes, then rechecks `max-characters-per-line` when that rule is configured.
 

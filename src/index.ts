@@ -52,7 +52,6 @@ export {
 
 export type {
   CodeDisciplineCheckName,
-  CodeDisciplineFormatterName,
   CodeDisciplineResult,
   CodeDisciplineRuleName,
   CodeDisciplineViolation,
@@ -126,7 +125,6 @@ export type {
   CodeDisciplineLifecycleHookResult,
   CodeDisciplineLifecycleHooks,
   CodeDisciplineCheckSelectorSlug,
-  CodeDisciplineFormatterSlug,
   CodeDisciplinePresets,
   CodeDisciplineRuleSlug,
   CodeDisciplineRuntimeMode as SharedCodeDisciplineRuntimeMode,

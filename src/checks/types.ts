@@ -6,9 +6,8 @@ import type {
   CodeDisciplineViolation,
 } from "#bsmch74up4fm";
 type CodeDisciplineRuleSlug = CodeDisciplineRuleName;
-type CodeDisciplineFormatterSlug = "format";
-type CodeDisciplineCheckSelectorSlug = CodeDisciplineRuleSlug | CodeDisciplineFormatterSlug;
-type FixableRuleSlug = "banned-files" | "min-file-lines" | "max-characters-per-line" | "folderize-compound-files" | "imports" | "remove-comments" | "structural-blank-lines" | CodeDisciplineFormatterSlug;
+type CodeDisciplineCheckSelectorSlug = CodeDisciplineRuleSlug;
+type FixableRuleSlug = "banned-files" | "min-file-lines" | "max-characters-per-line" | "folderize-compound-files" | "imports" | "remove-comments" | "structural-blank-lines" | "format";
 type CodeDisciplineMode = "check" | "fix";
 type CodeDisciplineRuntimeMode = CodeDisciplineMode;
 type CodeDisciplineRuleSeverity = "warning" | "fail";
@@ -116,7 +115,6 @@ type CheckCodeDisciplineOptions = {
   gitignorePath?: string;
   logging?: LoggingOptions;
   presets?: CodeDisciplinePresets;
-  formatter?: boolean;
   rules?: CodeDisciplineRules;
   lifecycle?: CodeDisciplineLifecycleHooks;
   onlyRules?: CodeDisciplineCheckSelectorSlug[];
@@ -208,7 +206,6 @@ type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
   logging: LoggingOptions;
   onlyRules?: CodeDisciplineCheckSelectorSlug[] | FixableRuleSlug[];
   progressObserver?: SourceProgressObserver;
-  formatter?: NormalizedFormattingRule;
   rules: {
     bannedFiles?: NormalizedBannedFilesRule;
     bannedPatterns?: NormalizedBannedPatternsRule;
@@ -269,7 +266,6 @@ export type {
   CodeDisciplineRuleSeverity,
   CodeDisciplineRuntimeMode,
   CodeDisciplineCheckSelectorSlug,
-  CodeDisciplineFormatterSlug,
   CodeDisciplineRules,
   CodeDisciplineImportsRuleOptions,
   DryRuleOptions,

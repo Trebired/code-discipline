@@ -205,32 +205,24 @@ async function verifyFormatter() {
   await assertFormattedOutput(projectRoot);
 }
 
-async function verifyLegacyFormatterAlias() {
-  const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cd-formatter-legacy-"));
-  await writeFixtureFile({
-    root: projectRoot,
-    relativePath: "src/app.ts",
-    text: "export function run(){\nreturn true\n}\n",
-  });
-
-  const result = await codeDiscipline({
-    projectRoot,
-    ignore: { use_gitignore: false },
-    mode: "check",
-    onlyRules: ["format"],
-    formatter: true,
-    rules: {
-      maxCharactersPerLine: {
-        max: 44,
+async function verifyTopLevelFormatterIsRejected() {
+  const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cd-formatter-rejected-"));
+  await assert.rejects(
+    () => codeDiscipline({
+      projectRoot,
+      ignore: { use_gitignore: false },
+      mode: "check",
+      onlyRules: ["format"],
+      formatter: true,
+      rules: {
+        formatting: {},
       },
-    },
-  });
-
-  assert.equal(result.ok, false);
-  assert.ok(result.violations.some((violation) => violation.rule === "format"));
+    }),
+    /formatter is no longer supported/u,
+  );
 }
 
 await verifyFormatter();
-await verifyLegacyFormatterAlias();
+await verifyTopLevelFormatterIsRejected();
 
 console.log("formatter verification passed");

@@ -15,8 +15,7 @@ type CodeDisciplineRuleName =
   | "dry"
   | "format";
 
-type CodeDisciplineFormatterName = "format";
-type CodeDisciplineCheckName = CodeDisciplineRuleName | CodeDisciplineFormatterName;
+type CodeDisciplineCheckName = CodeDisciplineRuleName;
 type CodeDisciplineViolationSeverity = "fail" | "warning";
 
 type CodeDisciplineViolation = {
@@ -42,7 +41,6 @@ type CodeDisciplineResult = {
 
 export type {
   CodeDisciplineCheckName,
-  CodeDisciplineFormatterName,
   CodeDisciplineResult,
   CodeDisciplineRuleName,
   CodeDisciplineViolation,

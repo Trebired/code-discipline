@@ -122,8 +122,8 @@ async function runCodeFormatter(
   options: NormalizedCheckCodeDisciplineOptions,
   mode: CodeFormatterMode,
 ): Promise<CodeFormatterResult> {
-  const formatter = options.formatter;
-  if (!formatter) {
+  const formatting = options.rules.formatting;
+  if (!formatting) {
     return {
       ok: true,
       violationCount: 0,
@@ -136,7 +136,7 @@ async function runCodeFormatter(
     };
   }
 
-  const collected = await collectCodeFormatterFiles(options, formatter);
+  const collected = await collectCodeFormatterFiles(options, formatting);
   const violations = [...collected.violations];
   const progress = createRuleProgress({
     observer: options.progressObserver,
@@ -165,7 +165,7 @@ async function runCodeFormatter(
   try {
     nativeResult = parseNativeFormatterResponse(binding.formatSourceFiles(JSON.stringify({
       mode,
-      options: toNativeFormatterOptions(formatter),
+      options: toNativeFormatterOptions(formatting),
       sourceFiles: collected.files.map(toNativeSourceFile),
     })));
   } catch (caught) {

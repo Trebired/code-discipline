@@ -12,6 +12,7 @@ import type {
 } from "./checks/types.js";
 import type { SourceProgressObserver, SourceScanObserver } from "./imports/types.js";
 import { orchestrateCodeDisciplineRun } from "./runtime/orchestrate.js";
+import { InvalidCodeDisciplineConfigError } from "./shared/errors.js";
 import type { LoggingOptions } from "./shared/logging-types.js";
 
 type CodeDisciplineInvocationOptions = {
@@ -98,7 +99,6 @@ function buildCheckOptions(options: Omit<CodeDisciplineOptions, "mode">): CheckC
     excludeSourceExtensions: options.excludeSourceExtensions,
     ignore: options.ignore,
     gitignorePath: options.gitignorePath,
-    formatter: options.formatter,
     logging: resolveLoggingOptions(options),
     onlyRules: options.onlyRules,
     progressObserver: options.progressObserver,
@@ -114,16 +114,30 @@ function buildFixOptions(options: Omit<CodeDisciplineOptions, "mode">): FixCodeD
   };
 }
 
+function assertRemovedInvocationOptions(options: Record<string, unknown>): void {
+  if ("formatters" in options) {
+    throw new InvalidCodeDisciplineConfigError("formatters is no longer supported; use rules.formatting instead", {
+      key: "formatters",
+    });
+  }
+
+  if ("formatter" in options) {
+    throw new InvalidCodeDisciplineConfigError("formatter is no longer supported; use rules.formatting instead", {
+      key: "formatter",
+    });
+  }
+}
+
 function codeDiscipline(options: CheckCodeDisciplineCommandOptions): Promise<CheckCodeDisciplineResult>;
 function codeDiscipline(options: FixCodeDisciplineCommandOptions): Promise<FixCodeDisciplineResult>;
 function codeDiscipline(options: CodeDisciplineOptions): Promise<CodeDisciplineResult>;
 async function codeDiscipline(options: CodeDisciplineOptions): Promise<CodeDisciplineResult> {
+  assertRemovedInvocationOptions(options as unknown as Record<string, unknown>);
   const baseConfig: CodeDisciplineConfig = {
     ignore: options.ignore,
     gitignorePath: options.gitignorePath,
     lifecycle: options.lifecycle,
     logging: options.logging,
-    formatter: options.formatter,
     onlyRules: options.onlyRules,
     rules: options.rules,
     excludeSourceExtensions: options.excludeSourceExtensions,
