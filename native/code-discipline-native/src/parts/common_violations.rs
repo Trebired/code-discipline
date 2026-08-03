@@ -30,6 +30,7 @@ fn supports_remove_comments(extension: &str) -> bool {
         || is_rust_extension(extension)
         || is_python_extension(extension)
         || is_shell_extension(extension)
+        || is_qml_extension(extension)
         || is_style_extension(extension)
 }
 

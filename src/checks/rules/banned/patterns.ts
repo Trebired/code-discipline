@@ -7,22 +7,57 @@ import type { CodeDisciplineViolation } from "#bsmch74up4fm";
 import { parseSource } from "#27pccnhol1ci";
 import { isTypeScriptFamilyExtension } from "#87jyjzn68rrk";
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls019o";
+import { CODE_DISCIPLINE_STATE_DIR } from "#ik5y0pee4ah1";
 import { collectFoldedStringMatches } from "./fold.js";
 import type { FoldedStringMatch } from "./fold.js";
 
-function countOccurrences(text: string, pattern: string): number {
-  if (!pattern) return 0;
+type TextSpan = {
+  start: number;
+  end: number;
+};
 
+const NORMALIZED_PACKAGE_STATE_DIR = CODE_DISCIPLINE_STATE_DIR.toLowerCase();
+
+function isStatePathCharacter(value: string): boolean {
+  const code = value.charCodeAt(0);
+  return code === 45
+    || code === 46
+    || code === 47
+    || code === 95
+    || (code >= 48 && code <= 57)
+    || (code >= 65 && code <= 90)
+    || (code >= 97 && code <= 122);
+}
+
+function collectPackageStatePathSpans(text: string): TextSpan[] {
+  const spans: TextSpan[] = [];
+  let index = 0;
+  while (index <= text.length - NORMALIZED_PACKAGE_STATE_DIR.length) {
+    const start = text.indexOf(NORMALIZED_PACKAGE_STATE_DIR, index);
+    if (start < 0) break;
+    let end = start + NORMALIZED_PACKAGE_STATE_DIR.length;
+    while (end < text.length && isStatePathCharacter(text[end] ?? "")) end += 1;
+    spans.push({ start, end });
+    index = end;
+  }
+  return spans;
+}
+
+function isInsideSpan(index: number, spans: TextSpan[]): boolean {
+  return spans.some((span) => index >= span.start && index < span.end);
+}
+
+function countOccurrencesOutsidePackageStatePath(text: string, pattern: string): number {
+  if (!pattern) return 0;
+  const packageStatePathSpans = collectPackageStatePathSpans(text);
   let count = 0;
   let index = 0;
-
   while (index <= text.length - pattern.length) {
     const matchIndex = text.indexOf(pattern, index);
     if (matchIndex < 0) break;
-    count += 1;
+    if (!isInsideSpan(matchIndex, packageStatePathSpans)) count += 1;
     index = matchIndex + 1;
   }
-
   return count;
 }
 
@@ -75,8 +110,12 @@ async function collectBannedPatternViolations(
     for (const pattern of rule.patterns) {
       if (pattern.allowedFiles.includes(file.relativeFromProjectRoot)) continue;
 
-      const rawOccurrences = normalizedText.includes(pattern.normalizedValue) ? countOccurrences(normalizedText, pattern.normalizedValue) : 0;
-      const patternFoldedMatches = foldedMatches.filter((match) => match.value.toLowerCase().includes(pattern.normalizedValue));
+      const rawOccurrences = normalizedText.includes(pattern.normalizedValue)
+        ? countOccurrencesOutsidePackageStatePath(normalizedText, pattern.normalizedValue)
+        : 0;
+      const patternFoldedMatches = foldedMatches.filter(
+        (match) => countOccurrencesOutsidePackageStatePath(match.value.toLowerCase(), pattern.normalizedValue) > 0,
+      );
 
       if (rawOccurrences === 0 && patternFoldedMatches.length === 0) continue;
 

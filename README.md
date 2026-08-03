@@ -129,7 +129,7 @@ Unsafe cases stay unchanged and remain reported after the fix pass. The fixer in
 
 Reports function-like declarations whose total span exceeds `max`.
 
-JavaScript and TypeScript use the TypeScript AST. Go and Rust use brace-aware function scanning. Python uses indentation-aware `def` and `async def` spans. Shell files with `.sh`, `.bash`, or `.zsh` use quote/comment-aware brace function spans.
+JavaScript and TypeScript use the TypeScript AST. Go and Rust use brace-aware function scanning. Python uses indentation-aware `def` and `async def` spans. Shell files with `.sh`, `.bash`, or `.zsh` use quote/comment-aware brace function spans. QML uses comment/string-aware scanning for JavaScript-style functions and signal-handler blocks.
 
 #### `folderizeCompoundFiles`
 
@@ -148,7 +148,7 @@ Validates and optionally fixes:
 - `project-manifests` output drift in root `tsconfig.json` and `package.json#imports`
 - `alias-map` output drift in `.trebired/code-discipline/imports/*.json` and the generated tsconfig projection
 
-`imports` rewrites JavaScript, TypeScript, and SCSS module specifiers. Mixed-language repositories can still include Go, Rust, Python, and extension-bearing shell files; those files are ignored by alias syncing instead of causing parser failures.
+`imports` rewrites JavaScript, TypeScript, and SCSS module specifiers. Mixed-language repositories can still include Go, Rust, Python, QML, and extension-bearing shell files; those files are ignored by alias syncing instead of causing parser failures.
 
 When `imports` sees a relative import that resolves nowhere, check mode reports it. Fix mode removes safe line-isolated static import/export declarations and Sass `@use`, `@forward`, or single-specifier quoted `@import` directives. Dynamic `import(...)`, comments, strings, CSS `url(...)`, and arbitrary CSS values are left alone.
 
@@ -194,10 +194,11 @@ The rule supports the same language families this package currently scans for di
 - Go
 - Rust
 - Python
+- QML
 - shell files with `.sh`, `.bash`, or `.zsh`
 - SCSS and CSS
 
-It keeps string, regex, rune, char, byte-string, raw-string, Python triple-string, shell quoted-string, and shell heredoc content intact while removing actual source comments. Python shebang and encoding comments are preserved, and shell shebangs are preserved. When a removed comment occupied the whole line, that empty line is removed in the same file rewrite.
+It keeps string, regex, rune, char, byte-string, raw-string, Python triple-string, QML string/template/regex literal, shell quoted-string, and shell heredoc content intact while removing actual source comments. Python shebang and encoding comments are preserved, and shell shebangs are preserved. When a removed comment occupied the whole line, that empty line is removed in the same file rewrite.
 
 You can preserve specific comments by matching plain substrings inside the comment text itself, without hardcoding any comment syntax:
 
@@ -427,6 +428,7 @@ Source scanning covers every built-in supported source family by default:
 
 - exclude specific extensions with `excludeSourceExtensions`
 - built-in excluded directories are always included
+- `.trebired/code-discipline` is package-owned state and is always excluded from source scans, rule fixes, formatter traversal, and banned-pattern matches against the package-owned state path itself
 - top-level `ignore.entries` and root `.gitignore` entries are included when `ignore.use_gitignore: true`
 
 So you get the full supported scan set automatically and only opt out when needed.
@@ -539,7 +541,7 @@ formatters: {
 
 `@trebired/code-discipline` can use a Rust native backend when a matching binary is available, with the TypeScript implementation as the fallback. This follows the same native-fast-path shape as `@trebired/logger`: package users keep the same CLI/API, while hot scanning and rewrite paths can move into Rust.
 
-The current native backend accelerates source scanning, `max-file-lines`, common `max-function-lines` paths, `folderize-compound-files` checks, and `remove-comments`. Its comment scanner understands JavaScript, TypeScript, Go, Rust, Python, shell, SCSS, and CSS. If no binary is present, the package automatically uses the TypeScript fallback.
+The current native backend accelerates source scanning, `max-file-lines`, common `max-function-lines` paths, `folderize-compound-files` checks, and `remove-comments`. Its comment scanner understands JavaScript, TypeScript, Go, Rust, Python, QML, shell, SCSS, and CSS. If no binary is present, the package automatically uses the TypeScript fallback.
 
 Useful native controls:
 

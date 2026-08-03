@@ -11,7 +11,8 @@ import type {
 } from "./types.js";
 import { loadNativeBinding } from "#q6u4pcd984qa";
 import { matchesGlob } from "#49ihfa399fpp";
-import { normalizeRelativePath, toPosixPath, uniqueStrings } from "#ntve5i5a0mol";
+import { CODE_DISCIPLINE_STATE_DIR } from "#ik5y0pee4ah1";
+import { isCodeDisciplineStatePath, normalizeRelativePath, toPosixPath, uniqueStrings } from "#ntve5i5a0mol";
 type DirectoryTask = {
   absolutePath: string;
   relativeDir: string;
@@ -42,10 +43,14 @@ function resolveScanConcurrency(): number {
   return Math.min(64, Math.max(8, parallelism * 4));
 }
 function createExcludeMatcher(excludeDirs: ExcludeDirEntry[], type: ExcludeDirEntry["type"]): ExcludeMatcher {
-  const normalizedEntries = uniqueStrings(excludeDirs
+  const packageOwnedEntries = type === "folder" ? [CODE_DISCIPLINE_STATE_DIR] : [];
+  const normalizedEntries = uniqueStrings([
+    ...packageOwnedEntries,
+    ...excludeDirs
     .filter((entry) => entry.type === type)
     .map((entry) => normalizeRelativePath(entry.pattern).replace(/\/+$/g, ""))
-    .filter(Boolean));
+    .filter(Boolean),
+  ]);
   const excludedDirectoryNames = new Set(normalizedEntries.filter((entry) => !entry.includes("/")));
   const excludedPaths = normalizedEntries
     .filter((entry) => entry.includes("/"))
@@ -78,6 +83,7 @@ function createExcludeMatcher(excludeDirs: ExcludeDirEntry[], type: ExcludeDirEn
 }
 function shouldExcludeFile(file: ScannedSourceFile, options: SourceScanOptions): boolean {
   const relativeFromProjectRoot = normalizeRelativePath(file.relativeFromProjectRoot);
+  if (isCodeDisciplineStatePath(relativeFromProjectRoot)) return true;
   return options.excludeDirs
     .filter((entry) => entry.type === "file")
     .some((entry) => matchesGlob(relativeFromProjectRoot, entry.pattern));

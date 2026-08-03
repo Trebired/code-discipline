@@ -3,12 +3,15 @@ import ts from "typescript";
 import {
   isGoExtension,
   isPythonExtension,
+  isQmlExtension,
   isRustExtension,
   isShellExtension,
   isStyleExtension,
   isTypeScriptFamilyExtension,
 } from "#87jyjzn68rrk";
+import { scanSlashBlockComment, scanSlashLineComment } from "./c-like.js";
 import { collectPythonCommentRanges } from "./python.js";
+import { collectQmlCommentRanges } from "./qml.js";
 import { scanEscapedQuotedLiteral } from "./quoted.js";
 import { collectShellCommentRanges } from "./shell.js";
 
@@ -52,40 +55,6 @@ function scanBacktickLiteral(text: string, start: number): number {
   return text.length;
 }
 
-function scanLineComment(text: string, start: number): number {
-  let index = start + 2;
-
-  while (index < text.length && text[index] !== "\n" && text[index] !== "\r") {
-    index += 1;
-  }
-
-  return index;
-}
-
-function scanBlockComment(text: string, start: number, nested: boolean): number {
-  let index = start + 2;
-  let depth = 1;
-
-  while (index < text.length) {
-    if (nested && text[index] === "/" && text[index + 1] === "*") {
-      depth += 1;
-      index += 2;
-      continue;
-    }
-
-    if (text[index] === "*" && text[index + 1] === "/") {
-      depth -= 1;
-      index += 2;
-      if (depth === 0) return index;
-      continue;
-    }
-
-    index += 1;
-  }
-
-  return text.length;
-}
-
 function collectGoCommentRanges(text: string): CommentRange[] {
   const ranges: CommentRange[] = [];
   let index = 0;
@@ -95,14 +64,14 @@ function collectGoCommentRanges(text: string): CommentRange[] {
     const next = text[index + 1];
 
     if (char === "/" && next === "/") {
-      const end = scanLineComment(text, index);
+      const end = scanSlashLineComment(text, index);
       ranges.push({ start: index, end, kind: "line" });
       index = end;
       continue;
     }
 
     if (char === "/" && next === "*") {
-      const end = scanBlockComment(text, index, false);
+      const end = scanSlashBlockComment(text, index, false);
       ranges.push({ start: index, end, kind: "block" });
       index = end;
       continue;
@@ -218,14 +187,14 @@ function collectRustCommentRanges(text: string): CommentRange[] {
     const char = text[index];
     const next = text[index + 1];
     if (char === "/" && next === "/") {
-      const end = scanLineComment(text, index);
+      const end = scanSlashLineComment(text, index);
       ranges.push({ start: index, end, kind: "line" });
       index = end;
       continue;
     }
 
     if (char === "/" && next === "*") {
-      const end = scanBlockComment(text, index, true);
+      const end = scanSlashBlockComment(text, index, true);
       ranges.push({ start: index, end, kind: "block" });
       index = end;
       continue;
@@ -243,6 +212,7 @@ function collectCommentRanges(text: string, extension: string): CommentRange[] {
   if (isRustExtension(extension)) return collectRustCommentRanges(text);
   if (isPythonExtension(extension)) return collectPythonCommentRanges(text);
   if (isShellExtension(extension)) return collectShellCommentRanges(text);
+  if (isQmlExtension(extension)) return collectQmlCommentRanges(text);
   if (isStyleExtension(extension)) return collectGoCommentRanges(text);
   return [];
 }

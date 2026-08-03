@@ -1,8 +1,9 @@
 import { buildPackageLogGroup, PACKAGE_NAME } from "./package-metadata.js";
 
 const DEFAULT_SOURCE_ROOT = ".";
-const DEFAULT_SOURCE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".mts", ".cts", ".cjs", ".go", ".rs", ".py", ".sh", ".bash", ".zsh", ".scss", ".css"];
-const DEFAULT_EXCLUDE_DIRS = [".git", "node_modules", "dist", ".vite", ".trebired/code-discipline"];
+const CODE_DISCIPLINE_STATE_DIR = ".trebired/code-discipline";
+const DEFAULT_SOURCE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".mts", ".cts", ".cjs", ".go", ".rs", ".py", ".sh", ".bash", ".zsh", ".qml", ".scss", ".css"];
+const DEFAULT_EXCLUDE_DIRS = [".git", "node_modules", "dist", ".vite", CODE_DISCIPLINE_STATE_DIR];
 const DEFAULT_ALIAS_PREFIX = "#";
 const DEFAULT_ALIAS_STRATEGY = "random";
 const DEFAULT_ALIAS_RANDOM_LENGTH = 12;
@@ -16,6 +17,7 @@ const RANDOM_ALIAS_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
 const HASH_ALIAS_LENGTH = 12;
 
 export {
+  CODE_DISCIPLINE_STATE_DIR,
   DEFAULT_ALIAS_PREFIX,
   DEFAULT_ALIAS_RANDOM_LENGTH,
   DEFAULT_ALIAS_STRATEGY,

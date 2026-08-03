@@ -2,7 +2,7 @@ import path from "node:path";
 
 import type { ExcludeDirEntry, ScannedSourceFile } from "#pkb9x3eo56l7";
 import { matchesGlob } from "./globs.js";
-import { normalizeRelativePath } from "./utils.js";
+import { isCodeDisciplineStatePath, normalizeRelativePath } from "./utils.js";
 
 type NormalizedRuleExclusions = {
   excludeDirs?: ExcludeDirEntry[];
@@ -26,6 +26,7 @@ function matchesExcludedFolder(filePath: string, folderPattern: string): boolean
 
 function isRuleExcludedFile(file: ScannedSourceFile, exclusions: NormalizedRuleExclusions): boolean {
   const relativePath = normalizeRelativePath(file.relativeFromProjectRoot);
+  if (isCodeDisciplineStatePath(relativePath)) return true;
   const excludeDirs = exclusions.excludeDirs ?? [];
   return excludeDirs.some((entry) => entry.type === "file"
     ? matchesGlob(relativePath, entry.pattern)

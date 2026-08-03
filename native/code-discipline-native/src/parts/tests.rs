@@ -112,6 +112,35 @@ mod tests {
     }
 
     #[test]
+    fn preserves_qml_strings_and_regex_literals() {
+        let source = [
+            "import QtQuick",
+            "Item {",
+            "    property string keep: \"literal // keep\"",
+            "    property var matcher: /https?:\\/\\/example/.test(keep)",
+            "    // remove this",
+            "    function buildTitle() {",
+            "        const text = \"/* keep block */\"",
+            "        return `${text} // keep template` // remove inline",
+            "    }",
+            "}",
+            "",
+        ]
+        .join("\n");
+
+        let result = strip_comments_internal(&source, ".qml", &[]);
+
+        assert!(result.changed);
+        assert_eq!(result.comment_count, 2);
+        assert!(result.text.contains("literal // keep"));
+        assert!(result.text.contains("https?:\\/\\/example"));
+        assert!(result.text.contains("/* keep block */"));
+        assert!(result.text.contains("// keep template"));
+        assert!(!result.text.contains("remove this"));
+        assert!(!result.text.contains("remove inline"));
+    }
+
+    #[test]
     fn scans_folderize_candidates_with_suggested_paths() {
         let files = vec![
             file("src/user_route.ts", ".ts"),

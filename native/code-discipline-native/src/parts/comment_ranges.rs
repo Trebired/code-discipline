@@ -301,6 +301,10 @@ fn collect_comment_ranges(text: &str, extension: &str) -> Vec<CommentRange> {
         return collect_shell_comment_ranges(text);
     }
 
+    if is_qml_extension(extension) {
+        return collect_qml_comment_ranges(text);
+    }
+
     if is_style_extension(extension) {
         return collect_c_like_comment_ranges(text, false, false);
     }

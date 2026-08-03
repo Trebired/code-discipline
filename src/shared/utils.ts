@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import ts from "typescript";
 
-import { RANDOM_ALIAS_ALPHABET } from "./constants.js";
+import { CODE_DISCIPLINE_STATE_DIR, RANDOM_ALIAS_ALPHABET } from "./constants.js";
 import { ParseFailureError } from "./errors.js";
 import type { TsconfigJson } from "#pkb9x3eo56l7";
 
@@ -16,6 +16,11 @@ export function toPosixPath(value: string): string {
 function normalizeRelativePath(value: string): string {
   const normalized = toPosixPath(value).replace(/^\.\/+/, "").replace(/\/+/g, "/");
   return normalized === "." ? "" : normalized;
+}
+
+function isCodeDisciplineStatePath(value: string): boolean {
+  const normalized = normalizeRelativePath(value).replace(/\/+$/g, "");
+  return normalized === CODE_DISCIPLINE_STATE_DIR || normalized.startsWith(`${CODE_DISCIPLINE_STATE_DIR}/`);
 }
 
 function normalizeDotPrefixedTarget(value: string): string {
@@ -177,6 +182,7 @@ export {
   isAliasIdValid,
   isDirectory,
   isFile,
+  isCodeDisciplineStatePath,
   isInsideDirectory,
   normalizeDotPrefixedTarget,
   normalizeRelativePath,

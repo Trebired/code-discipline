@@ -4,6 +4,12 @@ All notable changes to `@trebired/code-discipline` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 4.11.0
+
+- Added QML source support with QML-aware `//` and `/* */` comment handling, string/template/regex preservation, and `maxFunctionLines` detection for JavaScript-style QML functions and signal-handler blocks.
+- Made `.trebired/code-discipline` package-owned state intrinsically excluded from source scans, rule-level filtering, native scanning, Prettier formatter traversal, and banned-pattern matches against the package-owned state path itself.
+- Updated language verification coverage for QML and for the built-in package-state exclusion.
+
 ## 4.10.2
 
 - Added Python source support with comment-aware line counting, removable `#` comment detection, shebang/encoding-comment preservation, triple-string preservation, and indentation-based `maxFunctionLines` detection for `def` and `async def`.

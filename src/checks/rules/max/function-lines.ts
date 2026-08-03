@@ -10,6 +10,7 @@ import { parseSource } from "#27pccnhol1ci";
 import {
   isGoExtension,
   isPythonExtension,
+  isQmlExtension,
   isRustExtension,
   isShellExtension,
   isTypeScriptFamilyExtension,
@@ -20,6 +21,7 @@ import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls0
 import { getEndLine, getStartLine, isFunctionLikeWithBody, resolveFunctionKind, resolveFunctionName } from "#hrlcdim1gtmi";
 import { countCodeLinesInRange, maskCommentsForLineCounting } from "./code-lines.js";
 import { collectPythonFunctionDescriptors } from "./python.js";
+import { collectQmlFunctionDescriptors } from "./qml.js";
 import { collectShellFunctionDescriptors } from "./shell.js";
 import { stripCommentsAndStrings } from "./strip.js";
 
@@ -155,6 +157,7 @@ function collectLanguageFunctionDescriptors(text: string, extension: string, fil
   if (isGoExtension(extension) || isRustExtension(extension)) return collectBlockFunctionDescriptors(text, extension);
   if (isPythonExtension(extension)) return collectPythonFunctionDescriptors(text);
   if (isShellExtension(extension)) return collectShellFunctionDescriptors(text);
+  if (isQmlExtension(extension)) return collectQmlFunctionDescriptors(text);
   return [];
 }
 

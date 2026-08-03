@@ -12,6 +12,7 @@ include!("parts/support.rs");
 include!("parts/source_scan.rs");
 include!("parts/comment_ranges.rs");
 include!("parts/comment_ranges_python.rs");
+include!("parts/comment_ranges_qml.rs");
 include!("parts/comment_ranges_shell.rs");
 include!("parts/comment_stripping.rs");
 include!("parts/common_violations.rs");

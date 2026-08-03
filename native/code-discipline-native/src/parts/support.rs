@@ -148,6 +148,10 @@ fn is_python_extension(extension: &str) -> bool {
     extension == ".py"
 }
 
+fn is_qml_extension(extension: &str) -> bool {
+    extension == ".qml"
+}
+
 fn is_shell_extension(extension: &str) -> bool {
     matches!(extension, ".bash" | ".sh" | ".zsh")
 }

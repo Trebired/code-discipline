@@ -8,6 +8,7 @@ import { matchesGlob } from "#49ihfa399fpp";
 import { isInsideDirectory, normalizeRelativePath, toPosixPath, uniqueStrings } from "#ntve5i5a0mol";
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls019o";
 import type { NormalizedCheckCodeDisciplineOptions, NormalizedPrettierFormatter } from "#uqbg4indzud7";
+import { CODE_DISCIPLINE_STATE_DIR } from "#ik5y0pee4ah1";
 
 type PrettierMode = "check" | "fix";
 
@@ -32,6 +33,7 @@ const DEFAULT_PRETTIER_IGNORE = [
   ".gitignore",
   "node_modules",
   ".prettierignore",
+  CODE_DISCIPLINE_STATE_DIR,
 ];
 
 function normalizePatterns(patterns: string[]): string[] {
