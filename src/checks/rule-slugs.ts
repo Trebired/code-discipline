@@ -20,6 +20,7 @@ const ALL_RULE_SLUGS: CodeDisciplineRuleSlug[] = [
   "remove-comments",
   "structural-blank-lines",
   "dry",
+  "format",
 ];
 
 const FIXABLE_RULE_SLUGS: FixableRuleSlug[] = [
@@ -49,6 +50,7 @@ const RULE_SLUG_BY_CONFIG_KEY = {
   minFileLines: "min-file-lines",
   removeComments: "remove-comments",
   structuralBlankLines: "structural-blank-lines",
+  formatting: "format",
   imports: "imports",
 } as const;
 

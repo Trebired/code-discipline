@@ -75,6 +75,9 @@ type DryRuleOptions = RuleExclusionOptions & {
 type CodeDisciplineImportsRuleOptions = RuleExclusionOptions & Omit<ImportsRuleOptions, "fix" | "excludeDirs"> & {
   severity?: CodeDisciplineRuleSeverity;
 };
+type FormattingRuleOptions = RuleExclusionOptions & {
+  severity?: CodeDisciplineRuleSeverity;
+};
 type CodeDisciplineRules = {
   bannedFiles?: BannedFilesRuleOptions;
   bannedPatterns?: BannedPatternsRuleOptions;
@@ -87,6 +90,7 @@ type CodeDisciplineRules = {
   imports?: CodeDisciplineImportsRuleOptions;
   removeComments?: RemoveCommentsRuleOptions;
   structuralBlankLines?: StructuralBlankLinesRuleOptions;
+  formatting?: FormattingRuleOptions;
   dry?: DryRuleOptions;
 };
 type TsconfigPathsNormalizeMode = ImportsRuntimeNormalizeMode;
@@ -194,13 +198,17 @@ type NormalizedCodeFormatter = {
   trimTrailingWhitespace: boolean;
   collapseBlankLines: boolean;
 };
+type NormalizedFormattingRule = NormalizedCodeFormatter & {
+  excludeDirs: ExcludeDirEntry[];
+  severity: CodeDisciplineRuleSeverity;
+};
 type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
   configPath?: string;
   sourceRootRelative: string;
   logging: LoggingOptions;
   onlyRules?: CodeDisciplineCheckSelectorSlug[] | FixableRuleSlug[];
   progressObserver?: SourceProgressObserver;
-  formatter?: NormalizedCodeFormatter;
+  formatter?: NormalizedFormattingRule;
   rules: {
     bannedFiles?: NormalizedBannedFilesRule;
     bannedPatterns?: NormalizedBannedPatternsRule;
@@ -213,6 +221,7 @@ type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
     imports?: CodeDisciplineImportsRuleOptions;
     removeComments?: NormalizedRemoveCommentsRule;
     structuralBlankLines?: NormalizedStructuralBlankLinesRule;
+    formatting?: NormalizedFormattingRule;
     dry?: NormalizedDryRule;
   };
 };
@@ -269,12 +278,14 @@ export type {
   FixCodeDisciplineResult,
   FixCodeDisciplineRuleResult,
   FolderizeCompoundFilesRuleOptions,
+  FormattingRuleOptions,
   MaxCharactersPerLineRuleOptions,
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
   MinDeclarationNameRuleOptions,
   MinFileLinesRuleOptions,
   NormalizedCodeFormatter,
+  NormalizedFormattingRule,
   NormalizedBannedFileRuleEntry,
   NormalizedBannedFilesRule,
   NormalizedBannedPatternRuleEntry,

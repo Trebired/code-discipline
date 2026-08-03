@@ -18,7 +18,7 @@ function resolveConfiguredSeverity(
     case "remove-comments": return options.rules.removeComments?.severity ?? "fail";
     case "structural-blank-lines": return options.rules.structuralBlankLines?.severity ?? "fail";
     case "dry": return options.rules.dry?.severity ?? "fail";
-    case "format": return "fail";
+    case "format": return options.rules.formatting?.severity ?? "fail";
   }
 }
 

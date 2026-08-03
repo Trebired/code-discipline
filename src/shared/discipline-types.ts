@@ -12,7 +12,8 @@ type CodeDisciplineRuleName =
   | "imports"
   | "remove-comments"
   | "structural-blank-lines"
-  | "dry";
+  | "dry"
+  | "format";
 
 type CodeDisciplineFormatterName = "format";
 type CodeDisciplineCheckName = CodeDisciplineRuleName | CodeDisciplineFormatterName;

@@ -329,6 +329,7 @@ export {
   normalizeBannedFilesRule,
   normalizeDryRule,
   normalizeFolderizeCompoundFilesRule,
+  normalizeSeverity,
   normalizeMaxCharactersPerLineRule,
   normalizeMaxFileLinesRule,
   normalizeMaxFunctionLinesRule,

@@ -4,6 +4,11 @@ All notable changes to `@trebired/code-discipline` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.0.2
+
+- Moved the primary formatting config surface to `rules.formatting: {}` so formatting is enabled like the other rule-backed checks and fixes.
+- Kept top-level `formatter: true` accepted as a compatibility alias while updating docs and formatter verification to use `rules.formatting`.
+
 ## 5.0.1
 
 - Replaced the nested formatter config surface with top-level `formatter: true | false`.

@@ -123,8 +123,8 @@ function formatterOptions(projectRoot, mode, onlyRules = ["format"]) {
     ignore: { use_gitignore: false },
     mode,
     onlyRules,
-    formatter: true,
     rules: {
+      formatting: {},
       maxCharactersPerLine: {
         max: 44,
       },
@@ -205,6 +205,32 @@ async function verifyFormatter() {
   await assertFormattedOutput(projectRoot);
 }
 
+async function verifyLegacyFormatterAlias() {
+  const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cd-formatter-legacy-"));
+  await writeFixtureFile({
+    root: projectRoot,
+    relativePath: "src/app.ts",
+    text: "export function run(){\nreturn true\n}\n",
+  });
+
+  const result = await codeDiscipline({
+    projectRoot,
+    ignore: { use_gitignore: false },
+    mode: "check",
+    onlyRules: ["format"],
+    formatter: true,
+    rules: {
+      maxCharactersPerLine: {
+        max: 44,
+      },
+    },
+  });
+
+  assert.equal(result.ok, false);
+  assert.ok(result.violations.some((violation) => violation.rule === "format"));
+}
+
 await verifyFormatter();
+await verifyLegacyFormatterAlias();
 
 console.log("formatter verification passed");

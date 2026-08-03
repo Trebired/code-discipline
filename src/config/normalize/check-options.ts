@@ -39,7 +39,7 @@ function assertRemovedCheckOptions(options: Record<string, unknown>): void {
   }
 
   if ("formatters" in options) {
-    throw new InvalidCodeDisciplineConfigError("formatters is no longer supported; use formatter: true or formatter: false", {
+    throw new InvalidCodeDisciplineConfigError("formatters is no longer supported; use rules.formatting instead", {
       key: "formatters",
     });
   }
@@ -66,6 +66,9 @@ async function normalizeCheckCodeDisciplineOptions(
     removeComments: normalizeRemoveCommentsRule(rules?.removeComments),
     structuralBlankLines: normalizeStructuralBlankLinesRule(rules?.structuralBlankLines),
   };
+  const formatting = normalizeFormatter(rules?.formatting, options.formatter, {
+    maxCharactersPerLine: normalizedRules.maxCharactersPerLine?.max,
+  });
 
   return {
     ...source,
@@ -73,10 +76,11 @@ async function normalizeCheckCodeDisciplineOptions(
     logging: normalizeLoggingOptions(options.logging, "logging"),
     onlyRules: normalizeOnlyRules(mode, options.onlyRules, rules, options.formatter),
     progressObserver: options.progressObserver,
-    formatter: normalizeFormatter(options.formatter, {
-      maxCharactersPerLine: normalizedRules.maxCharactersPerLine?.max,
-    }),
-    rules: normalizedRules,
+    formatter: formatting,
+    rules: {
+      ...normalizedRules,
+      formatting,
+    },
   };
 }
 

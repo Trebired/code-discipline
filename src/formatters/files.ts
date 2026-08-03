@@ -6,7 +6,7 @@ import { DEFAULT_EXCLUDE_DIRS } from "#ik5y0pee4ah1";
 import { matchesGlob } from "#49ihfa399fpp";
 import { supportsFormatter } from "#87jyjzn68rrk";
 import { isInsideDirectory, normalizeRelativePath, toPosixPath, uniqueStrings } from "#ntve5i5a0mol";
-import type { NormalizedCheckCodeDisciplineOptions, NormalizedCodeFormatter } from "#uqbg4indzud7";
+import type { NormalizedCheckCodeDisciplineOptions, NormalizedFormattingRule } from "#uqbg4indzud7";
 
 type CodeFormatterFile = {
   absolutePath: string;
@@ -24,7 +24,7 @@ function normalizePatterns(patterns: string[]): string[] {
 
 function resolveFormatterIgnorePatterns(
   options: NormalizedCheckCodeDisciplineOptions,
-  formatter: NormalizedCodeFormatter,
+  formatter: NormalizedFormattingRule,
 ): string[] {
   const codeDisciplinePatterns = formatter.ignore
     ? [
@@ -32,10 +32,12 @@ function resolveFormatterIgnorePatterns(
         ...(options.ignore?.gitignorePatterns ?? []),
       ]
     : [];
+  const formatterPatterns = formatter.excludeDirs.map((entry) => entry.pattern);
 
   return normalizePatterns([
     ...DEFAULT_FORMATTER_IGNORE,
     ...codeDisciplinePatterns,
+    ...formatterPatterns,
   ]);
 }
 
@@ -113,7 +115,7 @@ async function collectDirectoryFiles(
 
 async function collectCodeFormatterFiles(
   options: NormalizedCheckCodeDisciplineOptions,
-  formatter: NormalizedCodeFormatter,
+  formatter: NormalizedFormattingRule,
 ): Promise<{ files: CodeFormatterFile[]; ignoredFiles: number; violations: CodeDisciplineViolation[] }> {
   const files: CodeFormatterFile[] = [];
   const violations: CodeDisciplineViolation[] = [];
