@@ -11,10 +11,7 @@ import { resolveFileCandidate } from "#ay5rr8vjr5fh";
 import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
 import { pathExists } from "#ntve5i5a0mol";
 
-const DEFAULT_CONFIG_FILENAMES = [
-  "code-discipline.config.ts",
-  ".code-discipline/config.ts",
-];
+const DEFAULT_CONFIG_FILENAMES = [".trebired/code-discipline/config.ts"];
 
 const NODE_TRANSPILE_EXTENSIONS = new Set([
   ".js",

@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const aliasMapDir = path.join(repoRoot, ".code-discipline", "imports");
+const aliasMapDir = path.join(repoRoot, ".trebired/code-discipline", "imports");
 const sourceRoot = path.join(repoRoot, "src");
 const distRoot = path.join(repoRoot, "dist");
 

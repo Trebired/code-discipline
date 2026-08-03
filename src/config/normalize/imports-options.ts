@@ -14,8 +14,8 @@ import { isDirectory } from "#ntve5i5a0mol";
 import { normalizeLoggingOptions } from "./logging-options.js";
 import { normalizeSourceOptions } from "./source-options.js";
 
-const GENERATED_TSCONFIG_PATH = ".code-discipline/generated/tsconfig.paths.json";
-const IMPORTS_FOLDER_DIR = ".code-discipline/imports";
+const GENERATED_TSCONFIG_PATH = ".trebired/code-discipline/generated/tsconfig.paths.json";
+const IMPORTS_FOLDER_DIR = ".trebired/code-discipline/imports";
 
 function assertValidImportsOptions(options: ImportsOptions): void {
   if ("imports" in (options as Record<string, unknown>)) {

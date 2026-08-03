@@ -21,8 +21,8 @@ import type {
   TsconfigJson,
 } from "./types.js";
 import type { NormalizedCodeDisciplineLogger } from "#uljkt8i26p4t";
-const IMPORTS_FOLDER_DIR = ".code-discipline/imports";
-const GENERATED_TSCONFIG_PATH = ".code-discipline/generated/tsconfig.paths.json";
+const IMPORTS_FOLDER_DIR = ".trebired/code-discipline/imports";
+const GENERATED_TSCONFIG_PATH = ".trebired/code-discipline/generated/tsconfig.paths.json";
 type ImportsFolderState = {
   entryCounts: Array<{ filePath: string; count: number }>;
   map: Record<string, string>;

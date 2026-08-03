@@ -11,7 +11,7 @@ coverage/
 # Runtime and generated work files
 .tmp/
 tmp/
-.code-discipline/generated/
+.trebired/code-discipline/generated/
 cd-report-*.txt
 # Native build output
 native/*/target/

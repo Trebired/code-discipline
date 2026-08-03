@@ -21,7 +21,7 @@ const URL_LITERAL_PATTERN = /(?:https?|ftp):\/\/|mailto:/i;
 
 function isGeneratedSource(file: ScannedSourceFile): boolean {
   const normalized = file.relativeFromProjectRoot.split(path.sep).join("/");
-  return normalized.startsWith(".code-discipline/generated/") || normalized.split("/").includes("generated");
+  return normalized.startsWith(".trebired/code-discipline/generated/") || normalized.split("/").includes("generated");
 }
 
 function isMinifiedSource(file: ScannedSourceFile): boolean {

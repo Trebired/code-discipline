@@ -144,7 +144,7 @@ Validates and optionally fixes:
 - `tsconfig.compilerOptions.paths`
 - relative source imports that should become aliases
 - `project-manifests` output drift in root `tsconfig.json` and `package.json#imports`
-- `alias-map` output drift in `.code-discipline/imports/*.json` and the generated tsconfig projection
+- `alias-map` output drift in `.trebired/code-discipline/imports/*.json` and the generated tsconfig projection
 
 `imports` rewrites JavaScript, TypeScript, and SCSS module specifiers. Mixed-language repositories can still include Go and Rust; those files are ignored by alias syncing instead of causing parser failures.
 
@@ -152,15 +152,15 @@ When `imports` sees a relative import that resolves nowhere, check mode reports 
 
 Setting `removeDeadImports: true` also detects and removes unused JavaScript/TypeScript import bindings (default, namespace, and named specifiers, including `import type`). Detection is syntactic: a binding is dead when its local name has no other identifier reference anywhere else in the file. Side-effect-only imports (`import "./x"`) are never touched, and only the unused portion of a multi-binding import is removed, keeping the rest intact. This option is off by default.
 
-The default `output: { type: "project-manifests" }` writes aliases directly into root `tsconfig.json` and mirrors them into `package.json#imports`. `output: { type: "alias-map" }` uses `.code-discipline/imports/*.json` as the alias source of truth, writes `.code-discipline/generated/tsconfig.paths.json`, makes root `tsconfig.json` extend the generated file, and removes managed project-manifest alias state. `code-discipline check imports` reports missing or stale generated tsconfig wiring as a fixable violation, and `code-discipline fix imports` migrates both directions when the configured output model changes.
+The default `output: { type: "project-manifests" }` writes aliases directly into root `tsconfig.json` and mirrors them into `package.json#imports`. `output: { type: "alias-map" }` uses `.trebired/code-discipline/imports/*.json` as the alias source of truth, writes `.trebired/code-discipline/generated/tsconfig.paths.json`, makes root `tsconfig.json` extend the generated file, and removes managed project-manifest alias state. `code-discipline check imports` reports missing or stale generated tsconfig wiring as a fixable violation, and `code-discipline fix imports` migrates both directions when the configured output model changes.
 
 Alias-map output separates committed state from disposable package output:
 
-- commit `.code-discipline/config.ts`
-- commit `.code-discipline/imports/*.json` when stable or random aliases are part of the configured alias-map state
-- do not commit `.code-discipline/generated/`
-- `code-discipline fix imports` creates root `.gitignore` when missing and adds `.code-discipline/generated/` idempotently
-- saved CLI reports are written under `.code-discipline/generated/reports/`
+- commit `.trebired/code-discipline/config.ts`
+- commit `.trebired/code-discipline/imports/*.json` when stable or random aliases are part of the configured alias-map state
+- do not commit `.trebired/code-discipline/generated/`
+- `code-discipline fix imports` creates root `.gitignore` when missing and adds `.trebired/code-discipline/generated/` idempotently
+- saved CLI reports are written under `.trebired/code-discipline/generated/reports/`
 
 Top-level `ignore` groups shared scan and formatter exclusions in one place, so you can add explicit entries through `ignore.entries` and opt into root `.gitignore` entries through `ignore.use_gitignore`.
 
@@ -301,10 +301,9 @@ Available modes:
 
 The CLI auto-discovers config modules in this order:
 
-- `code-discipline.config.ts`
-- `.code-discipline/config.ts`
+- `.trebired/code-discipline/config.ts`
 
-Those are the only auto-discovered config filenames.
+That is the only auto-discovered config filename.
 
 You can still point at an explicit module path:
 
@@ -318,7 +317,7 @@ Rules are enabled by presence. If a rule object exists under `rules`, it runs.
 
 Rule severity is optional and now supports only `severity: "warning" | "fail"`. If omitted, the default is `fail`.
 
-Example `code-discipline.config.ts` or `.code-discipline/config.ts`:
+Example `.trebired/code-discipline/config.ts`:
 
 ```ts
 import { defineCodeDisciplineConfig } from "@trebired/code-discipline";
@@ -509,7 +508,7 @@ Formatter selectors such as `prettier` are enabled by top-level `formatters` con
 
 Formatters are configured at top level under `formatters`, not under `rules`. Presence enables a formatter; there is no `enabled: true` key.
 
-`formatters.prettier` uses Prettier as the formatting engine and keeps `.code-discipline/config.ts` as the formatting policy source. `check prettier` validates formatting without modifying files, while `fix prettier` writes formatted files. Running `code-discipline fix` with no selectors runs configured Prettier formatting last after structural, import, comment, and blank-line fixes. Set `formatters.prettier.ignore: true` to reuse the shared top-level `ignore`.
+`formatters.prettier` uses Prettier as the formatting engine and keeps `.trebired/code-discipline/config.ts` as the formatting policy source. `check prettier` validates formatting without modifying files, while `fix prettier` writes formatted files. Running `code-discipline fix` with no selectors runs configured Prettier formatting last after structural, import, comment, and blank-line fixes. Set `formatters.prettier.ignore: true` to reuse the shared top-level `ignore`.
 
 Example:
 
@@ -559,7 +558,7 @@ If you want the terminal output written to a package-managed report file too, ad
 code-discipline check save
 ```
 
-This writes a plain-text report to a timestamped file such as `.code-discipline/generated/reports/cd-report-2026-05-26-19-00-00.txt`.
+This writes a plain-text report to a timestamped file such as `.trebired/code-discipline/generated/reports/cd-report-2026-05-26-19-00-00.txt`.
 
 Typical `package.json` scripts can stay simple:
 

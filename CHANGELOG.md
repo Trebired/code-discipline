@@ -4,6 +4,13 @@ All notable changes to `@trebired/code-discipline` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 4.10.0
+
+- Changed automatic config discovery to `.trebired/code-discipline/config.ts` only; old `code-discipline.config.ts` and `.code-discipline/config.ts` files are no longer auto-discovered.
+- Moved package-owned generated artifacts, reports, import alias maps, and generated tsconfig path files under `.trebired/code-discipline/`.
+- Kept explicit `--config <path>` support for caller-supplied paths, including legacy paths when passed intentionally.
+- Updated README, CLI help, generated artifact verification, scan exclusions, and package fixtures for the new `.trebired` structure.
+
 ## 4.9.3
 
 - Updated package metadata and release version for the current imports-rule migration line.

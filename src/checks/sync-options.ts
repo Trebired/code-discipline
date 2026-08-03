@@ -5,8 +5,8 @@ import { ensureDotExtension, normalizeRelativePath, uniqueStrings } from "#ntve5
 import type { CodeDisciplineImportsRuleOptions, NormalizedCheckCodeDisciplineOptions } from "./types.js";
 import { mergeExcludeDirEntries } from "#gqxxrd6ye9fj";
 
-const GENERATED_TSCONFIG_PATH = ".code-discipline/generated/tsconfig.paths.json";
-const IMPORTS_FOLDER_DIR = ".code-discipline/imports";
+const GENERATED_TSCONFIG_PATH = ".trebired/code-discipline/generated/tsconfig.paths.json";
+const IMPORTS_FOLDER_DIR = ".trebired/code-discipline/imports";
 
 function hasExplicitLogging(logging: CodeDisciplineImportsRuleOptions["logging"]): boolean {
   return Boolean(logging?.adapter || logging?.logger);

@@ -3,9 +3,9 @@ import path from "node:path";
 
 import { pathExists } from "./utils.js";
 
-const GENERATED_ARTIFACTS_DIR = ".code-discipline/generated";
-const GENERATED_ARTIFACTS_GITIGNORE_ENTRY = ".code-discipline/generated/";
-const GENERATED_REPORTS_DIR = ".code-discipline/generated/reports";
+const GENERATED_ARTIFACTS_DIR = ".trebired/code-discipline/generated";
+const GENERATED_ARTIFACTS_GITIGNORE_ENTRY = ".trebired/code-discipline/generated/";
+const GENERATED_REPORTS_DIR = ".trebired/code-discipline/generated/reports";
 
 function isGeneratedArtifactsGitignoreEntry(line: string): boolean {
   const normalized = line.trim().replace(/^\/+/, "").replace(/\/+$/g, "");
