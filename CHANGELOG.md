@@ -4,10 +4,16 @@ All notable changes to `@trebired/code-discipline` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.0.1
+
+- Replaced the nested formatter config surface with top-level `formatter: true | false`.
+- Added native formatter line wrapping for safe TypeScript, QML, Python, and Rust long-line shapes so configured formatting can satisfy `maxCharactersPerLine`.
+- Reordered unfiltered `fix` runs so formatting happens before the final `max-characters-per-line` fix result is reported.
+
 ## 5.0.0
 
 - Removed the external formatter integration, formatter dependency, formatter options passthrough, and old formatter selector.
-- Added the package-owned Rust formatter with the new `formatters.code` config and `format` selector for `check` and `fix`.
+- Added the package-owned Rust formatter with the `format` selector for `check` and `fix`.
 - Added native formatting for JavaScript, TypeScript, Go, Rust, Python, QML, shell, SCSS, and CSS source files.
 - Added formatter verification for check mode, fix mode, supported language coverage, max-line comment wrapping, and package-owned state exclusion.
 

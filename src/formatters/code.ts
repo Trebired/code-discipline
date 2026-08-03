@@ -122,7 +122,7 @@ async function runCodeFormatter(
   options: NormalizedCheckCodeDisciplineOptions,
   mode: CodeFormatterMode,
 ): Promise<CodeFormatterResult> {
-  const formatter = options.formatters.code;
+  const formatter = options.formatter;
   if (!formatter) {
     return {
       ok: true,

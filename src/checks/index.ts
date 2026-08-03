@@ -199,10 +199,10 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
   await applyMinFileLinesFix(state, normalized, logger);
   await applyFolderizeFix(state, normalized, logger);
   await applyImportsFix(state, normalized);
-  await applyMaxCharactersPerLineFix(state, normalized);
   await applyRemoveCommentsFix(state, normalized);
   await applyStructuralBlankLinesFix(state, normalized);
   await applyCodeFormatterFix(state, normalized);
+  await applyMaxCharactersPerLineFix(state, normalized);
   const result = attachDisciplineResult("fix", createFixResult(state));
   logFixResult(result, logger);
   return result;

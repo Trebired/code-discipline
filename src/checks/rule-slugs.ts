@@ -1,7 +1,6 @@
 import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
 import type {
   CodeDisciplineMode,
-  CodeDisciplineFormatters,
   CodeDisciplineCheckSelectorSlug,
   CodeDisciplineRuleSlug,
   CodeDisciplineRules,
@@ -70,11 +69,11 @@ function resolveEnabledRuleSlugs(
 }
 
 function resolveEnabledFormatterSlugs(
-  formatters: CodeDisciplineFormatters | undefined,
+  formatter: boolean | undefined,
 ): Set<CodeDisciplineCheckSelectorSlug> {
   const enabled = new Set<CodeDisciplineCheckSelectorSlug>();
 
-  if (formatters?.code) {
+  if (formatter) {
     enabled.add("format");
   }
 
@@ -85,13 +84,13 @@ function normalizeOnlyRules(
   mode: CodeDisciplineMode,
   onlyRules: readonly string[] | undefined,
   rules: CodeDisciplineRules | undefined,
-  formatters: CodeDisciplineFormatters | undefined,
+  formatter: boolean | undefined,
 ): CodeDisciplineCheckSelectorSlug[] | FixableRuleSlug[] | undefined {
   if (!onlyRules || onlyRules.length === 0) return undefined;
 
   const allowedRules = new Set<string>(mode === "fix" ? FIXABLE_RULE_SLUGS : [...ALL_RULE_SLUGS, ...FORMATTER_SLUGS]);
   const enabledRules = resolveEnabledRuleSlugs(rules);
-  const enabledFormatters = resolveEnabledFormatterSlugs(formatters);
+  const enabledFormatters = resolveEnabledFormatterSlugs(formatter);
   const normalized: CodeDisciplineCheckSelectorSlug[] = [];
 
   for (const rule of onlyRules) {

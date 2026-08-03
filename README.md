@@ -356,16 +356,7 @@ export default defineCodeDisciplineConfig({
       ],
     },
   },
-  formatters: {
-    code: {
-      ignore: true,
-      maxCharactersPerLine: 100,
-      indentWidth: 2,
-      finalNewline: true,
-      trimTrailingWhitespace: true,
-      collapseBlankLines: true,
-    },
-  },
+  formatter: true,
   rules: {
     minFileLines: {
       min: 1,
@@ -506,31 +497,27 @@ Rules use kebab-case public slugs:
 
 `fix` only accepts fixable rules. Trying to run `code-discipline fix max-function-lines` or `code-discipline fix dry` fails clearly.
 
-Formatter selectors such as `format` are enabled by top-level `formatters` config, not by `rules`.
+The `format` selector is enabled by top-level `formatter: true`, not by `rules`.
 
-### Formatters
+### Formatter
 
-Formatters are configured at top level under `formatters`, not under `rules`. Presence enables a formatter; there is no `enabled: true` key.
+The package-owned Rust formatter is enabled at top level with `formatter: true`. Use `formatter: false` or omit the key to leave formatting disabled.
 
-`formatters.code` uses the package-owned Rust formatter and keeps `.trebired/code-discipline/config.ts` as the formatting policy source. `check format` validates formatting without modifying files, while `fix format` writes formatted files. Running `code-discipline fix` with no selectors runs configured formatting last after structural, import, comment, and blank-line fixes.
+`check format` validates formatting without modifying files, while `fix format` writes formatted files. Running `code-discipline fix` with no selectors runs configured formatting after structural, import, comment, and blank-line fixes, then rechecks `max-characters-per-line` when that rule is configured.
 
-The formatter supports JavaScript, TypeScript, Go, Rust, Python, QML, shell files with `.sh`, `.bash`, or `.zsh`, SCSS, and CSS. It normalizes line endings, trailing whitespace, final newline, repeated blank lines, brace-language indentation, indentation-sensitive language whitespace, and safe comment wrapping against `maxCharactersPerLine`.
+The formatter supports JavaScript, TypeScript, Go, Rust, Python, QML, shell files with `.sh`, `.bash`, or `.zsh`, SCSS, and CSS. It normalizes line endings, trailing whitespace, final newline, repeated blank lines, brace-language indentation, indentation-sensitive language whitespace, and safe line wrapping against `rules.maxCharactersPerLine.max`.
 
-If `rules.maxCharactersPerLine.max` is configured and `formatters.code.maxCharactersPerLine` is omitted, the formatter uses the rule limit. Without either setting, formatter line width defaults to `100`.
+If `rules.maxCharactersPerLine.max` is configured, the formatter uses that width. Without that rule, formatter line width defaults to `100`.
 
-Set `formatters.code.ignore: true` to reuse the shared top-level `ignore` and root `.gitignore` patterns. `.trebired/code-discipline` is always package-owned state and is never formatted by generic formatter traversal.
+The formatter uses the shared top-level `ignore` and root `.gitignore` patterns. `.trebired/code-discipline` is always package-owned state and is never formatted by generic formatter traversal.
 
 Example:
 
 ```ts
-formatters: {
-  code: {
-    ignore: true,
-    maxCharactersPerLine: 100,
-    indentWidth: 2,
-    finalNewline: true,
-    trimTrailingWhitespace: true,
-    collapseBlankLines: true,
+formatter: true,
+rules: {
+  maxCharactersPerLine: {
+    max: 100,
   },
 },
 ```

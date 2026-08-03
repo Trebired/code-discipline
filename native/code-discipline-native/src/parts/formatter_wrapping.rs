@@ -35,6 +35,10 @@ fn split_words_for_width(content: &str, capacity: usize) -> Option<Vec<String>> 
     (lines.len() > 1).then_some(lines)
 }
 
+fn has_comment_marker(text: &str) -> bool {
+    text.contains("//") || text.contains("/*") || text.contains("*/")
+}
+
 fn line_comment_marker<'a>(extension: &str, trimmed: &'a str, line_number: usize) -> Option<&'a str> {
     if is_python_extension(extension) || is_shell_extension(extension) {
         if line_number == 1 && trimmed.starts_with("#!") {
@@ -105,4 +109,64 @@ fn wrap_comment_lines(
     }
 
     wrapped_lines
+}
+
+fn wrap_long_source_line(
+    line: &str,
+    extension: &str,
+    line_number: usize,
+    max: usize,
+) -> Option<Vec<String>> {
+    if count_display_characters(line) <= max {
+        return None;
+    }
+
+    if let Some(replacements) = wrap_comment_line(line, extension, line_number, max) {
+        return Some(replacements);
+    }
+
+    wrap_one_line_block(line, extension)
+        .or_else(|| wrap_array_or_call_line(line, extension, max))
+        .or_else(|| {
+            is_rust_extension(extension)
+                .then(|| wrap_rust_raw_string_line(line, max))
+                .flatten()
+        })
+        .or_else(|| {
+            is_python_extension(extension)
+                .then(|| wrap_python_string_line(line, max))
+                .flatten()
+        })
+        .or_else(|| wrap_js_like_string_line(line, extension, max))
+        .or_else(|| wrap_markup_line(line, max))
+}
+
+fn wrap_source_lines(
+    lines: Vec<String>,
+    extension: &str,
+    options: &NativeFormatterOptions,
+) -> Vec<String> {
+    let max = options.max_characters_per_line.max(1);
+    let mut current = lines;
+
+    for _ in 0..4 {
+        let mut changed = false;
+        let mut next = Vec::with_capacity(current.len());
+
+        for (index, line) in current.into_iter().enumerate() {
+            if let Some(replacements) = wrap_long_source_line(&line, extension, index + 1, max) {
+                changed = true;
+                next.extend(replacements);
+            } else {
+                next.push(line);
+            }
+        }
+
+        current = next;
+        if !changed {
+            break;
+        }
+    }
+
+    current
 }

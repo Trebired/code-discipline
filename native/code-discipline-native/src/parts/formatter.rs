@@ -175,11 +175,12 @@ fn format_brace_indented_text(
     options: &NativeFormatterOptions,
 ) -> Vec<String> {
     let indent_width = indent_width_for_extension(extension, options);
-    let masked = strip_comments_and_strings(text);
+    let masked = strip_comments_and_strings_for_formatter(text, extension);
     let raw_lines: Vec<&str> = text.split('\n').collect();
     let masked_lines: Vec<&str> = masked.split('\n').collect();
     let mut lines = Vec::with_capacity(raw_lines.len());
     let mut indent_level = 0_usize;
+    let mut continuation_level = 0_usize;
 
     for (index, raw_line) in raw_lines.iter().enumerate() {
         if index == raw_lines.len().saturating_sub(1) && raw_line.is_empty() {
@@ -196,12 +197,13 @@ fn format_brace_indented_text(
         let masked_line = masked_lines.get(index).copied().unwrap_or_default();
         let masked_trimmed = masked_line.trim_start();
         let leading_closers = count_leading_closers(masked_trimmed);
-        let line_indent = indent_level.saturating_sub(leading_closers);
+        let line_indent = indent_level.saturating_sub(leading_closers) + continuation_level;
         let indent = " ".repeat(line_indent * indent_width);
         push_formatted_line(&mut lines, format!("{indent}{content}"), options);
 
         let next_indent = indent_level as isize + brace_balance(masked_line);
         indent_level = next_indent.max(0) as usize;
+        continuation_level = usize::from(continues_formatter_expression(masked_trimmed));
     }
 
     lines
@@ -254,6 +256,7 @@ fn format_source_internal(
         format_indentation_preserving_text(&normalized, extension, options)
     };
     let lines = wrap_comment_lines(lines, extension, options);
+    let lines = wrap_source_lines(lines, extension, options);
     finalize_formatted_lines(lines, options)
 }
 

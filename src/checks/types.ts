@@ -89,18 +89,6 @@ type CodeDisciplineRules = {
   structuralBlankLines?: StructuralBlankLinesRuleOptions;
   dry?: DryRuleOptions;
 };
-type CodeFormatterOptions = {
-  targets?: string[];
-  ignore?: boolean;
-  maxCharactersPerLine?: number;
-  indentWidth?: number;
-  finalNewline?: boolean;
-  trimTrailingWhitespace?: boolean;
-  collapseBlankLines?: boolean;
-};
-type CodeDisciplineFormatters = {
-  code?: CodeFormatterOptions;
-};
 type TsconfigPathsNormalizeMode = ImportsRuntimeNormalizeMode;
 type CodeDisciplineLifecycleContext = {
   mode: CodeDisciplineRuntimeMode;
@@ -124,7 +112,7 @@ type CheckCodeDisciplineOptions = {
   gitignorePath?: string;
   logging?: LoggingOptions;
   presets?: CodeDisciplinePresets;
-  formatters?: CodeDisciplineFormatters;
+  formatter?: boolean;
   rules?: CodeDisciplineRules;
   lifecycle?: CodeDisciplineLifecycleHooks;
   onlyRules?: CodeDisciplineCheckSelectorSlug[];
@@ -212,9 +200,7 @@ type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
   logging: LoggingOptions;
   onlyRules?: CodeDisciplineCheckSelectorSlug[] | FixableRuleSlug[];
   progressObserver?: SourceProgressObserver;
-  formatters: {
-    code?: NormalizedCodeFormatter;
-  };
+  formatter?: NormalizedCodeFormatter;
   rules: {
     bannedFiles?: NormalizedBannedFilesRule;
     bannedPatterns?: NormalizedBannedPatternsRule;
@@ -275,7 +261,6 @@ export type {
   CodeDisciplineRuntimeMode,
   CodeDisciplineCheckSelectorSlug,
   CodeDisciplineFormatterSlug,
-  CodeDisciplineFormatters,
   CodeDisciplineRules,
   CodeDisciplineImportsRuleOptions,
   DryRuleOptions,
@@ -296,7 +281,6 @@ export type {
   NormalizedBannedPatternsRule,
   RemoveCommentsRuleOptions,
   RuleExclusionOptions,
-  CodeFormatterOptions,
   NormalizedCheckCodeDisciplineOptions,
   NormalizedDryRule,
   NormalizedFolderizeCompoundFilesRule,

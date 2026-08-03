@@ -127,7 +127,6 @@ export type {
   CodeDisciplineLifecycleHooks,
   CodeDisciplineCheckSelectorSlug,
   CodeDisciplineFormatterSlug,
-  CodeDisciplineFormatters,
   CodeDisciplinePresets,
   CodeDisciplineRuleSlug,
   CodeDisciplineRuntimeMode as SharedCodeDisciplineRuntimeMode,
@@ -162,6 +161,5 @@ export type {
   NormalizedStructuralBlankLinesRule,
   RemoveCommentsRuleOptions,
   StructuralBlankLinesRuleOptions,
-  CodeFormatterOptions,
   TsconfigPathsNormalizeMode,
 } from "./checks/types.js";

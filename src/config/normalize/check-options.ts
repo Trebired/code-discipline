@@ -19,7 +19,7 @@ import {
   normalizeStructuralBlankLinesRule,
   normalizeImportsRule,
 } from "./rule-options.js";
-import { normalizeFormatters } from "./formatter-options.js";
+import { normalizeFormatter } from "./formatter-options.js";
 import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
 import { normalizeLoggingOptions } from "./logging-options.js";
 import { applyCodeDisciplinePresets } from "./presets.js";
@@ -35,6 +35,12 @@ function assertRemovedCheckOptions(options: Record<string, unknown>): void {
   if ("tsconfigPaths" in options) {
     throw new InvalidCodeDisciplineConfigError("tsconfigPaths is no longer supported; use rules.imports.runtime instead", {
       key: "tsconfigPaths",
+    });
+  }
+
+  if ("formatters" in options) {
+    throw new InvalidCodeDisciplineConfigError("formatters is no longer supported; use formatter: true or formatter: false", {
+      key: "formatters",
     });
   }
 }
@@ -65,9 +71,9 @@ async function normalizeCheckCodeDisciplineOptions(
     ...source,
     configPath: options.configPath,
     logging: normalizeLoggingOptions(options.logging, "logging"),
-    onlyRules: normalizeOnlyRules(mode, options.onlyRules, rules, options.formatters),
+    onlyRules: normalizeOnlyRules(mode, options.onlyRules, rules, options.formatter),
     progressObserver: options.progressObserver,
-    formatters: normalizeFormatters(options.formatters, {
+    formatter: normalizeFormatter(options.formatter, {
       maxCharactersPerLine: normalizedRules.maxCharactersPerLine?.max,
     }),
     rules: normalizedRules,
