@@ -70,6 +70,10 @@ function supportsRemoveComments(value: string): boolean {
   return isTypeScriptFamilyExtension(value) || isGoExtension(value) || isRustExtension(value) || isPythonExtension(value) || isShellExtension(value) || isQmlExtension(value) || isStyleExtension(value);
 }
 
+function supportsFormatter(value: string): boolean {
+  return supportsRemoveComments(value);
+}
+
 export {
   isGoExtension,
   isPythonExtension,
@@ -80,6 +84,7 @@ export {
   isStyleExtension,
   isTypeScriptFamilyExtension,
   supportsFolderizationFix,
+  supportsFormatter,
   supportsMaxFunctionLines,
   supportsRemoveComments,
   supportsImports,

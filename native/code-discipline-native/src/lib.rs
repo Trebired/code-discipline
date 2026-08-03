@@ -21,5 +21,7 @@ include!("parts/folderize.rs");
 include!("parts/function_lines.rs");
 include!("parts/function_lines_shared.rs");
 include!("parts/function_lines_typescript.rs");
+include!("parts/formatter.rs");
+include!("parts/formatter_wrapping.rs");
 include!("parts/api.rs");
 include!("parts/tests.rs");

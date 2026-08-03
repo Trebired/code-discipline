@@ -31,11 +31,11 @@ const FIXABLE_RULE_SLUGS: FixableRuleSlug[] = [
   "imports",
   "remove-comments",
   "structural-blank-lines",
-  "prettier",
+  "format",
 ];
 
 const FORMATTER_SLUGS = [
-  "prettier",
+  "format",
 ] as const;
 
 const RULE_SLUG_BY_CONFIG_KEY = {
@@ -74,8 +74,8 @@ function resolveEnabledFormatterSlugs(
 ): Set<CodeDisciplineCheckSelectorSlug> {
   const enabled = new Set<CodeDisciplineCheckSelectorSlug>();
 
-  if (formatters?.prettier) {
-    enabled.add("prettier");
+  if (formatters?.code) {
+    enabled.add("format");
   }
 
   return enabled;

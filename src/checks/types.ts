@@ -1,5 +1,4 @@
 import type { LoggingOptions } from "#uljkt8i26p4t";
-import type { Options as PrettierOptions } from "prettier";
 import { CodeDisciplineIgnoreOptions, ExcludeDirEntry, SourceProgressObserver, SourceScanObserver, SourceScanOptions, ImportsRuleOptions, ImportsRuntimeNormalizeMode } from "#pkb9x3eo56l7";
 import type {
   CodeDisciplineResult,
@@ -7,7 +6,7 @@ import type {
   CodeDisciplineViolation,
 } from "#bsmch74up4fm";
 type CodeDisciplineRuleSlug = CodeDisciplineRuleName;
-type CodeDisciplineFormatterSlug = "prettier";
+type CodeDisciplineFormatterSlug = "format";
 type CodeDisciplineCheckSelectorSlug = CodeDisciplineRuleSlug | CodeDisciplineFormatterSlug;
 type FixableRuleSlug = "banned-files" | "min-file-lines" | "max-characters-per-line" | "folderize-compound-files" | "imports" | "remove-comments" | "structural-blank-lines" | CodeDisciplineFormatterSlug;
 type CodeDisciplineMode = "check" | "fix";
@@ -90,13 +89,17 @@ type CodeDisciplineRules = {
   structuralBlankLines?: StructuralBlankLinesRuleOptions;
   dry?: DryRuleOptions;
 };
-type PrettierFormatterOptions = {
+type CodeFormatterOptions = {
   targets?: string[];
   ignore?: boolean;
-  options?: PrettierOptions;
+  maxCharactersPerLine?: number;
+  indentWidth?: number;
+  finalNewline?: boolean;
+  trimTrailingWhitespace?: boolean;
+  collapseBlankLines?: boolean;
 };
 type CodeDisciplineFormatters = {
-  prettier?: PrettierFormatterOptions;
+  code?: CodeFormatterOptions;
 };
 type TsconfigPathsNormalizeMode = ImportsRuntimeNormalizeMode;
 type CodeDisciplineLifecycleContext = {
@@ -194,10 +197,14 @@ type NormalizedStructuralBlankLinesRule = {
   excludeDirs: ExcludeDirEntry[];
   severity: CodeDisciplineRuleSeverity;
 };
-type NormalizedPrettierFormatter = {
+type NormalizedCodeFormatter = {
   targets: string[];
   ignore: boolean;
-  options: PrettierOptions;
+  maxCharactersPerLine: number;
+  indentWidth?: number;
+  finalNewline: boolean;
+  trimTrailingWhitespace: boolean;
+  collapseBlankLines: boolean;
 };
 type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
   configPath?: string;
@@ -206,7 +213,7 @@ type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
   onlyRules?: CodeDisciplineCheckSelectorSlug[] | FixableRuleSlug[];
   progressObserver?: SourceProgressObserver;
   formatters: {
-    prettier?: NormalizedPrettierFormatter;
+    code?: NormalizedCodeFormatter;
   };
   rules: {
     bannedFiles?: NormalizedBannedFilesRule;
@@ -282,14 +289,14 @@ export type {
   MaxFunctionLinesRuleOptions,
   MinDeclarationNameRuleOptions,
   MinFileLinesRuleOptions,
-  NormalizedPrettierFormatter,
+  NormalizedCodeFormatter,
   NormalizedBannedFileRuleEntry,
   NormalizedBannedFilesRule,
   NormalizedBannedPatternRuleEntry,
   NormalizedBannedPatternsRule,
   RemoveCommentsRuleOptions,
   RuleExclusionOptions,
-  PrettierFormatterOptions,
+  CodeFormatterOptions,
   NormalizedCheckCodeDisciplineOptions,
   NormalizedDryRule,
   NormalizedFolderizeCompoundFilesRule,

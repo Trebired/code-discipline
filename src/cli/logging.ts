@@ -25,7 +25,7 @@ const RULE_SLUGS = new Set([
   "imports",
   "remove-comments",
   "dry",
-  "prettier",
+  "format",
 ]);
 
 function createDefaultCliLogger(): LogInstance {

@@ -114,13 +114,7 @@ async function verifyPackageStateExclusion(projectRoot) {
     projectRoot,
     ignore: { use_gitignore: false },
     mode: "check",
-    onlyRules: ["banned-patterns", "prettier"],
-    formatters: {
-      prettier: {
-        targets: ["."],
-        ignore: false,
-      },
-    },
+    onlyRules: ["banned-patterns"],
     rules: {
       bannedPatterns: {
         patterns: ["AUTO_EXCLUDED_TOKEN", packageStatePattern],

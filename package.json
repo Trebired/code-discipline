@@ -1,6 +1,6 @@
 {
   "name": "@trebired/code-discipline",
-  "version": "4.11.0",
+  "version": "5.0.0",
   "description": "Configurable codebase discipline checks and rule-driven fixes for Bun projects.",
   "type": "module",
   "private": false,
@@ -40,19 +40,19 @@
     "demo": "bun run examples/dummy.ts",
     "discipline": "bun node_modules/@trebired/code-discipline/dist/cli.js check",
     "discipline:fix": "bun node_modules/@trebired/code-discipline/dist/cli.js fix",
-    "prepublishOnly": "bun run typecheck && bun run build && bun run verify:max-line-fixer && bun run verify:language-support && bun run verify:generated-artifacts",
+    "prepublishOnly": "bun run typecheck && bun run build && bun run build:native && bun run verify:max-line-fixer && bun run verify:language-support && bun run verify:formatter && bun run verify:generated-artifacts",
     "prepare:generated": "bun ./scripts/build/generated/tsconfig.mjs",
     "publish:package": "bun run build:native:matrix && bun publish",
     "publish:package:host": "bun run build:native && bun publish",
     "typecheck": "bun run prepare:generated && tsc --noEmit",
     "verify:generated-artifacts": "bun ./scripts/verify/generated/artifacts.mjs",
+    "verify:formatter": "bun ./scripts/verify/formatter.mjs",
     "verify:language-support": "bun ./scripts/verify/language/support.mjs",
     "verify:max-line-fixer": "bun ./scripts/verify/max/line/fixer.mjs"
   },
   "dependencies": {
     "@package/logger": "npm:@trebired/logger@^2.5.13",
     "@package/result": "npm:@trebired/result@^1.1.6",
-    "prettier": "3.9.6",
     "typescript": "^6.0.3"
   },
   "devDependencies": {

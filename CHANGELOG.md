@@ -4,10 +4,17 @@ All notable changes to `@trebired/code-discipline` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.0.0
+
+- Removed the external formatter integration, formatter dependency, formatter options passthrough, and old formatter selector.
+- Added the package-owned Rust formatter with the new `formatters.code` config and `format` selector for `check` and `fix`.
+- Added native formatting for JavaScript, TypeScript, Go, Rust, Python, QML, shell, SCSS, and CSS source files.
+- Added formatter verification for check mode, fix mode, supported language coverage, max-line comment wrapping, and package-owned state exclusion.
+
 ## 4.11.0
 
 - Added QML source support with QML-aware `//` and `/* */` comment handling, string/template/regex preservation, and `maxFunctionLines` detection for JavaScript-style QML functions and signal-handler blocks.
-- Made `.trebired/code-discipline` package-owned state intrinsically excluded from source scans, rule-level filtering, native scanning, Prettier formatter traversal, and banned-pattern matches against the package-owned state path itself.
+- Made `.trebired/code-discipline` package-owned state intrinsically excluded from source scans, rule-level filtering, native scanning, formatter traversal, and banned-pattern matches against the package-owned state path itself.
 - Updated language verification coverage for QML and for the built-in package-state exclusion.
 
 ## 4.10.2
@@ -40,7 +47,7 @@ This project follows semantic versioning once published.
 ## 4.8.0
 
 - Made `maxCharactersPerLine` fixable for safe JavaScript and TypeScript string literal cases, splitting long plain literals into concatenated segments while preserving runtime values and leaving unsafe lines reported.
-- Added `max-characters-per-line` to targeted and unqualified `fix` runs without making Prettier a requirement for the rewrite.
+- Added `max-characters-per-line` to targeted and unqualified `fix` runs without making a formatter requirement for the rewrite.
 - Made `sync-imports` alias-map fixes ensure `.code-discipline/generated/` is present in root `.gitignore` without ignoring committed `.code-discipline/imports/*.json` state.
 - Moved saved CLI reports under `.code-discipline/generated/reports/` and kept the CLI output pointed at the relative saved path.
 - Added package verification scripts for the string-literal fixer and generated artifact hygiene, and included them in the publish check.
@@ -91,22 +98,22 @@ This project follows semantic versioning once published.
 ## 4.5.0
 
 - Added `structuralBlankLines`, a fixable rule that enforces exactly one blank line at AST-identified structural boundaries (file headers, imports, declaration groups, class members) while leaving compact groups (imports, variables, types, re-exports, execution statements, class fields, directive prologues, function overloads, getter/setter pairs) at zero or one blank line and collapsing two or more blank lines to one.
-- Made unqualified `fix` run `structuralBlankLines` after `removeComments` and before configured Prettier formatting.
+- Made unqualified `fix` run `structuralBlankLines` after `removeComments` and before configured formatting.
 
 ## 4.4.2
 
 - Replaced top-level `excludeDirs` with shared `ignore.entries` and `ignore.use_gitignore` configuration.
-- Simplified `formatters.prettier.ignore` to a boolean that reuses the shared code-discipline ignore when `true`.
+- Simplified formatter ignore config to a boolean that reuses the shared code-discipline ignore when `true`.
 
 ## 4.4.1
 
-- Added `formatters.prettier.ignore.gitignore` support, with `ignore.entries` for explicit formatter ignore patterns.
+- Added formatter `.gitignore` support, with `ignore.entries` for explicit formatter ignore patterns.
 - Updated the completed source scan log to report the number of files scanned explicitly.
 
 ## 4.4.0
 
-- Added top-level `formatters.prettier` configuration, backed by Prettier `3.9.6`, with `check prettier` for formatting validation and `fix prettier` for formatting writes.
-- Made unqualified `fix` run configured Prettier formatting last after structural, import, and comment fixes.
+- Added top-level formatter configuration with dedicated check and fix selectors.
+- Made unqualified `fix` run configured formatting last after structural, import, and comment fixes.
 - Added formatter changed and unchanged counts to fix results and CLI summaries.
 
 ## 4.3.2

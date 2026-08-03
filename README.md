@@ -9,10 +9,11 @@ Configurable repository discipline checks and rule-driven fixes for Bun projects
 - sync rules such as keeping source imports, `tsconfig.json`, and optional `package.json#imports` aligned
 - source cleanup rules such as removing comments across supported languages
 - structural spacing rules such as normalizing blank lines around JavaScript and TypeScript declarations
+- a built-in Rust formatter for the supported source languages
 - native acceleration with a TypeScript fallback for large codebases
 - DRY enforcement through source-tree duplicate function grouping
 
-It is not a formatter, linter replacement, or build system.
+It is not a linter replacement or build system.
 
 ## Install
 
@@ -27,9 +28,9 @@ bun i @trebired/code-discipline
 ```sh
 code-discipline check
 code-discipline check save
-code-discipline check max-function-lines dry
+code-discipline check max-function-lines dry format
 code-discipline fix
-code-discipline fix banned-files min-file-lines max-characters-per-line imports remove-comments structural-blank-lines
+code-discipline fix banned-files min-file-lines max-characters-per-line imports remove-comments structural-blank-lines format
 code-discipline gate -- bun run dev
 ```
 
@@ -101,7 +102,7 @@ Reports JavaScript and TypeScript `function` declarations and simple `const` ide
 
 Reports physical lines whose character count exceeds `max`, defaulting to `150` when the rule is configured.
 
-`code-discipline fix max-characters-per-line` can split safe JavaScript and TypeScript string literals into concatenated string segments without requiring Prettier. The fixer preserves the exact runtime string value, prefers whitespace split points, keeps the original quote style when practical, and handles common expression positions such as object property values, variable initializers, array elements, call arguments, and return statements.
+`code-discipline fix max-characters-per-line` can split safe JavaScript and TypeScript string literals into concatenated string segments. The fixer preserves the exact runtime string value, prefers whitespace split points, keeps the original quote style when practical, and handles common expression positions such as object property values, variable initializers, array elements, call arguments, and return statements.
 
 Example:
 
@@ -356,17 +357,13 @@ export default defineCodeDisciplineConfig({
     },
   },
   formatters: {
-    prettier: {
+    code: {
       ignore: true,
-      options: {
-        printWidth: 100,
-        tabWidth: 2,
-        useTabs: false,
-        semi: true,
-        singleQuote: true,
-        trailingComma: "all",
-        endOfLine: "lf",
-      },
+      maxCharactersPerLine: 100,
+      indentWidth: 2,
+      finalNewline: true,
+      trimTrailingWhitespace: true,
+      collapseBlankLines: true,
     },
   },
   rules: {
@@ -486,9 +483,9 @@ Manual `rules.bannedPatterns` entries still work normally. If both are configure
 
 ```sh
 code-discipline check max-file-lines max-function-lines
-code-discipline fix banned-files min-file-lines max-characters-per-line imports remove-comments structural-blank-lines
-code-discipline check prettier
-code-discipline fix prettier
+code-discipline fix banned-files min-file-lines max-characters-per-line imports remove-comments structural-blank-lines format
+code-discipline check format
+code-discipline fix format
 ```
 
 Rules use kebab-case public slugs:
@@ -505,32 +502,35 @@ Rules use kebab-case public slugs:
 - `remove-comments`
 - `structural-blank-lines`
 - `dry`
+- `format`
 
 `fix` only accepts fixable rules. Trying to run `code-discipline fix max-function-lines` or `code-discipline fix dry` fails clearly.
 
-Formatter selectors such as `prettier` are enabled by top-level `formatters` config, not by `rules`.
+Formatter selectors such as `format` are enabled by top-level `formatters` config, not by `rules`.
 
 ### Formatters
 
 Formatters are configured at top level under `formatters`, not under `rules`. Presence enables a formatter; there is no `enabled: true` key.
 
-`formatters.prettier` uses Prettier as the formatting engine and keeps `.trebired/code-discipline/config.ts` as the formatting policy source. `check prettier` validates formatting without modifying files, while `fix prettier` writes formatted files. Running `code-discipline fix` with no selectors runs configured Prettier formatting last after structural, import, comment, and blank-line fixes. Set `formatters.prettier.ignore: true` to reuse the shared top-level `ignore`.
+`formatters.code` uses the package-owned Rust formatter and keeps `.trebired/code-discipline/config.ts` as the formatting policy source. `check format` validates formatting without modifying files, while `fix format` writes formatted files. Running `code-discipline fix` with no selectors runs configured formatting last after structural, import, comment, and blank-line fixes.
+
+The formatter supports JavaScript, TypeScript, Go, Rust, Python, QML, shell files with `.sh`, `.bash`, or `.zsh`, SCSS, and CSS. It normalizes line endings, trailing whitespace, final newline, repeated blank lines, brace-language indentation, indentation-sensitive language whitespace, and safe comment wrapping against `maxCharactersPerLine`.
+
+If `rules.maxCharactersPerLine.max` is configured and `formatters.code.maxCharactersPerLine` is omitted, the formatter uses the rule limit. Without either setting, formatter line width defaults to `100`.
+
+Set `formatters.code.ignore: true` to reuse the shared top-level `ignore` and root `.gitignore` patterns. `.trebired/code-discipline` is always package-owned state and is never formatted by generic formatter traversal.
 
 Example:
 
 ```ts
 formatters: {
-  prettier: {
+  code: {
     ignore: true,
-    options: {
-      printWidth: 100,
-      tabWidth: 2,
-      useTabs: false,
-      semi: true,
-      singleQuote: true,
-      trailingComma: "all",
-      endOfLine: "lf",
-    },
+    maxCharactersPerLine: 100,
+    indentWidth: 2,
+    finalNewline: true,
+    trimTrailingWhitespace: true,
+    collapseBlankLines: true,
   },
 },
 ```

@@ -145,7 +145,7 @@ export type {
   MinDeclarationNameRuleOptions,
   MinFileLinesRuleOptions,
   NodeProcessBoundaryPresetOptions,
-  NormalizedPrettierFormatter,
+  NormalizedCodeFormatter,
   NormalizedBannedFileRuleEntry,
   NormalizedBannedFilesRule,
   NormalizedBannedPatternRuleEntry,
@@ -162,6 +162,6 @@ export type {
   NormalizedStructuralBlankLinesRule,
   RemoveCommentsRuleOptions,
   StructuralBlankLinesRuleOptions,
-  PrettierFormatterOptions,
+  CodeFormatterOptions,
   TsconfigPathsNormalizeMode,
 } from "./checks/types.js";

@@ -1,4 +1,4 @@
-import { runPrettierFormatter } from "#dxx8c7gob0bd";
+import { runCodeFormatter } from "#jnvdqdbcnk3f";
 import type { CodeDisciplineViolation } from "#bsmch74up4fm";
 import { shouldRunRule } from "./rule-slugs.js";
 import type {
@@ -6,7 +6,7 @@ import type {
   NormalizedCheckCodeDisciplineOptions,
 } from "./types.js";
 
-type PrettierFixApplication = {
+type CodeFormatterFixApplication = {
   formattedFiles: number;
   rewrittenFiles: number;
   ruleResult: FixCodeDisciplineRuleResult;
@@ -14,19 +14,19 @@ type PrettierFixApplication = {
   violations: CodeDisciplineViolation[];
 };
 
-async function collectPrettierViolations(
+async function collectFormatViolations(
   options: NormalizedCheckCodeDisciplineOptions,
 ): Promise<CodeDisciplineViolation[]> {
-  if (!options.formatters.prettier || !shouldRunRule("prettier", options.onlyRules)) return [];
-  return (await runPrettierFormatter(options, "check")).violations;
+  if (!options.formatters.code || !shouldRunRule("format", options.onlyRules)) return [];
+  return (await runCodeFormatter(options, "check")).violations;
 }
 
-async function applyPrettierFormatterFix(
+async function applyCodeFormatterFix(
   options: NormalizedCheckCodeDisciplineOptions,
-): Promise<PrettierFixApplication | null> {
-  if (!options.formatters.prettier || !shouldRunRule("prettier", options.onlyRules)) return null;
+): Promise<CodeFormatterFixApplication | null> {
+  if (!options.formatters.code || !shouldRunRule("format", options.onlyRules)) return null;
 
-  const result = await runPrettierFormatter(options, "fix");
+  const result = await runCodeFormatter(options, "fix");
 
   return {
     formattedFiles: result.formatted_files,
@@ -44,5 +44,5 @@ async function applyPrettierFormatterFix(
   };
 }
 
-export { applyPrettierFormatterFix, collectPrettierViolations };
-export type { PrettierFixApplication };
+export { applyCodeFormatterFix, collectFormatViolations };
+export type { CodeFormatterFixApplication };

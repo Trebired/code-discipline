@@ -1,4 +1,30 @@
 #[napi]
+pub fn format_source_text(request_json: String) -> Result<String> {
+    let request: FormatSourceTextRequest =
+        serde_json::from_str(&request_json).map_err(|error| err(error.to_string()))?;
+    let text = format_source_internal(&request.text, &request.extension, &request.options);
+    serde_json::to_string(&NativeFormatSourceTextResult {
+        changed: text != request.text,
+        text,
+    })
+    .map_err(|error| err(error.to_string()))
+}
+
+#[napi]
+pub fn format_source_files(request_json: String) -> Result<String> {
+    let request: FormatSourceFilesRequest =
+        serde_json::from_str(&request_json).map_err(|error| err(error.to_string()))?;
+    let mut files: Vec<NativeFormatFileResult> = request
+        .source_files
+        .par_iter()
+        .map(|file| format_file(file, &request.options, &request.mode))
+        .collect();
+    files.sort_by(|left, right| left.file_path.cmp(&right.file_path));
+    serde_json::to_string(&NativeFormatSourceFilesResult { files })
+        .map_err(|error| err(error.to_string()))
+}
+
+#[napi]
 pub fn strip_comments(request_json: String) -> Result<String> {
     let request: StripCommentsRequest =
         serde_json::from_str(&request_json).map_err(|error| err(error.to_string()))?;

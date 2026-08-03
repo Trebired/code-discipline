@@ -14,7 +14,7 @@ type CodeDisciplineRuleName =
   | "structural-blank-lines"
   | "dry";
 
-type CodeDisciplineFormatterName = "prettier";
+type CodeDisciplineFormatterName = "format";
 type CodeDisciplineCheckName = CodeDisciplineRuleName | CodeDisciplineFormatterName;
 type CodeDisciplineViolationSeverity = "fail" | "warning";
 

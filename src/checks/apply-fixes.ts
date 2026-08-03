@@ -5,7 +5,7 @@ import { filterSourceFilesForRule } from "#jizekc8duh4i";
 import type { CodeDisciplineViolation } from "#bsmch74up4fm";
 import type { resolveLogger } from "#5koja8ae2wwn";
 import { fixFolderization } from "./fix-folderization.js";
-import { applyPrettierFormatterFix } from "./prettier.js";
+import { applyCodeFormatterFix } from "./format.js";
 import { shouldRunRule } from "./rule-slugs.js";
 import { fixBannedFilesRule } from "./rules/banned/files.js";
 import { fixStructuralBlankLinesRule } from "./rules/blank-lines/index.js";
@@ -168,12 +168,12 @@ async function applyStructuralBlankLinesFix(state: FixState, normalized: Normali
   state.rewrittenFiles += result.rewritten_files ?? 0;
 }
 
-async function applyPrettierFix(state: FixState, normalized: NormalizedCheckCodeDisciplineOptions): Promise<void> {
-  const result = await applyPrettierFormatterFix(normalized);
+async function applyCodeFormatFix(state: FixState, normalized: NormalizedCheckCodeDisciplineOptions): Promise<void> {
+  const result = await applyCodeFormatterFix(normalized);
   if (!result) return;
 
   const violations = applyConfiguredSeverity(result.violations, normalized);
-  state.ruleResults.prettier = mapFixRuleResult({ ...result.ruleResult, violations });
+  state.ruleResults.format = mapFixRuleResult({ ...result.ruleResult, violations });
   state.violations.push(...violations);
   state.formattedFiles += result.formattedFiles;
   state.unchangedFiles += result.unchangedFiles;
@@ -182,10 +182,10 @@ async function applyPrettierFix(state: FixState, normalized: NormalizedCheckCode
 
 export {
   applyBannedFilesFix,
+  applyCodeFormatFix as applyCodeFormatterFix,
   applyFolderizeFix,
   applyMaxCharactersPerLineFix,
   applyMinFileLinesFix,
-  applyPrettierFix,
   applyRemoveCommentsFix,
   applyStructuralBlankLinesFix,
   applyImportsFix,

@@ -11,13 +11,13 @@ import {
   applyFolderizeFix,
   applyMaxCharactersPerLineFix,
   applyMinFileLinesFix,
-  applyPrettierFix,
+  applyCodeFormatterFix,
   applyRemoveCommentsFix,
   applyStructuralBlankLinesFix,
   applyImportsFix,
 } from "./apply-fixes.js";
 import type { FixState } from "./apply-fixes.js";
-import { collectPrettierViolations } from "./prettier.js";
+import { collectFormatViolations } from "./format.js";
 import { shouldRunRule } from "./rule-slugs.js";
 import { collectBannedFileViolations } from "./rules/banned/files.js";
 import { collectBannedPatternViolations } from "./rules/banned/patterns.js";
@@ -139,7 +139,7 @@ async function collectViolations(options: NormalizedCheckCodeDisciplineOptions):
   if (options.rules.structuralBlankLines && shouldRunRule("structural-blank-lines", options.onlyRules)) {
     violations.push(...await collectStructuralBlankLinesViolations(filterSourceFilesForRule(sourceFiles, options.rules.structuralBlankLines), options));
   }
-  violations.push(...await collectPrettierViolations(options));
+  violations.push(...await collectFormatViolations(options));
   return sortViolations(applyConfiguredSeverity(violations, options));
 }
 function createFixResult(state: FixState): FixCodeDisciplineResult {
@@ -202,7 +202,7 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
   await applyMaxCharactersPerLineFix(state, normalized);
   await applyRemoveCommentsFix(state, normalized);
   await applyStructuralBlankLinesFix(state, normalized);
-  await applyPrettierFix(state, normalized);
+  await applyCodeFormatterFix(state, normalized);
   const result = attachDisciplineResult("fix", createFixResult(state));
   logFixResult(result, logger);
   return result;

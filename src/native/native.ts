@@ -6,6 +6,8 @@ import { CODE_DISCIPLINE_PACKAGE_NAME } from "#ik5y0pee4ah1";
 
 type NativeBinding = {
   collectRemoveCommentsViolations(requestJson: string): string;
+  formatSourceFiles(requestJson: string): string;
+  formatSourceText(requestJson: string): string;
   fixRemoveCommentsRule(requestJson: string): string;
   runFolderizeCompoundFilesRule(requestJson: string): string;
   runMaxBlockFunctionLinesRule(requestJson: string): string;

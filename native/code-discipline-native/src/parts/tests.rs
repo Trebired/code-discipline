@@ -219,4 +219,99 @@ mod tests {
             ["// @ts-nocheck", "export const app = true;", ""].join("\n")
         );
     }
+
+    #[test]
+    fn formats_brace_languages_with_stable_indentation() {
+        let source = [
+            "export function run(){",
+            "const value = {",
+            "name: \"one\"",
+            "}",
+            "return value",
+            "}",
+            "",
+        ]
+        .join("\n");
+        let options = NativeFormatterOptions {
+            max_characters_per_line: 100,
+            indent_width: Some(2),
+            final_newline: true,
+            trim_trailing_whitespace: true,
+            collapse_blank_lines: true,
+        };
+
+        let formatted = format_source_internal(&source, ".ts", &options);
+
+        assert_eq!(
+            formatted,
+            [
+                "export function run(){",
+                "  const value = {",
+                "    name: \"one\"",
+                "  }",
+                "  return value",
+                "}",
+                "",
+            ]
+            .join("\n")
+        );
+    }
+
+    #[test]
+    fn preserves_python_blocks_and_wraps_comments() {
+        let source = [
+            "#!/usr/bin/env python3",
+            "def run():   ",
+            "    # this comment is long enough that it should wrap at a small configured width",
+            "    return True",
+            "",
+            "",
+        ]
+        .join("\n");
+        let options = NativeFormatterOptions {
+            max_characters_per_line: 44,
+            indent_width: None,
+            final_newline: true,
+            trim_trailing_whitespace: true,
+            collapse_blank_lines: true,
+        };
+
+        let formatted = format_source_internal(&source, ".py", &options);
+
+        assert_eq!(
+            formatted,
+            [
+                "#!/usr/bin/env python3",
+                "def run():",
+                "    # this comment is long enough that it",
+                "    # should wrap at a small configured",
+                "    # width",
+                "    return True",
+                "",
+            ]
+            .join("\n")
+        );
+    }
+
+    #[test]
+    fn formats_qml_and_style_sources() {
+        let options = NativeFormatterOptions {
+            max_characters_per_line: 100,
+            indent_width: Some(2),
+            final_newline: true,
+            trim_trailing_whitespace: true,
+            collapse_blank_lines: true,
+        };
+        let qml = ["Item {", "MouseArea {", "onClicked: {", "console.log(\"ok\")", "}", "}", "}", ""].join("\n");
+        let css = [".item {", "color: red;", "@media screen {", "display: block;", "}", "}", ""].join("\n");
+
+        assert_eq!(
+            format_source_internal(&qml, ".qml", &options),
+            ["Item {", "  MouseArea {", "    onClicked: {", "      console.log(\"ok\")", "    }", "  }", "}", ""].join("\n")
+        );
+        assert_eq!(
+            format_source_internal(&css, ".css", &options),
+            [".item {", "  color: red;", "  @media screen {", "    display: block;", "  }", "}", ""].join("\n")
+        );
+    }
 }
