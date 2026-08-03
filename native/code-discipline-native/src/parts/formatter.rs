@@ -61,16 +61,6 @@ fn default_true() -> bool {
     true
 }
 
-fn supports_formatter(extension: &str) -> bool {
-    is_ts_family_extension(extension)
-        || is_go_extension(extension)
-        || is_rust_extension(extension)
-        || is_python_extension(extension)
-        || is_shell_extension(extension)
-        || is_qml_extension(extension)
-        || is_style_extension(extension)
-}
-
 fn is_brace_indented_extension(extension: &str) -> bool {
     is_ts_family_extension(extension)
         || is_go_extension(extension)
@@ -203,7 +193,7 @@ fn format_brace_indented_text(
 
         let next_indent = indent_level as isize + brace_balance(masked_line);
         indent_level = next_indent.max(0) as usize;
-        continuation_level = usize::from(continues_formatter_expression(masked_trimmed));
+        continuation_level = usize::from(continues_formatter_expression(content));
     }
 
     lines
@@ -261,7 +251,7 @@ fn format_source_internal(
 }
 
 fn format_file(file: &ScannedSourceFile, options: &NativeFormatterOptions, mode: &str) -> NativeFormatFileResult {
-    if !supports_formatter(&file.extension) {
+    if !supports_remove_comments(&file.extension) {
         return NativeFormatFileResult {
             file_path: file.relative_from_project_root.clone(),
             checked: false,

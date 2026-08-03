@@ -85,6 +85,10 @@ function unionIndexGroup(state: DuplicateState, indexes: number[], signal: Dupli
   }
 }
 
+function languageScopedKey(descriptor: DryFunctionDescriptor, value: string): string {
+  return `${descriptor.language}:${value}`;
+}
+
 function indexExactAndNamedFunctions(functions: DryFunctionDescriptor[], options: NormalizedDryRule): {
   indexesByBehaviorFingerprint: Map<string, number[]>;
   indexesByFingerprint: Map<string, number[]>;
@@ -98,20 +102,23 @@ function indexExactAndNamedFunctions(functions: DryFunctionDescriptor[], options
     const descriptor = functions[index]!;
     if (isWithinDuplicateSizeThreshold(descriptor, options)) {
       if (descriptor.behaviorFingerprint) {
-        const indexes = indexesByBehaviorFingerprint.get(descriptor.behaviorFingerprint) ?? [];
+        const key = languageScopedKey(descriptor, descriptor.behaviorFingerprint);
+        const indexes = indexesByBehaviorFingerprint.get(key) ?? [];
         indexes.push(index);
-        indexesByBehaviorFingerprint.set(descriptor.behaviorFingerprint, indexes);
+        indexesByBehaviorFingerprint.set(key, indexes);
       }
 
-      const indexes = indexesByFingerprint.get(descriptor.fingerprint) ?? [];
+      const key = languageScopedKey(descriptor, descriptor.fingerprint);
+      const indexes = indexesByFingerprint.get(key) ?? [];
       indexes.push(index);
-      indexesByFingerprint.set(descriptor.fingerprint, indexes);
+      indexesByFingerprint.set(key, indexes);
     }
 
     if (shouldIndexNameDuplicate(descriptor, options)) {
-      const indexes = indexesByName.get(descriptor.normalizedName!) ?? [];
+      const key = languageScopedKey(descriptor, descriptor.normalizedName!);
+      const indexes = indexesByName.get(key) ?? [];
       indexes.push(index);
-      indexesByName.set(descriptor.normalizedName!, indexes);
+      indexesByName.set(key, indexes);
     }
   }
 

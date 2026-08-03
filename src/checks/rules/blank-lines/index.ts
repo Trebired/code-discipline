@@ -4,9 +4,10 @@ import path from "node:path";
 import { parseSource } from "#27pccnhol1ci";
 import type { ScannedSourceFile } from "#pkb9x3eo56l7";
 import type { CodeDisciplineViolation } from "#bsmch74up4fm";
-import { isTypeScriptFamilyExtension } from "#87jyjzn68rrk";
+import { isTypeScriptFamilyExtension, supportsStructuralBlankLines } from "#87jyjzn68rrk";
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls019o";
 import type { FixCodeDisciplineRuleResult, NormalizedCheckCodeDisciplineOptions } from "#uqbg4indzud7";
+import { rewriteGenericStructuralBlankLines } from "./generic.js";
 import { rewriteStructuralBlankLines } from "./rewrite.js";
 
 function createStructuralBlankLinesViolation(args: {
@@ -28,6 +29,14 @@ function createStructuralBlankLinesViolation(args: {
   };
 }
 
+function rewriteStructuralBlankLinesForFile(file: ScannedSourceFile, sourceText: string) {
+  const extension = path.extname(file.absolutePath).toLowerCase();
+  if (isTypeScriptFamilyExtension(extension)) {
+    return rewriteStructuralBlankLines(parseSource(sourceText, file.absolutePath), sourceText);
+  }
+  return rewriteGenericStructuralBlankLines(sourceText, extension);
+}
+
 async function collectStructuralBlankLinesViolations(
   sourceFiles: ScannedSourceFile[],
   options: NormalizedCheckCodeDisciplineOptions,
@@ -41,14 +50,13 @@ async function collectStructuralBlankLinesViolations(
 
   for (let index = 0; index < sourceFiles.length; index += 1) {
     const file = sourceFiles[index]!;
-    if (!isTypeScriptFamilyExtension(path.extname(file.absolutePath).toLowerCase())) {
+    if (!supportsStructuralBlankLines(file.extension)) {
       emitRuleChunk(progress, index + 1, violations.length);
       continue;
     }
 
     const sourceText = await fs.readFile(file.absolutePath, "utf8");
-    const sourceFile = parseSource(sourceText, file.absolutePath);
-    const result = rewriteStructuralBlankLines(sourceFile, sourceText);
+    const result = rewriteStructuralBlankLinesForFile(file, sourceText);
 
     if (result.changed) {
       violations.push(createStructuralBlankLinesViolation({
@@ -83,14 +91,13 @@ async function fixStructuralBlankLinesRule(
 
   for (let index = 0; index < sourceFiles.length; index += 1) {
     const file = sourceFiles[index]!;
-    if (!isTypeScriptFamilyExtension(path.extname(file.absolutePath).toLowerCase())) {
+    if (!supportsStructuralBlankLines(file.extension)) {
       emitRuleChunk(progress, index + 1, 0, { rewrittenFiles });
       continue;
     }
 
     const sourceText = await fs.readFile(file.absolutePath, "utf8");
-    const sourceFile = parseSource(sourceText, file.absolutePath);
-    const result = rewriteStructuralBlankLines(sourceFile, sourceText);
+    const result = rewriteStructuralBlankLinesForFile(file, sourceText);
 
     if (!result.changed) {
       emitRuleChunk(progress, index + 1, 0, { rewrittenFiles });

@@ -15,8 +15,39 @@ async function createLanguageProject() {
   await fs.writeFile(path.join(root, "src", "tool.py"), pythonSource(), "utf8");
   await fs.writeFile(path.join(root, "src", "run.sh"), shellSource(), "utf8");
   await fs.writeFile(path.join(root, "src", "View.qml"), qmlSource(), "utf8");
+  await fs.writeFile(path.join(root, "src", "spacing.py"), pythonSpacingSource(), "utf8");
+  await fs.writeFile(path.join(root, "src", "spacing.sh"), shellSpacingSource(), "utf8");
+  await fs.writeFile(path.join(root, "src", "spacing.qml"), qmlSpacingSource(), "utf8");
+  await fs.writeFile(path.join(root, "src", "spacing.rs"), rustSpacingSource(), "utf8");
+  await fs.writeFile(path.join(root, "src", "spacing.go"), goSpacingSource(), "utf8");
+  await fs.writeFile(path.join(root, "src", "spacing.css"), cssSpacingSource(), "utf8");
   await fs.writeFile(path.join(root, "src", "state.ts"), "export const stateDir = \".trebired/code-discipline/generated\";\n", "utf8");
   await fs.writeFile(path.join(root, ".trebired/code-discipline", "config.ts"), "const token='AUTO_EXCLUDED_TOKEN'   ;\n", "utf8");
+  return root;
+}
+
+async function createFolderizeProject() {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cd-folderize-language-"));
+  const files = [
+    "src/view_logic.qml",
+    "src/view_model.qml",
+    "src/render_svg.rs",
+    "src/render_text.rs",
+    "src/task_run.sh",
+    "src/task_sync.sh",
+    "src/module_alpha.py",
+    "src/module_beta.py",
+    "src/style_base.css",
+    "src/style_theme.css",
+    "src/app_main.go",
+    "src/app_worker.go",
+  ];
+
+  await fs.mkdir(path.join(root, "src"), { recursive: true });
+  for (const file of files) {
+    await fs.writeFile(path.join(root, file), "\n", "utf8");
+  }
+
   return root;
 }
 
@@ -81,6 +112,79 @@ function qmlSource() {
   ].join("\n");
 }
 
+function pythonSpacingSource() {
+  return [
+    "def one():",
+    "    return 1",
+    "def two():",
+    "    return 2",
+    "",
+  ].join("\n");
+}
+
+function shellSpacingSource() {
+  return [
+    "one() {",
+    "  echo one",
+    "}",
+    "two() {",
+    "  echo two",
+    "}",
+    "",
+  ].join("\n");
+}
+
+function qmlSpacingSource() {
+  return [
+    "QtObject {",
+    "  function one() {",
+    "    return 1",
+    "  }",
+    "  function two() {",
+    "    return 2",
+    "  }",
+    "}",
+    "",
+  ].join("\n");
+}
+
+function rustSpacingSource() {
+  return [
+    "fn one() {",
+    "    println!(\"one\");",
+    "}",
+    "fn two() {",
+    "    println!(\"two\");",
+    "}",
+    "",
+  ].join("\n");
+}
+
+function goSpacingSource() {
+  return [
+    "package main",
+    "func one() {",
+    "println(\"one\")",
+    "}",
+    "func two() {",
+    "println(\"two\")",
+    "}",
+    "",
+  ].join("\n");
+}
+
+function cssSpacingSource() {
+  return [
+    ".one {",
+    "  color: red;",
+    "}",
+    ".two {",
+    "  color: blue;",
+    "}",
+    "",
+  ].join("\n");
+}
+
 function options(projectRoot, mode, onlyRules) {
   return {
     projectRoot,
@@ -90,6 +194,30 @@ function options(projectRoot, mode, onlyRules) {
     rules: {
       maxFunctionLines: { max: 3 },
       removeComments: {},
+    },
+  };
+}
+
+function structuralOptions(projectRoot, mode) {
+  return {
+    projectRoot,
+    ignore: { use_gitignore: false },
+    mode,
+    onlyRules: ["structural-blank-lines"],
+    rules: {
+      structuralBlankLines: {},
+    },
+  };
+}
+
+function folderizeOptions(projectRoot, mode) {
+  return {
+    projectRoot,
+    ignore: { use_gitignore: false },
+    mode,
+    onlyRules: ["folderize-compound-files"],
+    rules: {
+      folderizeCompoundFiles: {},
     },
   };
 }
@@ -146,9 +274,55 @@ async function verifyLanguageFix(projectRoot) {
   assert.equal(qml.includes("remove inline qml comment"), false);
 }
 
+async function verifyStructuralBlankLines(projectRoot) {
+  const check = await codeDiscipline(structuralOptions(projectRoot, "check"));
+  const files = check.violations.map((violation) => violation.filePath).sort();
+
+  assert.equal(check.ok, false);
+  assert.ok(files.includes("src/spacing.css"));
+  assert.ok(files.includes("src/spacing.go"));
+  assert.ok(files.includes("src/spacing.py"));
+  assert.ok(files.includes("src/spacing.qml"));
+  assert.ok(files.includes("src/spacing.rs"));
+  assert.ok(files.includes("src/spacing.sh"));
+
+  const fix = await codeDiscipline(structuralOptions(projectRoot, "fix"));
+  assert.equal(fix.ok, true);
+  assert.ok((fix.ruleResults["structural-blank-lines"]?.rewritten_files ?? 0) >= 6);
+
+  const clean = await codeDiscipline(structuralOptions(projectRoot, "check"));
+  assert.equal(clean.ok, true, JSON.stringify(clean.violations, null, 2));
+}
+
+async function verifyFolderizeAcrossLanguages() {
+  const projectRoot = await createFolderizeProject();
+  const check = await codeDiscipline(folderizeOptions(projectRoot, "check"));
+  const files = check.violations.map((violation) => violation.filePath).sort();
+
+  assert.equal(check.ok, false);
+  assert.ok(files.includes("src/app_main.go"));
+  assert.ok(files.includes("src/module_alpha.py"));
+  assert.ok(files.includes("src/render_svg.rs"));
+  assert.ok(files.includes("src/style_base.css"));
+  assert.ok(files.includes("src/task_run.sh"));
+  assert.ok(files.includes("src/view_logic.qml"));
+
+  const fix = await codeDiscipline(folderizeOptions(projectRoot, "fix"));
+  assert.equal(fix.ok, true);
+  assert.equal(fix.moved_files, 12);
+  await fs.access(path.join(projectRoot, "src", "app", "main.go"));
+  await fs.access(path.join(projectRoot, "src", "module", "alpha.py"));
+  await fs.access(path.join(projectRoot, "src", "render", "svg.rs"));
+  await fs.access(path.join(projectRoot, "src", "style", "theme.css"));
+  await fs.access(path.join(projectRoot, "src", "task", "sync.sh"));
+  await fs.access(path.join(projectRoot, "src", "view", "model.qml"));
+}
+
 const projectRoot = await createLanguageProject();
 await verifyLanguageCheck(projectRoot);
 await verifyPackageStateExclusion(projectRoot);
 await verifyLanguageFix(projectRoot);
+await verifyStructuralBlankLines(projectRoot);
+await verifyFolderizeAcrossLanguages();
 
 console.log("language support verification passed");

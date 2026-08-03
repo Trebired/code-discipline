@@ -100,4 +100,4 @@ function collectShellFunctionDescriptors(text: string): FunctionDescriptor[] {
   return descriptors;
 }
 
-export { collectShellFunctionDescriptors };
+export { collectShellFunctionDescriptors, stripShellStringsAndComments };

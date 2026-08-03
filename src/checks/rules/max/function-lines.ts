@@ -246,4 +246,5 @@ async function runMaxFunctionLinesRule(
   return violations;
 }
 
-export { runMaxFunctionLinesRule };
+export { collectLanguageFunctionDescriptors, runMaxFunctionLinesRule };
+export type { FunctionDescriptor };

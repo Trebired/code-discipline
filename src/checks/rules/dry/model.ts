@@ -1,7 +1,13 @@
-import ts from "typescript";
-
 import type { ScannedSourceFile } from "#pkb9x3eo56l7";
-import { isTypeScriptFamilyExtension } from "#87jyjzn68rrk";
+import {
+  isGoExtension,
+  isPythonExtension,
+  isQmlExtension,
+  isRustExtension,
+  isShellExtension,
+  isTypeScriptFamilyExtension,
+  supportsDry,
+} from "#87jyjzn68rrk";
 
 type DryFunctionDescriptor = {
   absolutePath: string;
@@ -10,19 +16,35 @@ type DryFunctionDescriptor = {
   classification: "method" | "standalone";
   fingerprint: string;
   filePath: string;
+  language: string;
   localName?: string;
   normalizedName?: string;
-  nodeStart: number;
   normalizedText: string;
-  sourceFile: ts.SourceFile;
+  order: number;
+  startLine: number;
   topLevel: boolean;
   usesOuterScope: boolean;
   usesRestrictedRuntime: boolean;
 };
 
 function filterDrySourceFiles(sourceFiles: ScannedSourceFile[]): ScannedSourceFile[] {
-  return sourceFiles.filter((file) => isTypeScriptFamilyExtension(file.extension));
+  return sourceFiles.filter((file) => supportsDry(file.extension));
 }
 
-export { filterDrySourceFiles };
+function dryLanguageKey(extension: string): string {
+  if (isTypeScriptFamilyExtension(extension)) return "typescript";
+  if (isGoExtension(extension)) return "go";
+  if (isRustExtension(extension)) return "rust";
+  if (isPythonExtension(extension)) return "python";
+  if (isShellExtension(extension)) return "shell";
+  if (isQmlExtension(extension)) return "qml";
+  return extension;
+}
+
+function normalizeDryFunctionName(name: string | undefined): string | undefined {
+  const normalized = name?.trim().toLowerCase();
+  return normalized || undefined;
+}
+
+export { dryLanguageKey, filterDrySourceFiles, normalizeDryFunctionName };
 export type { DryFunctionDescriptor };

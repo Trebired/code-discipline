@@ -152,5 +152,5 @@ function rewriteStructuralBlankLines(sourceFile: ts.SourceFile, fullText: string
   return applyBoundaryEdits(fullText, edits);
 }
 
-export { collectBoundaryEdits, rewriteStructuralBlankLines };
+export { applyBoundaryEdits, collectBoundaryEdits, rewriteStructuralBlankLines };
 export type { ApplyBoundaryEditsResult };

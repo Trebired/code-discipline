@@ -217,5 +217,5 @@ function collectCommentRanges(text: string, extension: string): CommentRange[] {
   return [];
 }
 
-export { collectCommentRanges };
+export { collectCommentRanges, scanRustRawString };
 export type { CommentRange };

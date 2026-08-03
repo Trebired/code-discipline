@@ -35,7 +35,7 @@ fn supports_remove_comments(extension: &str) -> bool {
 }
 
 fn supports_folderization_fix(extension: &str) -> bool {
-    is_ts_family_extension(extension)
+    supports_remove_comments(extension)
 }
 
 fn posix_dirname(path: &str) -> String {

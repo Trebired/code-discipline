@@ -13,7 +13,7 @@ import { removeEmptyDirectories } from "#2gohqj1pb29e";
 import { formatRelativeSpecifier } from "#r4k0t5wqgwq6";
 import { applyTextReplacements, collectModuleSpecifiers } from "#27pccnhol1ci";
 import { isRelativeImportSpecifier } from "#ay5rr8vjr5fh";
-import { supportsFolderizationFix } from "#87jyjzn68rrk";
+import { supportsImports } from "#87jyjzn68rrk";
 import { FileConflictError, FixFailureError, RewriteFailureError } from "#4f8hale01wb4";
 import { ensureDotExtension, pathExists } from "#ntve5i5a0mol";
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "./progress.js";
@@ -120,7 +120,7 @@ async function planImportRewritesForFolderizationMoves(
 
   for (let index = 0; index < sourceFiles.length; index += 1) {
     const file = sourceFiles[index]!;
-    if (!supportsFolderizationFix(file.extension)) {
+    if (!supportsImports(file.extension)) {
       emitRuleChunk(progress, index + 1, 0, { rewrittenFiles, rewrittenImports });
       continue;
     }

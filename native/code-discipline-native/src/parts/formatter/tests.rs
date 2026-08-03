@@ -116,4 +116,63 @@ mod formatter_tests {
         assert!(!formatted.contains("fill=\"black\">\n"));
         assert_lines_fit(&formatted, 88);
     }
+
+    #[test]
+    fn wraps_rust_raw_svg_element_attributes() {
+        let source = [
+            "fn render() {",
+            "    svg.push_str(&format!(",
+            "        r#\"",
+            "        <text x=\"{text_x}\" y=\"{y}\" text-anchor=\"{anchor}\" font-family=\"{family}\" font-size=\"{font_size_mm}\" font-weight=\"{weight}\" fill=\"black\">{escaped}</text>",
+            "        \"#,",
+            "    ));",
+            "}",
+            "",
+        ]
+        .join("\n");
+        let formatted = format_source_internal(&source, ".rs", &options(150));
+
+        assert!(formatted.contains("<text"));
+        assert!(formatted.contains("fill=\"black\">{escaped}</text>"));
+        assert_lines_fit(&formatted, 150);
+        assert_eq!(format_source_internal(&formatted, ".rs", &options(150)), formatted);
+    }
+
+    #[test]
+    fn wraps_qml_string_concatenation_properties() {
+        let source = [
+            "Kirigami.InlineMessage {",
+            "  text: \"Development output is enabled. Print actions create SVG files under \" + root.appState.data_dir + \"/development-prints and do not send paper to a printer.\"",
+            "}",
+            "",
+        ]
+        .join("\n");
+        let formatted = format_source_internal(&source, ".qml", &options(150));
+
+        assert!(formatted.contains("\" +\n"));
+        assert!(formatted.contains("root.appState.data_dir +"));
+        assert_lines_fit(&formatted, 150);
+    }
+
+    #[test]
+    fn expands_compact_qml_blocks_below_line_limit() {
+        let source = [
+            "QtObject {",
+            "  function ticketWidthCm() { return parsedCm(props.widthText, 5) }",
+            "  function gridMinimumK(axisMm) { const step = gridStepMm(axisMm); return Math.ceil(-axisMm / (2 * step)) }",
+            "  function fittedImageSizeMm(width, height) {",
+            "    if (height > 10) { height = 10; width = height }",
+            "    return { width, height }",
+            "  }",
+            "}",
+            "",
+        ]
+        .join("\n");
+        let formatted = format_source_internal(&source, ".qml", &options(150));
+
+        assert!(formatted.contains("function ticketWidthCm() {\n    return parsedCm(props.widthText, 5)\n  }"));
+        assert!(formatted.contains("const step = gridStepMm(axisMm);"));
+        assert!(formatted.contains("if (height > 10) {\n      height = 10;\n      width = height\n    }"));
+        assert_lines_fit(&formatted, 150);
+    }
 }

@@ -69,6 +69,11 @@ async function writeLongLineFixtures(root) {
     "export const message = \"The formatter splits this TypeScript string while preserving the runtime value.\"",
     "",
   ].join("\n") });
+  await writeQmlLongLineFixtures(root);
+  await writeRustLongLineFixtures(root);
+}
+
+async function writeQmlLongLineFixtures(root) {
   await writeFixtureFile({ root, relativePath: "src/LongLine.qml", text: [
     "Item {",
     "function center() { const field = selectedField(); if (!field) return; updateGeometry(selectedFieldIndex, widthValue / 2, heightValue / 2, false); fieldsModel.setProperty(selectedFieldIndex, \"alignment\", \"center\") }",
@@ -78,9 +83,44 @@ async function writeLongLineFixtures(root) {
     "}",
     "",
   ].join("\n") });
+  await writeFixtureFile({ root, relativePath: "src/HomeMessage.qml", text: [
+    "Kirigami.InlineMessage {",
+    "text: \"Generated output is enabled under \" + root.appState.data_dir + \"/generated-output and does not send data to an external target.\"",
+    "actions: [",
+    "Kirigami.Action {",
+    "text: \"Settings\"",
+    "}",
+    "]",
+    "}",
+    "",
+  ].join("\n") });
+  await writeFixtureFile({ root, relativePath: "src/Compact.qml", text: [
+    "QtObject {",
+    "function widthCm() { return parsedCm(props.widthText, 5) }",
+    "function gridMinimum(axisMm) { const step = gridStepMm(axisMm); return Math.ceil(-axisMm / (2 * step)) }",
+    "function fitted(width, height) {",
+    "if (height > 10) { height = 10; width = height }",
+    "return { width, height }",
+    "}",
+    "}",
+    "",
+  ].join("\n") });
+}
+
+async function writeRustLongLineFixtures(root) {
   await writeFixtureFile({ root, relativePath: "src/raw.rs", text: [
     "pub fn svg() -> &'static str {",
     "r#\"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"80\" height=\"50\"><rect width=\"80\" height=\"50\" fill=\"white\"/></svg>\"#",
+    "}",
+    "",
+  ].join("\n") });
+  await writeFixtureFile({ root, relativePath: "src/renderer.rs", text: [
+    "fn render() {",
+    "    svg.push_str(&format!(",
+    "        r#\"",
+    "        <text x=\"{text_x}\" y=\"{y}\" text-anchor=\"{anchor}\" font-family=\"{family}\" font-size=\"{font_size}\" font-weight=\"{weight}\" fill=\"black\">{escaped}</text>",
+    "        \"#,",
+    "    ));",
     "}",
     "",
   ].join("\n") });
@@ -183,6 +223,9 @@ async function assertFormattedOutput(projectRoot) {
   assertLinesFit(await fs.readFile(path.join(projectRoot, "src/message.ts"), "utf8"), 44, "src/message.ts");
   assertLinesFit(await fs.readFile(path.join(projectRoot, "src/LongLine.qml"), "utf8"), 44, "src/LongLine.qml");
   assertLinesFit(await fs.readFile(path.join(projectRoot, "src/raw.rs"), "utf8"), 44, "src/raw.rs");
+  assertLinesFit(await fs.readFile(path.join(projectRoot, "src/HomeMessage.qml"), "utf8"), 44, "src/HomeMessage.qml");
+  assertLinesFit(await fs.readFile(path.join(projectRoot, "src/Compact.qml"), "utf8"), 44, "src/Compact.qml");
+  assertLinesFit(await fs.readFile(path.join(projectRoot, "src/renderer.rs"), "utf8"), 44, "src/renderer.rs");
 }
 
 async function verifyFormatter() {

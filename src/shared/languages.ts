@@ -58,12 +58,12 @@ function supportsImports(value: string): boolean {
   return isTypeScriptFamilyExtension(value) || isScssExtension(value);
 }
 
-function supportsFolderizationFix(value: string): boolean {
-  return supportsImports(value);
-}
-
 function supportsMaxFunctionLines(value: string): boolean {
   return isTypeScriptFamilyExtension(value) || isGoExtension(value) || isRustExtension(value) || isPythonExtension(value) || isShellExtension(value) || isQmlExtension(value);
+}
+
+function supportsDry(value: string): boolean {
+  return supportsMaxFunctionLines(value);
 }
 
 function supportsRemoveComments(value: string): boolean {
@@ -74,6 +74,9 @@ function supportsFormatter(value: string): boolean {
   return supportsRemoveComments(value);
 }
 
+const supportsFolderizationFix = supportsFormatter;
+const supportsStructuralBlankLines = supportsFormatter;
+
 export {
   isGoExtension,
   isPythonExtension,
@@ -83,9 +86,11 @@ export {
   isScssExtension,
   isStyleExtension,
   isTypeScriptFamilyExtension,
+  supportsDry,
   supportsFolderizationFix,
   supportsFormatter,
   supportsMaxFunctionLines,
   supportsRemoveComments,
+  supportsStructuralBlankLines,
   supportsImports,
 };

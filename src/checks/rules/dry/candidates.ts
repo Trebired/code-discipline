@@ -7,10 +7,12 @@ import { parseSource } from "#27pccnhol1ci";
 import type { ScannedSourceFile, SourceProgressObserver } from "#pkb9x3eo56l7";
 import type { CodeDisciplineViolation } from "#bsmch74up4fm";
 import type { NormalizedDryRule } from "#uqbg4indzud7";
+import { isTypeScriptFamilyExtension } from "#87jyjzn68rrk";
 import { createFunctionFingerprint, resolveClassification, resolveFunctionDisplayName } from "./fingerprint.js";
+import { collectGenericDryFunctionDescriptors } from "./generic.js";
 import { collectDuplicateGroups } from "./matching.js";
 import type { DuplicateGroup } from "./matching.js";
-import type { DryFunctionDescriptor } from "./model.js";
+import { dryLanguageKey, normalizeDryFunctionName, type DryFunctionDescriptor } from "./model.js";
 
 const DRY_PARSE_CHUNK_SIZE = 250;
 
@@ -22,11 +24,6 @@ function isFingerprintableFunction(node: ts.Node): node is ts.FunctionLikeDeclar
     || (ts.isGetAccessorDeclaration(node) && Boolean(node.body))
     || (ts.isSetAccessorDeclaration(node) && Boolean(node.body))
     || (ts.isConstructorDeclaration(node) && Boolean(node.body));
-}
-
-function normalizeFunctionName(name: string | undefined): string | undefined {
-  const normalized = name?.trim().toLowerCase();
-  return normalized || undefined;
 }
 
 function isTopLevelFunction(node: ts.FunctionLikeDeclaration): boolean {
@@ -55,6 +52,7 @@ function buildDryFunctionDescriptor(
   const sourceText = node.getText(sourceFile).replace(/\s+/g, "");
   const fingerprintState = createFunctionFingerprint(node, sourceFile);
   const localName = resolveFunctionDisplayName(node, sourceFile);
+  const nodeStart = node.getStart(sourceFile);
 
   return {
     absolutePath: file.absolutePath,
@@ -63,15 +61,60 @@ function buildDryFunctionDescriptor(
     classification,
     fingerprint: fingerprintState.fingerprint,
     filePath: file.relativeFromProjectRoot,
+    language: dryLanguageKey(file.extension),
     localName,
-    normalizedName: normalizeFunctionName(localName),
-    nodeStart: node.getStart(sourceFile),
+    normalizedName: normalizeDryFunctionName(localName),
     normalizedText: fingerprintState.fingerprint,
-    sourceFile,
+    order: nodeStart,
+    startLine: sourceFile.getLineAndCharacterOfPosition(nodeStart).line + 1,
     topLevel: isTopLevelFunction(node),
     usesOuterScope: fingerprintState.usesOuterScope,
     usesRestrictedRuntime: fingerprintState.usesRestrictedRuntime,
   };
+}
+
+function collectTypeScriptDryFunctions(file: ScannedSourceFile, text: string): DryFunctionDescriptor[] {
+  const sourceFile = parseSource(text, file.absolutePath);
+  const descriptors: DryFunctionDescriptor[] = [];
+
+  const visit = (node: ts.Node): void => {
+    if (isFingerprintableFunction(node)) {
+      const descriptor = buildDryFunctionDescriptor(node, sourceFile, file);
+      if (descriptor) descriptors.push(descriptor);
+    }
+
+    ts.forEachChild(node, visit);
+  };
+
+  visit(sourceFile);
+  return descriptors;
+}
+
+function collectDryFunctionsForFile(file: ScannedSourceFile, text: string): DryFunctionDescriptor[] {
+  return isTypeScriptFamilyExtension(file.extension)
+    ? collectTypeScriptDryFunctions(file, text)
+    : collectGenericDryFunctionDescriptors(file, text);
+}
+
+function emitDryParseChunk(args: {
+  completedItems: number;
+  discoveredFunctions: number;
+  observer?: SourceProgressObserver;
+  startedAt: number;
+  totalItems: number;
+}): void {
+  if (args.completedItems % DRY_PARSE_CHUNK_SIZE !== 0 && args.completedItems !== args.totalItems) return;
+
+  args.observer?.({
+    phase: "rule-chunk",
+    rule: "dry",
+    stage: "parse",
+    chunkIndex: Math.ceil(args.completedItems / DRY_PARSE_CHUNK_SIZE),
+    completedItems: args.completedItems,
+    totalItems: args.totalItems,
+    discoveredFunctions: args.discoveredFunctions,
+    elapsedMs: performance.now() - args.startedAt,
+  });
 }
 
 async function collectDryFunctions(sourceFiles: ScannedSourceFile[], observer?: SourceProgressObserver): Promise<DryFunctionDescriptor[]> {
@@ -81,35 +124,18 @@ async function collectDryFunctions(sourceFiles: ScannedSourceFile[], observer?: 
   for (let fileIndex = 0; fileIndex < sourceFiles.length; fileIndex += 1) {
     const file = sourceFiles[fileIndex]!;
     const text = await fs.readFile(file.absolutePath, "utf8");
-    const sourceFile = parseSource(text, file.absolutePath);
+    functions.push(...collectDryFunctionsForFile(file, text));
 
-    const visit = (node: ts.Node): void => {
-      if (isFingerprintableFunction(node)) {
-        const descriptor = buildDryFunctionDescriptor(node, sourceFile, file);
-        if (descriptor) functions.push(descriptor);
-      }
-
-      ts.forEachChild(node, visit);
-    };
-
-    visit(sourceFile);
-
-    const completedItems = fileIndex + 1;
-    if (completedItems % DRY_PARSE_CHUNK_SIZE === 0 || completedItems === sourceFiles.length) {
-      observer?.({
-        phase: "rule-chunk",
-        rule: "dry",
-        stage: "parse",
-        chunkIndex: Math.ceil(completedItems / DRY_PARSE_CHUNK_SIZE),
-        completedItems,
-        totalItems: sourceFiles.length,
-        discoveredFunctions: functions.length,
-        elapsedMs: performance.now() - startedAt,
-      });
-    }
+    emitDryParseChunk({
+      completedItems: fileIndex + 1,
+      discoveredFunctions: functions.length,
+      observer,
+      startedAt,
+      totalItems: sourceFiles.length,
+    });
   }
 
-  const sortedFunctions = functions.sort((left, right) => left.filePath.localeCompare(right.filePath) || left.nodeStart - right.nodeStart);
+  const sortedFunctions = functions.sort((left, right) => left.filePath.localeCompare(right.filePath) || left.order - right.order);
   observer?.({
     phase: "rule-completed",
     rule: "dry",
@@ -142,7 +168,8 @@ function createDryGroupViolation(group: DuplicateGroup): CodeDisciplineViolation
       functions: group.functions.map((descriptor) => ({
         classification: descriptor.classification,
         filePath: descriptor.filePath,
-        line: descriptor.sourceFile.getLineAndCharacterOfPosition(descriptor.nodeStart).line + 1,
+        language: descriptor.language,
+        line: descriptor.startLine,
         name: descriptor.localName,
         topLevel: descriptor.topLevel,
       })),

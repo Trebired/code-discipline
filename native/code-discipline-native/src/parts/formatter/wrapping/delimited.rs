@@ -60,7 +60,7 @@ fn find_markup_tag_end(text: &str) -> Option<usize> {
     None
 }
 
-fn wrap_markup_line(line: &str, max: usize) -> Option<Vec<String>> {
+fn wrap_markup_line(line: &str, extension: &str, max: usize) -> Option<Vec<String>> {
     let indent = leading_whitespace(line);
     let trimmed = line.trim_start();
     if !trimmed.starts_with('<') || trimmed.starts_with("</") {
@@ -70,14 +70,22 @@ fn wrap_markup_line(line: &str, max: usize) -> Option<Vec<String>> {
     let tag_end = find_markup_tag_end(trimmed)?;
     let head = &trimmed[..=tag_end];
     let tail = &trimmed[tag_end + 1..];
-    let tokens = split_markup_tag_tokens(head);
+    let mut tokens = split_markup_tag_tokens(head);
     if tokens.len() < 2 {
         return None;
     }
+    if !tail.is_empty() {
+        if let Some(last) = tokens.last_mut() {
+            last.push_str(tail);
+        }
+    }
 
-    let continuation_indent = format!("{indent}  ");
+    let continuation_indent = if is_rust_extension(extension) {
+        indent.to_string()
+    } else {
+        format!("{indent}  ")
+    };
     let mut output = vec![format!("{indent}{}", tokens[0])];
-
     for token in tokens.iter().skip(1) {
         let candidate = output
             .last()
@@ -90,16 +98,6 @@ fn wrap_markup_line(line: &str, max: usize) -> Option<Vec<String>> {
             }
         } else {
             output.push(format!("{continuation_indent}{token}"));
-        }
-    }
-
-    if !tail.is_empty() {
-        let candidate = format!("{}{}", output.last().cloned().unwrap_or_default(), tail);
-        if count_display_characters(&candidate) > max {
-            return None;
-        }
-        if let Some(last) = output.last_mut() {
-            last.push_str(tail);
         }
     }
 
@@ -300,9 +298,7 @@ fn wrap_one_line_block(line: &str, extension: &str) -> Option<Vec<String>> {
     }
 
     let trimmed = line.trim_start();
-    if !trimmed.contains(';')
-        || !(trimmed.starts_with("function ") || trimmed.contains(") {") || trimmed.contains(": {"))
-    {
+    if !(trimmed.starts_with("function ") || trimmed.contains(") {") || trimmed.contains(": {")) {
         return None;
     }
 
@@ -314,8 +310,16 @@ fn wrap_one_line_block(line: &str, extension: &str) -> Option<Vec<String>> {
 
     let prefix = line[..open_index].trim_end();
     let body = line[open_index + 1..close_index].trim();
+    if body.is_empty() {
+        return None;
+    }
+
     let suffix = &line[close_index + 1..];
-    let statements = split_top_level_statements(body)?;
+    let statements = split_top_level_statements(body).unwrap_or_else(|| vec![body.to_string()]);
+    if statements.len() == 1 && !is_qml_extension(extension) {
+        return None;
+    }
+
     let indent = leading_whitespace(line);
     let continuation_indent = format!("{indent}  ");
     let mut output = Vec::with_capacity(statements.len() + 2);

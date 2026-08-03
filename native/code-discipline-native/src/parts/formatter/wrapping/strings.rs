@@ -88,6 +88,99 @@ fn is_import_like_line(trimmed: &str) -> bool {
         || trimmed.contains(" from '")
 }
 
+fn push_top_level_plus_term(terms: &mut Vec<String>, current: &mut String) -> Option<()> {
+    let term = current.trim().to_string();
+    if term.is_empty() {
+        return None;
+    }
+    terms.push(term);
+    current.clear();
+    Some(())
+}
+
+fn split_top_level_plus_terms(content: &str) -> Option<Vec<String>> {
+    let mut terms = Vec::new();
+    let mut current = String::new();
+    let mut quote: Option<char> = None;
+    let mut escaped = false;
+    let mut depth = 0_isize;
+
+    for ch in content.chars() {
+        if let Some(active) = quote {
+            current.push(ch);
+            if escaped {
+                escaped = false;
+            } else if ch == '\\' {
+                escaped = true;
+            } else if ch == active {
+                quote = None;
+            }
+            continue;
+        }
+
+        match ch {
+            '"' | '\'' | '`' => {
+                quote = Some(ch);
+                current.push(ch);
+            }
+            '(' | '[' | '{' => {
+                depth += 1;
+                current.push(ch);
+            }
+            ')' | ']' | '}' => {
+                depth -= 1;
+                current.push(ch);
+            }
+            '+' if depth == 0 => {
+                push_top_level_plus_term(&mut terms, &mut current)?;
+            }
+            _ => current.push(ch),
+        }
+    }
+
+    if !current.trim().is_empty() {
+        push_top_level_plus_term(&mut terms, &mut current)?;
+    }
+
+    (terms.len() > 1).then_some(terms)
+}
+
+fn wrap_js_like_concatenation_line(line: &str, extension: &str) -> Option<Vec<String>> {
+    if !(is_ts_family_extension(extension) || is_qml_extension(extension)) {
+        return None;
+    }
+
+    let trimmed = line.trim_start();
+    if is_import_like_line(trimmed) || has_comment_marker(trimmed) {
+        return None;
+    }
+
+    let terms = split_top_level_plus_terms(trimmed)?;
+    let indent = leading_whitespace(line);
+    let continuation_indent = format!("{indent}  ");
+    let mut output = Vec::with_capacity(terms.len());
+
+    for (index, term) in terms.iter().enumerate() {
+        let current_indent = if index == 0 {
+            indent
+        } else {
+            continuation_indent.as_str()
+        };
+        let operator = if index == terms.len() - 1 { "" } else { " +" };
+        output.push(format!("{current_indent}{term}{operator}"));
+    }
+
+    Some(output)
+}
+
+fn js_like_string_continuation_indent(prefix: &str, indent: &str) -> String {
+    if prefix.trim().is_empty() {
+        indent.to_string()
+    } else {
+        format!("{indent}  ")
+    }
+}
+
 fn wrap_js_like_string_line(line: &str, extension: &str, max: usize) -> Option<Vec<String>> {
     if !(is_ts_family_extension(extension) || is_qml_extension(extension)) {
         return None;
@@ -103,7 +196,7 @@ fn wrap_js_like_string_line(line: &str, extension: &str, max: usize) -> Option<V
     let raw = &line[start..end];
     let suffix = &line[end..];
 
-    if prefix.trim().is_empty() && suffix.trim().is_empty() {
+    if prefix.is_empty() && suffix.trim().is_empty() {
         return None;
     }
     if raw[1..raw.len().saturating_sub(1)].contains('\\') || has_comment_marker(suffix) {
@@ -112,7 +205,7 @@ fn wrap_js_like_string_line(line: &str, extension: &str, max: usize) -> Option<V
 
     let value = &raw[1..raw.len().saturating_sub(1)];
     let indent = leading_whitespace(line);
-    let continuation_indent = format!("{indent}  ");
+    let continuation_indent = js_like_string_continuation_indent(prefix, indent);
     let first_capacity = max.saturating_sub(count_display_characters(prefix) + 4);
     let next_capacity = max.saturating_sub(count_display_characters(&continuation_indent) + 4);
     let segments = split_literal_for_width(value, first_capacity, next_capacity)?;

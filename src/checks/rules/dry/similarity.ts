@@ -88,6 +88,7 @@ function shouldCompareSimilarity(
   right: DryFunctionDescriptor,
   minDuplicateCharacters: number,
 ): boolean {
+  if (left.language !== right.language) return false;
   if (left.characterCount < minDuplicateCharacters || right.characterCount < minDuplicateCharacters) return false;
 
   const smaller = Math.min(left.normalizedText.length, right.normalizedText.length);

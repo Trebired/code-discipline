@@ -138,7 +138,7 @@ Detects flat compound names such as `user_route.ts` and can move them into struc
 
 The rule config only describes separators now. Whether it mutates is decided by running `code-discipline fix`.
 
-Folderization autofix stays intentionally conservative: move-aware relative import repair is implemented for the JavaScript and TypeScript module family, while Go and Rust files are scanned safely for other rules but are not folderized automatically.
+Folderization scans and moves supported source files across JavaScript, TypeScript, Go, Rust, Python, QML, shell, SCSS, and CSS. Move-aware import repair is applied for languages whose import syntax is package-supported.
 
 #### `imports`
 
@@ -219,9 +219,11 @@ code-discipline fix remove-comments
 
 #### `structuralBlankLines`
 
-Reports JavaScript and TypeScript files where the major structural sections aren't visually separated, and normalizes the blank lines between them when you run `code-discipline fix`.
+Reports supported source files where major structural sections aren't visually separated, and normalizes the blank lines between them when you run `code-discipline fix`.
 
-It only enforces blank lines at boundaries the AST clearly identifies as structural: after the file header, between imports and the first non-import statement, between declaration groups (variables, types, functions, classes, enums, namespaces), and between class fields/methods/constructors. Compact groups  -  consecutive imports, variables, type declarations, re-exports, top-level executable statements, class fields, directive prologues, function overload chains, and getter/setter pairs  -  allow zero or one blank line and only collapse two or more down to one.
+JavaScript and TypeScript use the TypeScript AST: after the file header, between imports and the first non-import statement, between declaration groups (variables, types, functions, classes, enums, namespaces), and between class fields/methods/constructors. Compact groups  -  consecutive imports, variables, type declarations, re-exports, top-level executable statements, class fields, directive prologues, function overload chains, and getter/setter pairs  -  allow zero or one blank line and only collapse two or more down to one.
+
+Go, Rust, Python, QML, shell, SCSS, and CSS use language-aware structural scanning to normalize blank lines between adjacent top-level declarations, functions, handlers, or rules in the same scope.
 
 It never touches statements inside function or method bodies, `if`/loop/`try` bodies, object literals, array elements, interface members, type literal members, enum members, or JSX children  -  spacing choices inside those remain up to the developer.
 
@@ -239,6 +241,8 @@ code-discipline fix structural-blank-lines
 
 Reports duplicate function groups across the configured source tree.
 
+- JavaScript and TypeScript use AST-aware structural and behavior fingerprints
+- Go, Rust, Python, QML, and shell use language-aware function spans with conservative token fingerprints
 - exact normalized structure is reported with 100% confidence
 - equivalent normalized behavior in simple pure functions is reported with 100% confidence
 - matching function names are reported with 100% confidence
@@ -499,13 +503,15 @@ Rules use kebab-case public slugs:
 
 The `format` selector is enabled by `rules.formatting`.
 
+The `structural-blank-lines` selector is enabled by `rules.structuralBlankLines` and normalizes blank lines between structural declarations in supported source languages.
+
 ### Formatting
 
 The package-owned Rust formatter is enabled as a rule with `rules.formatting: {}`. Omit `rules.formatting` to leave formatting disabled.
 
 `check format` validates formatting without modifying files, while `fix format` writes formatted files. Running `code-discipline fix` with no selectors runs configured formatting after structural, import, comment, and blank-line fixes, then rechecks `max-characters-per-line` when that rule is configured.
 
-The formatter supports JavaScript, TypeScript, Go, Rust, Python, QML, shell files with `.sh`, `.bash`, or `.zsh`, SCSS, and CSS. It normalizes line endings, trailing whitespace, final newline, repeated blank lines, brace-language indentation, indentation-sensitive language whitespace, and safe line wrapping against `rules.maxCharactersPerLine.max`.
+The formatter supports JavaScript, TypeScript, Go, Rust, Python, QML, shell files with `.sh`, `.bash`, or `.zsh`, SCSS, and CSS. It normalizes line endings, trailing whitespace, final newline, repeated blank lines, brace-language indentation, indentation-sensitive language whitespace, compact QML blocks, and safe line wrapping against `rules.maxCharactersPerLine.max`.
 
 If `rules.maxCharactersPerLine.max` is configured, the formatter uses that width. Without that rule, formatter line width defaults to `100`.
 

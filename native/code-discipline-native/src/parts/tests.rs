@@ -164,6 +164,31 @@ mod tests {
     }
 
     #[test]
+    fn scans_folderize_candidates_across_supported_languages() {
+        let files = vec![
+            file("src/view_logic.qml", ".qml"),
+            file("src/view_model.qml", ".qml"),
+            file("src/render_svg.rs", ".rs"),
+            file("src/render_text.rs", ".rs"),
+            file("src/task_run.sh", ".sh"),
+            file("src/task_sync.sh", ".sh"),
+            file("src/other.txt", ".txt"),
+        ];
+
+        let violations = collect_folderize_violations(&files, &["_".to_string()]);
+        let paths = violations
+            .iter()
+            .map(|violation| violation.file_path.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(violations.len(), 6);
+        assert!(paths.contains(&"src/render_svg.rs"));
+        assert!(paths.contains(&"src/task_run.sh"));
+        assert!(paths.contains(&"src/view_logic.qml"));
+        assert!(!paths.contains(&"src/other.txt"));
+    }
+
+    #[test]
     fn detects_block_function_line_violations() {
         let source = [
             "pub fn build_payload() -> String {",

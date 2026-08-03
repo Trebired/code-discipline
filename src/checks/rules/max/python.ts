@@ -106,5 +106,5 @@ function collectPythonFunctionDescriptors(text: string): FunctionDescriptor[] {
   return descriptors;
 }
 
-export { collectPythonFunctionDescriptors };
-export type { FunctionDescriptor };
+export { collectPythonFunctionDescriptors, measurePythonIndent, updatePythonTripleState };
+export type { FunctionDescriptor, PythonTripleState };

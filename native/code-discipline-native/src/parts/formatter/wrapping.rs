@@ -137,8 +137,17 @@ fn wrap_long_source_line(
                 .then(|| wrap_python_string_line(line, max))
                 .flatten()
         })
+        .or_else(|| wrap_js_like_concatenation_line(line, extension))
         .or_else(|| wrap_js_like_string_line(line, extension, max))
-        .or_else(|| wrap_markup_line(line, max))
+        .or_else(|| wrap_markup_line(line, extension, max))
+}
+
+fn expand_compact_source_line(line: &str, extension: &str) -> Option<Vec<String>> {
+    if !is_qml_extension(extension) {
+        return None;
+    }
+
+    wrap_one_line_block(line, extension)
 }
 
 fn wrap_source_lines(
@@ -154,7 +163,10 @@ fn wrap_source_lines(
         let mut next = Vec::with_capacity(current.len());
 
         for (index, line) in current.into_iter().enumerate() {
-            if let Some(replacements) = wrap_long_source_line(&line, extension, index + 1, max) {
+            if let Some(replacements) = expand_compact_source_line(&line, extension) {
+                changed = true;
+                next.extend(replacements);
+            } else if let Some(replacements) = wrap_long_source_line(&line, extension, index + 1, max) {
                 changed = true;
                 next.extend(replacements);
             } else {

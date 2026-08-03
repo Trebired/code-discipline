@@ -1,21 +1,3 @@
-fn scan_qml_template_literal(text: &str, start: usize) -> usize {
-    let bytes = text.as_bytes();
-    let mut index = start + 1;
-
-    while index < bytes.len() {
-        if bytes[index] == b'\\' {
-            index += 2;
-            continue;
-        }
-        if bytes[index] == b'`' {
-            return index + 1;
-        }
-        index += 1;
-    }
-
-    bytes.len()
-}
-
 fn previous_qml_significant_byte(text: &str, start: usize) -> Option<(usize, u8)> {
     let bytes = text.as_bytes();
     let mut index = start;
@@ -131,7 +113,7 @@ fn scan_qml_literal(text: &str, start: usize) -> Option<usize> {
         return Some(scan_escaped_quoted_literal(text, start, current));
     }
     if current == b'`' {
-        return Some(scan_qml_template_literal(text, start));
+        return Some(scan_backtick_literal(text, start));
     }
     if current == b'/'
         && bytes.get(start + 1) != Some(&b'/')
