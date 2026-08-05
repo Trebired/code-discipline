@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
-import { languageFixtures, sourceFileStructureFiles } from "./fixtures.mjs";
+import { languageFixtures, redundantPathSegmentsFiles } from "./fixtures.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 process.env.TB_CODE_DISCIPLINE_DISABLE_NATIVE = "1";
@@ -20,9 +20,9 @@ async function createLanguageProject() {
   return root;
 }
 
-async function createSourceFileStructureProject() {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cd-source-file-structure-language-"));
-  for (const file of sourceFileStructureFiles) {
+async function createRedundantPathSegmentsProject() {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), "cd-redundant-path-segments-language-"));
+  for (const file of redundantPathSegmentsFiles) {
     await fs.mkdir(path.dirname(path.join(root, file)), { recursive: true });
     await fs.writeFile(path.join(root, file), "\n", "utf8");
   }
@@ -55,14 +55,14 @@ function structuralOptions(projectRoot, mode) {
   };
 }
 
-function sourceFileStructureOptions(projectRoot, mode) {
+function redundantPathSegmentsOptions(projectRoot, mode) {
   return {
     projectRoot,
     ignore: { use_gitignore: false },
     mode,
-    onlyRules: ["source-file-structure"],
+    onlyRules: ["redundant-path-segments"],
     rules: {
-      sourceFileStructure: {},
+      redundantPathSegments: {},
     },
   };
 }
@@ -168,9 +168,9 @@ async function verifyStructuralBlankLines(projectRoot) {
   assert.equal(clean.ok, true, JSON.stringify(clean.violations, null, 2));
 }
 
-async function verifySourceFileStructureAcrossLanguages() {
-  const projectRoot = await createSourceFileStructureProject();
-  const check = await codeDiscipline(sourceFileStructureOptions(projectRoot, "check"));
+async function verifyRedundantPathSegmentsAcrossLanguages() {
+  const projectRoot = await createRedundantPathSegmentsProject();
+  const check = await codeDiscipline(redundantPathSegmentsOptions(projectRoot, "check"));
   const files = check.violations.map((violation) => violation.filePath).sort();
 
   assert.equal(check.ok, false);
@@ -183,10 +183,14 @@ async function verifySourceFileStructureAcrossLanguages() {
   assert.ok(files.includes("src/pages/home_page.ts"));
   assert.equal(
     check.violations.find((violation) => violation.filePath === "src/pages/home_page.ts")?.details.mode,
-    "redundant-role-suffix",
+    "redundant-path-segment",
+  );
+  assert.equal(
+    check.violations.find((violation) => violation.filePath === "src/pages/home_page.ts")?.details.pathSegment,
+    "pages",
   );
 
-  const fix = await codeDiscipline(sourceFileStructureOptions(projectRoot, "fix"));
+  const fix = await codeDiscipline(redundantPathSegmentsOptions(projectRoot, "fix"));
   assert.equal(fix.ok, true);
   assert.equal(fix.moved_files, 14);
   await fs.access(path.join(projectRoot, "src", "app", "main.go"));
@@ -205,6 +209,6 @@ await verifyDeclarationNameAcrossLanguages(projectRoot);
 await verifyPackageStateExclusion(projectRoot);
 await verifyLanguageFix(projectRoot);
 await verifyStructuralBlankLines(projectRoot);
-await verifySourceFileStructureAcrossLanguages();
+await verifyRedundantPathSegmentsAcrossLanguages();
 
 console.log("language support verification passed");

@@ -30,7 +30,7 @@ code-discipline check
 code-discipline check save
 code-discipline check max-function-lines dry format
 code-discipline fix
-code-discipline fix banned-files min-file-lines max-characters-per-line source-file-structure imports remove-comments structural-blank-lines format
+code-discipline fix banned-files min-file-lines max-characters-per-line redundant-path-segments imports remove-comments structural-blank-lines format
 code-discipline gate -- bun run dev
 ```
 
@@ -134,13 +134,13 @@ Reports function-like declarations whose total span exceeds `max`.
 
 JavaScript and TypeScript use the TypeScript AST. Go and Rust use brace-aware function scanning. Python uses indentation-aware `def` and `async def` spans. Shell files with `.sh`, `.bash`, or `.zsh` use quote/comment-aware brace function spans. QML uses comment/string-aware scanning for JavaScript-style functions and signal-handler blocks.
 
-#### `sourceFileStructure`
+#### `redundantPathSegments`
 
-Normalizes source file paths. It detects flat compound names such as `user_route.ts` and can move them into structural folders such as `user/route.ts`. It also removes redundant role suffixes when the parent directory already names the role, such as `pages/home_page.ts` becoming `pages/home.ts`.
+Normalizes source file paths. It detects flat compound names such as `user_route.ts` and can move them into structural folders such as `user/route.ts`. It also removes redundant filename suffix segments when an ancestor directory already names the same concept, such as `pages/home_page.ts` becoming `pages/home.ts` because `pages` normalizes to `page`.
 
-The rule config describes compound-name separators and redundant role suffixes. Whether it mutates is decided by running `code-discipline fix`.
+The rule config describes compound-name separators. Whether it mutates is decided by running `code-discipline fix`.
 
-Source file structure scans and moves supported source files across JavaScript, TypeScript, Go, Rust, Python, QML, shell, SCSS, and CSS. Move-aware import repair is applied for languages whose import syntax is package-supported.
+Redundant path segment scans and moves supported source files across JavaScript, TypeScript, Go, Rust, Python, QML, shell, SCSS, and CSS. Move-aware import repair is applied for languages whose import syntax is package-supported.
 
 #### `imports`
 
@@ -384,9 +384,8 @@ export default defineCodeDisciplineConfig({
       max: 80,
       severity: "warning",
     },
-    sourceFileStructure: {
+    redundantPathSegments: {
       separators: ["_", "-"],
-      roleSuffixes: ["page"],
     },
     removeComments: {
       exclude: ["@ts-nocheck"],
@@ -495,7 +494,7 @@ Rules use kebab-case public slugs:
 - `max-file-lines`
 - `max-characters-per-line`
 - `max-function-lines`
-- `source-file-structure`
+- `redundant-path-segments`
 - `imports`
 - `remove-comments`
 - `structural-blank-lines`
@@ -537,7 +536,7 @@ rules: {
 
 `@trebired/code-discipline` can use a Rust native backend when a matching binary is available, with the TypeScript implementation as the fallback. This follows the same native-fast-path shape as `@trebired/logger`: package users keep the same CLI/API, while hot scanning and rewrite paths can move into Rust.
 
-The current native backend accelerates source scanning, `max-file-lines`, common `max-function-lines` paths, `source-file-structure` checks, and `remove-comments`. Its comment scanner understands JavaScript, TypeScript, Go, Rust, Python, QML, shell, SCSS, and CSS. If no binary is present, the package automatically uses the TypeScript fallback.
+The current native backend accelerates source scanning, `max-file-lines`, common `max-function-lines` paths, `redundant-path-segments` checks, and `remove-comments`. Its comment scanner understands JavaScript, TypeScript, Go, Rust, Python, QML, shell, SCSS, and CSS. If no binary is present, the package automatically uses the TypeScript fallback.
 
 Useful native controls:
 

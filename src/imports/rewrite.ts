@@ -5,7 +5,7 @@ import { RewriteFailureError } from "#4f8hale01wb4";
 import { ruleLogGroup } from "#foa3t3ao5irq";
 import type { NormalizedCodeDisciplineLogger } from "#uljkt8i26p4t";
 import { isTypeScriptFamilyExtension } from "#87jyjzn68rrk";
-import { collectDeadImportRemovals } from "./dead-imports.js";
+import { collectDeadImportRemovals } from "./dead.js";
 import { applyTextReplacements, collectModuleSpecifiers } from "./module-specifiers.js";
 import type { TextReplacement } from "./module-specifiers.js";
 import { resolveRelativeImport } from "./resolve.js";

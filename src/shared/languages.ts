@@ -78,7 +78,7 @@ function supportsFormatter(value: string): boolean {
   return supportsRemoveComments(value);
 }
 
-const supportsSourceFileStructureFix = supportsFormatter;
+const supportsRedundantPathSegmentsFix = supportsFormatter;
 const supportsStructuralBlankLines = supportsFormatter;
 
 export {
@@ -91,7 +91,7 @@ export {
   isStyleExtension,
   isTypeScriptFamilyExtension,
   supportsDry,
-  supportsSourceFileStructureFix,
+  supportsRedundantPathSegmentsFix,
   supportsFormatter,
   supportsMaxFunctionLines,
   supportsMinDeclarationName,

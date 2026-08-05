@@ -10,7 +10,7 @@ import {
   normalizeBannedPatternsRule,
   normalizeBannedFilesRule,
   normalizeDryRule,
-  normalizeSourceFileStructureRule,
+  normalizeRedundantPathSegmentsRule,
   normalizeMaxCharactersPerLineRule,
   normalizeMaxFileLinesRule,
   normalizeMaxFunctionLinesRule,
@@ -57,8 +57,14 @@ function assertRemovedRuleKeys(rules: CodeDisciplineRules | undefined): void {
   if (!source) return;
 
   if ("folderizeCompoundFiles" in source) {
-    throw new InvalidCodeDisciplineConfigError("rules.folderizeCompoundFiles is no longer supported; use rules.sourceFileStructure instead", {
+    throw new InvalidCodeDisciplineConfigError("rules.folderizeCompoundFiles is no longer supported; use rules.redundantPathSegments instead", {
       key: "rules.folderizeCompoundFiles",
+    });
+  }
+
+  if ("sourceFileStructure" in source) {
+    throw new InvalidCodeDisciplineConfigError("rules.sourceFileStructure is no longer supported; use rules.redundantPathSegments instead", {
+      key: "rules.sourceFileStructure",
     });
   }
 }
@@ -80,7 +86,7 @@ async function normalizeCheckCodeDisciplineOptions(
     maxFileLines: normalizeMaxFileLinesRule(rules?.maxFileLines),
     maxCharactersPerLine: normalizeMaxCharactersPerLineRule(rules?.maxCharactersPerLine),
     maxFunctionLines: normalizeMaxFunctionLinesRule(rules?.maxFunctionLines),
-    sourceFileStructure: normalizeSourceFileStructureRule(rules?.sourceFileStructure),
+    redundantPathSegments: normalizeRedundantPathSegmentsRule(rules?.redundantPathSegments),
     imports: normalizeImportsRule(rules?.imports),
     removeComments: normalizeRemoveCommentsRule(rules?.removeComments),
     structuralBlankLines: normalizeStructuralBlankLinesRule(rules?.structuralBlankLines),

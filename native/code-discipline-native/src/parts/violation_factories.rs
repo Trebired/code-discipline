@@ -62,13 +62,13 @@ fn create_remove_comments_violation(
     }
 }
 
-fn create_source_file_structure_violation(
+fn create_redundant_path_segments_violation(
     file: &ScannedSourceFile,
     suggested_path: String,
     mode: &str,
     prefix: &str,
     remainder: &str,
-    role_suffix: Option<&str>,
+    path_segment: Option<&str>,
     separator: &str,
 ) -> CodeDisciplineViolation {
     let mut details = json!({
@@ -77,14 +77,14 @@ fn create_source_file_structure_violation(
         "remainder": remainder,
         "separator": separator,
     });
-    if let Some(role_suffix) = role_suffix {
+    if let Some(path_segment) = path_segment {
         if let Some(object) = details.as_object_mut() {
-            object.insert("roleSuffix".to_string(), json!(role_suffix));
+            object.insert("pathSegment".to_string(), json!(path_segment));
         }
     }
 
     CodeDisciplineViolation {
-        rule: "source-file-structure".to_string(),
+        rule: "redundant-path-segments".to_string(),
         fix: true,
         file_path: file.relative_from_project_root.clone(),
         message: format!("file path should be normalized to {suggested_path}"),

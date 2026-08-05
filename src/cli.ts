@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { runCli } from "./cli/run-cli.js";
+import { runCli } from "./cli/run.js";
 import { isDirectExecution } from "./shared/utils.js";
 
 if (await isDirectExecution(import.meta.url, process.argv[1])) {
@@ -9,4 +9,4 @@ if (await isDirectExecution(import.meta.url, process.argv[1])) {
 }
 
 export { runCli };
-export type { CliRunOptions, CliRunResult } from "./cli/run-cli.js";
+export type { CliRunOptions, CliRunResult } from "./cli/run.js";

@@ -7,7 +7,7 @@ import type { CodeDisciplineViolation } from "#bsmch74up4fm";
 import { collectPackageJsonImportsSyncState, collectPackageJsonImportsSyncStateFromAliasMap } from "#51kcncizdqcz";
 import { isTypeScriptFamilyExtension, supportsImports } from "#87jyjzn68rrk";
 import { planTsconfigAliases } from "./aliases.js";
-import { collectDeadImportViolations } from "./dead-imports.js";
+import { collectDeadImportViolations } from "./dead.js";
 import { collectModuleSpecifiers } from "./module-specifiers.js";
 import { resolveRelativeImport } from "./resolve.js";
 import { isAllowedRelative } from "./rewrite.js";

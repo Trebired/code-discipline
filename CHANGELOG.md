@@ -4,6 +4,11 @@ All notable changes to `@trebired/code-discipline` will be documented here.
 
 This project follows semantic versioning once published.
 
+## 5.3.0
+
+- Renamed `sourceFileStructure` to `redundantPathSegments` with the `redundant-path-segments` selector.
+- Removed explicit `roleSuffixes`; redundant suffix cleanup is inferred from singularized path segments, so `pages/home_page.ts` still moves to `pages/home.ts`.
+
 ## 5.2.0
 
 - Added formatter wrapping for QML top-level string concatenation expressions so formatting can resolve property lines that combine literals and runtime values.

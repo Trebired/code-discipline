@@ -7,7 +7,7 @@ import type {
 } from "#bsmch74up4fm";
 type CodeDisciplineRuleSlug = CodeDisciplineRuleName;
 type CodeDisciplineCheckSelectorSlug = CodeDisciplineRuleSlug;
-type FixableRuleSlug = "banned-files" | "min-file-lines" | "max-characters-per-line" | "source-file-structure" | "imports" | "remove-comments" | "structural-blank-lines" | "format";
+type FixableRuleSlug = "banned-files" | "min-file-lines" | "max-characters-per-line" | "redundant-path-segments" | "imports" | "remove-comments" | "structural-blank-lines" | "format";
 type CodeDisciplineMode = "check" | "fix";
 type CodeDisciplineRuntimeMode = CodeDisciplineMode;
 type CodeDisciplineRuleSeverity = "warning" | "fail";
@@ -56,8 +56,7 @@ type MaxFunctionLinesRuleOptions = RuleExclusionOptions & {
   max?: number;
   severity?: CodeDisciplineRuleSeverity;
 };
-type SourceFileStructureRuleOptions = RuleExclusionOptions & {
-  roleSuffixes?: string[];
+type RedundantPathSegmentsRuleOptions = RuleExclusionOptions & {
   separators?: string[];
   severity?: CodeDisciplineRuleSeverity;
 };
@@ -86,7 +85,7 @@ type CodeDisciplineRules = {
   maxFileLines?: MaxFileLinesRuleOptions;
   maxCharactersPerLine?: MaxCharactersPerLineRuleOptions;
   maxFunctionLines?: MaxFunctionLinesRuleOptions;
-  sourceFileStructure?: SourceFileStructureRuleOptions;
+  redundantPathSegments?: RedundantPathSegmentsRuleOptions;
   imports?: CodeDisciplineImportsRuleOptions;
   removeComments?: RemoveCommentsRuleOptions;
   structuralBlankLines?: StructuralBlankLinesRuleOptions;
@@ -169,9 +168,8 @@ type NormalizedMaxFunctionLinesRule = {
   max: number;
   severity: CodeDisciplineRuleSeverity;
 };
-type NormalizedSourceFileStructureRule = {
+type NormalizedRedundantPathSegmentsRule = {
   excludeDirs: ExcludeDirEntry[];
-  roleSuffixes: string[];
   separators: string[];
   severity: CodeDisciplineRuleSeverity;
 };
@@ -216,7 +214,7 @@ type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
     maxFileLines?: NormalizedMaxFileLinesRule;
     maxCharactersPerLine?: NormalizedMaxCharactersPerLineRule;
     maxFunctionLines?: NormalizedMaxFunctionLinesRule;
-    sourceFileStructure?: NormalizedSourceFileStructureRule;
+    redundantPathSegments?: NormalizedRedundantPathSegmentsRule;
     imports?: CodeDisciplineImportsRuleOptions;
     removeComments?: NormalizedRemoveCommentsRule;
     structuralBlankLines?: NormalizedStructuralBlankLinesRule;
@@ -275,7 +273,7 @@ export type {
   FixCodeDisciplineOptions,
   FixCodeDisciplineResult,
   FixCodeDisciplineRuleResult,
-  SourceFileStructureRuleOptions,
+  RedundantPathSegmentsRuleOptions,
   FormattingRuleOptions,
   MaxCharactersPerLineRuleOptions,
   MaxFileLinesRuleOptions,
@@ -292,7 +290,7 @@ export type {
   RuleExclusionOptions,
   NormalizedCheckCodeDisciplineOptions,
   NormalizedDryRule,
-  NormalizedSourceFileStructureRule,
+  NormalizedRedundantPathSegmentsRule,
   NormalizedMaxCharactersPerLineRule,
   NormalizedMaxFileLinesRule,
   NormalizedMaxFunctionLinesRule,

@@ -124,14 +124,11 @@ pub fn run_max_block_function_lines_rule(request_json: String) -> Result<String>
 }
 
 #[napi]
-pub fn run_source_file_structure_rule(request_json: String) -> Result<String> {
-    let request: SourceFileStructureRequest =
+pub fn run_redundant_path_segments_rule(request_json: String) -> Result<String> {
+    let request: RedundantPathSegmentsRequest =
         serde_json::from_str(&request_json).map_err(|error| err(error.to_string()))?;
-    let violations = collect_source_file_structure_violations(
-        &request.source_files,
-        &request.separators,
-        &request.role_suffixes,
-    );
+    let violations =
+        collect_redundant_path_segments_violations(&request.source_files, &request.separators);
     serde_json::to_string(&violations).map_err(|error| err(error.to_string()))
 }
 

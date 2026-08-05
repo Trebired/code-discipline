@@ -4,11 +4,11 @@ mod structure_tests {
     use super::test_source_file as file;
 
     fn violations(files: &[ScannedSourceFile]) -> Vec<CodeDisciplineViolation> {
-        collect_source_file_structure_violations(files, &["_".to_string()], &["page".to_string()])
+        collect_redundant_path_segments_violations(files, &["_".to_string()])
     }
 
     #[test]
-    fn scans_source_file_structure_candidates_with_suggested_paths() {
+    fn scans_redundant_path_segments_candidates_with_suggested_paths() {
         let files = vec![
             file("src/user_route.ts", ".ts"),
             file("src/user_model.ts", ".ts"),
@@ -24,7 +24,7 @@ mod structure_tests {
     }
 
     #[test]
-    fn scans_source_file_structure_candidates_across_supported_languages() {
+    fn scans_redundant_path_segments_candidates_across_supported_languages() {
         let files = vec![
             file("src/view_logic.qml", ".qml"),
             file("src/view_model.qml", ".qml"),
@@ -48,7 +48,7 @@ mod structure_tests {
     }
 
     #[test]
-    fn removes_redundant_role_suffixes_before_grouping() {
+    fn removes_redundant_path_segments_before_grouping() {
         let files = vec![
             file("src/pages/home_page.ts", ".ts"),
             file("src/pages/other_page.ts", ".ts"),
@@ -65,8 +65,8 @@ mod structure_tests {
             .unwrap();
 
         assert_eq!(home.suggested_path.as_deref(), Some("src/pages/home.ts"));
-        assert_eq!(home.details["mode"], "redundant-role-suffix");
-        assert_eq!(home.details["roleSuffix"], "page");
+        assert_eq!(home.details["mode"], "redundant-path-segment");
+        assert_eq!(home.details["pathSegment"], "pages");
         assert_eq!(other.suggested_path.as_deref(), Some("src/pages/other.ts"));
     }
 }

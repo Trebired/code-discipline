@@ -27,7 +27,7 @@ export default defineCodeDisciplineConfig({
     maxFunctionLines: {
       max: 50,
     },
-    sourceFileStructure: {},
+    redundantPathSegments: {},
     imports: {
       alias: {
         strategy: "random",

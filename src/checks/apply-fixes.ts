@@ -4,7 +4,7 @@ import type { ScannedSourceFile } from "#pkb9x3eo56l7";
 import { filterSourceFilesForRule } from "#jizekc8duh4i";
 import type { CodeDisciplineViolation } from "#bsmch74up4fm";
 import type { resolveLogger } from "#5koja8ae2wwn";
-import { fixSourceFileStructure } from "./fix-source-file-structure.js";
+import { fixRedundantPathSegments } from "./fix-redundant-path-segments.js";
 import { applyCodeFormatterFix } from "./format.js";
 import { shouldRunRule } from "./rule-slugs.js";
 import { fixBannedFilesRule } from "./rules/banned/files.js";
@@ -102,16 +102,16 @@ async function applyMinFileLinesFix(
   }
 }
 
-async function applySourceFileStructureFix(
+async function applyRedundantPathSegmentsFix(
   state: FixState,
   normalized: NormalizedCheckCodeDisciplineOptions,
   logger: ReturnType<typeof resolveLogger>,
 ): Promise<void> {
-  if (!normalized.rules.sourceFileStructure || !shouldRunFixRule("source-file-structure", normalized)) return;
+  if (!normalized.rules.redundantPathSegments || !shouldRunFixRule("redundant-path-segments", normalized)) return;
 
-  const result = await fixSourceFileStructure(filterSourceFilesForRule(state.sourceFiles, normalized.rules.sourceFileStructure), normalized, logger);
+  const result = await fixRedundantPathSegments(filterSourceFilesForRule(state.sourceFiles, normalized.rules.redundantPathSegments), normalized, logger);
   const violations = applyConfiguredSeverity(result.violations, normalized);
-  state.ruleResults["source-file-structure"] = mapFixRuleResult({ ...result, violations });
+  state.ruleResults["redundant-path-segments"] = mapFixRuleResult({ ...result, violations });
   state.violations.push(...violations);
   state.movedFiles += result.moved_files;
   state.rewrittenFiles += result.rewritten_files;
@@ -183,7 +183,7 @@ async function applyCodeFormatFix(state: FixState, normalized: NormalizedCheckCo
 export {
   applyBannedFilesFix,
   applyCodeFormatFix as applyCodeFormatterFix,
-  applySourceFileStructureFix,
+  applyRedundantPathSegmentsFix,
   applyMaxCharactersPerLineFix,
   applyMinFileLinesFix,
   applyRemoveCommentsFix,

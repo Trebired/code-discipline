@@ -1,6 +1,6 @@
 import { result as createResult } from "@package/result";
 import { normalizeCheckCodeDisciplineOptions } from "#x458f9t6w4a6";
-import { collectImportViolations } from "#ymdyths4ukwp";
+import { collectImportViolations } from "#zdmj0zb82kk1";
 import { scanSourceFiles } from "#ua9whqppp94v";
 import { runLogGroup } from "#foa3t3ao5irq";
 import { resolveLogger } from "#5koja8ae2wwn";
@@ -8,7 +8,7 @@ import { filterSourceFilesForRule } from "#jizekc8duh4i";
 import type { CodeDisciplineResult, CodeDisciplineViolation } from "#bsmch74up4fm";
 import {
   applyBannedFilesFix,
-  applySourceFileStructureFix,
+  applyRedundantPathSegmentsFix,
   applyMaxCharactersPerLineFix,
   applyMinFileLinesFix,
   applyCodeFormatterFix,
@@ -26,7 +26,7 @@ import { collectDryViolations } from "./rules/dry/index.js";
 import { runMaxCharactersPerLineRule } from "./rules/max/characters-per-line.js";
 import { runMaxFileLinesRule } from "./rules/max/file-lines.js";
 import { runMaxFunctionLinesRule } from "./rules/max/function-lines.js";
-import { runSourceFileStructureRule } from "./rules/source-file-structure/index.js";
+import { runRedundantPathSegmentsRule } from "./rules/redundant-path-segments/index.js";
 import { runMinDeclarationNameRule } from "./rules/min/declaration-name.js";
 import { runMinFileLinesRule } from "./rules/min/file/lines.js";
 import { collectRemoveCommentsViolations } from "./rules/remove-comments.js";
@@ -121,8 +121,8 @@ async function collectViolations(options: NormalizedCheckCodeDisciplineOptions):
   if (options.rules.maxFunctionLines && shouldRunRule("max-function-lines", options.onlyRules)) {
     violations.push(...await runMaxFunctionLinesRule(filterSourceFilesForRule(sourceFiles, options.rules.maxFunctionLines), options));
   }
-  if (options.rules.sourceFileStructure && shouldRunRule("source-file-structure", options.onlyRules)) {
-    violations.push(...runSourceFileStructureRule(filterSourceFilesForRule(sourceFiles, options.rules.sourceFileStructure), options));
+  if (options.rules.redundantPathSegments && shouldRunRule("redundant-path-segments", options.onlyRules)) {
+    violations.push(...runRedundantPathSegmentsRule(filterSourceFilesForRule(sourceFiles, options.rules.redundantPathSegments), options));
   }
   if (options.rules.dry && shouldRunRule("dry", options.onlyRules)) {
     violations.push(...await collectDryViolations(filterSourceFilesForRule(sourceFiles, options.rules.dry), options));
@@ -197,7 +197,7 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
   };
   await applyBannedFilesFix(state, normalized);
   await applyMinFileLinesFix(state, normalized, logger);
-  await applySourceFileStructureFix(state, normalized, logger);
+  await applyRedundantPathSegmentsFix(state, normalized, logger);
   await applyImportsFix(state, normalized);
   await applyRemoveCommentsFix(state, normalized);
   await applyStructuralBlankLinesFix(state, normalized);

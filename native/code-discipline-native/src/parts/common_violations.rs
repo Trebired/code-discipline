@@ -34,7 +34,7 @@ fn supports_remove_comments(extension: &str) -> bool {
         || is_style_extension(extension)
 }
 
-fn supports_source_file_structure_fix(extension: &str) -> bool {
+fn supports_redundant_path_segments_fix(extension: &str) -> bool {
     supports_remove_comments(extension)
 }
 

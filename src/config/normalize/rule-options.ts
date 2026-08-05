@@ -1,7 +1,6 @@
 import {
   DEFAULT_ALLOW_RELATIVE,
-  DEFAULT_SOURCE_FILE_STRUCTURE_ROLE_SUFFIXES,
-  DEFAULT_SOURCE_FILE_STRUCTURE_SEPARATORS,
+  DEFAULT_REDUNDANT_PATH_SEGMENTS_SEPARATORS,
 } from "#ik5y0pee4ah1";
 import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
 import type {
@@ -9,7 +8,7 @@ import type {
   BannedFilesRuleOptions,
   CodeDisciplineImportsRuleOptions,
   DryRuleOptions,
-  SourceFileStructureRuleOptions,
+  RedundantPathSegmentsRuleOptions,
   MaxCharactersPerLineRuleOptions,
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
@@ -196,27 +195,20 @@ function normalizeMaxFunctionLinesRule(rule: MaxFunctionLinesRuleOptions | undef
     severity: normalizeSeverity(rule.severity, "maxFunctionLines"),
   };
 }
-function normalizeSourceFileStructureRule(rule: SourceFileStructureRuleOptions | undefined) {
+function normalizeRedundantPathSegmentsRule(rule: RedundantPathSegmentsRuleOptions | undefined) {
   if (!rule) return undefined;
   const source = rule as Record<string, unknown>;
-  assertRemovedKeys("sourceFileStructure", source, ["enabled", "stop", "suffixes", "fix"]);
-  const separators = uniqueStrings(rule?.separators ?? DEFAULT_SOURCE_FILE_STRUCTURE_SEPARATORS);
-  const roleSuffixes = uniqueStrings(rule?.roleSuffixes ?? DEFAULT_SOURCE_FILE_STRUCTURE_ROLE_SUFFIXES);
+  assertRemovedKeys("redundantPathSegments", source, ["enabled", "stop", "suffixes", "roleSuffixes", "fix"]);
+  const separators = uniqueStrings(rule?.separators ?? DEFAULT_REDUNDANT_PATH_SEGMENTS_SEPARATORS);
   if (separators.length === 0) {
-    throw new InvalidCodeDisciplineConfigError("sourceFileStructure.separators must contain at least one separator", {
-      rule: "sourceFileStructure",
-    });
-  }
-  if (roleSuffixes.length === 0) {
-    throw new InvalidCodeDisciplineConfigError("sourceFileStructure.roleSuffixes must contain at least one suffix", {
-      rule: "sourceFileStructure",
+    throw new InvalidCodeDisciplineConfigError("redundantPathSegments.separators must contain at least one separator", {
+      rule: "redundantPathSegments",
     });
   }
   return {
-    ...normalizeRuleExclusions("sourceFileStructure", source),
-    roleSuffixes,
+    ...normalizeRuleExclusions("redundantPathSegments", source),
     separators,
-    severity: normalizeSeverity(rule.severity, "sourceFileStructure"),
+    severity: normalizeSeverity(rule.severity, "redundantPathSegments"),
   };
 }
 function normalizeImportsOutput(output: CodeDisciplineImportsRuleOptions["output"]): CodeDisciplineImportsRuleOptions["output"] {
@@ -336,7 +328,7 @@ export {
   normalizeBannedPatternsRule,
   normalizeBannedFilesRule,
   normalizeDryRule,
-  normalizeSourceFileStructureRule,
+  normalizeRedundantPathSegmentsRule,
   normalizeSeverity,
   normalizeMaxCharactersPerLineRule,
   normalizeMaxFileLinesRule,

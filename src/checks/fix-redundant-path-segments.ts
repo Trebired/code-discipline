@@ -17,7 +17,7 @@ import { supportsImports } from "#87jyjzn68rrk";
 import { FileConflictError, FixFailureError, RewriteFailureError } from "#4f8hale01wb4";
 import { ensureDotExtension, pathExists } from "#ntve5i5a0mol";
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "./progress.js";
-import { planSourceFileStructure } from "./rules/source-file-structure/plan.js";
+import { planRedundantPathSegments } from "./rules/redundant-path-segments/plan.js";
 
 type PlannedMove = {
   fromAbsolutePath: string;
@@ -25,14 +25,14 @@ type PlannedMove = {
   toAbsolutePath: string;
   toRelativePath: string;
 };
-function createSourceFileStructureViolation(
+function createRedundantPathSegmentsViolation(
   filePath: string,
   suggestedPath: string,
   options: NormalizedCheckCodeDisciplineOptions,
   details: Record<string, unknown>,
 ): CodeDisciplineViolation {
   return {
-    rule: "source-file-structure",
+    rule: "redundant-path-segments",
     fix: true,
     filePath,
     message: `file path should be normalized to ${suggestedPath}`,
@@ -45,14 +45,14 @@ function buildMovePlan(
   sourceFiles: ScannedSourceFile[],
   options: NormalizedCheckCodeDisciplineOptions,
 ): { moves: PlannedMove[]; violations: CodeDisciplineViolation[] } {
-  const candidates = planSourceFileStructure(sourceFiles, options);
+  const candidates = planRedundantPathSegments(sourceFiles, options);
   const moves = candidates.map((candidate) => ({
     fromAbsolutePath: candidate.absolutePath,
     fromRelativePath: candidate.relativeFromProjectRoot,
     toAbsolutePath: candidate.suggestedAbsolutePath,
     toRelativePath: candidate.suggestedPath,
   }));
-  const violations = candidates.map((candidate) => createSourceFileStructureViolation(
+  const violations = candidates.map((candidate) => createRedundantPathSegmentsViolation(
     candidate.relativeFromProjectRoot,
     candidate.suggestedPath,
     options,
@@ -60,7 +60,7 @@ function buildMovePlan(
       mode: candidate.mode,
       prefix: candidate.prefix,
       remainder: candidate.remainder,
-      ...(candidate.roleSuffix ? { roleSuffix: candidate.roleSuffix } : {}),
+      ...(candidate.pathSegment ? { pathSegment: candidate.pathSegment } : {}),
       separator: candidate.separator,
     },
   ));
@@ -90,7 +90,7 @@ function resolveRelativeFromInventory(
   return null;
 }
 
-async function planImportRewritesForSourceFileStructureMoves(
+async function planImportRewritesForRedundantPathSegmentsMoves(
   sourceFiles: ScannedSourceFile[],
   moves: PlannedMove[],
   options: NormalizedCheckCodeDisciplineOptions,
@@ -112,7 +112,7 @@ async function planImportRewritesForSourceFileStructureMoves(
   const rewrittenByPath = new Map<string, { text: string; count: number }>();
   const progress = createRuleProgress({
     observer: options.progressObserver,
-    rule: "source-file-structure",
+    rule: "redundant-path-segments",
     stage: "rewrite-plan",
     totalItems: sourceFiles.length,
   });
@@ -200,7 +200,7 @@ async function validateMovePlan(moves: PlannedMove[]): Promise<void> {
 async function moveFiles(moves: PlannedMove[], options: NormalizedCheckCodeDisciplineOptions): Promise<number> {
   const progress = createRuleProgress({
     observer: options.progressObserver,
-    rule: "source-file-structure",
+    rule: "redundant-path-segments",
     stage: "move",
     totalItems: moves.length,
   });
@@ -222,7 +222,7 @@ async function moveFiles(moves: PlannedMove[], options: NormalizedCheckCodeDisci
   return movedFiles;
 }
 
-async function writeSourceFileStructureRewrites(
+async function writeRedundantPathSegmentsRewrites(
   rewrites: Map<string, { text: string; count: number }>,
   options: NormalizedCheckCodeDisciplineOptions,
 ): Promise<void> {
@@ -230,7 +230,7 @@ async function writeSourceFileStructureRewrites(
   const totalImports = entries.reduce((sum, [, rewrite]) => sum + rewrite.count, 0);
   const progress = createRuleProgress({
     observer: options.progressObserver,
-    rule: "source-file-structure",
+    rule: "redundant-path-segments",
     stage: "write",
     totalItems: entries.length,
   });
@@ -250,17 +250,17 @@ async function writeSourceFileStructureRewrites(
   });
 }
 
-async function fixSourceFileStructure(
+async function fixRedundantPathSegments(
   sourceFiles: ScannedSourceFile[],
   options: NormalizedCheckCodeDisciplineOptions,
   logger: NormalizedCodeDisciplineLogger,
 ): Promise<FixCodeDisciplineResult> {
   const { moves, violations } = buildMovePlan(sourceFiles, options);
 
-  if (!options.rules.sourceFileStructure || moves.length === 0) {
-    logger.info("fix-source-file-structure-unchanged", "no source file structure moves required", {
+  if (!options.rules.redundantPathSegments || moves.length === 0) {
+    logger.info("fix-redundant-path-segments-unchanged", "no redundant path segment moves required", {
       moves: 0,
-    }, { group: ruleLogGroup("source-file-structure") });
+    }, { group: ruleLogGroup("redundant-path-segments") });
     return {
       ok: true,
       violationCount: 0,
@@ -281,17 +281,17 @@ async function fixSourceFileStructure(
   const sourceDirectories = moves.map((move) => path.dirname(move.fromAbsolutePath));
 
   try {
-    const rewriteState = await planImportRewritesForSourceFileStructureMoves(sourceFiles, moves, options);
+    const rewriteState = await planImportRewritesForRedundantPathSegmentsMoves(sourceFiles, moves, options);
     const movedFiles = await moveFiles(moves, options);
-    await writeSourceFileStructureRewrites(rewriteState.rewrittenByPath, options);
+    await writeRedundantPathSegmentsRewrites(rewriteState.rewrittenByPath, options);
 
     await removeEmptyDirectories(sourceDirectories);
 
-    logger.success("fix-source-file-structure-finished", `source file structure moves=${movedFiles} rewrittenImports=${rewriteState.rewrittenImports}`, {
+    logger.success("fix-redundant-path-segments-finished", `redundant path segment moves=${movedFiles} rewrittenImports=${rewriteState.rewrittenImports}`, {
       movedFiles,
       rewrittenFiles: rewriteState.rewrittenFiles,
       rewrittenImports: rewriteState.rewrittenImports,
-    }, { group: ruleLogGroup("source-file-structure") });
+    }, { group: ruleLogGroup("redundant-path-segments") });
 
     return {
       ok: true,
@@ -311,10 +311,10 @@ async function fixSourceFileStructure(
       throw error;
     }
 
-    throw new FixFailureError("Source file structure fix failed", {
+    throw new FixFailureError("Redundant path segments fix failed", {
       cause: error instanceof Error ? error.message : String(error),
     });
   }
 }
 
-export { buildMovePlan, createSourceFileStructureViolation, fixSourceFileStructure };
+export { buildMovePlan, createRedundantPathSegmentsViolation, fixRedundantPathSegments };

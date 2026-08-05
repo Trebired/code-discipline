@@ -1,6 +1,6 @@
 {
   "name": "@trebired/code-discipline",
-  "version": "5.2.0",
+  "version": "5.3.0",
   "description": "Configurable codebase discipline checks and rule-driven fixes for Bun projects.",
   "type": "module",
   "private": false,
@@ -34,7 +34,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "bun run prepare:generated && rm -rf dist && tsc -p tsconfig.build.json && bun ./scripts/build/aliases.mjs && chmod +x dist/cli.js dist/cli/run-cli.js",
+    "build": "bun run prepare:generated && rm -rf dist && tsc -p tsconfig.build.json && bun ./scripts/build/aliases.mjs && chmod +x dist/cli.js dist/cli/run.js",
     "build:native": "bun ./scripts/build/native.mjs",
     "build:native:matrix": "bun ./scripts/build/native/matrix.mjs",
     "demo": "bun run examples/dummy.ts",

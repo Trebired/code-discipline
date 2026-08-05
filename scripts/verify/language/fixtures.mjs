@@ -159,7 +159,7 @@ const languageFixtures = {
   ].join("\n"),
 };
 
-const sourceFileStructureFiles = [
+const redundantPathSegmentsFiles = [
   "src/view_logic.qml",
   "src/view_model.qml",
   "src/render_svg.rs",
@@ -176,4 +176,4 @@ const sourceFileStructureFiles = [
   "src/pages/other_page.ts",
 ];
 
-export { languageFixtures, sourceFileStructureFiles };
+export { languageFixtures, redundantPathSegmentsFiles };

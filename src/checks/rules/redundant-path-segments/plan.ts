@@ -2,19 +2,19 @@ import path from "node:path";
 
 import type { NormalizedCheckCodeDisciplineOptions } from "#uqbg4indzud7";
 import type { ScannedSourceFile } from "#pkb9x3eo56l7";
-import { supportsSourceFileStructureFix } from "#87jyjzn68rrk";
+import { supportsRedundantPathSegmentsFix } from "#87jyjzn68rrk";
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls019o";
 
-type SourceFileStructureCandidate = {
+type RedundantPathSegmentsCandidate = {
   absolutePath: string;
   relativeFromProjectRoot: string;
   suggestedAbsolutePath: string;
   suggestedPath: string;
   prefix: string;
   remainder: string;
-  roleSuffix?: string;
+  pathSegment?: string;
   separator: string;
-  mode: "redundant-role-suffix" | "same-directory-group" | "repeated-folder-prefix";
+  mode: "redundant-path-segment" | "same-directory-group" | "repeated-folder-prefix";
 };
 
 type PrefixMatch = {
@@ -22,6 +22,7 @@ type PrefixMatch = {
   remainder: string;
   separator: string;
   index: number;
+  pathSegment?: string;
 };
 
 function findPrefixMatch(file: ScannedSourceFile, separators: string[]): PrefixMatch | null {
@@ -44,44 +45,58 @@ function findPrefixMatch(file: ScannedSourceFile, separators: string[]): PrefixM
   return bestMatch;
 }
 
-function normalizeRoleToken(value: string): string {
+function normalizePathSegmentToken(value: string): string {
   return value.toLowerCase().replace(/[_\-\s]+/gu, "");
 }
 
-function directoryMatchesRoleSuffix(directoryName: string, roleSuffix: string): boolean {
-  const normalizedDirectory = normalizeRoleToken(directoryName);
-  const normalizedSuffix = normalizeRoleToken(roleSuffix);
-  return normalizedDirectory === normalizedSuffix || normalizedDirectory === `${normalizedSuffix}s`;
+function singularizePathSegmentToken(value: string): string {
+  const normalized = normalizePathSegmentToken(value);
+  return normalized.length > 1 && normalized.endsWith("s") ? normalized.slice(0, -1) : normalized;
 }
 
-function findRedundantRoleSuffixMatch(
+function pathSegmentTokenMap(file: ScannedSourceFile): Map<string, string> {
+  const directory = path.posix.dirname(file.relativeFromSourceRoot);
+  const tokens = new Map<string, string>();
+
+  if (!directory || directory === ".") return tokens;
+
+  for (const segment of directory.split("/")) {
+    if (!segment || segment === ".") continue;
+    const token = singularizePathSegmentToken(segment);
+    if (!token || tokens.has(token)) continue;
+    tokens.set(token, segment);
+  }
+
+  return tokens;
+}
+
+function findRedundantPathSegmentMatch(
   file: ScannedSourceFile,
   separators: string[],
-  roleSuffixes: string[],
 ): PrefixMatch | null {
   const basename = path.basename(file.relativeFromSourceRoot, file.extension);
-  const directoryName = path.basename(path.dirname(file.relativeFromSourceRoot));
+  const pathSegmentTokens = pathSegmentTokenMap(file);
   let bestMatch: PrefixMatch | null = null;
 
-  for (const roleSuffix of roleSuffixes) {
-    if (!directoryMatchesRoleSuffix(directoryName, roleSuffix)) continue;
+  for (const separator of separators) {
+    const index = basename.lastIndexOf(separator);
+    if (index <= 0) continue;
 
-    for (const separator of separators) {
-      const suffixToken = `${separator}${roleSuffix}`;
-      if (!basename.toLowerCase().endsWith(suffixToken.toLowerCase())) continue;
+    const prefix = basename.slice(0, index);
+    const remainder = basename.slice(index + separator.length);
+    if (!prefix || !remainder) continue;
 
-      const prefix = basename.slice(0, -suffixToken.length);
-      if (!prefix) continue;
+    const pathSegment = pathSegmentTokens.get(singularizePathSegmentToken(remainder));
+    if (!pathSegment) continue;
 
-      const index = basename.length - suffixToken.length;
-      if (!bestMatch || suffixToken.length > bestMatch.separator.length + bestMatch.remainder.length) {
-        bestMatch = {
-          prefix,
-          remainder: roleSuffix,
-          separator,
-          index,
-        };
-      }
+    if (!bestMatch || index > bestMatch.index) {
+      bestMatch = {
+        prefix,
+        remainder,
+        separator,
+        index,
+        pathSegment,
+      };
     }
   }
 
@@ -92,13 +107,13 @@ function buildSuggestedPath(
   file: ScannedSourceFile,
   prefix: string,
   remainder: string,
-  mode: SourceFileStructureCandidate["mode"],
+  mode: RedundantPathSegmentsCandidate["mode"],
 ): { absolutePath: string; relativeFromProjectRoot: string } {
   const sourceDir = path.dirname(file.absolutePath);
   const projectDir = path.posix.dirname(file.relativeFromProjectRoot);
-  const targetFileName = `${mode === "redundant-role-suffix" ? prefix : remainder}${file.extension}`;
+  const targetFileName = `${mode === "redundant-path-segment" ? prefix : remainder}${file.extension}`;
 
-  if (mode === "repeated-folder-prefix" || mode === "redundant-role-suffix") {
+  if (mode === "repeated-folder-prefix" || mode === "redundant-path-segment") {
     return {
       absolutePath: path.join(sourceDir, targetFileName),
       relativeFromProjectRoot: path.posix.join(projectDir, targetFileName),
@@ -111,29 +126,28 @@ function buildSuggestedPath(
   };
 }
 
-function planSourceFileStructure(
+function planRedundantPathSegments(
   sourceFiles: ScannedSourceFile[],
   options: NormalizedCheckCodeDisciplineOptions,
-): SourceFileStructureCandidate[] {
-  if (!options.rules.sourceFileStructure) return [];
+): RedundantPathSegmentsCandidate[] {
+  if (!options.rules.redundantPathSegments) return [];
 
-  const separators = options.rules.sourceFileStructure.separators;
-  const roleSuffixes = options.rules.sourceFileStructure.roleSuffixes;
+  const separators = options.rules.redundantPathSegments.separators;
   const byDirectoryAndPrefix = new Map<string, ScannedSourceFile[]>();
   const matchesByPath = new Map<string, PrefixMatch>();
-  const roleSuffixMatchesByPath = new Map<string, PrefixMatch>();
+  const pathSegmentMatchesByPath = new Map<string, PrefixMatch>();
   const progress = createRuleProgress({
     observer: options.progressObserver,
-    rule: "source-file-structure",
+    rule: "redundant-path-segments",
     stage: "plan",
     totalItems: sourceFiles.length,
   });
 
   for (const file of sourceFiles) {
-    if (!supportsSourceFileStructureFix(file.extension)) continue;
-    const roleSuffixMatch = findRedundantRoleSuffixMatch(file, separators, roleSuffixes);
-    if (roleSuffixMatch) {
-      roleSuffixMatchesByPath.set(file.absolutePath, roleSuffixMatch);
+    if (!supportsRedundantPathSegmentsFix(file.extension)) continue;
+    const pathSegmentMatch = findRedundantPathSegmentMatch(file, separators);
+    if (pathSegmentMatch) {
+      pathSegmentMatchesByPath.set(file.absolutePath, pathSegmentMatch);
     }
 
     const match = findPrefixMatch(file, separators);
@@ -146,23 +160,23 @@ function planSourceFileStructure(
     byDirectoryAndPrefix.set(directoryKey, rows);
   }
 
-  const candidates: SourceFileStructureCandidate[] = [];
+  const candidates: RedundantPathSegmentsCandidate[] = [];
 
   for (let index = 0; index < sourceFiles.length; index += 1) {
     const file = sourceFiles[index]!;
-    const roleSuffixMatch = roleSuffixMatchesByPath.get(file.absolutePath);
-    if (roleSuffixMatch) {
-      const suggested = buildSuggestedPath(file, roleSuffixMatch.prefix, roleSuffixMatch.remainder, "redundant-role-suffix");
+    const pathSegmentMatch = pathSegmentMatchesByPath.get(file.absolutePath);
+    if (pathSegmentMatch) {
+      const suggested = buildSuggestedPath(file, pathSegmentMatch.prefix, pathSegmentMatch.remainder, "redundant-path-segment");
       candidates.push({
         absolutePath: file.absolutePath,
         relativeFromProjectRoot: file.relativeFromProjectRoot,
         suggestedAbsolutePath: suggested.absolutePath,
         suggestedPath: suggested.relativeFromProjectRoot,
-        prefix: roleSuffixMatch.prefix,
-        remainder: roleSuffixMatch.remainder,
-        roleSuffix: roleSuffixMatch.remainder,
-        separator: roleSuffixMatch.separator,
-        mode: "redundant-role-suffix",
+        prefix: pathSegmentMatch.prefix,
+        remainder: pathSegmentMatch.remainder,
+        pathSegment: pathSegmentMatch.pathSegment,
+        separator: pathSegmentMatch.separator,
+        mode: "redundant-path-segment",
       });
       emitRuleChunk(progress, index + 1, candidates.length);
       continue;
@@ -206,5 +220,5 @@ function planSourceFileStructure(
   return candidates.sort((left, right) => left.relativeFromProjectRoot.localeCompare(right.relativeFromProjectRoot));
 }
 
-export { planSourceFileStructure };
-export type { SourceFileStructureCandidate };
+export { planRedundantPathSegments };
+export type { RedundantPathSegmentsCandidate };

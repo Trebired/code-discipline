@@ -4,6 +4,7 @@ struct PrefixMatch {
     remainder: String,
     separator: String,
     index: usize,
+    path_segment: Option<String>,
 }
 
 fn find_prefix_match(file: &ScannedSourceFile, separators: &[String]) -> Option<PrefixMatch> {
@@ -37,6 +38,7 @@ fn find_prefix_match(file: &ScannedSourceFile, separators: &[String]) -> Option<
                 remainder,
                 separator: separator.clone(),
                 index,
+                path_segment: None,
             });
         }
     }
@@ -44,7 +46,7 @@ fn find_prefix_match(file: &ScannedSourceFile, separators: &[String]) -> Option<
     best_match
 }
 
-fn normalize_role_token(value: &str) -> String {
+fn normalize_path_segment_token(value: &str) -> String {
     value
         .chars()
         .filter(|ch| !matches!(ch, '_' | '-' | ' ' | '\t'))
@@ -52,53 +54,90 @@ fn normalize_role_token(value: &str) -> String {
         .collect()
 }
 
-fn directory_matches_role_suffix(directory_name: &str, role_suffix: &str) -> bool {
-    let normalized_directory = normalize_role_token(directory_name);
-    let normalized_suffix = normalize_role_token(role_suffix);
-    normalized_directory == normalized_suffix || normalized_directory == format!("{normalized_suffix}s")
+fn singularize_path_segment_token(value: &str) -> String {
+    let normalized = normalize_path_segment_token(value);
+    normalized
+        .strip_suffix('s')
+        .filter(|base| !base.is_empty())
+        .unwrap_or(&normalized)
+        .to_string()
 }
 
-fn find_redundant_role_suffix_match(
+fn path_segment_tokens(file: &ScannedSourceFile) -> Vec<(String, String)> {
+    let directory = posix_dirname(&file.relative_from_source_root);
+    if directory.is_empty() || directory == "." {
+        return Vec::new();
+    }
+
+    let mut seen = HashSet::new();
+    let mut tokens = Vec::new();
+    for segment in directory.split('/') {
+        if segment.is_empty() || segment == "." {
+            continue;
+        }
+
+        let token = singularize_path_segment_token(segment);
+        if token.is_empty() || !seen.insert(token.clone()) {
+            continue;
+        }
+
+        tokens.push((token, segment.to_string()));
+    }
+
+    tokens
+}
+
+fn find_redundant_path_segment_match(
     file: &ScannedSourceFile,
     separators: &[String],
-    role_suffixes: &[String],
 ) -> Option<PrefixMatch> {
     let basename = strip_extension(
         posix_basename(&file.relative_from_source_root),
         &file.extension,
     );
-    let directory_name = posix_basename(&posix_dirname(&file.relative_from_source_root)).to_string();
-    let normalized_basename = basename.to_lowercase();
+    let path_segments = path_segment_tokens(file);
     let mut best_match: Option<PrefixMatch> = None;
-    let mut best_score = 0_usize;
 
-    for role_suffix in role_suffixes {
-        if !directory_matches_role_suffix(&directory_name, role_suffix) {
+    if path_segments.is_empty() {
+        return None;
+    }
+
+    for separator in separators {
+        if separator.is_empty() {
+            continue;
+        }
+        let Some(index) = basename.rfind(separator) else {
+            continue;
+        };
+        if index == 0 {
             continue;
         }
 
-        for separator in separators {
-            let suffix_token = format!("{separator}{role_suffix}");
-            let normalized_suffix_token = suffix_token.to_lowercase();
-            if !normalized_basename.ends_with(&normalized_suffix_token) {
-                continue;
-            }
+        let prefix = basename[..index].to_string();
+        let remainder = basename[index + separator.len()..].to_string();
+        if prefix.is_empty() || remainder.is_empty() {
+            continue;
+        }
+        let remainder_token = singularize_path_segment_token(&remainder);
+        let path_segment = path_segments
+            .iter()
+            .find(|(token, _)| token == &remainder_token)
+            .map(|(_, segment)| segment.clone());
+        let Some(path_segment) = path_segment else {
+            continue;
+        };
 
-            let index = basename.len().saturating_sub(suffix_token.len());
-            if index == 0 {
-                continue;
-            }
-
-            if suffix_token.len() <= best_score {
-                continue;
-            }
-
-            best_score = suffix_token.len();
+        if best_match
+            .as_ref()
+            .map(|item| index > item.index)
+            .unwrap_or(true)
+        {
             best_match = Some(PrefixMatch {
-                prefix: basename[..index].to_string(),
-                remainder: role_suffix.clone(),
+                prefix,
+                remainder,
                 separator: separator.clone(),
                 index,
+                path_segment: Some(path_segment),
             });
         }
     }
@@ -106,22 +145,19 @@ fn find_redundant_role_suffix_match(
     best_match
 }
 
-fn collect_source_file_structure_violations(
+fn collect_redundant_path_segments_violations(
     source_files: &[ScannedSourceFile],
     separators: &[String],
-    role_suffixes: &[String],
 ) -> Vec<CodeDisciplineViolation> {
     let mut matches = Vec::<(ScannedSourceFile, PrefixMatch)>::new();
-    let mut role_suffix_matches = Vec::<(ScannedSourceFile, PrefixMatch)>::new();
+    let mut path_segment_matches = Vec::<(ScannedSourceFile, PrefixMatch)>::new();
 
     for file in source_files {
-        if !supports_source_file_structure_fix(&file.extension) {
+        if !supports_redundant_path_segments_fix(&file.extension) {
             continue;
         }
-        if let Some(role_suffix_match) =
-            find_redundant_role_suffix_match(file, separators, role_suffixes)
-        {
-            role_suffix_matches.push((file.clone(), role_suffix_match));
+        if let Some(path_segment_match) = find_redundant_path_segment_match(file, separators) {
+            path_segment_matches.push((file.clone(), path_segment_match));
         }
         if let Some(prefix_match) = find_prefix_match(file, separators) {
             matches.push((file.clone(), prefix_match));
@@ -129,29 +165,29 @@ fn collect_source_file_structure_violations(
     }
 
     let mut violations = Vec::new();
-    let role_suffix_paths: HashSet<String> = role_suffix_matches
+    let path_segment_paths: HashSet<String> = path_segment_matches
         .iter()
         .map(|(file, _)| file.absolute_path.clone())
         .collect();
 
-    for (file, role_suffix_match) in role_suffix_matches.iter() {
-        let target_file_name = format!("{}{}", role_suffix_match.prefix, file.extension);
+    for (file, path_segment_match) in path_segment_matches.iter() {
+        let target_file_name = format!("{}{}", path_segment_match.prefix, file.extension);
         let project_dir = posix_dirname(&file.relative_from_project_root);
         let suggested_path = join_posix(&project_dir, &target_file_name);
 
-        violations.push(create_source_file_structure_violation(
+        violations.push(create_redundant_path_segments_violation(
             file,
             suggested_path,
-            "redundant-role-suffix",
-            &role_suffix_match.prefix,
-            &role_suffix_match.remainder,
-            Some(&role_suffix_match.remainder),
-            &role_suffix_match.separator,
+            "redundant-path-segment",
+            &path_segment_match.prefix,
+            &path_segment_match.remainder,
+            path_segment_match.path_segment.as_deref(),
+            &path_segment_match.separator,
         ));
     }
 
     for (file, prefix_match) in matches.iter() {
-        if role_suffix_paths.contains(&file.absolute_path) {
+        if path_segment_paths.contains(&file.absolute_path) {
             continue;
         }
 
@@ -196,7 +232,7 @@ fn collect_source_file_structure_violations(
             )
         };
 
-        violations.push(create_source_file_structure_violation(
+        violations.push(create_redundant_path_segments_violation(
             file,
             suggested_path,
             mode,

@@ -6,7 +6,7 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const distUrl = pathToFileURL(path.join(repoRoot, "dist/index.js")).href;
-const cliUrl = pathToFileURL(path.join(repoRoot, "dist/cli/run-cli.js")).href;
+const cliUrl = pathToFileURL(path.join(repoRoot, "dist/cli/run.js")).href;
 const { codeDiscipline, loadResolvedCodeDisciplineConfig } = await import(distUrl);
 const { runCli } = await import(cliUrl);
 

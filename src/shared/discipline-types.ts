@@ -8,7 +8,7 @@ type CodeDisciplineRuleName =
   | "max-file-lines"
   | "max-characters-per-line"
   | "max-function-lines"
-  | "source-file-structure"
+  | "redundant-path-segments"
   | "imports"
   | "remove-comments"
   | "structural-blank-lines"

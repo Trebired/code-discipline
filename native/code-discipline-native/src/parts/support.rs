@@ -48,9 +48,7 @@ struct MaxFileLinesRequest {
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct SourceFileStructureRequest {
-    #[serde(default)]
-    role_suffixes: Vec<String>,
+struct RedundantPathSegmentsRequest {
     source_files: Vec<ScannedSourceFile>,
     separators: Vec<String>,
 }

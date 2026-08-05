@@ -7,7 +7,7 @@ import { supportsImports } from "#87jyjzn68rrk";
 import { ensureGeneratedArtifactsGitignore } from "#zdy5k79iam8y";
 import type { CodeDisciplineViolation } from "#bsmch74up4fm";
 import { planTsconfigAliases, syncTsconfigAliases } from "./aliases.js";
-import { collectImportViolations } from "./check-imports.js";
+import { collectImportViolations } from "./check.js";
 import { rewriteSourceImports } from "./rewrite.js";
 import { scanSourceFiles } from "./scan.js";
 import type { ImportsOptions, ImportsResult, NormalizedImportsOptions } from "./types.js";
