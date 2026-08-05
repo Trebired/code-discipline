@@ -4,12 +4,15 @@ All notable changes to `@trebired/code-discipline` will be documented here.
 
 This project follows semantic versioning once published.
 
-## 5.1.0
+## 5.2.0
 
 - Added formatter wrapping for QML top-level string concatenation expressions so formatting can resolve property lines that combine literals and runtime values.
 - Expanded compact one-line QML blocks as part of `rules.formatting`, including single-statement helper functions and inline statement blocks.
 - Fixed SVG/XML attribute wrapping inside Rust raw string bodies so tag text tails reserve line width and `maxCharactersPerLine` can pass after formatting.
-- Expanded `folderizeCompoundFiles` planning and moves across supported source languages instead of limiting folderization to JavaScript and TypeScript family files.
+- Renamed `folderizeCompoundFiles` to `sourceFileStructure` with the `source-file-structure` selector, with no legacy rule alias.
+- Added redundant role suffix cleanup to `sourceFileStructure`, so paths such as `pages/home_page.ts` move to `pages/home.ts` by default.
+- Expanded `sourceFileStructure` planning and moves across supported source languages instead of limiting path normalization to JavaScript and TypeScript family files.
+- Expanded `minDeclarationName` checks across Go, Rust, Python, QML, shell, SCSS, and CSS with language-aware declaration scanning.
 - Expanded `dry` duplicate-function checks across Go, Rust, Python, QML, and shell source files with language-aware token fingerprints.
 - Added generic structural blank-line normalization for supported non-TypeScript languages while keeping the TypeScript AST path for JavaScript and TypeScript files.
 

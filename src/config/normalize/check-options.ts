@@ -1,6 +1,7 @@
 import type {
   CheckCodeDisciplineOptions,
   CodeDisciplineMode,
+  CodeDisciplineRules,
   FixCodeDisciplineOptions,
   NormalizedCheckCodeDisciplineOptions,
 } from "#uqbg4indzud7";
@@ -9,7 +10,7 @@ import {
   normalizeBannedPatternsRule,
   normalizeBannedFilesRule,
   normalizeDryRule,
-  normalizeFolderizeCompoundFilesRule,
+  normalizeSourceFileStructureRule,
   normalizeMaxCharactersPerLineRule,
   normalizeMaxFileLinesRule,
   normalizeMaxFunctionLinesRule,
@@ -51,12 +52,24 @@ function assertRemovedCheckOptions(options: Record<string, unknown>): void {
   }
 }
 
+function assertRemovedRuleKeys(rules: CodeDisciplineRules | undefined): void {
+  const source = rules as Record<string, unknown> | undefined;
+  if (!source) return;
+
+  if ("folderizeCompoundFiles" in source) {
+    throw new InvalidCodeDisciplineConfigError("rules.folderizeCompoundFiles is no longer supported; use rules.sourceFileStructure instead", {
+      key: "rules.folderizeCompoundFiles",
+    });
+  }
+}
+
 async function normalizeCheckCodeDisciplineOptions(
   options: CheckCodeDisciplineOptions | FixCodeDisciplineOptions,
   mode: CodeDisciplineMode,
 ): Promise<NormalizedCheckCodeDisciplineOptions> {
   assertRemovedCheckOptions(options as Record<string, unknown>);
   const source = await normalizeSourceOptions(options);
+  assertRemovedRuleKeys(options.rules);
   const rules = applyCodeDisciplinePresets(options.rules, options.presets);
   const normalizedRules = {
     bannedPatterns: normalizeBannedPatternsRule(rules?.bannedPatterns),
@@ -67,7 +80,7 @@ async function normalizeCheckCodeDisciplineOptions(
     maxFileLines: normalizeMaxFileLinesRule(rules?.maxFileLines),
     maxCharactersPerLine: normalizeMaxCharactersPerLineRule(rules?.maxCharactersPerLine),
     maxFunctionLines: normalizeMaxFunctionLinesRule(rules?.maxFunctionLines),
-    folderizeCompoundFiles: normalizeFolderizeCompoundFilesRule(rules?.folderizeCompoundFiles),
+    sourceFileStructure: normalizeSourceFileStructureRule(rules?.sourceFileStructure),
     imports: normalizeImportsRule(rules?.imports),
     removeComments: normalizeRemoveCommentsRule(rules?.removeComments),
     structuralBlankLines: normalizeStructuralBlankLinesRule(rules?.structuralBlankLines),

@@ -30,7 +30,7 @@ code-discipline check
 code-discipline check save
 code-discipline check max-function-lines dry format
 code-discipline fix
-code-discipline fix banned-files min-file-lines max-characters-per-line imports remove-comments structural-blank-lines format
+code-discipline fix banned-files min-file-lines max-characters-per-line source-file-structure imports remove-comments structural-blank-lines format
 code-discipline gate -- bun run dev
 ```
 
@@ -96,7 +96,9 @@ Reports files whose code line count is at or below `min`, defaulting to `1` when
 
 #### `minDeclarationName`
 
-Reports JavaScript and TypeScript `function` declarations and simple `const` identifiers whose names are shorter than `min`, defaulting to `2` when the rule is configured.
+Reports named declarations whose names are shorter than `min`, defaulting to `2` when the rule is configured.
+
+JavaScript and TypeScript use the TypeScript AST for `function` declarations and simple `const` identifiers. Go, Rust, Python, QML, shell, SCSS, and CSS use language-aware declaration scanners for functions, declarations, properties, variables, and custom properties where those concepts exist.
 
 #### `maxCharactersPerLine`
 
@@ -132,13 +134,13 @@ Reports function-like declarations whose total span exceeds `max`.
 
 JavaScript and TypeScript use the TypeScript AST. Go and Rust use brace-aware function scanning. Python uses indentation-aware `def` and `async def` spans. Shell files with `.sh`, `.bash`, or `.zsh` use quote/comment-aware brace function spans. QML uses comment/string-aware scanning for JavaScript-style functions and signal-handler blocks.
 
-#### `folderizeCompoundFiles`
+#### `sourceFileStructure`
 
-Detects flat compound names such as `user_route.ts` and can move them into structural folders such as `user/route.ts`.
+Normalizes source file paths. It detects flat compound names such as `user_route.ts` and can move them into structural folders such as `user/route.ts`. It also removes redundant role suffixes when the parent directory already names the role, such as `pages/home_page.ts` becoming `pages/home.ts`.
 
-The rule config only describes separators now. Whether it mutates is decided by running `code-discipline fix`.
+The rule config describes compound-name separators and redundant role suffixes. Whether it mutates is decided by running `code-discipline fix`.
 
-Folderization scans and moves supported source files across JavaScript, TypeScript, Go, Rust, Python, QML, shell, SCSS, and CSS. Move-aware import repair is applied for languages whose import syntax is package-supported.
+Source file structure scans and moves supported source files across JavaScript, TypeScript, Go, Rust, Python, QML, shell, SCSS, and CSS. Move-aware import repair is applied for languages whose import syntax is package-supported.
 
 #### `imports`
 
@@ -382,8 +384,9 @@ export default defineCodeDisciplineConfig({
       max: 80,
       severity: "warning",
     },
-    folderizeCompoundFiles: {
+    sourceFileStructure: {
       separators: ["_", "-"],
+      roleSuffixes: ["page"],
     },
     removeComments: {
       exclude: ["@ts-nocheck"],
@@ -492,7 +495,7 @@ Rules use kebab-case public slugs:
 - `max-file-lines`
 - `max-characters-per-line`
 - `max-function-lines`
-- `folderize-compound-files`
+- `source-file-structure`
 - `imports`
 - `remove-comments`
 - `structural-blank-lines`
@@ -534,7 +537,7 @@ rules: {
 
 `@trebired/code-discipline` can use a Rust native backend when a matching binary is available, with the TypeScript implementation as the fallback. This follows the same native-fast-path shape as `@trebired/logger`: package users keep the same CLI/API, while hot scanning and rewrite paths can move into Rust.
 
-The current native backend accelerates source scanning, `max-file-lines`, common `max-function-lines` paths, `folderize-compound-files` checks, and `remove-comments`. Its comment scanner understands JavaScript, TypeScript, Go, Rust, Python, QML, shell, SCSS, and CSS. If no binary is present, the package automatically uses the TypeScript fallback.
+The current native backend accelerates source scanning, `max-file-lines`, common `max-function-lines` paths, `source-file-structure` checks, and `remove-comments`. Its comment scanner understands JavaScript, TypeScript, Go, Rust, Python, QML, shell, SCSS, and CSS. If no binary is present, the package automatically uses the TypeScript fallback.
 
 Useful native controls:
 

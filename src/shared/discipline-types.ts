@@ -8,7 +8,7 @@ type CodeDisciplineRuleName =
   | "max-file-lines"
   | "max-characters-per-line"
   | "max-function-lines"
-  | "folderize-compound-files"
+  | "source-file-structure"
   | "imports"
   | "remove-comments"
   | "structural-blank-lines"

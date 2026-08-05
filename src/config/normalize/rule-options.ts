@@ -1,6 +1,7 @@
 import {
   DEFAULT_ALLOW_RELATIVE,
-  DEFAULT_FOLDERIZE_COMPOUND_FILE_SEPARATORS,
+  DEFAULT_SOURCE_FILE_STRUCTURE_ROLE_SUFFIXES,
+  DEFAULT_SOURCE_FILE_STRUCTURE_SEPARATORS,
 } from "#ik5y0pee4ah1";
 import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
 import type {
@@ -8,7 +9,7 @@ import type {
   BannedFilesRuleOptions,
   CodeDisciplineImportsRuleOptions,
   DryRuleOptions,
-  FolderizeCompoundFilesRuleOptions,
+  SourceFileStructureRuleOptions,
   MaxCharactersPerLineRuleOptions,
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
@@ -195,20 +196,27 @@ function normalizeMaxFunctionLinesRule(rule: MaxFunctionLinesRuleOptions | undef
     severity: normalizeSeverity(rule.severity, "maxFunctionLines"),
   };
 }
-function normalizeFolderizeCompoundFilesRule(rule: FolderizeCompoundFilesRuleOptions | undefined) {
+function normalizeSourceFileStructureRule(rule: SourceFileStructureRuleOptions | undefined) {
   if (!rule) return undefined;
   const source = rule as Record<string, unknown>;
-  assertRemovedKeys("folderizeCompoundFiles", source, ["enabled", "stop", "suffixes", "fix"]);
-  const separators = uniqueStrings(rule?.separators ?? DEFAULT_FOLDERIZE_COMPOUND_FILE_SEPARATORS);
+  assertRemovedKeys("sourceFileStructure", source, ["enabled", "stop", "suffixes", "fix"]);
+  const separators = uniqueStrings(rule?.separators ?? DEFAULT_SOURCE_FILE_STRUCTURE_SEPARATORS);
+  const roleSuffixes = uniqueStrings(rule?.roleSuffixes ?? DEFAULT_SOURCE_FILE_STRUCTURE_ROLE_SUFFIXES);
   if (separators.length === 0) {
-    throw new InvalidCodeDisciplineConfigError("folderizeCompoundFiles.separators must contain at least one separator", {
-      rule: "folderizeCompoundFiles",
+    throw new InvalidCodeDisciplineConfigError("sourceFileStructure.separators must contain at least one separator", {
+      rule: "sourceFileStructure",
+    });
+  }
+  if (roleSuffixes.length === 0) {
+    throw new InvalidCodeDisciplineConfigError("sourceFileStructure.roleSuffixes must contain at least one suffix", {
+      rule: "sourceFileStructure",
     });
   }
   return {
-    ...normalizeRuleExclusions("folderizeCompoundFiles", source),
+    ...normalizeRuleExclusions("sourceFileStructure", source),
+    roleSuffixes,
     separators,
-    severity: normalizeSeverity(rule.severity, "folderizeCompoundFiles"),
+    severity: normalizeSeverity(rule.severity, "sourceFileStructure"),
   };
 }
 function normalizeImportsOutput(output: CodeDisciplineImportsRuleOptions["output"]): CodeDisciplineImportsRuleOptions["output"] {
@@ -328,7 +336,7 @@ export {
   normalizeBannedPatternsRule,
   normalizeBannedFilesRule,
   normalizeDryRule,
-  normalizeFolderizeCompoundFilesRule,
+  normalizeSourceFileStructureRule,
   normalizeSeverity,
   normalizeMaxCharactersPerLineRule,
   normalizeMaxFileLinesRule,

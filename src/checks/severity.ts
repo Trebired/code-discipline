@@ -13,7 +13,7 @@ function resolveConfiguredSeverity(
     case "max-file-lines": return options.rules.maxFileLines?.severity ?? "fail";
     case "max-characters-per-line": return options.rules.maxCharactersPerLine?.severity ?? "fail";
     case "max-function-lines": return options.rules.maxFunctionLines?.severity ?? "fail";
-    case "folderize-compound-files": return options.rules.folderizeCompoundFiles?.severity ?? "fail";
+    case "source-file-structure": return options.rules.sourceFileStructure?.severity ?? "fail";
     case "imports": return options.rules.imports?.severity ?? "fail";
     case "remove-comments": return options.rules.removeComments?.severity ?? "fail";
     case "structural-blank-lines": return options.rules.structuralBlankLines?.severity ?? "fail";

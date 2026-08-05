@@ -17,7 +17,7 @@ import { supportsImports } from "#87jyjzn68rrk";
 import { FileConflictError, FixFailureError, RewriteFailureError } from "#4f8hale01wb4";
 import { ensureDotExtension, pathExists } from "#ntve5i5a0mol";
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "./progress.js";
-import { planFolderizeCompoundFiles } from "./rules/folderize/plan.js";
+import { planSourceFileStructure } from "./rules/source-file-structure/plan.js";
 
 type PlannedMove = {
   fromAbsolutePath: string;
@@ -25,17 +25,17 @@ type PlannedMove = {
   toAbsolutePath: string;
   toRelativePath: string;
 };
-function createFolderizationViolation(
+function createSourceFileStructureViolation(
   filePath: string,
   suggestedPath: string,
   options: NormalizedCheckCodeDisciplineOptions,
   details: Record<string, unknown>,
 ): CodeDisciplineViolation {
   return {
-    rule: "folderize-compound-files",
+    rule: "source-file-structure",
     fix: true,
     filePath,
-    message: `file can be grouped under ${suggestedPath}`,
+    message: `file path should be normalized to ${suggestedPath}`,
     suggestedPath,
     details,
   };
@@ -45,14 +45,14 @@ function buildMovePlan(
   sourceFiles: ScannedSourceFile[],
   options: NormalizedCheckCodeDisciplineOptions,
 ): { moves: PlannedMove[]; violations: CodeDisciplineViolation[] } {
-  const candidates = planFolderizeCompoundFiles(sourceFiles, options);
+  const candidates = planSourceFileStructure(sourceFiles, options);
   const moves = candidates.map((candidate) => ({
     fromAbsolutePath: candidate.absolutePath,
     fromRelativePath: candidate.relativeFromProjectRoot,
     toAbsolutePath: candidate.suggestedAbsolutePath,
     toRelativePath: candidate.suggestedPath,
   }));
-  const violations = candidates.map((candidate) => createFolderizationViolation(
+  const violations = candidates.map((candidate) => createSourceFileStructureViolation(
     candidate.relativeFromProjectRoot,
     candidate.suggestedPath,
     options,
@@ -60,6 +60,7 @@ function buildMovePlan(
       mode: candidate.mode,
       prefix: candidate.prefix,
       remainder: candidate.remainder,
+      ...(candidate.roleSuffix ? { roleSuffix: candidate.roleSuffix } : {}),
       separator: candidate.separator,
     },
   ));
@@ -89,7 +90,7 @@ function resolveRelativeFromInventory(
   return null;
 }
 
-async function planImportRewritesForFolderizationMoves(
+async function planImportRewritesForSourceFileStructureMoves(
   sourceFiles: ScannedSourceFile[],
   moves: PlannedMove[],
   options: NormalizedCheckCodeDisciplineOptions,
@@ -111,7 +112,7 @@ async function planImportRewritesForFolderizationMoves(
   const rewrittenByPath = new Map<string, { text: string; count: number }>();
   const progress = createRuleProgress({
     observer: options.progressObserver,
-    rule: "folderize-compound-files",
+    rule: "source-file-structure",
     stage: "rewrite-plan",
     totalItems: sourceFiles.length,
   });
@@ -199,7 +200,7 @@ async function validateMovePlan(moves: PlannedMove[]): Promise<void> {
 async function moveFiles(moves: PlannedMove[], options: NormalizedCheckCodeDisciplineOptions): Promise<number> {
   const progress = createRuleProgress({
     observer: options.progressObserver,
-    rule: "folderize-compound-files",
+    rule: "source-file-structure",
     stage: "move",
     totalItems: moves.length,
   });
@@ -221,7 +222,7 @@ async function moveFiles(moves: PlannedMove[], options: NormalizedCheckCodeDisci
   return movedFiles;
 }
 
-async function writeFolderizationRewrites(
+async function writeSourceFileStructureRewrites(
   rewrites: Map<string, { text: string; count: number }>,
   options: NormalizedCheckCodeDisciplineOptions,
 ): Promise<void> {
@@ -229,7 +230,7 @@ async function writeFolderizationRewrites(
   const totalImports = entries.reduce((sum, [, rewrite]) => sum + rewrite.count, 0);
   const progress = createRuleProgress({
     observer: options.progressObserver,
-    rule: "folderize-compound-files",
+    rule: "source-file-structure",
     stage: "write",
     totalItems: entries.length,
   });
@@ -249,17 +250,17 @@ async function writeFolderizationRewrites(
   });
 }
 
-async function fixFolderization(
+async function fixSourceFileStructure(
   sourceFiles: ScannedSourceFile[],
   options: NormalizedCheckCodeDisciplineOptions,
   logger: NormalizedCodeDisciplineLogger,
 ): Promise<FixCodeDisciplineResult> {
   const { moves, violations } = buildMovePlan(sourceFiles, options);
 
-  if (!options.rules.folderizeCompoundFiles || moves.length === 0) {
-    logger.info("fix-folderization-unchanged", "no folderization moves required", {
+  if (!options.rules.sourceFileStructure || moves.length === 0) {
+    logger.info("fix-source-file-structure-unchanged", "no source file structure moves required", {
       moves: 0,
-    }, { group: ruleLogGroup("folderize-compound-files") });
+    }, { group: ruleLogGroup("source-file-structure") });
     return {
       ok: true,
       violationCount: 0,
@@ -280,17 +281,17 @@ async function fixFolderization(
   const sourceDirectories = moves.map((move) => path.dirname(move.fromAbsolutePath));
 
   try {
-    const rewriteState = await planImportRewritesForFolderizationMoves(sourceFiles, moves, options);
+    const rewriteState = await planImportRewritesForSourceFileStructureMoves(sourceFiles, moves, options);
     const movedFiles = await moveFiles(moves, options);
-    await writeFolderizationRewrites(rewriteState.rewrittenByPath, options);
+    await writeSourceFileStructureRewrites(rewriteState.rewrittenByPath, options);
 
     await removeEmptyDirectories(sourceDirectories);
 
-    logger.success("fix-folderization-finished", `folderized files=${movedFiles} rewrittenImports=${rewriteState.rewrittenImports}`, {
+    logger.success("fix-source-file-structure-finished", `source file structure moves=${movedFiles} rewrittenImports=${rewriteState.rewrittenImports}`, {
       movedFiles,
       rewrittenFiles: rewriteState.rewrittenFiles,
       rewrittenImports: rewriteState.rewrittenImports,
-    }, { group: ruleLogGroup("folderize-compound-files") });
+    }, { group: ruleLogGroup("source-file-structure") });
 
     return {
       ok: true,
@@ -310,10 +311,10 @@ async function fixFolderization(
       throw error;
     }
 
-    throw new FixFailureError("Folderization fix failed", {
+    throw new FixFailureError("Source file structure fix failed", {
       cause: error instanceof Error ? error.message : String(error),
     });
   }
 }
 
-export { buildMovePlan, createFolderizationViolation, fixFolderization };
+export { buildMovePlan, createSourceFileStructureViolation, fixSourceFileStructure };

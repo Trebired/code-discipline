@@ -9,7 +9,7 @@ type NativeBinding = {
   formatSourceFiles(requestJson: string): string;
   formatSourceText(requestJson: string): string;
   fixRemoveCommentsRule(requestJson: string): string;
-  runFolderizeCompoundFilesRule(requestJson: string): string;
+  runSourceFileStructureRule(requestJson: string): string;
   runMaxBlockFunctionLinesRule(requestJson: string): string;
   runMaxFileLinesRule(requestJson: string): string;
   scanSourceFiles(requestJson: string): string;

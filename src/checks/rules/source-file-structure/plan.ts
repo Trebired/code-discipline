@@ -2,18 +2,19 @@ import path from "node:path";
 
 import type { NormalizedCheckCodeDisciplineOptions } from "#uqbg4indzud7";
 import type { ScannedSourceFile } from "#pkb9x3eo56l7";
-import { supportsFolderizationFix } from "#87jyjzn68rrk";
+import { supportsSourceFileStructureFix } from "#87jyjzn68rrk";
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls019o";
 
-type FolderizationCandidate = {
+type SourceFileStructureCandidate = {
   absolutePath: string;
   relativeFromProjectRoot: string;
   suggestedAbsolutePath: string;
   suggestedPath: string;
   prefix: string;
   remainder: string;
+  roleSuffix?: string;
   separator: string;
-  mode: "same-directory-group" | "repeated-folder-prefix";
+  mode: "redundant-role-suffix" | "same-directory-group" | "repeated-folder-prefix";
 };
 
 type PrefixMatch = {
@@ -43,17 +44,61 @@ function findPrefixMatch(file: ScannedSourceFile, separators: string[]): PrefixM
   return bestMatch;
 }
 
+function normalizeRoleToken(value: string): string {
+  return value.toLowerCase().replace(/[_\-\s]+/gu, "");
+}
+
+function directoryMatchesRoleSuffix(directoryName: string, roleSuffix: string): boolean {
+  const normalizedDirectory = normalizeRoleToken(directoryName);
+  const normalizedSuffix = normalizeRoleToken(roleSuffix);
+  return normalizedDirectory === normalizedSuffix || normalizedDirectory === `${normalizedSuffix}s`;
+}
+
+function findRedundantRoleSuffixMatch(
+  file: ScannedSourceFile,
+  separators: string[],
+  roleSuffixes: string[],
+): PrefixMatch | null {
+  const basename = path.basename(file.relativeFromSourceRoot, file.extension);
+  const directoryName = path.basename(path.dirname(file.relativeFromSourceRoot));
+  let bestMatch: PrefixMatch | null = null;
+
+  for (const roleSuffix of roleSuffixes) {
+    if (!directoryMatchesRoleSuffix(directoryName, roleSuffix)) continue;
+
+    for (const separator of separators) {
+      const suffixToken = `${separator}${roleSuffix}`;
+      if (!basename.toLowerCase().endsWith(suffixToken.toLowerCase())) continue;
+
+      const prefix = basename.slice(0, -suffixToken.length);
+      if (!prefix) continue;
+
+      const index = basename.length - suffixToken.length;
+      if (!bestMatch || suffixToken.length > bestMatch.separator.length + bestMatch.remainder.length) {
+        bestMatch = {
+          prefix,
+          remainder: roleSuffix,
+          separator,
+          index,
+        };
+      }
+    }
+  }
+
+  return bestMatch;
+}
+
 function buildSuggestedPath(
   file: ScannedSourceFile,
   prefix: string,
   remainder: string,
-  mode: FolderizationCandidate["mode"],
+  mode: SourceFileStructureCandidate["mode"],
 ): { absolutePath: string; relativeFromProjectRoot: string } {
   const sourceDir = path.dirname(file.absolutePath);
   const projectDir = path.posix.dirname(file.relativeFromProjectRoot);
-  const targetFileName = `${remainder}${file.extension}`;
+  const targetFileName = `${mode === "redundant-role-suffix" ? prefix : remainder}${file.extension}`;
 
-  if (mode === "repeated-folder-prefix") {
+  if (mode === "repeated-folder-prefix" || mode === "redundant-role-suffix") {
     return {
       absolutePath: path.join(sourceDir, targetFileName),
       relativeFromProjectRoot: path.posix.join(projectDir, targetFileName),
@@ -66,24 +111,31 @@ function buildSuggestedPath(
   };
 }
 
-function planFolderizeCompoundFiles(
+function planSourceFileStructure(
   sourceFiles: ScannedSourceFile[],
   options: NormalizedCheckCodeDisciplineOptions,
-): FolderizationCandidate[] {
-  if (!options.rules.folderizeCompoundFiles) return [];
+): SourceFileStructureCandidate[] {
+  if (!options.rules.sourceFileStructure) return [];
 
-  const separators = options.rules.folderizeCompoundFiles.separators;
+  const separators = options.rules.sourceFileStructure.separators;
+  const roleSuffixes = options.rules.sourceFileStructure.roleSuffixes;
   const byDirectoryAndPrefix = new Map<string, ScannedSourceFile[]>();
   const matchesByPath = new Map<string, PrefixMatch>();
+  const roleSuffixMatchesByPath = new Map<string, PrefixMatch>();
   const progress = createRuleProgress({
     observer: options.progressObserver,
-    rule: "folderize-compound-files",
+    rule: "source-file-structure",
     stage: "plan",
     totalItems: sourceFiles.length,
   });
 
   for (const file of sourceFiles) {
-    if (!supportsFolderizationFix(file.extension)) continue;
+    if (!supportsSourceFileStructureFix(file.extension)) continue;
+    const roleSuffixMatch = findRedundantRoleSuffixMatch(file, separators, roleSuffixes);
+    if (roleSuffixMatch) {
+      roleSuffixMatchesByPath.set(file.absolutePath, roleSuffixMatch);
+    }
+
     const match = findPrefixMatch(file, separators);
     if (!match) continue;
 
@@ -94,10 +146,28 @@ function planFolderizeCompoundFiles(
     byDirectoryAndPrefix.set(directoryKey, rows);
   }
 
-  const candidates: FolderizationCandidate[] = [];
+  const candidates: SourceFileStructureCandidate[] = [];
 
   for (let index = 0; index < sourceFiles.length; index += 1) {
     const file = sourceFiles[index]!;
+    const roleSuffixMatch = roleSuffixMatchesByPath.get(file.absolutePath);
+    if (roleSuffixMatch) {
+      const suggested = buildSuggestedPath(file, roleSuffixMatch.prefix, roleSuffixMatch.remainder, "redundant-role-suffix");
+      candidates.push({
+        absolutePath: file.absolutePath,
+        relativeFromProjectRoot: file.relativeFromProjectRoot,
+        suggestedAbsolutePath: suggested.absolutePath,
+        suggestedPath: suggested.relativeFromProjectRoot,
+        prefix: roleSuffixMatch.prefix,
+        remainder: roleSuffixMatch.remainder,
+        roleSuffix: roleSuffixMatch.remainder,
+        separator: roleSuffixMatch.separator,
+        mode: "redundant-role-suffix",
+      });
+      emitRuleChunk(progress, index + 1, candidates.length);
+      continue;
+    }
+
     const match = matchesByPath.get(file.absolutePath);
     if (!match) {
       emitRuleChunk(progress, index + 1, candidates.length);
@@ -136,5 +206,5 @@ function planFolderizeCompoundFiles(
   return candidates.sort((left, right) => left.relativeFromProjectRoot.localeCompare(right.relativeFromProjectRoot));
 }
 
-export { planFolderizeCompoundFiles };
-export type { FolderizationCandidate };
+export { planSourceFileStructure };
+export type { SourceFileStructureCandidate };

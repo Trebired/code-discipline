@@ -1,15 +1,7 @@
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn file(path: &str, extension: &str) -> ScannedSourceFile {
-        ScannedSourceFile {
-            absolute_path: format!("/repo/{path}"),
-            relative_from_project_root: path.to_string(),
-            relative_from_source_root: path.strip_prefix("src/").unwrap_or(path).to_string(),
-            extension: extension.to_string(),
-        }
-    }
+    use super::test_source_file as file;
 
     #[test]
     fn strips_comment_only_lines_without_touching_literals() {
@@ -138,54 +130,6 @@ mod tests {
         assert!(result.text.contains("// keep template"));
         assert!(!result.text.contains("remove this"));
         assert!(!result.text.contains("remove inline"));
-    }
-
-    #[test]
-    fn scans_folderize_candidates_with_suggested_paths() {
-        let files = vec![
-            file("src/user_route.ts", ".ts"),
-            file("src/user_model.ts", ".ts"),
-            file("src/other.ts", ".ts"),
-        ];
-
-        let violations = collect_folderize_violations(&files, &["_".to_string()]);
-
-        assert_eq!(violations.len(), 2);
-        assert_eq!(violations[0].file_path, "src/user_model.ts");
-        assert_eq!(
-            violations[0].suggested_path.as_deref(),
-            Some("src/user/model.ts")
-        );
-        assert_eq!(violations[1].file_path, "src/user_route.ts");
-        assert_eq!(
-            violations[1].suggested_path.as_deref(),
-            Some("src/user/route.ts")
-        );
-    }
-
-    #[test]
-    fn scans_folderize_candidates_across_supported_languages() {
-        let files = vec![
-            file("src/view_logic.qml", ".qml"),
-            file("src/view_model.qml", ".qml"),
-            file("src/render_svg.rs", ".rs"),
-            file("src/render_text.rs", ".rs"),
-            file("src/task_run.sh", ".sh"),
-            file("src/task_sync.sh", ".sh"),
-            file("src/other.txt", ".txt"),
-        ];
-
-        let violations = collect_folderize_violations(&files, &["_".to_string()]);
-        let paths = violations
-            .iter()
-            .map(|violation| violation.file_path.as_str())
-            .collect::<Vec<_>>();
-
-        assert_eq!(violations.len(), 6);
-        assert!(paths.contains(&"src/render_svg.rs"));
-        assert!(paths.contains(&"src/task_run.sh"));
-        assert!(paths.contains(&"src/view_logic.qml"));
-        assert!(!paths.contains(&"src/other.txt"));
     }
 
     #[test]

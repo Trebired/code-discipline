@@ -27,7 +27,7 @@ export default defineCodeDisciplineConfig({
     maxFunctionLines: {
       max: 50,
     },
-    folderizeCompoundFiles: {},
+    sourceFileStructure: {},
     imports: {
       alias: {
         strategy: "random",

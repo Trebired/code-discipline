@@ -124,10 +124,14 @@ pub fn run_max_block_function_lines_rule(request_json: String) -> Result<String>
 }
 
 #[napi]
-pub fn run_folderize_compound_files_rule(request_json: String) -> Result<String> {
-    let request: FolderizeRequest =
+pub fn run_source_file_structure_rule(request_json: String) -> Result<String> {
+    let request: SourceFileStructureRequest =
         serde_json::from_str(&request_json).map_err(|error| err(error.to_string()))?;
-    let violations = collect_folderize_violations(&request.source_files, &request.separators);
+    let violations = collect_source_file_structure_violations(
+        &request.source_files,
+        &request.separators,
+        &request.role_suffixes,
+    );
     serde_json::to_string(&violations).map_err(|error| err(error.to_string()))
 }
 

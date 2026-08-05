@@ -62,6 +62,10 @@ function supportsMaxFunctionLines(value: string): boolean {
   return isTypeScriptFamilyExtension(value) || isGoExtension(value) || isRustExtension(value) || isPythonExtension(value) || isShellExtension(value) || isQmlExtension(value);
 }
 
+function supportsMinDeclarationName(value: string): boolean {
+  return supportsFormatter(value);
+}
+
 function supportsDry(value: string): boolean {
   return supportsMaxFunctionLines(value);
 }
@@ -74,7 +78,7 @@ function supportsFormatter(value: string): boolean {
   return supportsRemoveComments(value);
 }
 
-const supportsFolderizationFix = supportsFormatter;
+const supportsSourceFileStructureFix = supportsFormatter;
 const supportsStructuralBlankLines = supportsFormatter;
 
 export {
@@ -87,9 +91,10 @@ export {
   isStyleExtension,
   isTypeScriptFamilyExtension,
   supportsDry,
-  supportsFolderizationFix,
+  supportsSourceFileStructureFix,
   supportsFormatter,
   supportsMaxFunctionLines,
+  supportsMinDeclarationName,
   supportsRemoveComments,
   supportsStructuralBlankLines,
   supportsImports,
