@@ -12,6 +12,7 @@ import { collectModuleSpecifiers } from "./module-specifiers.js";
 import { resolveRelativeImport } from "./resolve.js";
 import { isAllowedRelative } from "./rewrite.js";
 import type { NormalizedImportsOptions, ScannedSourceFile } from "./types.js";
+import { collectWithParseFailure } from "../checks/parse-failures.js";
 
 async function collectImportViolations(
   sourceFiles: ScannedSourceFile[],
@@ -77,7 +78,14 @@ async function collectImportViolations(
     const file = supportedSourceFiles[index]!;
     const text = await fs.readFile(file.absolutePath, "utf8");
 
-    for (const occurrence of collectModuleSpecifiers(text, file.absolutePath)) {
+    const occurrences = await collectWithParseFailure(
+      "imports",
+      file.relativeFromProjectRoot,
+      violations,
+      () => collectModuleSpecifiers(text, file.absolutePath),
+    );
+
+    for (const occurrence of occurrences ?? []) {
       if (!occurrence.specifier.startsWith(".")) continue;
 
       const resolvedFile = await resolveRelativeImport(occurrence.specifier, file.absolutePath, options);
@@ -112,8 +120,14 @@ async function collectImportViolations(
       });
     }
 
-    if (options.removeDeadImports && isTypeScriptFamilyExtension(file.extension)) {
-      for (const deadImport of collectDeadImportViolations(text, file.absolutePath)) {
+    if (options.removeDeadImports && isTypeScriptFamilyExtension(file.extension) && occurrences) {
+      const deadImports = await collectWithParseFailure(
+        "imports",
+        file.relativeFromProjectRoot,
+        violations,
+        () => collectDeadImportViolations(text, file.absolutePath),
+      );
+      for (const deadImport of deadImports ?? []) {
         violations.push({
           rule: "imports",
           fix: true,

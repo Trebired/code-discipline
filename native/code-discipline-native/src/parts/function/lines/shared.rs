@@ -48,5 +48,5 @@ fn should_continue_pending_block_function(
     pending_header: &str,
     pending_brace_depth: i32,
 ) -> bool {
-    pending_brace_depth == 0 && !strip_line_comments_and_strings(pending_header).contains('{')
+    pending_brace_depth == 0 && !strip_comments_and_strings(pending_header).contains('{')
 }

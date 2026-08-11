@@ -6,8 +6,11 @@ import ts from "typescript";
 import type { NormalizedCheckCodeDisciplineOptions } from "#uqbg4indzud7";
 import type { ScannedSourceFile } from "#pkb9x3eo56l7";
 import { loadNativeBinding } from "#q6u4pcd984qa";
+import { collectWithParseFailure } from "../../parse-failures.js";
 import { parseSource } from "#27pccnhol1ci";
 import {
+  isCppExtension,
+  isCsharpExtension,
   isGoExtension,
   isPythonExtension,
   isQmlExtension,
@@ -90,6 +93,29 @@ function countBraceDelta(value: string): number {
   return delta;
 }
 
+const C_FAMILY_HEADER_EXCLUDED_LEADING_WORDS = new Set([
+  "if", "else", "for", "while", "do", "switch", "case", "default", "catch", "try", "finally",
+  "using", "lock", "foreach", "fixed", "checked", "unchecked", "namespace", "class", "struct",
+  "enum", "interface", "return", "throw", "new", "delete", "goto", "break", "continue",
+]);
+
+function isCFamilyHeaderStart(line: string): boolean {
+  const trimmed = stripCommentsAndStrings(line).trim();
+  if (!trimmed || trimmed.endsWith(";") || trimmed.endsWith(":")) return false;
+  if (trimmed.startsWith("#") || trimmed.startsWith("[") || trimmed.startsWith("@")) return false;
+  if (!trimmed.includes("(")) return false;
+
+  const leadingWord = /[A-Za-z_]\w*/u.exec(trimmed)?.[0] ?? "";
+  return !C_FAMILY_HEADER_EXCLUDED_LEADING_WORDS.has(leadingWord);
+}
+
+function extractCFamilyFunctionName(header: string): string {
+  const stripped = stripCommentsAndStrings(header);
+  const parenIndex = stripped.indexOf("(");
+  if (parenIndex === -1) return "anonymous";
+  return /[A-Za-z_]\w*$/u.exec(stripped.slice(0, parenIndex))?.[0] ?? "anonymous";
+}
+
 function createPendingBlockFunction(): PendingBlockFunction {
   return {
     braceDepth: 0,
@@ -114,6 +140,7 @@ function collectBlockFunctionDescriptors(text: string, extension: string): Funct
   const descriptors: FunctionDescriptor[] = [];
   const lines = text.split(/\r?\n/);
   const isGo = isGoExtension(extension);
+  const isCFamily = isCppExtension(extension) || isCsharpExtension(extension);
   const headerStartPattern = isGo
     ? /^\s*func(?:\s*\([^)]*\))?\s+/u
     : /^\s*(?:pub(?:\([^)]*\))?\s+)?(?:async\s+)?(?:const\s+)?(?:unsafe\s+)?fn\s+/u;
@@ -126,15 +153,18 @@ function collectBlockFunctionDescriptors(text: string, extension: string): Funct
     const line = lines[index] ?? "";
 
     if (!pending.header) {
-      if (!headerStartPattern.test(line)) continue;
+      const isHeaderStart = isCFamily ? isCFamilyHeaderStart(line) : headerStartPattern.test(line);
+      if (!isHeaderStart) continue;
       pending.header = line;
       pending.startLine = index + 1;
       pending.kind = isGo && /\bfunc\s*\(/u.test(line) ? "method" : "function";
-      pending.name = headerNamePattern.exec(line)?.[1] ?? "anonymous";
+      pending.name = isCFamily ? extractCFamilyFunctionName(pending.header) : (headerNamePattern.exec(line)?.[1] ?? "anonymous");
     } else {
       pending.header = `${pending.header}\n${line}`;
       if (!pending.name || pending.name === "anonymous") {
-        pending.name = headerNamePattern.exec(pending.header)?.[1] ?? pending.name;
+        pending.name = isCFamily
+          ? extractCFamilyFunctionName(pending.header)
+          : (headerNamePattern.exec(pending.header)?.[1] ?? pending.name);
       }
     }
 
@@ -154,7 +184,9 @@ function collectBlockFunctionDescriptors(text: string, extension: string): Funct
 
 function collectLanguageFunctionDescriptors(text: string, extension: string, filePath: string): FunctionDescriptor[] {
   if (isTypeScriptFamilyExtension(extension)) return collectTypeScriptFunctionDescriptors(parseSource(text, filePath));
-  if (isGoExtension(extension) || isRustExtension(extension)) return collectBlockFunctionDescriptors(text, extension);
+  if (isGoExtension(extension) || isRustExtension(extension) || isCppExtension(extension) || isCsharpExtension(extension)) {
+    return collectBlockFunctionDescriptors(text, extension);
+  }
   if (isPythonExtension(extension)) return collectPythonFunctionDescriptors(text);
   if (isShellExtension(extension)) return collectShellFunctionDescriptors(text);
   if (isQmlExtension(extension)) return collectQmlFunctionDescriptors(text);
@@ -196,9 +228,14 @@ async function runMaxFunctionLinesRule(
     const text = await fs.readFile(file.absolutePath, "utf8");
     const extension = path.extname(file.absolutePath).toLowerCase();
     const maskedText = maskCommentsForLineCounting(text, extension);
-    const functions = collectLanguageFunctionDescriptors(text, extension, file.absolutePath);
+    const functions = await collectWithParseFailure(
+      "max-function-lines",
+      file.relativeFromProjectRoot,
+      violations,
+      () => collectLanguageFunctionDescriptors(text, extension, file.absolutePath),
+    );
 
-    for (const descriptor of functions) {
+    for (const descriptor of functions ?? []) {
       const codeLineCount = countCodeLinesInRange(maskedText, descriptor.startLine, descriptor.endLine);
       const physicalLineCount = descriptor.lineCount;
       if (codeLineCount > options.rules.maxFunctionLines.max) {

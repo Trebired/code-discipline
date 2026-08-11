@@ -144,6 +144,17 @@ fn is_rust_extension(extension: &str) -> bool {
     extension == ".rs"
 }
 
+fn is_cpp_extension(extension: &str) -> bool {
+    matches!(
+        extension,
+        ".cpp" | ".cc" | ".cxx" | ".c++" | ".hpp" | ".hh" | ".hxx" | ".h++" | ".h"
+    )
+}
+
+fn is_csharp_extension(extension: &str) -> bool {
+    extension == ".cs"
+}
+
 fn is_python_extension(extension: &str) -> bool {
     extension == ".py"
 }

@@ -63,10 +63,6 @@ function nativeAddonCandidatePathsForCurrentPlatform(): string[] {
 
 function loadNativeBinding(): NativeBinding | null {
   if (cachedBinding !== undefined) return cachedBinding;
-  if (process.env.TB_CODE_DISCIPLINE_DISABLE_NATIVE === "1") {
-    cachedBinding = null;
-    return cachedBinding;
-  }
 
   const require = createRequire(import.meta.url);
 
@@ -82,19 +78,33 @@ function loadNativeBinding(): NativeBinding | null {
   return cachedBinding;
 }
 
+function requireNativeBinding(): NativeBinding {
+  const binding = loadNativeBinding();
+  if (binding) return binding;
+
+  const expected = nativeBinaryBasenameForCurrentPlatform();
+  const reason = expected
+    ? `no loadable addon was found for ${process.platform}-${process.arch} (expected ${expected})`
+    : `${process.platform}-${process.arch} is not a supported platform`;
+
+  throw new Error(
+    `${CODE_DISCIPLINE_PACKAGE_NAME} requires its native backend, but ${reason}. `
+    + "Build it with `bun run build:native` or install a release that ships a prebuilt addon.",
+  );
+}
+
 function resetNativeBindingForTests(): void {
   cachedBinding = undefined;
 }
 
 function activeNativeBackendNotice(): string {
-  return loadNativeBinding()
-    ? `${CODE_DISCIPLINE_PACKAGE_NAME} using native backend`
-    : `${CODE_DISCIPLINE_PACKAGE_NAME} using TS fallback backend`;
+  return `${CODE_DISCIPLINE_PACKAGE_NAME} using native backend`;
 }
 
 export {
   activeNativeBackendNotice,
   loadNativeBinding,
+  requireNativeBinding,
   nativeAddonCandidatePathsForCurrentPlatform,
   nativeBinaryBasenameForCurrentPlatform,
   resetNativeBindingForTests,

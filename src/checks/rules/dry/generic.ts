@@ -1,24 +1,31 @@
 import { collectLanguageFunctionDescriptors, type FunctionDescriptor } from "#9tcp2jgf8qlj";
 import { scanRustRawString } from "#9cs5z6nffer3";
 import { maskCommentsForLineCounting } from "#mv1bbdtri77n";
+import { isCppExtension, isCsharpExtension } from "#87jyjzn68rrk";
 import type { ScannedSourceFile } from "#pkb9x3eo56l7";
 import { stableSerialize } from "#ntve5i5a0mol";
 import type { DryFunctionDescriptor } from "./model.js";
 import { dryLanguageKey, normalizeDryFunctionName } from "./model.js";
 
 const GENERIC_DRY_KEYWORDS = new Set([
+  "abstract",
   "and",
   "as",
   "async",
+  "auto",
   "await",
+  "base",
   "break",
   "case",
+  "catch",
   "class",
   "const",
+  "constexpr",
   "continue",
   "def",
   "default",
   "defer",
+  "delete",
   "do",
   "done",
   "elif",
@@ -26,42 +33,66 @@ const GENERIC_DRY_KEYWORDS = new Set([
   "enum",
   "esac",
   "except",
+  "explicit",
   "false",
   "fi",
+  "finally",
   "fn",
   "for",
+  "friend",
   "func",
   "function",
   "if",
   "impl",
   "in",
+  "internal",
   "interface",
   "let",
   "local",
   "loop",
   "match",
   "mut",
+  "namespace",
+  "new",
   "nil",
   "none",
   "not",
+  "noexcept",
   "null",
+  "nullptr",
+  "operator",
   "or",
+  "override",
   "package",
   "pass",
+  "private",
   "property",
+  "protected",
   "pub",
+  "public",
   "range",
+  "readonly",
   "return",
+  "sealed",
   "self",
+  "static",
   "struct",
+  "switch",
+  "template",
   "then",
   "this",
+  "throw",
   "trait",
   "true",
   "try",
   "type",
+  "typename",
   "unsafe",
+  "using",
   "var",
+  "virtual",
+  "void",
+  "volatile",
   "while",
   "with",
 ]);
@@ -152,6 +183,17 @@ function normalizeIdentifierToken(args: {
   return canonicalIdentifier(args.identifier, args.state);
 }
 
+function normalizeCFamilyFunctionHeader(source: string): string {
+  const parenIndex = source.indexOf("(");
+  if (parenIndex === -1) return source;
+
+  const nameMatch = /[A-Za-z_]\w*$/u.exec(source.slice(0, parenIndex));
+  if (!nameMatch) return source;
+
+  const nameStart = parenIndex - nameMatch[0].length;
+  return `${source.slice(0, nameStart)}__dry_function${source.slice(parenIndex)}`;
+}
+
 function normalizeFunctionHeader(source: string, extension: string): string {
   if (extension === ".go") return source.replace(/^(\s*func(?:\s*\([^)]*\))?\s+)[A-Za-z_]\w*/u, "$1__dry_function");
   if (extension === ".py") return source.replace(/^(\s*(?:async\s+)?def\s+)[A-Za-z_]\w*/u, "$1__dry_function");
@@ -163,6 +205,7 @@ function normalizeFunctionHeader(source: string, extension: string): string {
   if (extension === ".sh" || extension === ".bash" || extension === ".zsh") {
     return source.replace(/^(\s*(?:function\s+)?)[A-Za-z_][\w-]*(\s*(?:\(\s*\))?\s*\{)/u, "$1__dry_function$2");
   }
+  if (isCppExtension(extension) || isCsharpExtension(extension)) return normalizeCFamilyFunctionHeader(source);
   return source.replace(/^(\s*(?:(?:pub(?:\([^)]*\))?|async|const|unsafe)\s+)*fn\s+)[A-Za-z_]\w*/u, "$1__dry_function");
 }
 

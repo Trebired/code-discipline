@@ -6,6 +6,8 @@ import { parseSource } from "#27pccnhol1ci";
 import type { ScannedSourceFile } from "#pkb9x3eo56l7";
 import type { CodeDisciplineViolation } from "#bsmch74up4fm";
 import {
+  isCppExtension,
+  isCsharpExtension,
   isGoExtension,
   isPythonExtension,
   isQmlExtension,
@@ -16,9 +18,11 @@ import {
   isTypeScriptFamilyExtension,
   supportsMinDeclarationName,
 } from "#87jyjzn68rrk";
+import { collectLanguageFunctionDescriptors } from "#9tcp2jgf8qlj";
 import type { NormalizedCheckCodeDisciplineOptions } from "#uqbg4indzud7";
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls019o";
 import { getStartLine } from "#hrlcdim1gtmi";
+import { collectWithParseFailure } from "../../parse-failures.js";
 import { stripCommentsAndStrings } from "#azin2l86pnk4";
 import { updatePythonTripleState } from "#fr9be3qxsdjh";
 import { maskQmlCommentsAndStrings } from "#x6956eahfhcm";
@@ -166,6 +170,70 @@ function collectRustDeclarations(text: string): NamedDeclaration[] {
   ]);
 }
 
+function collectCFamilyFunctionDeclarations(text: string, extension: string, filePath: string): NamedDeclaration[] {
+  return collectLanguageFunctionDescriptors(text, extension, filePath).map((entry) => ({
+    kind: entry.kind,
+    line: entry.startLine,
+    name: entry.name,
+  }));
+}
+
+function collectCppDeclarations(text: string, extension: string, filePath: string): NamedDeclaration[] {
+  return [
+    ...collectCFamilyFunctionDeclarations(text, extension, filePath),
+    ...collectPatternDeclarations(stripCommentsAndStrings(text), [
+      {
+        kind: "namespace",
+        pattern: /^\s*namespace\s+([A-Za-z_]\w*)/u,
+      },
+      {
+        kind: "class",
+        pattern: /^\s*(?:template\s*<[^>]*>\s*)?class\s+([A-Za-z_]\w*)/u,
+      },
+      {
+        kind: "struct",
+        pattern: /^\s*(?:template\s*<[^>]*>\s*)?struct\s+([A-Za-z_]\w*)/u,
+      },
+      {
+        kind: "enum",
+        pattern: /^\s*enum(?:\s+class)?\s+([A-Za-z_]\w*)/u,
+      },
+      {
+        kind: "using",
+        pattern: /^\s*using\s+([A-Za-z_]\w*)\s*=/u,
+      },
+    ]),
+  ];
+}
+
+function collectCsharpDeclarations(text: string, extension: string, filePath: string): NamedDeclaration[] {
+  return [
+    ...collectCFamilyFunctionDeclarations(text, extension, filePath),
+    ...collectPatternDeclarations(stripCommentsAndStrings(text), [
+      {
+        kind: "namespace",
+        pattern: /^\s*namespace\s+([A-Za-z_][\w.]*)/u,
+      },
+      {
+        kind: "class",
+        pattern: /^\s*(?:(?:public|private|protected|internal|static|sealed|abstract|partial)\s+)*class\s+([A-Za-z_]\w*)/u,
+      },
+      {
+        kind: "interface",
+        pattern: /^\s*(?:(?:public|private|protected|internal|partial)\s+)*interface\s+([A-Za-z_]\w*)/u,
+      },
+      {
+        kind: "struct",
+        pattern: /^\s*(?:(?:public|private|protected|internal|readonly|partial)\s+)*struct\s+([A-Za-z_]\w*)/u,
+      },
+      {
+        kind: "enum",
+        pattern: /^\s*(?:(?:public|private|protected|internal)\s+)*enum\s+([A-Za-z_]\w*)/u,
+      },
+    ]),
+  ];
+}
+
 function collectPythonDeclarations(text: string): NamedDeclaration[] {
   const declarations: NamedDeclaration[] = [];
   const state = { quote: null as "\"\"\"" | "'''" | null };
@@ -278,6 +346,8 @@ function collectLanguageDeclarations(text: string, extension: string, filePath: 
   if (isTypeScriptFamilyExtension(extension)) return collectNamedDeclarations(parseSource(text, filePath));
   if (isGoExtension(extension)) return collectGoDeclarations(text);
   if (isRustExtension(extension)) return collectRustDeclarations(text);
+  if (isCppExtension(extension)) return collectCppDeclarations(text, extension, filePath);
+  if (isCsharpExtension(extension)) return collectCsharpDeclarations(text, extension, filePath);
   if (isPythonExtension(extension)) return collectPythonDeclarations(text);
   if (isQmlExtension(extension)) return collectQmlDeclarations(text);
   if (isShellExtension(extension)) return collectShellDeclarations(text);
@@ -331,7 +401,13 @@ async function runMinDeclarationNameRule(
     }
 
     const text = await fs.readFile(file.absolutePath, "utf8");
-    for (const declaration of collectLanguageDeclarations(text, file.extension, file.absolutePath)) {
+    const declarations = await collectWithParseFailure(
+      "min-declaration-name",
+      file.relativeFromProjectRoot,
+      violations,
+      () => collectLanguageDeclarations(text, file.extension, file.absolutePath),
+    );
+    for (const declaration of declarations ?? []) {
       const length = measureDeclarationName(declaration.name);
       if (length >= options.rules.minDeclarationName.min) continue;
       violations.push(createMinDeclarationNameViolation(file, declaration, options.rules.minDeclarationName.min, length));

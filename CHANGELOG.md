@@ -4,6 +4,38 @@ All notable changes to `@trebired/code-discipline` will be documented here.
 
 This project follows semantic versioning once published.
 
+## Unreleased
+
+## 5.4.0
+
+- Added C++ and C# language support across `removeComments`, `formatting`, `maxFunctionLines`, `minDeclarationName`, `structuralBlankLines`, `dry`, and `redundantPathSegments`. C++ recognizes `.cpp`, `.cc`, `.cxx`, `.c++`, `.hpp`, `.hh`, `.hxx`, `.h++`, and `.h`; C# recognizes `.cs`.
+- Taught the comment scanner and formatter about C++ raw strings (`R"delim(...)delim"`) and C# verbatim (`@"..."`) and interpolated (`$"..."`) strings, so comment-like content inside them is preserved.
+- Added heuristic C++/C# function-span detection for `maxFunctionLines` and `dry`, since neither language has a fixed leading keyword like Go's `func` or Rust's `fn`: a line is treated as a function header when it contains a parenthesized signature, doesn't end in `;`, and isn't a control-flow statement (`if`, `for`, `catch`, `using`, and similar are excluded). This also covers Allman-style bodies where the opening brace is on its own line, which is the common C# convention.
+- Fixed the native `should_continue_pending_block_function` check only ever inspecting the first line of a multi-line function header, which silently failed to detect any function whose opening brace was not on the same line as its signature. Go and Rust never hit this because both conventionally place the brace on the header line; it was a real risk for C#'s common brace-on-its-own-line style.
+- Fixed the native comment scanner treating regular-expression literals as ordinary text, so a literal such as `/^r(#{0,16})"/` no longer desynchronizes string tracking. Previously the quote inside the pattern opened a phantom string, and `remove-comments` then mistook the `/*` inside a `"/*"` string literal for a real comment and deleted every line through the following `*/`.
+- Fixed native formatter indentation drifting after a regular-expression literal that contains a quote or brace, which came from the same desynchronized masking.
+- Applied regular-expression literal scanning to JavaScript, TypeScript, and QML only; Go, Rust, Python, shell, SCSS, and CSS keep treating `/` as division.
+- Removed every TypeScript fallback implementation. Source scanning, `max-file-lines`, `redundant-path-segments` checks, `remove-comments`, and comment stripping now run only in the Rust backend, so a rule can no longer return different results depending on which backend ran or whether a progress observer was attached.
+- Made the native backend required. `requireNativeBinding` throws a descriptive error naming the expected addon instead of silently degrading to TypeScript.
+- Removed the `TB_CODE_DISCIPLINE_DISABLE_NATIVE` environment variable, which only existed to force the deleted fallback.
+- Added token-based spacing normalization to `rules.formatting` for JavaScript, TypeScript, and QML. A real token scanner now backs the formatter, so `function outer(data:Data):void{` becomes `function outer(data: Data): void {`, `if(x===1){` becomes `if (x === 1) {`, `}else{` becomes `} else {`, and `[1,2,3]` becomes `[1, 2, 3]`.
+- Kept generics, ternaries, optional chaining, unary operators, call chains, and regular-expression literals intact while normalizing spacing, including `Map<string, Array<number>>` and `<T extends Base>`.
+- Guarded spacing normalization with a token-sequence invariant: the pass re-tokenizes its own output and falls back to the original text unless the token stream is byte-identical, so formatting can only ever change whitespace between tokens.
+- Added single-quote to double-quote normalization for JavaScript and TypeScript string literals, skipping any literal whose contents would need re-escaping.
+- Added statement semicolon insertion for JavaScript and TypeScript. Insertion is skipped inside parentheses, brackets, object literals, generic type arguments, `import`/`export` specifier lists, and after braceless `if`/`for`/`while`/`switch`/`catch`/`for await` headers, so control flow and type syntax are never rewritten.
+- Excluded `.tsx` and `.jsx` from spacing and statement normalization; JSX is not yet modelled by the token scanner.
+- Fixed the token scanner mis-reading regular-expression literals and comments nested inside template-literal `${...}` interpolations, which previously desynchronized quote tracking for the rest of the file.
+- Preserved shebang lines verbatim instead of tokenizing them as source.
+- Made parse failures non-fatal. A file that cannot be parsed is reported as a violation by each rule that skipped it and the run continues over the remaining files, instead of aborting the whole command with `Failed to parse`.
+
+## 5.3.2
+
+- Aligned the package-owned Code Discipline config with the platform rule set, including formatting, redundant path segment cleanup, removable comment checks, structural blank lines, and dry checks.
+
+## 5.3.1
+
+- Excluded TypeScript, JavaScript, and Sass module specifier text from `bannedPatterns` raw matching, so package imports can stay valid while hardcoded banned wording in actual source text is still reported.
+
 ## 5.3.0
 
 - Renamed `sourceFileStructure` to `redundantPathSegments` with the `redundant-path-segments` selector.

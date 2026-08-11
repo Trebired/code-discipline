@@ -56,10 +56,11 @@ fn strip_rust_comments_and_strings_for_formatter(text: &str) -> String {
 
 fn strip_comments_and_strings_for_formatter(text: &str, extension: &str) -> String {
     if is_rust_extension(extension) {
-        strip_rust_comments_and_strings_for_formatter(text)
-    } else {
-        strip_comments_and_strings(text)
+        return strip_rust_comments_and_strings_for_formatter(text);
     }
+
+    let regex_literals = is_ts_family_extension(extension) || is_qml_extension(extension);
+    strip_comments_and_strings_with(text, regex_literals)
 }
 
 fn continues_formatter_expression(masked_trimmed: &str) -> bool {

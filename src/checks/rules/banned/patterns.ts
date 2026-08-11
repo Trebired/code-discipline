@@ -4,7 +4,7 @@ import path from "node:path";
 import type { ScannedSourceFile } from "#pkb9x3eo56l7";
 import type { NormalizedCheckCodeDisciplineOptions } from "#uqbg4indzud7";
 import type { CodeDisciplineViolation } from "#bsmch74up4fm";
-import { parseSource } from "#27pccnhol1ci";
+import { collectModuleSpecifiers, parseSource } from "#27pccnhol1ci";
 import { isTypeScriptFamilyExtension } from "#87jyjzn68rrk";
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls019o";
 import { CODE_DISCIPLINE_STATE_DIR } from "#ik5y0pee4ah1";
@@ -47,15 +47,26 @@ function isInsideSpan(index: number, spans: TextSpan[]): boolean {
   return spans.some((span) => index >= span.start && index < span.end);
 }
 
-function countOccurrencesOutsidePackageStatePath(text: string, pattern: string): number {
+function collectModuleSpecifierSpansSafely(text: string, filePath: string): TextSpan[] {
+  try {
+    return collectModuleSpecifiers(text, filePath).map((specifier) => ({
+      start: specifier.start,
+      end: specifier.end,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+function countOccurrencesOutsideIgnoredSpans(text: string, pattern: string, ignoredSpans: TextSpan[] = []): number {
   if (!pattern) return 0;
-  const packageStatePathSpans = collectPackageStatePathSpans(text);
+  const spans = [...collectPackageStatePathSpans(text), ...ignoredSpans];
   let count = 0;
   let index = 0;
   while (index <= text.length - pattern.length) {
     const matchIndex = text.indexOf(pattern, index);
     if (matchIndex < 0) break;
-    if (!isInsideSpan(matchIndex, packageStatePathSpans)) count += 1;
+    if (!isInsideSpan(matchIndex, spans)) count += 1;
     index = matchIndex + 1;
   }
   return count;
@@ -105,16 +116,17 @@ async function collectBannedPatternViolations(
     const file = sourceFiles[index]!;
     const text = await fs.readFile(file.absolutePath, "utf8");
     const normalizedText = text.toLowerCase();
+    const moduleSpecifierSpans = collectModuleSpecifierSpansSafely(text, file.absolutePath);
     const foldedMatches = collectFoldedMatchesSafely(text, file.absolutePath);
 
     for (const pattern of rule.patterns) {
       if (pattern.allowedFiles.includes(file.relativeFromProjectRoot)) continue;
 
       const rawOccurrences = normalizedText.includes(pattern.normalizedValue)
-        ? countOccurrencesOutsidePackageStatePath(normalizedText, pattern.normalizedValue)
+        ? countOccurrencesOutsideIgnoredSpans(normalizedText, pattern.normalizedValue, moduleSpecifierSpans)
         : 0;
       const patternFoldedMatches = foldedMatches.filter(
-        (match) => countOccurrencesOutsidePackageStatePath(match.value.toLowerCase(), pattern.normalizedValue) > 0,
+        (match) => countOccurrencesOutsideIgnoredSpans(match.value.toLowerCase(), pattern.normalizedValue) > 0,
       );
 
       if (rawOccurrences === 0 && patternFoldedMatches.length === 0) continue;

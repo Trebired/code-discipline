@@ -65,6 +65,8 @@ fn is_brace_indented_extension(extension: &str) -> bool {
     is_ts_family_extension(extension)
         || is_go_extension(extension)
         || is_rust_extension(extension)
+        || is_cpp_extension(extension)
+        || is_csharp_extension(extension)
         || is_qml_extension(extension)
         || is_style_extension(extension)
 }
@@ -74,7 +76,11 @@ fn indent_width_for_extension(extension: &str, options: &NativeFormatterOptions)
         return width.max(1);
     }
 
-    if is_go_extension(extension) || is_rust_extension(extension) || is_python_extension(extension) {
+    if is_go_extension(extension)
+        || is_rust_extension(extension)
+        || is_python_extension(extension)
+        || is_csharp_extension(extension)
+    {
         4
     } else {
         2
@@ -234,12 +240,34 @@ fn format_indentation_preserving_text(
     lines
 }
 
+fn is_jsx_extension(extension: &str) -> bool {
+    let normalized = extension.to_ascii_lowercase();
+    normalized == ".tsx" || normalized == ".jsx"
+}
+
+fn is_script_spacing_extension(extension: &str) -> bool {
+    if is_jsx_extension(extension) {
+        return false;
+    }
+    is_ts_family_extension(extension) || is_qml_extension(extension)
+}
+
 fn format_source_internal(
     text: &str,
     extension: &str,
     options: &NativeFormatterOptions,
 ) -> String {
     let normalized = normalize_line_endings(text);
+    let normalized = if is_ts_family_extension(extension) && !is_jsx_extension(extension) {
+        normalize_script_statements(&normalized)
+    } else {
+        normalized
+    };
+    let normalized = if is_script_spacing_extension(extension) {
+        normalize_script_spacing(&normalized)
+    } else {
+        normalized
+    };
     let lines = if is_brace_indented_extension(extension) {
         format_brace_indented_text(&normalized, extension, options)
     } else {

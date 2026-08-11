@@ -217,7 +217,9 @@ fn wrap_array_or_call_line(line: &str, extension: &str, max: usize) -> Option<Ve
     if !(is_ts_family_extension(extension)
         || is_qml_extension(extension)
         || is_python_extension(extension)
-        || is_rust_extension(extension))
+        || is_rust_extension(extension)
+        || is_cpp_extension(extension)
+        || is_csharp_extension(extension))
     {
         return None;
     }

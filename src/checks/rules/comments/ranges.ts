@@ -1,6 +1,8 @@
 import ts from "typescript";
 
 import {
+  isCppExtension,
+  isCsharpExtension,
   isGoExtension,
   isPythonExtension,
   isQmlExtension,
@@ -206,10 +208,144 @@ function collectRustCommentRanges(text: string): CommentRange[] {
   return ranges;
 }
 
+function scanCppRawStringDelimiterEnd(text: string, start: number): number | null {
+  for (let index = start; index < Math.min(text.length, start + 16); index += 1) {
+    const character = text[index];
+    if (character === "(") return index;
+    if (character === ")" || character === "\\" || /\s/u.test(character ?? "")) return null;
+  }
+  return null;
+}
+
+function scanCppRawString(text: string, start: number): number | null {
+  if (text[start] !== "R" || text[start + 1] !== "\"") return null;
+
+  const delimiterStart = start + 2;
+  const parenIndex = scanCppRawStringDelimiterEnd(text, delimiterStart);
+  if (parenIndex == null) return null;
+
+  const delimiter = text.slice(delimiterStart, parenIndex);
+  const close = `)${delimiter}"`;
+  const closeIndex = text.indexOf(close, parenIndex);
+  return closeIndex < 0 ? text.length : closeIndex + close.length;
+}
+
+function collectCppCommentRanges(text: string): CommentRange[] {
+  const ranges: CommentRange[] = [];
+  let index = 0;
+
+  while (index < text.length) {
+    const rawStringEnd = scanCppRawString(text, index);
+    if (rawStringEnd != null) {
+      index = rawStringEnd;
+      continue;
+    }
+
+    const char = text[index];
+    const next = text[index + 1];
+
+    if (char === "/" && next === "/") {
+      const end = scanSlashLineComment(text, index);
+      ranges.push({ start: index, end, kind: "line" });
+      index = end;
+      continue;
+    }
+
+    if (char === "/" && next === "*") {
+      const end = scanSlashBlockComment(text, index, false);
+      ranges.push({ start: index, end, kind: "block" });
+      index = end;
+      continue;
+    }
+
+    if (char === "\"" || char === "'") {
+      index = scanEscapedQuotedLiteral(text, index, char);
+      continue;
+    }
+
+    index += 1;
+  }
+
+  return ranges;
+}
+
+function scanCsharpVerbatimString(text: string, quoteStart: number): number {
+  let index = quoteStart + 1;
+
+  while (index < text.length) {
+    if (text[index] === "\"") {
+      if (text[index + 1] === "\"") {
+        index += 2;
+        continue;
+      }
+      return index + 1;
+    }
+    index += 1;
+  }
+
+  return text.length;
+}
+
+function collectCsharpCommentRanges(text: string): CommentRange[] {
+  const ranges: CommentRange[] = [];
+  let index = 0;
+
+  while (index < text.length) {
+    const char = text[index];
+    const next = text[index + 1];
+    const afterNext = text[index + 2];
+
+    if (char === "@" && next === "\"") {
+      index = scanCsharpVerbatimString(text, index + 1);
+      continue;
+    }
+
+    if (char === "@" && next === "$" && afterNext === "\"") {
+      index = scanCsharpVerbatimString(text, index + 2);
+      continue;
+    }
+
+    if (char === "$" && next === "@" && afterNext === "\"") {
+      index = scanCsharpVerbatimString(text, index + 2);
+      continue;
+    }
+
+    if (char === "$" && next === "\"") {
+      index = scanEscapedQuotedLiteral(text, index + 1, "\"");
+      continue;
+    }
+
+    if (char === "\"" || char === "'") {
+      index = scanEscapedQuotedLiteral(text, index, char);
+      continue;
+    }
+
+    if (char === "/" && next === "/") {
+      const end = scanSlashLineComment(text, index);
+      ranges.push({ start: index, end, kind: "line" });
+      index = end;
+      continue;
+    }
+
+    if (char === "/" && next === "*") {
+      const end = scanSlashBlockComment(text, index, false);
+      ranges.push({ start: index, end, kind: "block" });
+      index = end;
+      continue;
+    }
+
+    index += 1;
+  }
+
+  return ranges;
+}
+
 function collectCommentRanges(text: string, extension: string): CommentRange[] {
   if (isTypeScriptFamilyExtension(extension)) return collectTypeScriptCommentRanges(text, extension);
   if (isGoExtension(extension)) return collectGoCommentRanges(text);
   if (isRustExtension(extension)) return collectRustCommentRanges(text);
+  if (isCppExtension(extension)) return collectCppCommentRanges(text);
+  if (isCsharpExtension(extension)) return collectCsharpCommentRanges(text);
   if (isPythonExtension(extension)) return collectPythonCommentRanges(text);
   if (isShellExtension(extension)) return collectShellCommentRanges(text);
   if (isQmlExtension(extension)) return collectQmlCommentRanges(text);

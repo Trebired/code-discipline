@@ -84,7 +84,11 @@ pub fn run_max_block_function_lines_rule(request_json: String) -> Result<String>
     let mut handled_paths = Vec::new();
 
     for file in request.source_files.iter() {
-        if is_go_extension(&file.extension) || is_rust_extension(&file.extension) {
+        if is_go_extension(&file.extension)
+            || is_rust_extension(&file.extension)
+            || is_cpp_extension(&file.extension)
+            || is_csharp_extension(&file.extension)
+        {
             let text =
                 fs::read_to_string(&file.absolute_path).map_err(|error| err(error.to_string()))?;
                 violations.extend(collect_block_function_violations(file, &text, request.max));

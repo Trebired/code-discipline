@@ -5,7 +5,6 @@ import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-delete process.env.TB_CODE_DISCIPLINE_DISABLE_NATIVE;
 const { codeDiscipline } = await import(pathToFileURL(path.join(repoRoot, "dist/index.js")).href);
 
 async function writeFixtureFile(args) {
@@ -16,7 +15,7 @@ async function writeFixtureFile(args) {
 
 async function writeBraceFixtures(root) {
   await writeFixtureFile({ root, relativePath: "src/app.ts", text: [
-    "export function run(){",
+    "export function run() {",
     "const value = {",
     "name: \"one\"",
     "}",
@@ -58,6 +57,24 @@ async function writeBraceFixtures(root) {
     "func main() {",
     "if true {",
     "println(\"ok\")",
+    "}",
+    "}",
+    "",
+  ].join("\n") });
+  await writeFixtureFile({ root, relativePath: "src/main.cpp", text: [
+    "int main() {",
+    "if (true) {",
+    "return 0;",
+    "}",
+    "}",
+    "",
+  ].join("\n") });
+  await writeFixtureFile({ root, relativePath: "src/Program.cs", text: [
+    "class Program",
+    "{",
+    "static void Main()",
+    "{",
+    "System.Console.WriteLine(\"ok\");",
     "}",
     "}",
     "",
@@ -190,15 +207,17 @@ function assertInitialCheck(check) {
   assert.ok(violatedFiles.includes("src/View.qml"));
   assert.ok(violatedFiles.includes("src/styles.css"));
   assert.ok(violatedFiles.includes("src/tool.py"));
+  assert.ok(violatedFiles.includes("src/main.cpp"));
+  assert.ok(violatedFiles.includes("src/Program.cs"));
 }
 
 async function assertFormattedOutput(projectRoot) {
   assert.equal(await fs.readFile(path.join(projectRoot, "src/app.ts"), "utf8"), [
-    "export function run(){",
+    "export function run() {",
     "  const value = {",
     "    name: \"one\"",
-    "  }",
-    "  return value",
+    "  };",
+    "  return value;",
     "}",
     "",
   ].join("\n"));
@@ -226,6 +245,24 @@ async function assertFormattedOutput(projectRoot) {
   assertLinesFit(await fs.readFile(path.join(projectRoot, "src/HomeMessage.qml"), "utf8"), 44, "src/HomeMessage.qml");
   assertLinesFit(await fs.readFile(path.join(projectRoot, "src/Compact.qml"), "utf8"), 44, "src/Compact.qml");
   assertLinesFit(await fs.readFile(path.join(projectRoot, "src/renderer.rs"), "utf8"), 44, "src/renderer.rs");
+  assert.equal(await fs.readFile(path.join(projectRoot, "src/main.cpp"), "utf8"), [
+    "int main() {",
+    "  if (true) {",
+    "    return 0;",
+    "  }",
+    "}",
+    "",
+  ].join("\n"));
+  assert.equal(await fs.readFile(path.join(projectRoot, "src/Program.cs"), "utf8"), [
+    "class Program",
+    "{",
+    "    static void Main()",
+    "    {",
+    "        System.Console.WriteLine(\"ok\");",
+    "    }",
+    "}",
+    "",
+  ].join("\n"));
 }
 
 async function verifyFormatter() {

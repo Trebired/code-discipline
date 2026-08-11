@@ -8,6 +8,7 @@ import { isTypeScriptFamilyExtension, supportsStructuralBlankLines } from "#87jy
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls019o";
 import type { FixCodeDisciplineRuleResult, NormalizedCheckCodeDisciplineOptions } from "#uqbg4indzud7";
 import { rewriteGenericStructuralBlankLines } from "./generic.js";
+import { collectWithParseFailure } from "../../parse-failures.js";
 import { rewriteStructuralBlankLines } from "./rewrite.js";
 
 function createStructuralBlankLinesViolation(args: {
@@ -56,9 +57,14 @@ async function collectStructuralBlankLinesViolations(
     }
 
     const sourceText = await fs.readFile(file.absolutePath, "utf8");
-    const result = rewriteStructuralBlankLinesForFile(file, sourceText);
+    const result = await collectWithParseFailure(
+      "structural-blank-lines",
+      file.relativeFromProjectRoot,
+      violations,
+      () => rewriteStructuralBlankLinesForFile(file, sourceText),
+    );
 
-    if (result.changed) {
+    if (result?.changed) {
       violations.push(createStructuralBlankLinesViolation({
         filePath: file.relativeFromProjectRoot,
         boundaryCount: result.boundaryCount,

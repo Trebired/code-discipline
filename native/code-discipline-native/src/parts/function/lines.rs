@@ -24,10 +24,45 @@ fn count_brace_delta(value: &str) -> i32 {
     })
 }
 
+const C_FAMILY_HEADER_EXCLUDED_LEADING_WORDS: &[&str] = &[
+    "if", "else", "for", "while", "do", "switch", "case", "default", "catch", "try", "finally",
+    "using", "lock", "foreach", "fixed", "checked", "unchecked", "namespace", "class", "struct",
+    "enum", "interface", "return", "throw", "new", "delete", "goto", "break", "continue",
+];
+
+fn c_family_header_leading_word(trimmed: &str) -> &str {
+    trimmed
+        .split(|ch: char| !(ch.is_ascii_alphanumeric() || ch == '_'))
+        .find(|word| !word.is_empty())
+        .unwrap_or("")
+}
+
+fn is_c_family_header_start(line: &str) -> bool {
+    let trimmed = strip_line_comments_and_strings(line);
+    let trimmed = trimmed.trim();
+
+    if trimmed.is_empty() || trimmed.ends_with(';') || trimmed.ends_with(':') {
+        return false;
+    }
+    if trimmed.starts_with('#') || trimmed.starts_with('[') || trimmed.starts_with('@') {
+        return false;
+    }
+    if !trimmed.contains('(') {
+        return false;
+    }
+
+    let leading_word = c_family_header_leading_word(trimmed);
+    !C_FAMILY_HEADER_EXCLUDED_LEADING_WORDS.contains(&leading_word)
+}
+
 fn header_start_matches(line: &str, extension: &str) -> bool {
     let trimmed = line.trim_start();
     if is_go_extension(extension) {
         return trimmed.starts_with("func ");
+    }
+
+    if is_cpp_extension(extension) || is_csharp_extension(extension) {
+        return is_c_family_header_start(line);
     }
 
     trimmed.starts_with("fn ")
@@ -39,6 +74,28 @@ fn header_start_matches(line: &str, extension: &str) -> bool {
         || trimmed.starts_with("pub async fn ")
         || trimmed.starts_with("pub unsafe fn ")
         || trimmed.starts_with("pub const fn ")
+}
+
+fn extract_c_family_function_name(header: &str) -> String {
+    let stripped = strip_comments_and_strings(header);
+    let Some(paren_index) = stripped.find('(') else {
+        return "anonymous".to_string();
+    };
+
+    let name: String = stripped[..paren_index]
+        .chars()
+        .rev()
+        .take_while(|ch| ch.is_ascii_alphanumeric() || *ch == '_')
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .collect();
+
+    if name.is_empty() {
+        "anonymous".to_string()
+    } else {
+        name
+    }
 }
 
 fn extract_function_name(header: &str, extension: &str) -> String {
@@ -62,6 +119,10 @@ fn extract_function_name(header: &str, extension: &str) -> String {
             .collect::<String>();
     }
 
+    if is_cpp_extension(extension) || is_csharp_extension(extension) {
+        return extract_c_family_function_name(header);
+    }
+
     let Some(fn_index) = normalized.find("fn ") else {
         return "anonymous".to_string();
     };
@@ -76,7 +137,11 @@ fn collect_block_function_violations(
     text: &str,
     max: usize,
 ) -> Vec<CodeDisciplineViolation> {
-    if !is_go_extension(&file.extension) && !is_rust_extension(&file.extension) {
+    if !is_go_extension(&file.extension)
+        && !is_rust_extension(&file.extension)
+        && !is_cpp_extension(&file.extension)
+        && !is_csharp_extension(&file.extension)
+    {
         return Vec::new();
     }
 
@@ -147,7 +212,11 @@ fn collect_block_function_warnings(
     text: &str,
     max: usize,
 ) -> Vec<CodeDisciplineViolation> {
-    if !is_go_extension(&file.extension) && !is_rust_extension(&file.extension) {
+    if !is_go_extension(&file.extension)
+        && !is_rust_extension(&file.extension)
+        && !is_cpp_extension(&file.extension)
+        && !is_csharp_extension(&file.extension)
+    {
         return Vec::new();
     }
 

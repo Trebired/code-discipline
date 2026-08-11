@@ -1,5 +1,3 @@
-import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { performance } from "node:perf_hooks";
 import type {
@@ -9,18 +7,10 @@ import type {
   SourceScanCompletedEvent,
   SourceScanOptions,
 } from "./types.js";
-import { loadNativeBinding } from "#q6u4pcd984qa";
+import { requireNativeBinding } from "#q6u4pcd984qa";
 import { matchesGlob } from "#49ihfa399fpp";
 import { CODE_DISCIPLINE_STATE_DIR } from "#ik5y0pee4ah1";
 import { isCodeDisciplineStatePath, normalizeRelativePath, toPosixPath, uniqueStrings } from "#ntve5i5a0mol";
-type DirectoryTask = {
-  absolutePath: string;
-  relativeDir: string;
-};
-type DirectoryScanResult = {
-  directories: DirectoryTask[];
-  files: ScannedSourceFile[];
-};
 type NativeScanResult = ScannedSourceFile[] | {
   rows: ScannedSourceFile[];
   metrics?: Omit<SourceScanCompletedEvent, "backend" | "phase">;
@@ -32,16 +22,6 @@ type NormalizedExcludeEntry = {
   exact: string;
   prefix: string;
 };
-function resolveScanConcurrency(): number {
-  const override = Number.parseInt(process.env.TB_CODE_DISCIPLINE_SCAN_CONCURRENCY ?? "", 10);
-  if (Number.isFinite(override) && override > 0) {
-    return Math.max(1, override);
-  }
-  const parallelism = typeof os.availableParallelism === "function"
-    ? os.availableParallelism()
-    : os.cpus().length;
-  return Math.min(64, Math.max(8, parallelism * 4));
-}
 function createExcludeMatcher(excludeDirs: ExcludeDirEntry[], type: ExcludeDirEntry["type"]): ExcludeMatcher {
   const packageOwnedEntries = type === "folder" ? [CODE_DISCIPLINE_STATE_DIR] : [];
   const normalizedEntries = uniqueStrings([
@@ -103,84 +83,6 @@ function emitScanCompleted(
     ...metrics,
   });
 }
-async function scanDirectory(
-  task: DirectoryTask,
-  options: SourceScanOptions,
-  extensionSet: Set<string>,
-  excludeMatcher: ExcludeMatcher,
-): Promise<DirectoryScanResult> {
-  const entries = await fs.readdir(task.absolutePath, { withFileTypes: true });
-  entries.sort((left, right) => left.name.localeCompare(right.name));
-  const directories: DirectoryTask[] = [];
-  const files: ScannedSourceFile[] = [];
-  for (const entry of entries) {
-    const absolutePath = path.join(task.absolutePath, entry.name);
-    if (entry.isDirectory()) {
-      const relativePath = normalizeRelativePath(path.join(task.relativeDir, entry.name));
-      const projectRelativePath = normalizeRelativePath(path.relative(options.projectRoot, absolutePath));
-      if (excludeMatcher.shouldExcludeDirectory(relativePath, projectRelativePath, entry.name)) continue;
-      directories.push({ absolutePath, relativeDir: relativePath });
-      continue;
-    }
-    if (!entry.isFile()) continue;
-    const extension = path.extname(entry.name).toLowerCase();
-    if (!extensionSet.has(extension)) continue;
-    const relativePath = normalizeRelativePath(path.join(task.relativeDir, entry.name));
-    files.push({
-      absolutePath,
-      relativeFromProjectRoot: toPosixPath(path.relative(options.projectRoot, absolutePath)),
-      relativeFromSourceRoot: toPosixPath(relativePath),
-      extension,
-    });
-  }
-  return { directories, files };
-}
-async function scanSourceFilesWithFallback(options: SourceScanOptions): Promise<ScannedSourceFile[]> {
-  const startedAt = performance.now();
-  const concurrency = resolveScanConcurrency();
-  const extensionSet = new Set(options.sourceExtensions.map((extension) => extension.toLowerCase()));
-  const excludeMatcher = createExcludeMatcher(options.excludeDirs, "folder");
-  const rows: ScannedSourceFile[] = [];
-  const queue: DirectoryTask[] = [{ absolutePath: options.sourceRoot, relativeDir: "" }];
-  let completedDirectories = 0;
-  let discoveredFiles = 0;
-  let chunkIndex = 0;
-  while (queue.length > 0) {
-    const batch = queue.splice(0, concurrency);
-    const results = await Promise.all(batch.map((task) => scanDirectory(task, options, extensionSet, excludeMatcher)));
-    chunkIndex += 1;
-    let chunkMatchedFiles = 0;
-    for (const result of results) {
-      rows.push(...result.files);
-      queue.push(...result.directories);
-      completedDirectories += 1;
-      discoveredFiles += result.files.length;
-      chunkMatchedFiles += result.files.length;
-    }
-    options.scanObserver?.({
-      phase: "chunk",
-      backend: "ts",
-      chunkIndex,
-      chunkSize: batch.length,
-      chunkMatchedFiles,
-      queuedDirectories: queue.length,
-      completedDirectories,
-      discoveredFiles,
-      elapsedMs: performance.now() - startedAt,
-      concurrency,
-    });
-  }
-  const sortedRows = filterExcludedFiles(rows, options)
-    .sort((left, right) => left.relativeFromProjectRoot.localeCompare(right.relativeFromProjectRoot));
-  emitScanCompleted(options, "ts", {
-    chunkCount: chunkIndex,
-    directoryCount: completedDirectories,
-    fileCount: sortedRows.length,
-    elapsedMs: performance.now() - startedAt,
-    concurrency,
-  });
-  return sortedRows;
-}
 function parseNativeScanResult(result: NativeScanResult): {
   metrics?: Omit<SourceScanCompletedEvent, "backend" | "phase">;
   rows: ScannedSourceFile[];
@@ -194,29 +96,26 @@ function parseNativeScanResult(result: NativeScanResult): {
   };
 }
 async function scanSourceFiles(options: SourceScanOptions): Promise<ScannedSourceFile[]> {
-  const native = loadNativeBinding();
-  if (native) {
-    const startedAt = performance.now();
-    const parsed = parseNativeScanResult(JSON.parse(native.scanSourceFiles(JSON.stringify({
-      projectRoot: options.projectRoot,
-      sourceRoot: options.sourceRoot,
-      sourceExtensions: options.sourceExtensions,
-      excludeDirs: options.excludeDirs.filter((entry) => entry.type === "folder").map((entry) => entry.pattern),
-    }))) as NativeScanResult);
-    const rows = filterExcludedFiles(parsed.rows.filter((file) => !createExcludeMatcher(options.excludeDirs, "folder").shouldExcludeDirectory(
-      path.dirname(file.relativeFromSourceRoot),
-      path.dirname(file.relativeFromProjectRoot),
-      path.basename(path.dirname(file.relativeFromProjectRoot)),
-    )), options);
-    emitScanCompleted(options, "native", parsed.metrics ?? {
-      chunkCount: 1,
-      directoryCount: 0,
-      fileCount: rows.length,
-      elapsedMs: performance.now() - startedAt,
-      concurrency: 1,
-    });
-    return rows;
-  }
-  return scanSourceFilesWithFallback(options);
+  const native = requireNativeBinding();
+  const startedAt = performance.now();
+  const parsed = parseNativeScanResult(JSON.parse(native.scanSourceFiles(JSON.stringify({
+    projectRoot: options.projectRoot,
+    sourceRoot: options.sourceRoot,
+    sourceExtensions: options.sourceExtensions,
+    excludeDirs: options.excludeDirs.filter((entry) => entry.type === "folder").map((entry) => entry.pattern),
+  }))) as NativeScanResult);
+  const rows = filterExcludedFiles(parsed.rows.filter((file) => !createExcludeMatcher(options.excludeDirs, "folder").shouldExcludeDirectory(
+    path.dirname(file.relativeFromSourceRoot),
+    path.dirname(file.relativeFromProjectRoot),
+    path.basename(path.dirname(file.relativeFromProjectRoot)),
+  )), options);
+  emitScanCompleted(options, "native", parsed.metrics ?? {
+    chunkCount: 1,
+    directoryCount: 0,
+    fileCount: rows.length,
+    elapsedMs: performance.now() - startedAt,
+    concurrency: 1,
+  });
+  return rows;
 }
 export { scanSourceFiles };

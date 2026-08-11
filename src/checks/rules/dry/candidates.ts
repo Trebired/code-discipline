@@ -10,6 +10,7 @@ import type { NormalizedDryRule } from "#uqbg4indzud7";
 import { isTypeScriptFamilyExtension } from "#87jyjzn68rrk";
 import { createFunctionFingerprint, resolveClassification, resolveFunctionDisplayName } from "./fingerprint.js";
 import { collectGenericDryFunctionDescriptors } from "./generic.js";
+import { collectWithParseFailure } from "../../parse-failures.js";
 import { collectDuplicateGroups } from "./matching.js";
 import type { DuplicateGroup } from "./matching.js";
 import { dryLanguageKey, normalizeDryFunctionName, type DryFunctionDescriptor } from "./model.js";
@@ -117,14 +118,24 @@ function emitDryParseChunk(args: {
   });
 }
 
-async function collectDryFunctions(sourceFiles: ScannedSourceFile[], observer?: SourceProgressObserver): Promise<DryFunctionDescriptor[]> {
+async function collectDryFunctions(
+  sourceFiles: ScannedSourceFile[],
+  parseFailures: CodeDisciplineViolation[],
+  observer?: SourceProgressObserver,
+): Promise<DryFunctionDescriptor[]> {
   const startedAt = performance.now();
   const functions: DryFunctionDescriptor[] = [];
 
   for (let fileIndex = 0; fileIndex < sourceFiles.length; fileIndex += 1) {
     const file = sourceFiles[fileIndex]!;
     const text = await fs.readFile(file.absolutePath, "utf8");
-    functions.push(...collectDryFunctionsForFile(file, text));
+    const descriptors = await collectWithParseFailure(
+      "dry",
+      file.relativeFromProjectRoot,
+      parseFailures,
+      () => collectDryFunctionsForFile(file, text),
+    );
+    functions.push(...descriptors ?? []);
 
     emitDryParseChunk({
       completedItems: fileIndex + 1,
@@ -185,8 +196,12 @@ async function collectDrySourceDuplicateViolations(
   rule: NormalizedDryRule,
   observer?: SourceProgressObserver,
 ): Promise<CodeDisciplineViolation[]> {
-  const functions = await collectDryFunctions(sourceFiles, observer);
-  return collectDuplicateGroups(functions, rule, observer).map(createDryGroupViolation);
+  const parseFailures: CodeDisciplineViolation[] = [];
+  const functions = await collectDryFunctions(sourceFiles, parseFailures, observer);
+  return [
+    ...parseFailures,
+    ...collectDuplicateGroups(functions, rule, observer).map(createDryGroupViolation),
+  ];
 }
 
 export { collectDrySourceDuplicateViolations };

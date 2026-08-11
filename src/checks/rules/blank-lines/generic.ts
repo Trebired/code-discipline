@@ -1,4 +1,6 @@
 import {
+  isCppExtension,
+  isCsharpExtension,
   isGoExtension,
   isPythonExtension,
   isQmlExtension,
@@ -119,6 +121,24 @@ function maskBraceLanguage(text: string, extension: string): string {
   return stripCommentsAndStrings(text);
 }
 
+const C_FAMILY_BLANK_LINES_EXCLUDED_LEADING_WORDS = new Set([
+  "if", "else", "for", "while", "do", "switch", "case", "catch", "try", "finally",
+  "using", "lock", "foreach", "return", "throw", "new",
+]);
+
+function isCFamilyBraceUnitStart(trimmed: string): boolean {
+  if (/^(?:template\s*<[^>]*>\s*)?(?:(?:public|private|protected|internal|static|sealed|abstract|partial|virtual|override|readonly|inline|explicit|constexpr|friend)\s+)*(?:namespace|class|struct|interface|enum(?:\s+class)?)\s+[A-Za-z_]/u.test(trimmed)) {
+    return true;
+  }
+
+  if (!trimmed.includes("(") || trimmed.endsWith(";") || trimmed.startsWith("#") || trimmed.startsWith("[") || trimmed.startsWith("@")) {
+    return false;
+  }
+
+  const leadingWord = /[A-Za-z_]\w*/u.exec(trimmed)?.[0] ?? "";
+  return !C_FAMILY_BLANK_LINES_EXCLUDED_LEADING_WORDS.has(leadingWord);
+}
+
 function countMaskedBraceDelta(line: string): number {
   let delta = 0;
   for (const character of line) {
@@ -148,6 +168,10 @@ function isBraceUnitStart(line: string, extension: string): boolean {
 
   if (isStyleExtension(extension)) {
     return trimmed.includes("{") && !trimmed.startsWith("}");
+  }
+
+  if (isCppExtension(extension) || isCsharpExtension(extension)) {
+    return isCFamilyBraceUnitStart(trimmed);
   }
 
   return false;
@@ -293,7 +317,14 @@ function collectShellStructuralUnits(text: string): GenericStructuralUnit[] {
 function collectGenericStructuralUnits(text: string, extension: string): GenericStructuralUnit[] {
   if (isPythonExtension(extension)) return collectPythonStructuralUnits(text);
   if (isShellExtension(extension)) return collectShellStructuralUnits(text);
-  if (isGoExtension(extension) || isRustExtension(extension) || isQmlExtension(extension) || isStyleExtension(extension)) {
+  if (
+    isGoExtension(extension)
+    || isRustExtension(extension)
+    || isCppExtension(extension)
+    || isCsharpExtension(extension)
+    || isQmlExtension(extension)
+    || isStyleExtension(extension)
+  ) {
     return collectBraceStructuralUnits(text, extension);
   }
   return [];

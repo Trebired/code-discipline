@@ -15,6 +15,8 @@ const GO_FAMILY_EXTENSIONS = new Set([".go"]);
 const PYTHON_FAMILY_EXTENSIONS = new Set([".py"]);
 const QML_FAMILY_EXTENSIONS = new Set([".qml"]);
 const RUST_FAMILY_EXTENSIONS = new Set([".rs"]);
+const CPP_FAMILY_EXTENSIONS = new Set([".cpp", ".cc", ".cxx", ".c++", ".hpp", ".hh", ".hxx", ".h++", ".h"]);
+const CSHARP_FAMILY_EXTENSIONS = new Set([".cs"]);
 const SHELL_FAMILY_EXTENSIONS = new Set([".bash", ".sh", ".zsh"]);
 const STYLE_FAMILY_EXTENSIONS = new Set([".scss", ".css"]);
 
@@ -42,6 +44,14 @@ function isRustExtension(value: string): boolean {
   return RUST_FAMILY_EXTENSIONS.has(normalizeExtension(value));
 }
 
+function isCppExtension(value: string): boolean {
+  return CPP_FAMILY_EXTENSIONS.has(normalizeExtension(value));
+}
+
+function isCsharpExtension(value: string): boolean {
+  return CSHARP_FAMILY_EXTENSIONS.has(normalizeExtension(value));
+}
+
 function isShellExtension(value: string): boolean {
   return SHELL_FAMILY_EXTENSIONS.has(normalizeExtension(value));
 }
@@ -59,7 +69,14 @@ function supportsImports(value: string): boolean {
 }
 
 function supportsMaxFunctionLines(value: string): boolean {
-  return isTypeScriptFamilyExtension(value) || isGoExtension(value) || isRustExtension(value) || isPythonExtension(value) || isShellExtension(value) || isQmlExtension(value);
+  return isTypeScriptFamilyExtension(value)
+    || isGoExtension(value)
+    || isRustExtension(value)
+    || isCppExtension(value)
+    || isCsharpExtension(value)
+    || isPythonExtension(value)
+    || isShellExtension(value)
+    || isQmlExtension(value);
 }
 
 function supportsMinDeclarationName(value: string): boolean {
@@ -71,7 +88,15 @@ function supportsDry(value: string): boolean {
 }
 
 function supportsRemoveComments(value: string): boolean {
-  return isTypeScriptFamilyExtension(value) || isGoExtension(value) || isRustExtension(value) || isPythonExtension(value) || isShellExtension(value) || isQmlExtension(value) || isStyleExtension(value);
+  return isTypeScriptFamilyExtension(value)
+    || isGoExtension(value)
+    || isRustExtension(value)
+    || isCppExtension(value)
+    || isCsharpExtension(value)
+    || isPythonExtension(value)
+    || isShellExtension(value)
+    || isQmlExtension(value)
+    || isStyleExtension(value);
 }
 
 function supportsFormatter(value: string): boolean {
@@ -82,6 +107,8 @@ const supportsRedundantPathSegmentsFix = supportsFormatter;
 const supportsStructuralBlankLines = supportsFormatter;
 
 export {
+  isCppExtension,
+  isCsharpExtension,
   isGoExtension,
   isPythonExtension,
   isQmlExtension,

@@ -5,11 +5,15 @@ function defineCodeDisciplineConfig(config: CodeDisciplineConfig): CodeDisciplin
 }
 
 export default defineCodeDisciplineConfig({
+  logging: {
+    warnings: false,
+  },
   ignore: {
     entries: [],
     use_gitignore: true,
   },
   rules: {
+    formatting: {},
     bannedFiles: {
       patterns: [
         { glob: "**/*.spec.ts" },
@@ -21,6 +25,10 @@ export default defineCodeDisciplineConfig({
         { value: "trebired", allowedFiles: ["package.json"] },
       ],
     },
+    minDeclarationName: {},
+    maxCharactersPerLine: {},
+    structuralBlankLines: {},
+    minFileLines: {},
     maxFileLines: {
       max: 350,
     },
@@ -28,6 +36,7 @@ export default defineCodeDisciplineConfig({
       max: 50,
     },
     redundantPathSegments: {},
+    removeComments: {},
     imports: {
       alias: {
         strategy: "random",

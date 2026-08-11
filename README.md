@@ -10,7 +10,7 @@ Configurable repository discipline checks and rule-driven fixes for Bun projects
 - source cleanup rules such as removing comments across supported languages
 - structural spacing rules such as normalizing blank lines around JavaScript and TypeScript declarations
 - a built-in Rust formatter for the supported source languages
-- native acceleration with a TypeScript fallback for large codebases
+- a required Rust native backend that keeps scanning and rewriting fast on large codebases
 - DRY enforcement through source-tree duplicate function grouping
 
 It is not a linter replacement or build system.
@@ -98,7 +98,7 @@ Reports files whose code line count is at or below `min`, defaulting to `1` when
 
 Reports named declarations whose names are shorter than `min`, defaulting to `2` when the rule is configured.
 
-JavaScript and TypeScript use the TypeScript AST for `function` declarations and simple `const` identifiers. Go, Rust, Python, QML, shell, SCSS, and CSS use language-aware declaration scanners for functions, declarations, properties, variables, and custom properties where those concepts exist.
+JavaScript and TypeScript use the TypeScript AST for `function` declarations and simple `const` identifiers. Go, Rust, C++, C#, Python, QML, shell, SCSS, and CSS use language-aware declaration scanners for functions, declarations, properties, variables, and custom properties where those concepts exist.
 
 #### `maxCharactersPerLine`
 
@@ -132,7 +132,7 @@ Unsafe cases stay unchanged and remain reported after the fix pass. The fixer in
 
 Reports function-like declarations whose total span exceeds `max`.
 
-JavaScript and TypeScript use the TypeScript AST. Go and Rust use brace-aware function scanning. Python uses indentation-aware `def` and `async def` spans. Shell files with `.sh`, `.bash`, or `.zsh` use quote/comment-aware brace function spans. QML uses comment/string-aware scanning for JavaScript-style functions and signal-handler blocks.
+JavaScript and TypeScript use the TypeScript AST. Go, Rust, C++, and C# use brace-aware function scanning; C++ and C# scanning has no fixed leading keyword, so it infers a header from a parenthesized signature that is not a control-flow statement. Python uses indentation-aware `def` and `async def` spans. Shell files with `.sh`, `.bash`, or `.zsh` use quote/comment-aware brace function spans. QML uses comment/string-aware scanning for JavaScript-style functions and signal-handler blocks.
 
 #### `redundantPathSegments`
 
@@ -140,7 +140,7 @@ Normalizes source file paths. It detects flat compound names such as `user_route
 
 The rule config describes compound-name separators. Whether it mutates is decided by running `code-discipline fix`.
 
-Redundant path segment scans and moves supported source files across JavaScript, TypeScript, Go, Rust, Python, QML, shell, SCSS, and CSS. Move-aware import repair is applied for languages whose import syntax is package-supported.
+Redundant path segment scans and moves supported source files across JavaScript, TypeScript, Go, Rust, C++, C#, Python, QML, shell, SCSS, and CSS. Move-aware import repair is applied for languages whose import syntax is package-supported.
 
 #### `imports`
 
@@ -151,7 +151,7 @@ Validates and optionally fixes:
 - `project-manifests` output drift in root `tsconfig.json` and `package.json#imports`
 - `alias-map` output drift in `.trebired/code-discipline/imports/*.json` and the generated tsconfig projection
 
-`imports` rewrites JavaScript, TypeScript, and SCSS module specifiers. Mixed-language repositories can still include Go, Rust, Python, QML, and extension-bearing shell files; those files are ignored by alias syncing instead of causing parser failures.
+`imports` rewrites JavaScript, TypeScript, and SCSS module specifiers. Mixed-language repositories can still include Go, Rust, C++, C#, Python, QML, and extension-bearing shell files; those files are ignored by alias syncing instead of causing parser failures.
 
 When `imports` sees a relative import that resolves nowhere, check mode reports it. Fix mode removes safe line-isolated static import/export declarations and Sass `@use`, `@forward`, or single-specifier quoted `@import` directives. Dynamic `import(...)`, comments, strings, CSS `url(...)`, and arbitrary CSS values are left alone.
 
@@ -196,12 +196,14 @@ The rule supports the same language families this package currently scans for di
 - JavaScript and TypeScript
 - Go
 - Rust
+- C++
+- C#
 - Python
 - QML
 - shell files with `.sh`, `.bash`, or `.zsh`
 - SCSS and CSS
 
-It keeps string, regex, rune, char, byte-string, raw-string, Python triple-string, QML string/template/regex literal, shell quoted-string, and shell heredoc content intact while removing actual source comments. Python shebang and encoding comments are preserved, and shell shebangs are preserved. When a removed comment occupied the whole line, that empty line is removed in the same file rewrite.
+It keeps string, regex, rune, char, byte-string, raw-string, C++ raw-string, C# verbatim and interpolated string, Python triple-string, QML string/template/regex literal, shell quoted-string, and shell heredoc content intact while removing actual source comments. Python shebang and encoding comments are preserved, and shell shebangs are preserved. When a removed comment occupied the whole line, that empty line is removed in the same file rewrite.
 
 You can preserve specific comments by matching plain substrings inside the comment text itself, without hardcoding any comment syntax:
 
@@ -225,7 +227,7 @@ Reports supported source files where major structural sections aren't visually s
 
 JavaScript and TypeScript use the TypeScript AST: after the file header, between imports and the first non-import statement, between declaration groups (variables, types, functions, classes, enums, namespaces), and between class fields/methods/constructors. Compact groups  -  consecutive imports, variables, type declarations, re-exports, top-level executable statements, class fields, directive prologues, function overload chains, and getter/setter pairs  -  allow zero or one blank line and only collapse two or more down to one.
 
-Go, Rust, Python, QML, shell, SCSS, and CSS use language-aware structural scanning to normalize blank lines between adjacent top-level declarations, functions, handlers, or rules in the same scope.
+Go, Rust, C++, C#, Python, QML, shell, SCSS, and CSS use language-aware structural scanning to normalize blank lines between adjacent top-level declarations, functions, handlers, or rules in the same scope.
 
 It never touches statements inside function or method bodies, `if`/loop/`try` bodies, object literals, array elements, interface members, type literal members, enum members, or JSX children  -  spacing choices inside those remain up to the developer.
 
@@ -244,7 +246,7 @@ code-discipline fix structural-blank-lines
 Reports duplicate function groups across the configured source tree.
 
 - JavaScript and TypeScript use AST-aware structural and behavior fingerprints
-- Go, Rust, Python, QML, and shell use language-aware function spans with conservative token fingerprints
+- Go, Rust, C++, C#, Python, QML, and shell use language-aware function spans with conservative token fingerprints
 - exact normalized structure is reported with 100% confidence
 - equivalent normalized behavior in simple pure functions is reported with 100% confidence
 - matching function names are reported with 100% confidence
@@ -513,7 +515,7 @@ The package-owned Rust formatter is enabled as a rule with `rules.formatting: {}
 
 `check format` validates formatting without modifying files, while `fix format` writes formatted files. Running `code-discipline fix` with no selectors runs configured formatting after structural, import, comment, and blank-line fixes, then rechecks `max-characters-per-line` when that rule is configured.
 
-The formatter supports JavaScript, TypeScript, Go, Rust, Python, QML, shell files with `.sh`, `.bash`, or `.zsh`, SCSS, and CSS. It normalizes line endings, trailing whitespace, final newline, repeated blank lines, brace-language indentation, indentation-sensitive language whitespace, compact QML blocks, and safe line wrapping against `rules.maxCharactersPerLine.max`.
+The formatter supports JavaScript, TypeScript, Go, Rust, C++, C#, Python, QML, shell files with `.sh`, `.bash`, or `.zsh`, SCSS, and CSS. It normalizes line endings, trailing whitespace, final newline, repeated blank lines, brace-language indentation, indentation-sensitive language whitespace, compact QML blocks, and safe line wrapping against `rules.maxCharactersPerLine.max`.
 
 If `rules.maxCharactersPerLine.max` is configured, the formatter uses that width. Without that rule, formatter line width defaults to `100`.
 
@@ -534,15 +536,16 @@ rules: {
 
 ### Native Backend
 
-`@trebired/code-discipline` can use a Rust native backend when a matching binary is available, with the TypeScript implementation as the fallback. This follows the same native-fast-path shape as `@trebired/logger`: package users keep the same CLI/API, while hot scanning and rewrite paths can move into Rust.
+`@trebired/code-discipline` requires a Rust native backend. There is no TypeScript fallback: source scanning, comment stripping, and formatting have exactly one implementation, so a rule can never produce different results depending on which backend happened to run. If no matching binary can be loaded, the package throws instead of silently degrading.
 
-The current native backend accelerates source scanning, `max-file-lines`, common `max-function-lines` paths, `redundant-path-segments` checks, and `remove-comments`. Its comment scanner understands JavaScript, TypeScript, Go, Rust, Python, QML, shell, SCSS, and CSS. If no binary is present, the package automatically uses the TypeScript fallback.
+For JavaScript, TypeScript, and QML the formatter also normalizes spacing around operators and punctuation from a real token stream, so declarations, control-flow headers, and literals print consistently without reflowing statements. For JavaScript and TypeScript it additionally normalizes single-quoted strings to double quotes and terminates statements with semicolons. JSX (`.tsx`, `.jsx`) is excluded from both passes.
+
+The native backend owns source scanning, `max-file-lines`, `redundant-path-segments` checks, `remove-comments`, and `formatting`, and accelerates common `max-function-lines` paths. Its comment scanner understands JavaScript, TypeScript, Go, Rust, C++, C#, Python, QML, shell, SCSS, and CSS, including regular-expression literals in JavaScript, TypeScript, and QML.
 
 Useful native controls:
 
 - `bun run build:native` builds the host native addon into `native/<platform>.node`
 - `bun run build:native:matrix` builds the release target matrix
-- `TB_CODE_DISCIPLINE_DISABLE_NATIVE=1` forces the TypeScript fallback
 - `TB_CODE_DISCIPLINE_NATIVE_BINARY=/path/to/addon.node` loads a specific native addon
 
 Top-level `sync` is gone.

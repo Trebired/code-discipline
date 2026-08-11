@@ -50,7 +50,13 @@ fn line_comment_marker<'a>(extension: &str, trimmed: &'a str, line_number: usize
         return trimmed.starts_with('#').then_some("#");
     }
 
-    if is_ts_family_extension(extension) || is_go_extension(extension) || is_rust_extension(extension) || is_qml_extension(extension) {
+    if is_ts_family_extension(extension)
+        || is_go_extension(extension)
+        || is_rust_extension(extension)
+        || is_cpp_extension(extension)
+        || is_csharp_extension(extension)
+        || is_qml_extension(extension)
+    {
         if trimmed.starts_with("///") {
             return Some("///");
         }

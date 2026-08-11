@@ -1,5 +1,7 @@
 import type { ScannedSourceFile } from "#pkb9x3eo56l7";
 import {
+  isCppExtension,
+  isCsharpExtension,
   isGoExtension,
   isPythonExtension,
   isQmlExtension,
@@ -35,6 +37,8 @@ function dryLanguageKey(extension: string): string {
   if (isTypeScriptFamilyExtension(extension)) return "typescript";
   if (isGoExtension(extension)) return "go";
   if (isRustExtension(extension)) return "rust";
+  if (isCppExtension(extension)) return "cpp";
+  if (isCsharpExtension(extension)) return "csharp";
   if (isPythonExtension(extension)) return "python";
   if (isShellExtension(extension)) return "shell";
   if (isQmlExtension(extension)) return "qml";

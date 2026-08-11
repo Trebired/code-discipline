@@ -146,7 +146,11 @@ fn split_top_level_plus_terms(content: &str) -> Option<Vec<String>> {
 }
 
 fn wrap_js_like_concatenation_line(line: &str, extension: &str) -> Option<Vec<String>> {
-    if !(is_ts_family_extension(extension) || is_qml_extension(extension)) {
+    if !(is_ts_family_extension(extension)
+        || is_qml_extension(extension)
+        || is_cpp_extension(extension)
+        || is_csharp_extension(extension))
+    {
         return None;
     }
 
@@ -182,7 +186,11 @@ fn js_like_string_continuation_indent(prefix: &str, indent: &str) -> String {
 }
 
 fn wrap_js_like_string_line(line: &str, extension: &str, max: usize) -> Option<Vec<String>> {
-    if !(is_ts_family_extension(extension) || is_qml_extension(extension)) {
+    if !(is_ts_family_extension(extension)
+        || is_qml_extension(extension)
+        || is_cpp_extension(extension)
+        || is_csharp_extension(extension))
+    {
         return None;
     }
 

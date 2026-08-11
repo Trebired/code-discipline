@@ -28,6 +28,8 @@ fn supports_remove_comments(extension: &str) -> bool {
     is_ts_family_extension(extension)
         || is_go_extension(extension)
         || is_rust_extension(extension)
+        || is_cpp_extension(extension)
+        || is_csharp_extension(extension)
         || is_python_extension(extension)
         || is_shell_extension(extension)
         || is_qml_extension(extension)
@@ -82,6 +84,10 @@ fn mask_comments_for_line_count(text: &str, extension: &str) -> String {
 }
 
 fn strip_comments_and_strings(text: &str) -> String {
+    strip_comments_and_strings_with(text, false)
+}
+
+fn strip_comments_and_strings_with(text: &str, regex_literals: bool) -> String {
     let bytes = text.as_bytes();
     let mut result = String::with_capacity(text.len());
     let mut index = 0_usize;
@@ -117,6 +123,23 @@ fn strip_comments_and_strings(text: &str) -> String {
                 index += 1;
             }
             continue;
+        }
+
+        if regex_literals
+            && !in_single
+            && !in_double
+            && !in_template
+            && current == b'/'
+            && next != Some(b'/')
+            && next != Some(b'*')
+        {
+            if let Some(end) = scan_script_regex_literal(text, index) {
+                for byte in &bytes[index..end] {
+                    result.push(if *byte == b'\n' { '\n' } else { ' ' });
+                }
+                index = end;
+                continue;
+            }
         }
 
         if !in_single && !in_double && !in_template && current == b'/' && next == Some(b'/') {
