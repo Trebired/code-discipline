@@ -29,16 +29,16 @@ fn find_prefix_match(file: &ScannedSourceFile, separators: &[String]) -> Option<
         }
 
         if best_match
-            .as_ref()
-            .map(|item| index < item.index)
-            .unwrap_or(true)
+        .as_ref()
+        .map(|item| index < item.index)
+        .unwrap_or(true)
         {
             best_match = Some(PrefixMatch {
-                prefix,
-                remainder,
-                separator: separator.clone(),
-                index,
-                path_segment: None,
+                    prefix,
+                    remainder,
+                    separator: separator.clone(),
+                    index,
+                    path_segment: None,
             });
         }
     }
@@ -48,19 +48,19 @@ fn find_prefix_match(file: &ScannedSourceFile, separators: &[String]) -> Option<
 
 fn normalize_path_segment_token(value: &str) -> String {
     value
-        .chars()
-        .filter(|ch| !matches!(ch, '_' | '-' | ' ' | '\t'))
-        .flat_map(|ch| ch.to_lowercase())
-        .collect()
+    .chars()
+    .filter(|ch| !matches!(ch, '_' | '-' | ' ' | '\t'))
+    .flat_map(|ch| ch.to_lowercase())
+    .collect()
 }
 
 fn singularize_path_segment_token(value: &str) -> String {
     let normalized = normalize_path_segment_token(value);
     normalized
-        .strip_suffix('s')
-        .filter(|base| !base.is_empty())
-        .unwrap_or(&normalized)
-        .to_string()
+    .strip_suffix('s')
+    .filter(|base| !base.is_empty())
+    .unwrap_or(&normalized)
+    .to_string()
 }
 
 fn path_segment_tokens(file: &ScannedSourceFile) -> Vec<(String, String)> {
@@ -120,24 +120,24 @@ fn find_redundant_path_segment_match(
         }
         let remainder_token = singularize_path_segment_token(&remainder);
         let path_segment = path_segments
-            .iter()
-            .find(|(token, _)| token == &remainder_token)
-            .map(|(_, segment)| segment.clone());
+        .iter()
+        .find(|(token, _)| token == &remainder_token)
+        .map(|(_, segment)| segment.clone());
         let Some(path_segment) = path_segment else {
             continue;
         };
 
         if best_match
-            .as_ref()
-            .map(|item| index > item.index)
-            .unwrap_or(true)
+        .as_ref()
+        .map(|item| index > item.index)
+        .unwrap_or(true)
         {
             best_match = Some(PrefixMatch {
-                prefix,
-                remainder,
-                separator: separator.clone(),
-                index,
-                path_segment: Some(path_segment),
+                    prefix,
+                    remainder,
+                    separator: separator.clone(),
+                    index,
+                    path_segment: Some(path_segment),
             });
         }
     }
@@ -166,9 +166,9 @@ fn collect_redundant_path_segments_violations(
 
     let mut violations = Vec::new();
     let path_segment_paths: HashSet<String> = path_segment_matches
-        .iter()
-        .map(|(file, _)| file.absolute_path.clone())
-        .collect();
+    .iter()
+    .map(|(file, _)| file.absolute_path.clone())
+    .collect();
 
     for (file, path_segment_match) in path_segment_matches.iter() {
         let target_file_name = format!("{}{}", path_segment_match.prefix, file.extension);
@@ -176,13 +176,13 @@ fn collect_redundant_path_segments_violations(
         let suggested_path = join_posix(&project_dir, &target_file_name);
 
         violations.push(create_redundant_path_segments_violation(
-            file,
-            suggested_path,
-            "redundant-path-segment",
-            &path_segment_match.prefix,
-            &path_segment_match.remainder,
-            path_segment_match.path_segment.as_deref(),
-            &path_segment_match.separator,
+                file,
+                suggested_path,
+                "redundant-path-segment",
+                &path_segment_match.prefix,
+                &path_segment_match.remainder,
+                path_segment_match.path_segment.as_deref(),
+                &path_segment_match.separator,
         ));
     }
 
@@ -192,22 +192,22 @@ fn collect_redundant_path_segments_violations(
         }
 
         let directory_name =
-            posix_basename(&posix_dirname(&file.relative_from_project_root)).to_string();
+        posix_basename(&posix_dirname(&file.relative_from_project_root)).to_string();
         let directory_key = format!(
             "{}::{}",
             posix_dirname(&file.relative_from_source_root),
             prefix_match.prefix
         );
         let grouped_count = matches
-            .iter()
-            .filter(|(candidate, candidate_match)| {
+        .iter()
+        .filter(|(candidate, candidate_match)| {
                 format!(
                     "{}::{}",
                     posix_dirname(&candidate.relative_from_source_root),
                     candidate_match.prefix
                 ) == directory_key
-            })
-            .count();
+        })
+        .count();
 
         let mode = if directory_name == prefix_match.prefix {
             Some("repeated-folder-prefix")
@@ -233,13 +233,13 @@ fn collect_redundant_path_segments_violations(
         };
 
         violations.push(create_redundant_path_segments_violation(
-            file,
-            suggested_path,
-            mode,
-            &prefix_match.prefix,
-            &prefix_match.remainder,
-            None,
-            &prefix_match.separator,
+                file,
+                suggested_path,
+                mode,
+                &prefix_match.prefix,
+                &prefix_match.remainder,
+                None,
+                &prefix_match.separator,
         ));
     }
 

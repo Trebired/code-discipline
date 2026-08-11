@@ -337,25 +337,13 @@ Example `.trebired/code-discipline/config.ts`:
 import { defineCodeDisciplineConfig } from "@trebired/code-discipline";
 
 export default defineCodeDisciplineConfig({
-  excludeSourceExtensions: [".scss"],
-  ignore: {
-    entries: [
-      { type: "folder", pattern: "coverage" },
-      { type: "file", pattern: "**/*.client.ts" },
-      { type: "file", pattern: "*.min.js" },
-      { type: "file", pattern: "*.min.css" },
-    ],
-    use_gitignore: true,
-  },
   lifecycle: {
     async beforeRun(context) {
       context.state.started = true;
     },
   },
-  logging: {
-    warnings: true,
-  },
   presets: {
+    use: ["trebired"],
     nodeProcessBoundary: {
       envBoundaryFiles: ["src/backend/core/env.ts"],
       processBoundaryFiles: [
@@ -365,60 +353,85 @@ export default defineCodeDisciplineConfig({
     },
   },
   rules: {
-    formatting: {},
-    minFileLines: {
-      min: 1,
-      excludeDirs: [
-        { type: "file", pattern: "**/*.client.ts" },
+    bannedPatterns: {
+      patterns: [
+        { value: "internal-token", allowedFiles: ["src/generated/tokens.ts"] },
       ],
-    },
-    minDeclarationName: {
-      min: 2,
-    },
-    maxFileLines: {
-      max: 500,
-      severity: "warning",
-    },
-    maxCharactersPerLine: {
-      max: 150,
     },
     maxFunctionLines: {
       max: 80,
       severity: "warning",
     },
-    redundantPathSegments: {
-      separators: ["_", "-"],
-    },
-    removeComments: {
-      exclude: ["@ts-nocheck"],
-    },
+  },
+  ignore: {
+    entries: [
+      { type: "folder", pattern: "coverage" },
+      { type: "file", pattern: "**/*.client.ts" },
+      { type: "file", pattern: "*.min.js" },
+      { type: "file", pattern: "*.min.css" },
+    ],
+  },
+});
+```
+
+The `trebired` preset enables the strict shared Trebired rule set. Repo config merges on top, so local `rules`, `ignore`, and `logging` entries only describe repo-specific differences.
+
+Expanded, the preset enables:
+
+```ts
+{
+  logging: {
+    warnings: false,
+  },
+  ignore: {
+    entries: [],
+    use_gitignore: true,
+  },
+  rules: {
+    formatting: {},
     bannedFiles: {
       patterns: [
         { glob: "**/*.spec.ts" },
         { glob: "**/*.spec.tsx" },
       ],
     },
+    bannedPatterns: {
+      patterns: [
+        { value: "trebired", allowedFiles: ["package.json"] },
+      ],
+    },
+    minDeclarationName: {},
+    maxCharactersPerLine: {},
+    structuralBlankLines: {},
+    minFileLines: {},
+    maxFileLines: {
+      max: 350,
+    },
+    maxFunctionLines: {
+      max: 50,
+    },
+    redundantPathSegments: {},
+    removeComments: {},
     imports: {
       alias: {
-        prefix: "#",
-        strategy: "relative-path-slug",
+        strategy: "random",
       },
       allowRelative: ["./"],
       output: {
         type: "alias-map",
-        maxEntriesPerFile: 1000,
       },
       runtime: {
         normalize: "relative-dot-prefix",
-        restoreAfterRun: true,
+        restoreAfterRun: false,
       },
+      removeDeadImports: true,
     },
-    dry: {
-      minDuplicateCharacters: 0,
-    },
+    dry: {},
   },
-});
+}
 ```
+
+Manual arrays merge with the preset arrays. Duplicate `bannedPatterns.patterns` entries are merged by pattern value and their `allowedFiles` are unioned, so repos can widen preset allowlists without replacing the preset rule.
 
 Source scanning covers every built-in supported source family by default:
 
@@ -433,6 +446,10 @@ Example scan configuration:
 
 ```ts
 export default defineCodeDisciplineConfig({
+  presets: {
+    use: ["trebired"],
+  },
+
   // Skip specific built-in file types when needed.
   excludeSourceExtensions: [".scss"],
 
@@ -449,12 +466,29 @@ export default defineCodeDisciplineConfig({
   rules: {
     maxFunctionLines: {
       max: 80,
+      excludeDirs: [
+        { type: "file", pattern: "**/*.client.ts" },
+      ],
     },
   },
 });
 ```
 
 ### Presets
+
+#### `trebired`
+
+`presets.use: ["trebired"]` applies the strict shared Trebired codebase policy:
+
+- all rules enabled
+- warnings disabled
+- `.gitignore` entries included
+- `maxFileLines.max: 350`
+- `maxFunctionLines.max: 50`
+- random import aliases with alias-map output
+- remove-comments, redundant path segment, structural blank-line, dry, formatting, import, min-name, min-file, max-line, banned-file, and banned-pattern checks enabled
+
+Repo config merges on top of the preset. Arrays append and dedupe. Duplicate `bannedPatterns.patterns` entries union their `allowedFiles`.
 
 #### `nodeProcessBoundary`
 

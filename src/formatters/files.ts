@@ -27,17 +27,17 @@ function resolveFormatterIgnorePatterns(
   formatter: NormalizedFormattingRule,
 ): string[] {
   const codeDisciplinePatterns = formatter.ignore
-    ? [
-        ...(options.ignore?.entries ?? []).map((entry) => entry.pattern),
-        ...(options.ignore?.gitignorePatterns ?? []),
-      ]
-    : [];
+  ? [
+    ...(options.ignore?.entries ?? []).map((entry) => entry.pattern),
+    ...(options.ignore?.gitignorePatterns ?? []),
+  ]
+  : [];
   const formatterPatterns = formatter.excludeDirs.map((entry) => entry.pattern);
 
   return normalizePatterns([
-    ...DEFAULT_FORMATTER_IGNORE,
-    ...codeDisciplinePatterns,
-    ...formatterPatterns,
+      ...DEFAULT_FORMATTER_IGNORE,
+      ...codeDisciplinePatterns,
+      ...formatterPatterns,
   ]);
 }
 
@@ -47,9 +47,9 @@ function matchesIgnorePattern(relativePath: string, basename: string, pattern: s
   }
 
   return relativePath === pattern
-    || relativePath.startsWith(`${pattern}/`)
-    || matchesGlob(relativePath, pattern)
-    || matchesGlob(relativePath, `${pattern}/**`);
+  ||relativePath.startsWith(`${pattern}/`)
+  ||matchesGlob(relativePath, pattern)
+  ||matchesGlob(relativePath, `${pattern}/**`);
 }
 
 function shouldIgnore(relativePath: string, patterns: string[]): boolean {
@@ -59,8 +59,8 @@ function shouldIgnore(relativePath: string, patterns: string[]): boolean {
 }
 
 function createTargetReadViolation(args: {
-  filePath: string;
-  message: string;
+    filePath: string;
+    message: string;
 }): CodeDisciplineViolation {
   return {
     rule: "format",
@@ -116,7 +116,7 @@ async function collectDirectoryFiles(
 async function collectCodeFormatterFiles(
   options: NormalizedCheckCodeDisciplineOptions,
   formatter: NormalizedFormattingRule,
-): Promise<{ files: CodeFormatterFile[]; ignoredFiles: number; violations: CodeDisciplineViolation[] }> {
+): Promise<{files:CodeFormatterFile[];ignoredFiles:number;violations:CodeDisciplineViolation[]}> {
   const files: CodeFormatterFile[] = [];
   const violations: CodeDisciplineViolation[] = [];
   const ignorePatterns = resolveFormatterIgnorePatterns(options, formatter);
@@ -151,8 +151,8 @@ async function collectCodeFormatterFiles(
       }
     } catch (caught) {
       violations.push(createTargetReadViolation({
-        filePath: relativeTarget || target,
-        message: `target could not be read: ${caught instanceof Error ? caught.message : String(caught)}`,
+            filePath: relativeTarget || target,
+            message: `target could not be read: ${caught instanceof Error ? caught.message : String(caught)}`,
       }));
     }
   }

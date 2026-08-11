@@ -69,22 +69,22 @@ fn is_script_regex_prefix_byte(value: u8) -> bool {
     matches!(
         value,
         b'(' | b'['
-            | b'{'
-            | b':'
-            | b','
-            | b';'
-            | b'='
-            | b'!'
-            | b'?'
-            | b'&'
-            | b'|'
-            | b'+'
-            | b'-'
-            | b'*'
-            | b'~'
-            | b'^'
-            | b'<'
-            | b'>'
+        | b'{'
+        | b':'
+        | b','
+        | b';'
+        | b'='
+        | b'!'
+        | b'?'
+        | b'&'
+        | b'|'
+        | b'+'
+        | b'-'
+        | b'*'
+        | b'~'
+        | b'^'
+        | b'<'
+        | b'>'
     )
 }
 
@@ -101,18 +101,18 @@ fn can_start_script_regex_literal(text: &str, start: usize) -> bool {
         return matches!(
             previous_script_word(text, previous_index),
             "case"
-                | "delete"
-                | "do"
-                | "else"
-                | "in"
-                | "instanceof"
-                | "new"
-                | "of"
-                | "return"
-                | "throw"
-                | "typeof"
-                | "void"
-                | "yield"
+            | "delete"
+            | "do"
+            | "else"
+            | "in"
+            | "instanceof"
+            | "new"
+            | "of"
+            | "return"
+            | "throw"
+            | "typeof"
+            | "void"
+            | "yield"
         );
     }
 
@@ -144,7 +144,7 @@ fn scan_script_regex_literal(text: &str, start: usize) -> Option<usize> {
         } else if current == b'/' && !in_character_class {
             index += 1;
             while bytes.get(index).is_some_and(|byte| {
-                byte.is_ascii_alphanumeric() || *byte == b'_' || *byte == b'$'
+                    byte.is_ascii_alphanumeric() || *byte == b'_' || *byte == b'$'
             }) {
                 index += 1;
             }
@@ -229,9 +229,9 @@ fn collect_c_like_comment_ranges(
         if current == b'/' && next == Some(b'/') {
             let end = scan_line_comment(text, index);
             ranges.push(CommentRange {
-                start: index,
-                end,
-                kind: CommentKind::Line,
+                    start: index,
+                    end,
+                    kind: CommentKind::Line,
             });
             index = end;
             continue;
@@ -240,9 +240,9 @@ fn collect_c_like_comment_ranges(
         if current == b'/' && next == Some(b'*') {
             let end = scan_block_comment(text, index, nested_blocks);
             ranges.push(CommentRange {
-                start: index,
-                end,
-                kind: CommentKind::Block,
+                    start: index,
+                    end,
+                    kind: CommentKind::Block,
             });
             index = end;
             continue;
@@ -383,9 +383,9 @@ fn collect_rust_comment_ranges(text: &str) -> Vec<CommentRange> {
         if current == b'/' && next == Some(b'/') {
             let end = scan_line_comment(text, index);
             ranges.push(CommentRange {
-                start: index,
-                end,
-                kind: CommentKind::Line,
+                    start: index,
+                    end,
+                    kind: CommentKind::Line,
             });
             index = end;
             continue;
@@ -394,9 +394,9 @@ fn collect_rust_comment_ranges(text: &str) -> Vec<CommentRange> {
         if current == b'/' && next == Some(b'*') {
             let end = scan_block_comment(text, index, true);
             ranges.push(CommentRange {
-                start: index,
-                end,
-                kind: CommentKind::Block,
+                    start: index,
+                    end,
+                    kind: CommentKind::Block,
             });
             index = end;
             continue;

@@ -53,11 +53,11 @@ function closePythonFunctions(
     const pending = stack.pop()!;
     const resolvedEnd = Math.max(pending.startLine, endLine);
     descriptors.push({
-      kind: pending.kind,
-      lineCount: resolvedEnd - pending.startLine + 1,
-      name: pending.name,
-      startLine: pending.startLine,
-      endLine: resolvedEnd,
+        kind: pending.kind,
+        lineCount: resolvedEnd - pending.startLine + 1,
+        name: pending.name,
+        startLine: pending.startLine,
+        endLine: resolvedEnd,
     });
   }
 }

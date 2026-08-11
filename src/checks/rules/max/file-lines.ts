@@ -11,14 +11,14 @@ async function runMaxFileLinesRule(
   if (!options.rules.maxFileLines) return [];
 
   const progress = createRuleProgress({
-    observer: options.progressObserver,
-    rule: "max-file-lines",
-    totalItems: sourceFiles.length,
+      observer: options.progressObserver,
+      rule: "max-file-lines",
+      totalItems: sourceFiles.length,
   });
   const violations = JSON.parse(requireNativeBinding().runMaxFileLinesRule(JSON.stringify({
-    sourceFiles,
-    max: options.rules.maxFileLines.max,
-    warning: true,
+          sourceFiles,
+          max: options.rules.maxFileLines.max,
+          warning: true,
   }))) as CodeDisciplineViolation[];
   emitRuleCompleted(progress, violations.length);
   return violations;

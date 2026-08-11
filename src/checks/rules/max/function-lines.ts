@@ -6,7 +6,7 @@ import ts from "typescript";
 import type { NormalizedCheckCodeDisciplineOptions } from "#uqbg4indzud7";
 import type { ScannedSourceFile } from "#pkb9x3eo56l7";
 import { loadNativeBinding } from "#q6u4pcd984qa";
-import { collectWithParseFailure } from "../../parse-failures.js";
+import { collectWithParseFailure } from "#lvwwpxtj6az5";
 import { parseSource } from "#27pccnhol1ci";
 import {
   isCppExtension,
@@ -94,9 +94,9 @@ function countBraceDelta(value: string): number {
 }
 
 const C_FAMILY_HEADER_EXCLUDED_LEADING_WORDS = new Set([
-  "if", "else", "for", "while", "do", "switch", "case", "default", "catch", "try", "finally",
-  "using", "lock", "foreach", "fixed", "checked", "unchecked", "namespace", "class", "struct",
-  "enum", "interface", "return", "throw", "new", "delete", "goto", "break", "continue",
+    "if", "else", "for", "while", "do", "switch", "case", "default", "catch", "try", "finally",
+    "using", "lock", "foreach", "fixed", "checked", "unchecked", "namespace", "class", "struct",
+    "enum", "interface", "return", "throw", "new", "delete", "goto", "break", "continue",
 ]);
 
 function isCFamilyHeaderStart(line: string): boolean {
@@ -142,11 +142,11 @@ function collectBlockFunctionDescriptors(text: string, extension: string): Funct
   const isGo = isGoExtension(extension);
   const isCFamily = isCppExtension(extension) || isCsharpExtension(extension);
   const headerStartPattern = isGo
-    ? /^\s*func(?:\s*\([^)]*\))?\s+/u
-    : /^\s*(?:pub(?:\([^)]*\))?\s+)?(?:async\s+)?(?:const\s+)?(?:unsafe\s+)?fn\s+/u;
+  ? /^\s*func(?:\s*\([^)]*\))?\s+/u
+  : /^\s*(?:pub(?:\([^)]*\))?\s+)?(?:async\s+)?(?:const\s+)?(?:unsafe\s+)?fn\s+/u;
   const headerNamePattern = isGo
-    ? /^\s*func(?:\s*\([^)]*\))?\s+([A-Za-z_]\w*)/u
-    : /\bfn\s+([A-Za-z_]\w*)/u;
+  ? /^\s*func(?:\s*\([^)]*\))?\s+([A-Za-z_]\w*)/u
+  : /\bfn\s+([A-Za-z_]\w*)/u;
   let pending = createPendingBlockFunction();
 
   for (let index = 0; index < lines.length; index += 1) {
@@ -163,8 +163,8 @@ function collectBlockFunctionDescriptors(text: string, extension: string): Funct
       pending.header = `${pending.header}\n${line}`;
       if (!pending.name || pending.name === "anonymous") {
         pending.name = isCFamily
-          ? extractCFamilyFunctionName(pending.header)
-          : (headerNamePattern.exec(pending.header)?.[1] ?? pending.name);
+        ? extractCFamilyFunctionName(pending.header)
+        : (headerNamePattern.exec(pending.header)?.[1] ?? pending.name);
       }
     }
 
@@ -201,18 +201,18 @@ async function runMaxFunctionLinesRule(
 
   const violations: CodeDisciplineViolation[] = [];
   const progress = createRuleProgress({
-    observer: options.progressObserver,
-    rule: "max-function-lines",
-    totalItems: sourceFiles.length,
+      observer: options.progressObserver,
+      rule: "max-function-lines",
+      totalItems: sourceFiles.length,
   });
   const native = loadNativeBinding();
   const nativeHandledPaths = new Set<string>();
 
   if (native) {
     const nativeResult = JSON.parse(native.runMaxBlockFunctionLinesRule(JSON.stringify({
-      sourceFiles,
-      max: options.rules.maxFunctionLines.max,
-      warning: true,
+            sourceFiles,
+            max: options.rules.maxFunctionLines.max,
+            warning: true,
     }))) as NativeMaxFunctionLinesResult;
     violations.push(...nativeResult.violations);
     for (const filePath of nativeResult.handledPaths) nativeHandledPaths.add(filePath);
@@ -239,39 +239,43 @@ async function runMaxFunctionLinesRule(
       const codeLineCount = countCodeLinesInRange(maskedText, descriptor.startLine, descriptor.endLine);
       const physicalLineCount = descriptor.lineCount;
       if (codeLineCount > options.rules.maxFunctionLines.max) {
+        const message = `${descriptor.kind} ${descriptor.name} has ${codeLineCount} lines `
+        +`and exceeds the limit of ${options.rules.maxFunctionLines.max}`;
         violations.push({
-          rule: "max-function-lines",
-          fix: false,
-          filePath: file.relativeFromProjectRoot,
-          message: `${descriptor.kind} ${descriptor.name} has ${codeLineCount} lines and exceeds the limit of ${options.rules.maxFunctionLines.max}`,
-          details: {
-            functionKind: descriptor.kind,
-            functionName: descriptor.name,
-            lineCount: codeLineCount,
-            max: options.rules.maxFunctionLines.max,
-            startLine: descriptor.startLine,
-            endLine: descriptor.endLine,
-          },
+            rule: "max-function-lines",
+            fix: false,
+            filePath: file.relativeFromProjectRoot,
+            message,
+            details: {
+              functionKind: descriptor.kind,
+              functionName: descriptor.name,
+              lineCount: codeLineCount,
+              max: options.rules.maxFunctionLines.max,
+              startLine: descriptor.startLine,
+              endLine: descriptor.endLine,
+            },
         });
         continue;
       }
 
       if (physicalLineCount > options.rules.maxFunctionLines.max) {
+        const message = `${descriptor.kind} ${descriptor.name} has ${physicalLineCount} physical lines, `
+        +`but only ${codeLineCount} code lines count toward the limit of ${options.rules.maxFunctionLines.max}`;
         violations.push({
-          rule: "max-function-lines",
-          fix: false,
-          filePath: file.relativeFromProjectRoot,
-          severity: "warning",
-          message: `${descriptor.kind} ${descriptor.name} has ${physicalLineCount} physical lines, but only ${codeLineCount} code lines count toward the limit of ${options.rules.maxFunctionLines.max}`,
-          details: {
-            functionKind: descriptor.kind,
-            functionName: descriptor.name,
-            lineCount: physicalLineCount,
-            codeLineCount,
-            max: options.rules.maxFunctionLines.max,
-            startLine: descriptor.startLine,
-            endLine: descriptor.endLine,
-          },
+            rule: "max-function-lines",
+            fix: false,
+            filePath: file.relativeFromProjectRoot,
+            severity: "warning",
+            message,
+            details: {
+              functionKind: descriptor.kind,
+              functionName: descriptor.name,
+              lineCount: physicalLineCount,
+              codeLineCount,
+              max: options.rules.maxFunctionLines.max,
+              startLine: descriptor.startLine,
+              endLine: descriptor.endLine,
+            },
         });
       }
     }

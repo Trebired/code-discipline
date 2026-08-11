@@ -18,10 +18,10 @@ type PendingQmlBlock = {
 
 function countQmlBraceDelta(line: string): number {
   return Array.from(line).reduce((sum, char) => {
-    if (char === "{") return sum + 1;
-    if (char === "}") return sum - 1;
-    return sum;
-  }, 0);
+      if (char === "{") return sum + 1;
+      if (char === "}") return sum - 1;
+      return sum;
+    }, 0);
 }
 
 function findQmlFunctionStart(line: string, lineNumber: number): PendingQmlBlock | null {

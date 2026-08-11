@@ -1,5 +1,5 @@
 const CONTROL_KEYWORDS_BEFORE_PAREN: [&str; 9] =
-    ["await", "catch", "for", "if", "return", "switch", "throw", "while", "yield"];
+["await", "catch", "for", "if", "return", "switch", "throw", "while", "yield"];
 
 const VALUE_KEYWORDS: [&str; 2] = ["this", "super"];
 
@@ -15,11 +15,11 @@ fn is_word_token(token: &ScriptToken) -> bool {
     matches!(
         token.kind,
         ScriptTokenKind::Identifier
-            | ScriptTokenKind::Keyword
-            | ScriptTokenKind::Number
-            | ScriptTokenKind::StringLiteral
-            | ScriptTokenKind::TemplateLiteral
-            | ScriptTokenKind::Regex
+        | ScriptTokenKind::Keyword
+        | ScriptTokenKind::Number
+        | ScriptTokenKind::StringLiteral
+        | ScriptTokenKind::TemplateLiteral
+        | ScriptTokenKind::Regex
     )
 }
 
@@ -82,10 +82,6 @@ fn generic_arguments_end(text: &str, tokens: &[ScriptToken], open: usize) -> Opt
     }
 
     None
-}
-
-fn looks_like_generic_arguments(text: &str, tokens: &[ScriptToken], open: usize) -> bool {
-    generic_arguments_end(text, tokens, open).is_some()
 }
 
 struct SpacingContext {
@@ -163,8 +159,8 @@ fn needs_space_between(
     }
 
     if generic_opens[right_index].is_some()
-        || generic_opens[left_index].is_some()
-        || generic_closes[right_index].is_some()
+    || generic_opens[left_index].is_some()
+    || generic_closes[right_index].is_some()
     {
         return false;
     }
@@ -263,11 +259,11 @@ fn needs_space_between(
     let right_is_word = matches!(
         right.kind,
         ScriptTokenKind::Identifier
-            | ScriptTokenKind::Keyword
-            | ScriptTokenKind::Number
-            | ScriptTokenKind::StringLiteral
-            | ScriptTokenKind::TemplateLiteral
-            | ScriptTokenKind::Regex
+        | ScriptTokenKind::Keyword
+        | ScriptTokenKind::Number
+        | ScriptTokenKind::StringLiteral
+        | ScriptTokenKind::TemplateLiteral
+        | ScriptTokenKind::Regex
     );
 
     if left_is_word && right_is_word {
@@ -282,10 +278,10 @@ fn needs_space_between(
 
 fn token_signature(text: &str) -> Vec<String> {
     tokenize_script(text)
-        .iter()
-        .filter(|token| token.kind != ScriptTokenKind::Newline)
-        .map(|token| token_text(text, token).to_string())
-        .collect()
+    .iter()
+    .filter(|token| token.kind != ScriptTokenKind::Newline)
+    .map(|token| token_text(text, token).to_string())
+    .collect()
 }
 
 fn normalize_script_spacing(text: &str) -> String {
@@ -307,14 +303,14 @@ fn rewrite_script_spacing(text: &str) -> String {
     let mut generic_closes: Vec<Option<bool>> = vec![None; tokens.len()];
     for index in 0..tokens.len() {
         if tokens[index].kind != ScriptTokenKind::Punctuator
-            || token_text(text, &tokens[index]) != "<"
+        || token_text(text, &tokens[index]) != "<"
         {
             continue;
         }
         if let Some(end) = generic_arguments_end(text, &tokens, index) {
             let multiline = tokens[index..=end]
-                .iter()
-                .any(|token| token.kind == ScriptTokenKind::Newline);
+            .iter()
+            .any(|token| token.kind == ScriptTokenKind::Newline);
             generic_opens[index] = Some((end, multiline));
             generic_closes[end] = Some(!multiline);
         }
@@ -323,17 +319,17 @@ fn rewrite_script_spacing(text: &str) -> String {
     let mut optional_markers = vec![false; tokens.len()];
     for index in 0..tokens.len() {
         if tokens[index].kind != ScriptTokenKind::Punctuator
-            || token_text(text, &tokens[index]) != "?"
+        || token_text(text, &tokens[index]) != "?"
         {
             continue;
         }
         let next = (index + 1..tokens.len()).find(|candidate| {
-            !matches!(
-                tokens[*candidate].kind,
-                ScriptTokenKind::Newline
+                !matches!(
+                    tokens[*candidate].kind,
+                    ScriptTokenKind::Newline
                     | ScriptTokenKind::LineComment
                     | ScriptTokenKind::BlockComment
-            )
+                )
         });
         if let Some(next) = next {
             if token_text(text, &tokens[next]) == ":" {
@@ -371,7 +367,7 @@ fn rewrite_script_spacing(text: &str) -> String {
                             context.generic_depth += 1;
                         }
                     } else if previous_index
-                        .is_some_and(|left| is_value_end_token(text, &tokens[left]))
+                    .is_some_and(|left| is_value_end_token(text, &tokens[left]))
                     {
                         is_binary = true;
                     }
@@ -380,10 +376,10 @@ fn rewrite_script_spacing(text: &str) -> String {
                     if let Some(compact) = generic_closes[index] {
                         if compact {
                             context.generic_depth =
-                                context.generic_depth.saturating_sub(value.len());
+                            context.generic_depth.saturating_sub(value.len());
                         }
                     } else if previous_index
-                        .is_some_and(|left| is_value_end_token(text, &tokens[left]))
+                    .is_some_and(|left| is_value_end_token(text, &tokens[left]))
                     {
                         is_binary = true;
                     }
@@ -399,8 +395,8 @@ fn rewrite_script_spacing(text: &str) -> String {
                 _ => {
                     if BINARY_PUNCTUATORS.contains(&value) {
                         is_binary = previous_index
-                            .is_some_and(|left| is_value_end_token(text, &tokens[left]))
-                            || matches!(value, "=" | "=>" | "==" | "===" | "!=" | "!==");
+                        .is_some_and(|left| is_value_end_token(text, &tokens[left]))
+                        || matches!(value, "=" | "=>" | "==" | "===" | "!=" | "!==");
                     }
                 }
             }

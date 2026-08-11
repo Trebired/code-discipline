@@ -27,17 +27,17 @@ type CommentRange = {
 
 function collectTypeScriptCommentRanges(text: string, extension: string): CommentRange[] {
   const languageVariant = extension === ".jsx" || extension === ".tsx"
-    ? ts.LanguageVariant.JSX
-    : ts.LanguageVariant.Standard;
+  ? ts.LanguageVariant.JSX
+  : ts.LanguageVariant.Standard;
   const scanner = ts.createScanner(ts.ScriptTarget.Latest, false, languageVariant, text);
   const ranges: CommentRange[] = [];
 
   for (let token = scanner.scan(); token !== ts.SyntaxKind.EndOfFileToken; token = scanner.scan()) {
     const kind = token === ts.SyntaxKind.SingleLineCommentTrivia
-      ? "line"
-      : token === ts.SyntaxKind.MultiLineCommentTrivia
-        ? "block"
-        : null;
+    ? "line"
+    : token === ts.SyntaxKind.MultiLineCommentTrivia
+    ? "block"
+    : null;
     if (!kind) continue;
 
     ranges.push({ start: scanner.getTokenPos(), end: scanner.getTextPos(), kind });

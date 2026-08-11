@@ -68,9 +68,9 @@ function computeBoundaryEdits(lines: string[], units: GenericStructuralUnit[]): 
       if (gap === 1) continue;
 
       edits.push({
-        atLine: previous.endLine + 1,
-        removeCount: Math.max(0, gap - 1),
-        insertCount: Math.max(0, 1 - gap),
+          atLine: previous.endLine + 1,
+          removeCount: Math.max(0, gap - 1),
+          insertCount: Math.max(0, 1 - gap),
       });
     }
   }
@@ -122,12 +122,18 @@ function maskBraceLanguage(text: string, extension: string): string {
 }
 
 const C_FAMILY_BLANK_LINES_EXCLUDED_LEADING_WORDS = new Set([
-  "if", "else", "for", "while", "do", "switch", "case", "catch", "try", "finally",
-  "using", "lock", "foreach", "return", "throw", "new",
+    "if", "else", "for", "while", "do", "switch", "case", "catch", "try", "finally",
+    "using", "lock", "foreach", "return", "throw", "new",
 ]);
 
+const C_FAMILY_BRACE_TYPE_PATTERN = new RegExp([
+    "^(?:template\\s*<[^>]*>\\s*)?",
+    "(?:(?:public|private|protected|internal|static|sealed|abstract|partial|virtual|override|readonly|inline|explicit|constexpr|friend)\\s+)*",
+    "(?:namespace|class|struct|interface|enum(?:\\s+class)?)\\s+[A-Za-z_]",
+  ].join(""), "u");
+
 function isCFamilyBraceUnitStart(trimmed: string): boolean {
-  if (/^(?:template\s*<[^>]*>\s*)?(?:(?:public|private|protected|internal|static|sealed|abstract|partial|virtual|override|readonly|inline|explicit|constexpr|friend)\s+)*(?:namespace|class|struct|interface|enum(?:\s+class)?)\s+[A-Za-z_]/u.test(trimmed)) {
+  if (C_FAMILY_BRACE_TYPE_PATTERN.test(trimmed)) {
     return true;
   }
 
@@ -162,8 +168,8 @@ function isBraceUnitStart(line: string, extension: string): boolean {
 
   if (isQmlExtension(extension)) {
     return /^(?:async\s+)?function\s+[A-Za-z_$][\w$]*\s*\(/u.test(trimmed)
-      || /^(?:property\s+\w+\s+)?[A-Za-z_$][\w$]*\s*:\s*function\s*\(/u.test(trimmed)
-      || /^on[A-Z][\w$]*\s*:\s*(?:$|\{|function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)/u.test(trimmed);
+    ||/^(?:property\s+\w+\s+)?[A-Za-z_$][\w$]*\s*:\s*function\s*\(/u.test(trimmed)
+    ||/^on[A-Z][\w$]*\s*:\s*(?:$|\{|function\b|\([^)]*\)\s*=>|[A-Za-z_$][\w$]*\s*=>)/u.test(trimmed);
   }
 
   if (isStyleExtension(extension)) {
@@ -206,9 +212,9 @@ function collectBraceStructuralUnits(text: string, extension: string): GenericSt
 
     if (pending?.seenOpeningBrace && pending.braceDepth <= 0) {
       units.push({
-        startLine: pending.startLine,
-        endLine: index + 1,
-        scopeKey: pending.scopeKey,
+          startLine: pending.startLine,
+          endLine: index + 1,
+          scopeKey: pending.scopeKey,
       });
       pending = null;
     }
@@ -218,17 +224,17 @@ function collectBraceStructuralUnits(text: string, extension: string): GenericSt
 }
 
 function closeIndentedUnits(args: {
-  currentIndent: number;
-  endLine: number;
-  stack: PendingIndentedUnit[];
-  units: GenericStructuralUnit[];
+    currentIndent: number;
+    endLine: number;
+    stack: PendingIndentedUnit[];
+    units: GenericStructuralUnit[];
 }): void {
   while (args.stack.length > 0 && args.currentIndent <= args.stack[args.stack.length - 1]!.indent) {
     const pending = args.stack.pop()!;
     args.units.push({
-      startLine: pending.startLine,
-      endLine: Math.max(pending.startLine, args.endLine),
-      scopeKey: pending.scopeKey,
+        startLine: pending.startLine,
+        endLine: Math.max(pending.startLine, args.endLine),
+        scopeKey: pending.scopeKey,
     });
   }
 }
@@ -244,16 +250,16 @@ function collectPythonStructuralUnits(text: string): GenericStructuralUnit[] {
     const line = lines[index] ?? "";
     const insideTripleString = state.quote !== null;
     const match = insideTripleString
-      ? null
-      : /^(\s*)(?:async\s+def|def|class)\s+[A-Za-z_]\w*\b/u.exec(line);
+    ? null
+    : /^(\s*)(?:async\s+def|def|class)\s+[A-Za-z_]\w*\b/u.exec(line);
 
     if (!insideTripleString && line.trim().length > 0 && !line.trimStart().startsWith("#")) {
       const indent = measurePythonIndent(line);
       closeIndentedUnits({
-        currentIndent: indent,
-        endLine: lastMeaningfulLine,
-        stack,
-        units,
+          currentIndent: indent,
+          endLine: lastMeaningfulLine,
+          stack,
+          units,
       });
       lastMeaningfulLine = index + 1;
     }
@@ -261,9 +267,9 @@ function collectPythonStructuralUnits(text: string): GenericStructuralUnit[] {
     if (match) {
       const indent = measurePythonIndent(match[1] ?? "");
       stack.push({
-        indent,
-        scopeKey: `indent:${indent}`,
-        startLine: index + 1,
+          indent,
+          scopeKey: `indent:${indent}`,
+          startLine: index + 1,
       });
     }
 
@@ -271,10 +277,10 @@ function collectPythonStructuralUnits(text: string): GenericStructuralUnit[] {
   }
 
   closeIndentedUnits({
-    currentIndent: -1,
-    endLine: lastMeaningfulLine || lines.length,
-    stack,
-    units,
+      currentIndent: -1,
+      endLine: lastMeaningfulLine || lines.length,
+      stack,
+      units,
   });
 
   return units;
@@ -303,9 +309,9 @@ function collectShellStructuralUnits(text: string): GenericStructuralUnit[] {
 
     if (pending?.seenOpeningBrace && pending.braceDepth <= 0) {
       units.push({
-        startLine: pending.startLine,
-        endLine: index + 1,
-        scopeKey: pending.scopeKey,
+          startLine: pending.startLine,
+          endLine: index + 1,
+          scopeKey: pending.scopeKey,
       });
       pending = null;
     }
@@ -319,11 +325,11 @@ function collectGenericStructuralUnits(text: string, extension: string): Generic
   if (isShellExtension(extension)) return collectShellStructuralUnits(text);
   if (
     isGoExtension(extension)
-    || isRustExtension(extension)
-    || isCppExtension(extension)
-    || isCsharpExtension(extension)
-    || isQmlExtension(extension)
-    || isStyleExtension(extension)
+    ||isRustExtension(extension)
+    ||isCppExtension(extension)
+    ||isCsharpExtension(extension)
+    ||isQmlExtension(extension)
+    ||isStyleExtension(extension)
   ) {
     return collectBraceStructuralUnits(text, extension);
   }

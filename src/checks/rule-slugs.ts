@@ -81,16 +81,16 @@ function normalizeOnlyRules(
     if (!allowedRules.has(rule)) {
       throw new InvalidCodeDisciplineConfigError(
         mode === "fix"
-          ? `Selected rule is not fixable: ${rule}`
-          : `Unknown rule selector: ${rule}`,
+        ? `Selected rule is not fixable: ${rule}`
+        : `Unknown rule selector: ${rule}`,
         { mode, rule },
       );
     }
 
     if (!enabledRules.has(rule as CodeDisciplineRuleSlug)) {
       throw new InvalidCodeDisciplineConfigError(`Selected rule is not configured: ${rule}`, {
-        mode,
-        rule,
+          mode,
+          rule,
       });
     }
 
@@ -100,8 +100,8 @@ function normalizeOnlyRules(
   }
 
   return mode === "fix"
-    ? normalized as FixableRuleSlug[]
-    : normalized;
+  ? normalized as FixableRuleSlug[]
+  : normalized;
 }
 
 function shouldRunRule(

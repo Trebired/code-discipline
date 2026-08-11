@@ -117,15 +117,15 @@ async function verifyDeclarationNameAcrossLanguages(projectRoot) {
 async function verifyPackageStateExclusion(projectRoot) {
   const packageStatePattern = ["tre", "bired"].join(process.env.CD_VERIFY_PATTERN_SEPARATOR ?? "");
   const result = await codeDiscipline({
-    projectRoot,
-    ignore: { use_gitignore: false },
-    mode: "check",
-    onlyRules: ["banned-patterns"],
-    rules: {
-      bannedPatterns: {
-        patterns: ["AUTO_EXCLUDED_TOKEN", packageStatePattern],
+      projectRoot,
+      ignore: { use_gitignore: false },
+      mode: "check",
+      onlyRules: ["banned-patterns"],
+      rules: {
+        bannedPatterns: {
+          patterns: ["AUTO_EXCLUDED_TOKEN", packageStatePattern],
+        },
       },
-    },
   });
   assert.equal(result.violations.some((violation) => violation.filePath.startsWith(".trebired/code-discipline/")), false);
 }
@@ -154,15 +154,15 @@ async function verifyBannedPatternImportSpecifierExclusion(projectRoot) {
   await fs.writeFile(path.join(projectRoot, "src", "banned-literal.ts"), 'export const brand = "trebired";\n', "utf8");
 
   const result = await codeDiscipline({
-    projectRoot,
-    ignore: { use_gitignore: false },
-    mode: "check",
-    onlyRules: ["banned-patterns"],
-    rules: {
-      bannedPatterns: {
-        patterns: ["trebired"],
+      projectRoot,
+      ignore: { use_gitignore: false },
+      mode: "check",
+      onlyRules: ["banned-patterns"],
+      rules: {
+        bannedPatterns: {
+          patterns: ["trebired"],
+        },
       },
-    },
   });
   const files = result.violations.map((violation) => violation.filePath).sort();
   assert.deepEqual(files, ["src/banned-literal.ts"]);
@@ -261,6 +261,7 @@ async function verifyRedundantPathSegmentsAcrossLanguages() {
 }
 
 const projectRoot = await createLanguageProject();
+
 await verifyLanguageCheck(projectRoot);
 await verifyDeclarationNameAcrossLanguages(projectRoot);
 await verifyPackageStateExclusion(projectRoot);

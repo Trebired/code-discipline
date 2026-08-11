@@ -63,10 +63,10 @@ async function resolveSourceTarget(
   file: ScannedSourceFile,
   options: NormalizedCheckCodeDisciplineOptions,
   aliasTargets: Map<string, string>,
-): Promise<string | null> {
+): Promise<string|null> {
   return isRelativeImportSpecifier(specifier)
-    ? resolveRelativeImport(specifier, file.absolutePath, options)
-    : aliasTargets.get(specifier) ?? null;
+  ? resolveRelativeImport(specifier, file.absolutePath, options)
+  : aliasTargets.get(specifier) ?? null;
 }
 
 async function collectRedirectPlans(
@@ -116,12 +116,12 @@ function replacementForRedirect(
 }
 
 async function planRedirectImportRewrites(args: {
-  aliasTargets: Map<string, string>;
-  options: NormalizedCheckCodeDisciplineOptions;
-  redirects: Map<string, RedirectPlan>;
-  sourceFiles: ScannedSourceFile[];
-}): Promise<{ rewrittenByPath: Map<string, { text: string; count: number }>; rewrittenFiles: number; rewrittenImports: number }> {
-  const rewrittenByPath = new Map<string, { text: string; count: number }>();
+    aliasTargets: Map<string, string>;
+    options: NormalizedCheckCodeDisciplineOptions;
+    redirects: Map<string, RedirectPlan>;
+    sourceFiles: ScannedSourceFile[];
+}): Promise<{rewrittenByPath:Map<string, {text:string;count:number}>;rewrittenFiles:number;rewrittenImports:number}> {
+  const rewrittenByPath = new Map<string, {text:string;count:number}>();
   let rewrittenFiles = 0;
   let rewrittenImports = 0;
 
@@ -157,15 +157,15 @@ async function planRedirectImportRewrites(args: {
 
 async function applyMinFileLineFixWrites(
   redirects: Map<string, RedirectPlan>,
-  rewrites: Map<string, { text: string; count: number }>,
+  rewrites: Map<string, {text:string;count:number}>,
   options: NormalizedCheckCodeDisciplineOptions,
 ): Promise<number> {
   const filesToDelete = [...redirects.values()];
   const progress = createRuleProgress({
-    observer: options.progressObserver,
-    rule: "min-file-lines",
-    stage: "fix",
-    totalItems: filesToDelete.length,
+      observer: options.progressObserver,
+      rule: "min-file-lines",
+      stage: "fix",
+      totalItems: filesToDelete.length,
   });
 
   for (const [filePath, rewrite] of rewrites) {
@@ -220,7 +220,7 @@ async function fixMinFileLinesRule(
   } catch (error) {
     if (error instanceof RewriteFailureError) throw error;
     throw new FixFailureError("min-file-lines fix failed", {
-      cause: error instanceof Error ? error.message : String(error),
+        cause: error instanceof Error ? error.message : String(error),
     });
   }
 }

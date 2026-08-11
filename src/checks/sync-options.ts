@@ -22,22 +22,22 @@ async function buildNormalizedSyncOptions(
   const sourceRoot = options.sourceRoot;
   const sourceRootRelative = normalizeRelativePath(path.relative(options.projectRoot, sourceRoot));
   const excludedSourceExtensions = rule.excludeSourceExtensions
-    ? new Set(rule.excludeSourceExtensions.map(ensureDotExtension))
-    : null;
+  ? new Set(rule.excludeSourceExtensions.map(ensureDotExtension))
+  : null;
   const sourceExtensions = excludedSourceExtensions
-    ? uniqueStrings(DEFAULT_SOURCE_EXTENSIONS.filter((extension) => !excludedSourceExtensions.has(extension)))
-    : options.sourceExtensions;
+  ? uniqueStrings(DEFAULT_SOURCE_EXTENSIONS.filter((extension) => !excludedSourceExtensions.has(extension)))
+  : options.sourceExtensions;
   const gitignorePath = rule.gitignorePath ?? options.gitignorePath;
   const excludeDirs = mergeExcludeDirEntries(options.excludeDirs, rule.excludeDirs ?? []);
 
   const output = rule.output?.type === "alias-map"
-    ? {
-      type: "alias-map" as const,
-      dir: IMPORTS_FOLDER_DIR,
-      generatedTsconfigPath: GENERATED_TSCONFIG_PATH,
-      maxEntriesPerFile: Math.max(1, Math.floor(rule.output.maxEntriesPerFile ?? 1000)),
-    }
-    : { type: "project-manifests" as const };
+  ? {
+    type: "alias-map"as const,
+    dir: IMPORTS_FOLDER_DIR,
+    generatedTsconfigPath: GENERATED_TSCONFIG_PATH,
+    maxEntriesPerFile: Math.max(1, Math.floor(rule.output.maxEntriesPerFile ?? 1000)),
+  }
+  : { type: "project-manifests"as const };
 
   return {
     configPath: options.configPath,
@@ -51,8 +51,8 @@ async function buildNormalizedSyncOptions(
     progressObserver: options.progressObserver,
     scanObserver: options.scanObserver,
     tsconfigPath: rule.runtime?.tsconfigPath
-      ? path.resolve(options.projectRoot, rule.runtime.tsconfigPath)
-      : `${options.projectRoot}/tsconfig.json`,
+    ? path.resolve(options.projectRoot, rule.runtime.tsconfigPath)
+    : `${options.projectRoot}/tsconfig.json`,
     fix,
     alias: {
       prefix: rule.alias?.prefix ?? "#",

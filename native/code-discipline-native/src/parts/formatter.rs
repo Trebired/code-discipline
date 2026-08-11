@@ -63,12 +63,12 @@ fn default_true() -> bool {
 
 fn is_brace_indented_extension(extension: &str) -> bool {
     is_ts_family_extension(extension)
-        || is_go_extension(extension)
-        || is_rust_extension(extension)
-        || is_cpp_extension(extension)
-        || is_csharp_extension(extension)
-        || is_qml_extension(extension)
-        || is_style_extension(extension)
+    || is_go_extension(extension)
+    || is_rust_extension(extension)
+    || is_cpp_extension(extension)
+    || is_csharp_extension(extension)
+    || is_qml_extension(extension)
+    || is_style_extension(extension)
 }
 
 fn indent_width_for_extension(extension: &str, options: &NativeFormatterOptions) -> usize {
@@ -77,9 +77,9 @@ fn indent_width_for_extension(extension: &str, options: &NativeFormatterOptions)
     }
 
     if is_go_extension(extension)
-        || is_rust_extension(extension)
-        || is_python_extension(extension)
-        || is_csharp_extension(extension)
+    || is_rust_extension(extension)
+    || is_python_extension(extension)
+    || is_csharp_extension(extension)
     {
         4
     } else {
@@ -97,17 +97,17 @@ fn count_display_characters(text: &str) -> usize {
 
 fn leading_whitespace(text: &str) -> &str {
     let end = text
-        .char_indices()
-        .find_map(|(index, ch)| (!matches!(ch, ' ' | '\t')).then_some(index))
-        .unwrap_or(text.len());
+    .char_indices()
+    .find_map(|(index, ch)| (!matches!(ch, ' ' | '\t')).then_some(index))
+    .unwrap_or(text.len());
     &text[..end]
 }
 
 fn leading_columns(text: &str, tab_width: usize) -> usize {
     leading_whitespace(text)
-        .chars()
-        .map(|ch| if ch == '\t' { tab_width } else { 1 })
-        .sum()
+    .chars()
+    .map(|ch| if ch == '\t' { tab_width } else { 1 })
+    .sum()
 }
 
 fn trim_trailing_if_enabled(line: &str, options: &NativeFormatterOptions) -> String {
@@ -146,9 +146,9 @@ fn finalize_formatted_lines(mut lines: Vec<String>, options: &NativeFormatterOpt
 
 fn count_leading_closers(masked_trimmed: &str) -> usize {
     masked_trimmed
-        .chars()
-        .take_while(|ch| matches!(ch, '}' | ']' | ')'))
-        .count()
+    .chars()
+    .take_while(|ch| matches!(ch, '}' | ']' | ')'))
+    .count()
 }
 
 fn brace_balance(masked_line: &str) -> isize {

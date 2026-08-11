@@ -23,7 +23,7 @@ function cloneContext(context: BehaviorContext): BehaviorContext {
   };
 }
 
-function isTagged(value: BehaviorExpression, tag: string): value is [string, ...BehaviorExpression[]] {
+function isTagged(value: BehaviorExpression, tag: string): value is[string, ...BehaviorExpression[]] {
   return Array.isArray(value) && value[0] === tag;
 }
 
@@ -33,7 +33,7 @@ function isNamedGlobal(value: BehaviorExpression, name: string): boolean {
 
 function isBooleanExpression(value: BehaviorExpression): boolean {
   return Array.isArray(value)
-    && ["and", "call", "compare", "not", "nullish", "truthy"].includes(String(value[0]));
+  &&["and", "call", "compare", "not", "nullish", "truthy"].includes(String(value[0]));
 }
 
 function expressionsEqual(left: BehaviorExpression, right: BehaviorExpression): boolean {
@@ -48,7 +48,7 @@ function replaceExpression(
   if (expressionsEqual(expression, target)) return replacement;
   if (!Array.isArray(expression)) return expression;
   return expression.map((part) => (
-    Array.isArray(part)
+      Array.isArray(part)
       ? replaceExpression(part, target, replacement)
       : part
   ));
@@ -98,8 +98,8 @@ function normalizeAnd(terms: BehaviorExpression[]): BehaviorExpression {
   for (const term of flattened) unique.set(stableSerialize(term), term);
 
   const sorted = [...unique.entries()]
-    .sort((left, right) => left[0].localeCompare(right[0]))
-    .map(([, term]) => term);
+  .sort((left, right) => left[0].localeCompare(right[0]))
+  .map(([, term]) => term);
   return sorted.length === 1 ? sorted[0]! : ["and", ...sorted];
 }
 
@@ -110,40 +110,40 @@ function invertCondition(expression: BehaviorExpression): BehaviorExpression {
 
 function flattenBinary(node: ts.BinaryExpression, operator: ts.SyntaxKind): ts.Node[] {
   const left = ts.isBinaryExpression(node.left) && node.left.operatorToken.kind === operator
-    ? flattenBinary(node.left, operator)
-    : [node.left];
+  ? flattenBinary(node.left, operator)
+  : [node.left];
   const right = ts.isBinaryExpression(node.right) && node.right.operatorToken.kind === operator
-    ? flattenBinary(node.right, operator)
-    : [node.right];
+  ? flattenBinary(node.right, operator)
+  : [node.right];
   return [...left, ...right];
 }
 
 function isComparisonOperator(kind: ts.SyntaxKind): boolean {
   return isEqualityOperator(kind)
-    || kind === ts.SyntaxKind.LessThanToken
-    || kind === ts.SyntaxKind.LessThanEqualsToken
-    || kind === ts.SyntaxKind.GreaterThanToken
-    || kind === ts.SyntaxKind.GreaterThanEqualsToken
-    || kind === ts.SyntaxKind.InstanceOfKeyword
-    || kind === ts.SyntaxKind.InKeyword;
+  ||kind === ts.SyntaxKind.LessThanToken
+  ||kind === ts.SyntaxKind.LessThanEqualsToken
+  ||kind === ts.SyntaxKind.GreaterThanToken
+  ||kind === ts.SyntaxKind.GreaterThanEqualsToken
+  ||kind === ts.SyntaxKind.InstanceOfKeyword
+  ||kind === ts.SyntaxKind.InKeyword;
 }
 
 function isEqualityOperator(kind: ts.SyntaxKind): boolean {
   return kind === ts.SyntaxKind.EqualsEqualsToken
-    || kind === ts.SyntaxKind.EqualsEqualsEqualsToken
-    || kind === ts.SyntaxKind.ExclamationEqualsToken
-    || kind === ts.SyntaxKind.ExclamationEqualsEqualsToken;
+  ||kind === ts.SyntaxKind.EqualsEqualsEqualsToken
+  ||kind === ts.SyntaxKind.ExclamationEqualsToken
+  ||kind === ts.SyntaxKind.ExclamationEqualsEqualsToken;
 }
 
 function isLogicalOperator(kind: ts.SyntaxKind): boolean {
   return kind === ts.SyntaxKind.AmpersandAmpersandToken
-    || kind === ts.SyntaxKind.BarBarToken;
+  ||kind === ts.SyntaxKind.BarBarToken;
 }
 
 function positiveEqualityOperator(kind: ts.SyntaxKind): "==" | "===" {
   return kind === ts.SyntaxKind.EqualsEqualsEqualsToken || kind === ts.SyntaxKind.ExclamationEqualsEqualsToken
-    ? "==="
-    : "==";
+  ? "==="
+  : "==";
 }
 
 function normalizeComparison(operator: string, left: BehaviorExpression, right: BehaviorExpression): BehaviorExpression {
@@ -172,7 +172,7 @@ function reduceExpression(expression: BehaviorExpression): BehaviorExpression {
   if (tag === "not") return invertCondition(reduceExpression(expression[1]));
 
   return expression.map((part) => (
-    Array.isArray(part)
+      Array.isArray(part)
       ? reduceExpression(part)
       : part
   ));
@@ -181,8 +181,8 @@ function reduceExpression(expression: BehaviorExpression): BehaviorExpression {
 function reduceCallExpression(expression: BehaviorExpression[]): BehaviorExpression {
   const callee = reduceExpression(expression[1]);
   const args = Array.isArray(expression[2])
-    ? expression[2].map(reduceExpression)
-    : [];
+  ? expression[2].map(reduceExpression)
+  : [];
 
   if (isNamedGlobal(callee, "String") && args.length === 1 && isStringLiteral(args[0])) {
     return args[0]!;
@@ -220,14 +220,14 @@ function isStringLiteral(expression: BehaviorExpression): boolean {
 
 function isNullishLiteral(expression: BehaviorExpression): boolean {
   return Array.isArray(expression)
-    && expression[0] === "literal"
-    && (expression[1] === "null" || expression[1] === "undefined");
+  &&expression[0] === "literal"
+  &&(expression[1] === "null" || expression[1] === "undefined");
 }
 
 function isDefiniteLiteral(expression: BehaviorExpression): boolean {
   return Array.isArray(expression)
-    && expression[0] === "literal"
-    && !["null", "undefined"].includes(String(expression[1]));
+  &&expression[0] === "literal"
+  &&!["null", "undefined"].includes(String(expression[1]));
 }
 
 export {

@@ -1,13 +1,30 @@
 import type { LoggingOptions } from "#uljkt8i26p4t";
-import { CodeDisciplineIgnoreOptions, ExcludeDirEntry, SourceProgressObserver, SourceScanObserver, SourceScanOptions, ImportsRuleOptions, ImportsRuntimeNormalizeMode } from "#pkb9x3eo56l7";
+import type {
+  CodeDisciplineIgnoreOptions,
+  ExcludeDirEntry,
+  ImportsRuleOptions,
+  ImportsRuntimeNormalizeMode,
+  SourceProgressObserver,
+  SourceScanObserver,
+  SourceScanOptions,
+} from "#pkb9x3eo56l7";
 import type {
   CodeDisciplineResult,
   CodeDisciplineRuleName,
   CodeDisciplineViolation,
 } from "#bsmch74up4fm";
+
 type CodeDisciplineRuleSlug = CodeDisciplineRuleName;
 type CodeDisciplineCheckSelectorSlug = CodeDisciplineRuleSlug;
-type FixableRuleSlug = "banned-files" | "min-file-lines" | "max-characters-per-line" | "redundant-path-segments" | "imports" | "remove-comments" | "structural-blank-lines" | "format";
+type FixableRuleSlug =
+|"banned-files"
+|"min-file-lines"
+|"max-characters-per-line"
+|"redundant-path-segments"
+|"imports"
+|"remove-comments"
+|"structural-blank-lines"
+|"format";
 type CodeDisciplineMode = "check" | "fix";
 type CodeDisciplineRuntimeMode = CodeDisciplineMode;
 type CodeDisciplineRuleSeverity = "warning" | "fail";
@@ -18,7 +35,7 @@ type BannedPatternRuleEntry = string | {
   value: string;
   allowedFiles?: string[];
 };
-type BannedPatternsRuleOptions = RuleExclusionOptions & {
+type BannedPatternsRuleOptions = RuleExclusionOptions& {
   patterns: BannedPatternRuleEntry[];
   severity?: CodeDisciplineRuleSeverity;
 };
@@ -26,55 +43,57 @@ type NodeProcessBoundaryPresetOptions = {
   envBoundaryFiles?: string[];
   processBoundaryFiles?: string[];
 };
+type CodeDisciplinePresetName = "trebired";
 type CodeDisciplinePresets = {
+  use?: CodeDisciplinePresetName | CodeDisciplinePresetName[];
   nodeProcessBoundary?: NodeProcessBoundaryPresetOptions;
 };
 type BannedFileRuleEntry = string | {
   glob: string;
 };
-type BannedFilesRuleOptions = RuleExclusionOptions & {
+type BannedFilesRuleOptions = RuleExclusionOptions& {
   patterns: BannedFileRuleEntry[];
   severity?: CodeDisciplineRuleSeverity;
 };
-type MinFileLinesRuleOptions = RuleExclusionOptions & {
+type MinFileLinesRuleOptions = RuleExclusionOptions& {
   min?: number;
   severity?: CodeDisciplineRuleSeverity;
 };
-type MinDeclarationNameRuleOptions = RuleExclusionOptions & {
+type MinDeclarationNameRuleOptions = RuleExclusionOptions& {
   min?: number;
   severity?: CodeDisciplineRuleSeverity;
 };
-type MaxFileLinesRuleOptions = RuleExclusionOptions & {
+type MaxFileLinesRuleOptions = RuleExclusionOptions& {
   max?: number;
   severity?: CodeDisciplineRuleSeverity;
 };
-type MaxCharactersPerLineRuleOptions = RuleExclusionOptions & {
+type MaxCharactersPerLineRuleOptions = RuleExclusionOptions& {
   max?: number;
   severity?: CodeDisciplineRuleSeverity;
 };
-type MaxFunctionLinesRuleOptions = RuleExclusionOptions & {
+type MaxFunctionLinesRuleOptions = RuleExclusionOptions& {
   max?: number;
   severity?: CodeDisciplineRuleSeverity;
 };
-type RedundantPathSegmentsRuleOptions = RuleExclusionOptions & {
+type RedundantPathSegmentsRuleOptions = RuleExclusionOptions& {
   separators?: string[];
   severity?: CodeDisciplineRuleSeverity;
 };
-type RemoveCommentsRuleOptions = RuleExclusionOptions & {
+type RemoveCommentsRuleOptions = RuleExclusionOptions& {
   severity?: CodeDisciplineRuleSeverity;
   exclude?: string[];
 };
-type StructuralBlankLinesRuleOptions = RuleExclusionOptions & {
+type StructuralBlankLinesRuleOptions = RuleExclusionOptions& {
   severity?: CodeDisciplineRuleSeverity;
 };
-type DryRuleOptions = RuleExclusionOptions & {
+type DryRuleOptions = RuleExclusionOptions& {
   minDuplicateCharacters?: number;
   severity?: CodeDisciplineRuleSeverity;
 };
-type CodeDisciplineImportsRuleOptions = RuleExclusionOptions & Omit<ImportsRuleOptions, "fix" | "excludeDirs"> & {
+type CodeDisciplineImportsRuleOptions = RuleExclusionOptions&Omit<ImportsRuleOptions, "fix"|"excludeDirs">& {
   severity?: CodeDisciplineRuleSeverity;
 };
-type FormattingRuleOptions = RuleExclusionOptions & {
+type FormattingRuleOptions = RuleExclusionOptions& {
   severity?: CodeDisciplineRuleSeverity;
 };
 type CodeDisciplineRules = {
@@ -100,7 +119,7 @@ type CodeDisciplineLifecycleContext = {
   config: CodeDisciplineConfig;
   state: Record<string, unknown>;
 };
-type CodeDisciplineLifecycleHookResult = void | Promise<void>;
+type CodeDisciplineLifecycleHookResult = void |Promise<void>;
 type CodeDisciplineLifecycleHooks = {
   beforeRun?: (context: CodeDisciplineLifecycleContext) => CodeDisciplineLifecycleHookResult;
   afterRun?: (context: CodeDisciplineLifecycleContext, result: unknown) => CodeDisciplineLifecycleHookResult;
@@ -121,7 +140,7 @@ type CheckCodeDisciplineOptions = {
   progressObserver?: SourceProgressObserver;
   scanObserver?: SourceScanObserver;
 };
-type FixCodeDisciplineOptions = Omit<CheckCodeDisciplineOptions, "onlyRules"> & {
+type FixCodeDisciplineOptions = Omit<CheckCodeDisciplineOptions, "onlyRules">& {
   onlyRules?: FixableRuleSlug[];
 };
 type CodeDisciplineConfig = Omit<CheckCodeDisciplineOptions, "projectRoot">;
@@ -196,11 +215,11 @@ type NormalizedCodeFormatter = {
   trimTrailingWhitespace: boolean;
   collapseBlankLines: boolean;
 };
-type NormalizedFormattingRule = NormalizedCodeFormatter & {
+type NormalizedFormattingRule = NormalizedCodeFormatter& {
   excludeDirs: ExcludeDirEntry[];
   severity: CodeDisciplineRuleSeverity;
 };
-type NormalizedCheckCodeDisciplineOptions = SourceScanOptions & {
+type NormalizedCheckCodeDisciplineOptions = SourceScanOptions& {
   configPath?: string;
   sourceRootRelative: string;
   logging: LoggingOptions;
@@ -239,7 +258,7 @@ type FixCodeDisciplineRuleResult = {
   inserted_blank_lines?: number;
   removed_blank_lines?: number;
 };
-type FixCodeDisciplineResult = CodeDisciplineResult & {
+type FixCodeDisciplineResult = CodeDisciplineResult& {
   deleted_files: number;
   moved_files: number;
   rewritten_files: number;
@@ -249,6 +268,7 @@ type FixCodeDisciplineResult = CodeDisciplineResult & {
   unchanged_files: number;
   ruleResults: Partial<Record<FixableRuleSlug, FixCodeDisciplineRuleResult>>;
 };
+
 export type {
   BannedPatternRuleEntry,
   BannedFileRuleEntry,
@@ -261,6 +281,7 @@ export type {
   CodeDisciplineLifecycleHookResult,
   CodeDisciplineLifecycleHooks,
   CodeDisciplineMode,
+  CodeDisciplinePresetName,
   CodeDisciplinePresets,
   CodeDisciplineRuleSlug,
   CodeDisciplineRuleSeverity,

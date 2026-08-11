@@ -2,7 +2,35 @@ import { buildPackageLogGroup, PACKAGE_NAME } from "./package-metadata.js";
 
 const DEFAULT_SOURCE_ROOT = ".";
 const CODE_DISCIPLINE_STATE_DIR = ".trebired/code-discipline";
-const DEFAULT_SOURCE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".mts", ".cts", ".cjs", ".go", ".rs", ".cpp", ".cc", ".cxx", ".c++", ".hpp", ".hh", ".hxx", ".h++", ".h", ".cs", ".py", ".sh", ".bash", ".zsh", ".qml", ".scss", ".css"];
+const DEFAULT_SOURCE_EXTENSIONS = [
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".mts",
+  ".cts",
+  ".cjs",
+  ".go",
+  ".rs",
+  ".cpp",
+  ".cc",
+  ".cxx",
+  ".c++",
+  ".hpp",
+  ".hh",
+  ".hxx",
+  ".h++",
+  ".h",
+  ".cs",
+  ".py",
+  ".sh",
+  ".bash",
+  ".zsh",
+  ".qml",
+  ".scss",
+  ".css"
+];
 const DEFAULT_EXCLUDE_DIRS = [".git", "node_modules", "dist", ".vite", CODE_DISCIPLINE_STATE_DIR];
 const DEFAULT_ALIAS_PREFIX = "#";
 const DEFAULT_ALIAS_STRATEGY = "random";

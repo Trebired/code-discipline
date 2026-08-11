@@ -12,7 +12,7 @@ import { collectModuleSpecifiers } from "./module-specifiers.js";
 import { resolveRelativeImport } from "./resolve.js";
 import { isAllowedRelative } from "./rewrite.js";
 import type { NormalizedImportsOptions, ScannedSourceFile } from "./types.js";
-import { collectWithParseFailure } from "../checks/parse-failures.js";
+import { collectWithParseFailure } from "#lvwwpxtj6az5";
 
 async function collectImportViolations(
   sourceFiles: ScannedSourceFile[],
@@ -21,9 +21,9 @@ async function collectImportViolations(
 ): Promise<CodeDisciplineViolation[]> {
   const supportedSourceFiles = sourceFiles.filter((file) => supportsImports(file.extension));
   const progress = createRuleProgress({
-    observer: options.progressObserver,
-    rule: "imports",
-    totalItems: supportedSourceFiles.length,
+      observer: options.progressObserver,
+      rule: "imports",
+      totalItems: supportedSourceFiles.length,
   });
   const aliasPlan = await planTsconfigAliases(options, supportedSourceFiles, logger);
   const aliasIdsByFilePath = new Map(aliasPlan.aliasRecords.map((record) => [record.absolutePath, record.id]));
@@ -31,21 +31,21 @@ async function collectImportViolations(
 
   if (aliasPlan.aliasesChanged) {
     violations.push({
-      rule: "imports",
-      fix: true,
-      filePath: path.relative(options.projectRoot, options.tsconfigPath) || "tsconfig.json",
-      message: options.output.type === "alias-map"
+        rule: "imports",
+        fix: true,
+        filePath: path.relative(options.projectRoot, options.tsconfigPath) || "tsconfig.json",
+        message: options.output.type === "alias-map"
         ? "imports folder and generated tsconfig are out of sync"
         : "tsconfig paths are out of sync with the current source tree",
-      details: {
-        aliasesCount: aliasPlan.aliasesCount,
-        drift: aliasPlan.drift,
-      },
+        details: {
+          aliasesCount: aliasPlan.aliasesCount,
+          drift: aliasPlan.drift,
+        },
     });
   }
 
   const packageJsonSyncState = options.output.type === "alias-map" && aliasPlan.aliasPathMap
-    ? await collectPackageJsonImportsSyncStateFromAliasMap({
+  ? await collectPackageJsonImportsSyncStateFromAliasMap({
       aliasPathMap: aliasPlan.aliasPathMap,
       cleanWhenDisabled: true,
       configPath: options.configPath,
@@ -54,23 +54,23 @@ async function collectImportViolations(
         enabled: false,
       },
       projectRoot: options.projectRoot,
-    })
-    : await collectPackageJsonImportsSyncState({
+  })
+  : await collectPackageJsonImportsSyncState({
       configPath: options.configPath,
       options: options.packageJsonImports,
       projectRoot: options.projectRoot,
       tsconfigPath: options.tsconfigPath,
-    });
+  });
 
   if (packageJsonSyncState?.changed) {
     violations.push({
-      rule: "imports",
-      fix: true,
-      filePath: path.relative(options.projectRoot, packageJsonSyncState.packageJsonPath) || "package.json",
-      message: "package.json imports are out of sync with tsconfig paths",
-      details: {
-        importsCount: packageJsonSyncState.importsCount,
-      },
+        rule: "imports",
+        fix: true,
+        filePath: path.relative(options.projectRoot, packageJsonSyncState.packageJsonPath) || "package.json",
+        message: "package.json imports are out of sync with tsconfig paths",
+        details: {
+          importsCount: packageJsonSyncState.importsCount,
+        },
     });
   }
 
@@ -91,13 +91,13 @@ async function collectImportViolations(
       const resolvedFile = await resolveRelativeImport(occurrence.specifier, file.absolutePath, options);
       if (!resolvedFile) {
         violations.push({
-          rule: "imports",
-          fix: Boolean(occurrence.removalStart !== undefined && occurrence.removalEnd !== undefined),
-          filePath: file.relativeFromProjectRoot,
-          message: `unresolved import ${occurrence.specifier} should be removed`,
-          details: {
-            specifier: occurrence.specifier,
-          },
+            rule: "imports",
+            fix: Boolean(occurrence.removalStart !== undefined && occurrence.removalEnd !== undefined),
+            filePath: file.relativeFromProjectRoot,
+            message: `unresolved import ${occurrence.specifier} should be removed`,
+            details: {
+              specifier: occurrence.specifier,
+            },
         });
         continue;
       }
@@ -108,15 +108,15 @@ async function collectImportViolations(
       if (!aliasId) continue;
 
       violations.push({
-        rule: "imports",
-        fix: true,
-        filePath: file.relativeFromProjectRoot,
-        message: `relative import ${occurrence.specifier} should be rewritten to ${aliasId}`,
-        details: {
-          specifier: occurrence.specifier,
-          aliasId,
-          resolvedFile: path.relative(options.projectRoot, resolvedFile),
-        },
+          rule: "imports",
+          fix: true,
+          filePath: file.relativeFromProjectRoot,
+          message: `relative import ${occurrence.specifier} should be rewritten to ${aliasId}`,
+          details: {
+            specifier: occurrence.specifier,
+            aliasId,
+            resolvedFile: path.relative(options.projectRoot, resolvedFile),
+          },
       });
     }
 
@@ -129,13 +129,13 @@ async function collectImportViolations(
       );
       for (const deadImport of deadImports ?? []) {
         violations.push({
-          rule: "imports",
-          fix: true,
-          filePath: file.relativeFromProjectRoot,
-          message: `unused import ${deadImport.name} should be removed`,
-          details: {
-            name: deadImport.name,
-          },
+            rule: "imports",
+            fix: true,
+            filePath: file.relativeFromProjectRoot,
+            message: `unused import ${deadImport.name} should be removed`,
+            details: {
+              name: deadImport.name,
+            },
         });
       }
     }

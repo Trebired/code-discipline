@@ -21,12 +21,12 @@ const NORMALIZED_PACKAGE_STATE_DIR = CODE_DISCIPLINE_STATE_DIR.toLowerCase();
 function isStatePathCharacter(value: string): boolean {
   const code = value.charCodeAt(0);
   return code === 45
-    || code === 46
-    || code === 47
-    || code === 95
-    || (code >= 48 && code <= 57)
-    || (code >= 65 && code <= 90)
-    || (code >= 97 && code <= 122);
+  ||code === 46
+  ||code === 47
+  ||code === 95
+  ||(code >= 48 && code <= 57)
+  ||(code >= 65 && code <= 90)
+  ||(code >= 97 && code <= 122);
 }
 
 function collectPackageStatePathSpans(text: string): TextSpan[] {
@@ -50,8 +50,8 @@ function isInsideSpan(index: number, spans: TextSpan[]): boolean {
 function collectModuleSpecifierSpansSafely(text: string, filePath: string): TextSpan[] {
   try {
     return collectModuleSpecifiers(text, filePath).map((specifier) => ({
-      start: specifier.start,
-      end: specifier.end,
+          start: specifier.start,
+          end: specifier.end,
     }));
   } catch {
     return [];
@@ -95,7 +95,9 @@ function buildBannedPatternMessage(patternValue: string, rawOccurrences: number,
     return `file contains banned pattern "${patternValue}" via a constant-folded expression${formatOccurrenceSuffix(foldedOccurrences)}`;
   }
 
-  return `file contains banned pattern "${patternValue}"${formatOccurrenceSuffix(rawOccurrences)} and via a constant-folded expression${formatOccurrenceSuffix(foldedOccurrences)}`;
+  const rawSuffix = formatOccurrenceSuffix(rawOccurrences);
+  const foldedSuffix = formatOccurrenceSuffix(foldedOccurrences);
+  return `file contains banned pattern "${patternValue}"${rawSuffix} and via a constant-folded expression${foldedSuffix}`;
 }
 
 async function collectBannedPatternViolations(
@@ -107,9 +109,9 @@ async function collectBannedPatternViolations(
 
   const violations: CodeDisciplineViolation[] = [];
   const progress = createRuleProgress({
-    observer: options.progressObserver,
-    rule: "banned-patterns",
-    totalItems: sourceFiles.length,
+      observer: options.progressObserver,
+      rule: "banned-patterns",
+      totalItems: sourceFiles.length,
   });
 
   for (let index = 0; index < sourceFiles.length; index += 1) {
@@ -123,8 +125,8 @@ async function collectBannedPatternViolations(
       if (pattern.allowedFiles.includes(file.relativeFromProjectRoot)) continue;
 
       const rawOccurrences = normalizedText.includes(pattern.normalizedValue)
-        ? countOccurrencesOutsideIgnoredSpans(normalizedText, pattern.normalizedValue, moduleSpecifierSpans)
-        : 0;
+      ? countOccurrencesOutsideIgnoredSpans(normalizedText, pattern.normalizedValue, moduleSpecifierSpans)
+      : 0;
       const patternFoldedMatches = foldedMatches.filter(
         (match) => countOccurrencesOutsideIgnoredSpans(match.value.toLowerCase(), pattern.normalizedValue) > 0,
       );
@@ -132,17 +134,17 @@ async function collectBannedPatternViolations(
       if (rawOccurrences === 0 && patternFoldedMatches.length === 0) continue;
 
       violations.push({
-        rule: "banned-patterns",
-        fix: false,
-        filePath: file.relativeFromProjectRoot,
-        message: buildBannedPatternMessage(pattern.value, rawOccurrences, patternFoldedMatches.length),
-        details: {
-          pattern: pattern.value,
-          occurrences: rawOccurrences,
-          foldedOccurrences: patternFoldedMatches.length,
-          foldedMatches: patternFoldedMatches.map((match) => ({ line: match.line, kind: match.kind })),
-          allowedFiles: pattern.allowedFiles,
-        },
+          rule: "banned-patterns",
+          fix: false,
+          filePath: file.relativeFromProjectRoot,
+          message: buildBannedPatternMessage(pattern.value, rawOccurrences, patternFoldedMatches.length),
+          details: {
+            pattern: pattern.value,
+            occurrences: rawOccurrences,
+            foldedOccurrences: patternFoldedMatches.length,
+            foldedMatches: patternFoldedMatches.map((match) => ({ line: match.line, kind: match.kind })),
+            allowedFiles: pattern.allowedFiles,
+          },
       });
     }
 

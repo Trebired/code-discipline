@@ -44,10 +44,10 @@ function normalizeCondition(
 
 function unwrapCondition(node: ts.Node): ts.Node {
   if (ts.isParenthesizedExpression(node)
-    || ts.isAsExpression(node)
-    || ts.isTypeAssertionExpression(node)
-    || ts.isNonNullExpression(node)
-    || ts.isSatisfiesExpression(node)) {
+    ||ts.isAsExpression(node)
+    ||ts.isTypeAssertionExpression(node)
+    ||ts.isNonNullExpression(node)
+    ||ts.isSatisfiesExpression(node)) {
     return node.expression;
   }
 
@@ -75,8 +75,8 @@ function normalizeBinaryCondition(
     const left = normalizeExpression(node.left, context, sourceFile);
     const right = normalizeExpression(node.right, context, sourceFile);
     return left === undefined || right === undefined
-      ? undefined
-      : ["compare", ts.tokenToString(node.operatorToken.kind) ?? String(node.operatorToken.kind), left, right];
+    ? undefined
+    : ["compare", ts.tokenToString(node.operatorToken.kind) ?? String(node.operatorToken.kind), left, right];
   }
 
   return undefined;
@@ -88,7 +88,7 @@ function normalizeLogicalAnd(
   sourceFile: ts.SourceFile,
 ): BehaviorExpression | undefined {
   const terms = flattenBinary(node, ts.SyntaxKind.AmpersandAmpersandToken)
-    .map((term) => normalizeCondition(term, context, sourceFile));
+  .map((term) => normalizeCondition(term, context, sourceFile));
   return terms.some((term) => term === undefined) ? undefined : normalizeAnd(terms as BehaviorExpression[]);
 }
 
@@ -98,7 +98,7 @@ function normalizeLogicalOr(
   sourceFile: ts.SourceFile,
 ): BehaviorExpression | undefined {
   const terms = flattenBinary(node, ts.SyntaxKind.BarBarToken)
-    .map((term) => normalizeCondition(term, context, sourceFile));
+  .map((term) => normalizeCondition(term, context, sourceFile));
   if (terms.some((term) => term === undefined)) return undefined;
   return invertCondition(normalizeAnd((terms as BehaviorExpression[]).map(invertCondition)));
 }
@@ -160,9 +160,9 @@ function normalizeEqualityCondition(
 
   const equality = normalizeComparison(positiveEqualityOperator(node.operatorToken.kind), left, right);
   return node.operatorToken.kind === ts.SyntaxKind.ExclamationEqualsEqualsToken
-    || node.operatorToken.kind === ts.SyntaxKind.ExclamationEqualsToken
-    ? invertCondition(equality)
-    : equality;
+  ||node.operatorToken.kind === ts.SyntaxKind.ExclamationEqualsToken
+  ? invertCondition(equality)
+  : equality;
 }
 
 function normalizeNullishGroup(
@@ -191,7 +191,7 @@ function normalizeStrictNullishGroup(
   sourceFile: ts.SourceFile,
 ): BehaviorExpression | undefined {
   const parts = flattenBinary(node, node.operatorToken.kind)
-    .map((part) => normalizeStrictNullishEquality(part, context, sourceFile));
+  .map((part) => normalizeStrictNullishEquality(part, context, sourceFile));
   if (parts.some((part) => part === undefined)) return undefined;
 
   const first = parts[0]!;
@@ -239,7 +239,7 @@ function normalizeStrictNullishEquality(
     expression,
     kind: leftKind ?? rightKind!,
     negated: node.operatorToken.kind === ts.SyntaxKind.ExclamationEqualsEqualsToken
-      || node.operatorToken.kind === ts.SyntaxKind.ExclamationEqualsToken,
+    ||node.operatorToken.kind === ts.SyntaxKind.ExclamationEqualsToken,
   };
 }
 

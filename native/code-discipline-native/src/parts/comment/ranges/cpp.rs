@@ -27,7 +27,7 @@ fn scan_cpp_raw_string(text: &str, start: usize) -> Option<usize> {
     close.push('"');
 
     Some(text[paren_index..].find(&close).map_or(bytes.len(), |relative_end| {
-        paren_index + relative_end + close.len()
+                paren_index + relative_end + close.len()
     }))
 }
 
@@ -48,9 +48,9 @@ fn collect_cpp_comment_ranges(text: &str) -> Vec<CommentRange> {
         if current == b'/' && next == Some(b'/') {
             let end = scan_line_comment(text, index);
             ranges.push(CommentRange {
-                start: index,
-                end,
-                kind: CommentKind::Line,
+                    start: index,
+                    end,
+                    kind: CommentKind::Line,
             });
             index = end;
             continue;
@@ -59,9 +59,9 @@ fn collect_cpp_comment_ranges(text: &str) -> Vec<CommentRange> {
         if current == b'/' && next == Some(b'*') {
             let end = scan_block_comment(text, index, false);
             ranges.push(CommentRange {
-                start: index,
-                end,
-                kind: CommentKind::Block,
+                    start: index,
+                    end,
+                    kind: CommentKind::Block,
             });
             index = end;
             continue;

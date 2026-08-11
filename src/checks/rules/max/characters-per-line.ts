@@ -55,9 +55,9 @@ async function runMaxCharactersPerLineRule(
   if (!options.rules.maxCharactersPerLine) return [];
 
   const progress = createRuleProgress({
-    observer: options.progressObserver,
-    rule: "max-characters-per-line",
-    totalItems: sourceFiles.length,
+      observer: options.progressObserver,
+      rule: "max-characters-per-line",
+      totalItems: sourceFiles.length,
   });
   const violations: CodeDisciplineViolation[] = [];
 
@@ -87,15 +87,15 @@ async function runMaxCharactersPerLineRule(
       if (characterCount <= options.rules.maxCharactersPerLine.max) continue;
 
       violations.push({
-        rule: "max-characters-per-line",
-        fix: false,
-        filePath: file.relativeFromProjectRoot,
-        message: `line ${lineIndex + 1} has ${characterCount} characters and exceeds the limit of ${options.rules.maxCharactersPerLine.max}`,
-        details: {
-          line: lineIndex + 1,
-          characterCount,
-          max: options.rules.maxCharactersPerLine.max,
-        },
+          rule: "max-characters-per-line",
+          fix: false,
+          filePath: file.relativeFromProjectRoot,
+          message: `line ${lineIndex + 1} has ${characterCount} characters and exceeds the limit of ${options.rules.maxCharactersPerLine.max}`,
+          details: {
+            line: lineIndex + 1,
+            characterCount,
+            max: options.rules.maxCharactersPerLine.max,
+          },
       });
     }
 

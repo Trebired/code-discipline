@@ -100,10 +100,10 @@ function createHashToken(value: string, length: number): string {
 
 function createSlugToken(value: string): string {
   const slug = value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "");
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, "-")
+  .replace(/-+/g, "-")
+  .replace(/^-|-$/g, "");
 
   return slug || "module";
 }

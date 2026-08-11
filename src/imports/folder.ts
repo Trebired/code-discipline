@@ -21,40 +21,49 @@ import type {
   TsconfigJson,
 } from "./types.js";
 import type { NormalizedCodeDisciplineLogger } from "#uljkt8i26p4t";
+
 const IMPORTS_FOLDER_DIR = ".trebired/code-discipline/imports";
 const GENERATED_TSCONFIG_PATH = ".trebired/code-discipline/generated/tsconfig.paths.json";
+
 type ImportsFolderState = {
-  entryCounts: Array<{ filePath: string; count: number }>;
+  entryCounts: Array<{filePath:string;count:number}>;
   map: Record<string, string>;
   stableFiles: Record<string, Record<string, string>>;
 };
+
 function resolveImportsFolderPath(options: NormalizedImportsOptions): string {
   const input = options.output.type === "alias-map" ? options.output.dir : IMPORTS_FOLDER_DIR;
   return path.isAbsolute(input) ? path.resolve(input) : path.resolve(options.projectRoot, input);
 }
+
 function resolveGeneratedTsconfigPath(options: NormalizedImportsOptions): string {
   const input = options.output.type === "alias-map" ? options.output.generatedTsconfigPath : GENERATED_TSCONFIG_PATH;
   return path.isAbsolute(input) ? path.resolve(input) : path.resolve(options.projectRoot, input);
 }
+
 function sortStringRecord(record: Record<string, string>): Record<string, string> {
   return Object.fromEntries(
     Object.entries(record).sort(([left], [right]) => left.localeCompare(right)),
   );
 }
+
 function toGeneratedTsconfigTarget(projectRoot: string, generatedTsconfigPath: string, targetPath: string): string {
   const absoluteTarget = path.resolve(projectRoot, targetPath);
   const relative = toPosixPath(path.relative(path.dirname(generatedTsconfigPath), absoluteTarget));
   if (relative.startsWith("../")) return relative;
   return relative.startsWith("./") ? relative : `./${relative}`;
 }
+
 function toRootTsconfigExtendsTarget(tsconfigPath: string, generatedTsconfigPath: string): string {
   const relative = toPosixPath(path.relative(path.dirname(tsconfigPath), generatedTsconfigPath));
   if (relative.startsWith("../")) return relative;
   return relative.startsWith("./") ? relative : `./${relative}`;
 }
+
 function normalizeTsconfigExtendsTarget(tsconfigPath: string, target: string): string {
   return path.resolve(path.dirname(tsconfigPath), target);
 }
+
 function hasGeneratedExtends(tsconfig: TsconfigJson, tsconfigPath: string, generatedTsconfigPath: string): boolean {
   const current = tsconfig.extends;
   if (typeof current === "string") {
@@ -65,6 +74,7 @@ function hasGeneratedExtends(tsconfig: TsconfigJson, tsconfigPath: string, gener
   }
   return false;
 }
+
 function addGeneratedExtends(tsconfig: TsconfigJson, tsconfigPath: string, generatedTsconfigPath: string): TsconfigJson {
   if (hasGeneratedExtends(tsconfig, tsconfigPath, generatedTsconfigPath)) return tsconfig;
   const generatedTarget = toRootTsconfigExtendsTarget(tsconfigPath, generatedTsconfigPath);
@@ -86,6 +96,7 @@ function addGeneratedExtends(tsconfig: TsconfigJson, tsconfigPath: string, gener
     extends: generatedTarget,
   };
 }
+
 function removeInlineTsconfigPaths(tsconfig: TsconfigJson): TsconfigJson {
   const compilerOptions = { ...(tsconfig.compilerOptions ?? {}) };
   delete compilerOptions.paths;
@@ -95,6 +106,7 @@ function removeInlineTsconfigPaths(tsconfig: TsconfigJson): TsconfigJson {
     compilerOptions,
   };
 }
+
 function buildGeneratedTsconfig(options: NormalizedImportsOptions, aliasPathMap: Record<string, string>): TsconfigJson {
   const generatedTsconfigPath = resolveGeneratedTsconfigPath(options);
   const paths: Record<string, string[]> = {};
@@ -107,6 +119,7 @@ function buildGeneratedTsconfig(options: NormalizedImportsOptions, aliasPathMap:
     },
   };
 }
+
 async function readJsonObject(filePath: string): Promise<Record<string, unknown>> {
   const text = await fs.readFile(filePath, "utf8");
   const parsed = JSON.parse(text) as unknown;
@@ -115,16 +128,17 @@ async function readJsonObject(filePath: string): Promise<Record<string, unknown>
   }
   return parsed as Record<string, unknown>;
 }
+
 async function readImportsFolderState(options: NormalizedImportsOptions): Promise<ImportsFolderState> {
   const importsFolderPath = resolveImportsFolderPath(options);
   const map: Record<string, string> = {};
   const stableFiles: Record<string, Record<string, string>> = {};
-  const entryCounts: Array<{ filePath: string; count: number }> = [];
+  const entryCounts: Array<{filePath:string;count:number}> = [];
   if (!await pathExists(importsFolderPath)) return { entryCounts, map, stableFiles };
   const entries = (await fs.readdir(importsFolderPath, { withFileTypes: true }))
-    .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".json"))
-    .map((entry) => entry.name)
-    .sort((left, right) => left.localeCompare(right, undefined, { numeric: true }));
+  .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".json"))
+  .map((entry) => entry.name)
+  .sort((left, right) => left.localeCompare(right, undefined, { numeric: true }));
   for (const filename of entries) {
     const filePath = path.join(importsFolderPath, filename);
     const parsed = await readJsonObject(filePath);
@@ -145,6 +159,7 @@ async function readImportsFolderState(options: NormalizedImportsOptions): Promis
     stableFiles,
   };
 }
+
 function splitAliasPathMap(
   aliasPathMap: Record<string, string>,
   maxEntriesPerFile: number,
@@ -157,11 +172,13 @@ function splitAliasPathMap(
   }
   return files;
 }
-async function readGeneratedTsconfig(options: NormalizedImportsOptions): Promise<TsconfigJson | null> {
+
+async function readGeneratedTsconfig(options: NormalizedImportsOptions): Promise<TsconfigJson|null> {
   const generatedTsconfigPath = resolveGeneratedTsconfigPath(options);
   if (!await pathExists(generatedTsconfigPath)) return null;
   return parseTsconfigJson(await fs.readFile(generatedTsconfigPath, "utf8"), generatedTsconfigPath);
 }
+
 function collectGeneratedTsconfigAliasPaths(
   options: NormalizedImportsOptions,
   generatedTsconfig: TsconfigJson | null,
@@ -178,12 +195,14 @@ function collectGeneratedTsconfigAliasPaths(
   }
   return sortStringRecord(aliasPathMap);
 }
+
 async function readAliasMapAliasPaths(options: NormalizedImportsOptions): Promise<Record<string, string>> {
   return sortStringRecord({
-    ...collectGeneratedTsconfigAliasPaths(options, await readGeneratedTsconfig(options)),
-    ...(await readImportsFolderState(options)).map,
+      ...collectGeneratedTsconfigAliasPaths(options, await readGeneratedTsconfig(options)),
+      ...(await readImportsFolderState(options)).map,
   });
 }
+
 function collectTsconfigAliasPaths(tsconfig: TsconfigJson): Record<string, string> {
   const paths = tsconfig.compilerOptions?.paths ?? {};
   const aliasPathMap: Record<string, string> = {};
@@ -193,6 +212,7 @@ function collectTsconfigAliasPaths(tsconfig: TsconfigJson): Record<string, strin
   }
   return aliasPathMap;
 }
+
 async function writeImportsFolder(
   options: NormalizedImportsOptions,
   aliasPathMap: Record<string, string>,
@@ -200,14 +220,15 @@ async function writeImportsFolder(
   const importsFolderPath = resolveImportsFolderPath(options);
   await fs.mkdir(importsFolderPath, { recursive: true });
   const existingJsonFiles = (await fs.readdir(importsFolderPath, { withFileTypes: true }))
-    .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".json"))
-    .map((entry) => path.join(importsFolderPath, entry.name));
+  .filter((entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".json"))
+  .map((entry) => path.join(importsFolderPath, entry.name));
   await Promise.all(existingJsonFiles.map((filePath) => fs.unlink(filePath)));
   const maxEntriesPerFile = options.output.type === "alias-map" ? options.output.maxEntriesPerFile : 1000;
   for (const [filename, entries] of Object.entries(splitAliasPathMap(aliasPathMap, maxEntriesPerFile))) {
     await fs.writeFile(path.join(importsFolderPath, filename), toStableJson(entries));
   }
 }
+
 async function writeGeneratedTsconfig(
   options: NormalizedImportsOptions,
   aliasPathMap: Record<string, string>,
@@ -216,15 +237,17 @@ async function writeGeneratedTsconfig(
   await fs.mkdir(path.dirname(generatedTsconfigPath), { recursive: true });
   await fs.writeFile(generatedTsconfigPath, toStableJson(buildGeneratedTsconfig(options, aliasPathMap)));
 }
+
 async function resolveAliasTargetToSourcePath(
   options: NormalizedImportsOptions,
   targetPath: string,
-): Promise<string | null> {
+): Promise<string|null> {
   const absoluteTarget = path.resolve(options.projectRoot, targetPath);
   const resolvedTarget = await resolveProjectPathTarget(absoluteTarget, options.sourceExtensions);
   if (!resolvedTarget || !isInsideDirectory(resolvedTarget, options.sourceRoot)) return null;
   return resolvedTarget;
 }
+
 async function writeImportsFolderAliases(
   options: NormalizedImportsOptions,
   aliasPathMap: Record<string, string>,
@@ -232,6 +255,7 @@ async function writeImportsFolderAliases(
   await writeImportsFolder(options, aliasPathMap);
   await writeGeneratedTsconfig(options, aliasPathMap);
 }
+
 async function removeAliasMapState(options: NormalizedImportsOptions): Promise<boolean> {
   const importsFolderPath = resolveImportsFolderPath(options);
   const generatedTsconfigPath = resolveGeneratedTsconfigPath(options);
@@ -245,6 +269,7 @@ async function removeAliasMapState(options: NormalizedImportsOptions): Promise<b
   }
   return importsFolderExists || generatedTsconfigExists;
 }
+
 async function planImportsFolderAliases(
   options: NormalizedImportsOptions,
   sourceFiles: ScannedSourceFile[],
@@ -254,13 +279,13 @@ async function planImportsFolderAliases(
   const importsFolderState = await readImportsFolderState(options);
   const sourceFilesByPath = new Map(sourceFiles.map((file) => [file.absolutePath, file]));
   const migratedAliasPathMap = sortStringRecord({
-    ...collectTsconfigAliasPaths(config),
-    ...await collectPackageJsonAliasImports({
-      configPath: options.configPath,
-      options: options.packageJsonImports,
-      projectRoot: options.projectRoot,
-    }),
-    ...importsFolderState.map,
+      ...collectTsconfigAliasPaths(config),
+      ...await collectPackageJsonAliasImports({
+          configPath: options.configPath,
+          options: options.packageJsonImports,
+          projectRoot: options.projectRoot,
+      }),
+      ...importsFolderState.map,
   });
   const preservedAliasPathMap: Record<string, string> = {};
   const preservedAliasesByPath = new Map<string, string>();
@@ -280,9 +305,9 @@ async function planImportsFolderAliases(
     reservedIds.add(aliasId);
     managedAliasPathMap[aliasId] = normalizeDotPrefixedTarget(file.relativeFromProjectRoot);
     aliasRecords.push({
-      id: aliasId,
-      absolutePath: file.absolutePath,
-      relativeFromProjectRoot: file.relativeFromProjectRoot,
+        id: aliasId,
+        absolutePath: file.absolutePath,
+        relativeFromProjectRoot: file.relativeFromProjectRoot,
     });
   }
   const aliasPathMap = sortStringRecord(managedAliasPathMap);
@@ -293,8 +318,8 @@ async function planImportsFolderAliases(
   const rootTsconfigWithoutPaths = removeInlineTsconfigPaths(config);
   const nextRootTsconfig = addGeneratedExtends(rootTsconfigWithoutPaths, options.tsconfigPath, resolveGeneratedTsconfigPath(options));
   const maxEntriesExceeded = importsFolderState.entryCounts
-    .filter((entry) => entry.count > maxEntriesPerFile)
-    .map((entry) => ({ filePath: entry.filePath, count: entry.count, max: maxEntriesPerFile }));
+  .filter((entry) => entry.count > maxEntriesPerFile)
+  .map((entry) => ({ filePath: entry.filePath, count: entry.count, max: maxEntriesPerFile }));
   const rootProjectionChanged = stableSerialize(originalConfig) !== stableSerialize(nextRootTsconfig);
   const drift = {
     generatedTsconfigChanged: stableSerialize(currentGeneratedTsconfig ?? {}) !== stableSerialize(generatedTsconfig),
@@ -302,16 +327,16 @@ async function planImportsFolderAliases(
     inlineTsconfigPaths: Boolean(config.compilerOptions?.paths),
     maxEntriesExceeded,
     rootExtendsChanged: rootProjectionChanged
-      && (!hasGeneratedExtends(config, options.tsconfigPath, resolveGeneratedTsconfigPath(options))
-        || Boolean(config.compilerOptions?.paths)
-        || Boolean(config.compilerOptions?.baseUrl)),
+    &&(!hasGeneratedExtends(config, options.tsconfigPath, resolveGeneratedTsconfigPath(options))
+      ||Boolean(config.compilerOptions?.paths)
+      ||Boolean(config.compilerOptions?.baseUrl)),
   };
   return {
     aliasesChanged: drift.importsFolderChanged
-      || drift.generatedTsconfigChanged
-      || drift.inlineTsconfigPaths
-      || drift.rootExtendsChanged
-      || maxEntriesExceeded.length > 0,
+    ||drift.generatedTsconfigChanged
+    ||drift.inlineTsconfigPaths
+    ||drift.rootExtendsChanged
+    ||maxEntriesExceeded.length > 0,
     aliasesCount: aliasRecords.length,
     aliasPathMap,
     aliasRecords,
@@ -319,4 +344,5 @@ async function planImportsFolderAliases(
     tsconfig: nextRootTsconfig,
   };
 }
+
 export { planImportsFolderAliases, readAliasMapAliasPaths, removeAliasMapState, writeImportsFolderAliases };

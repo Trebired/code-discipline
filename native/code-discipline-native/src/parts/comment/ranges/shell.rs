@@ -3,8 +3,8 @@ fn is_shell_comment_boundary(line: &str, index: usize) -> bool {
         return true;
     }
     line.as_bytes()
-        .get(index - 1)
-        .is_some_and(|byte| byte.is_ascii_whitespace() || b";&|(){}".contains(byte))
+    .get(index - 1)
+    .is_some_and(|byte| byte.is_ascii_whitespace() || b";&|(){}".contains(byte))
 }
 
 fn shell_comment_start(line: &str) -> Option<usize> {
@@ -31,10 +31,10 @@ fn shell_comment_start(line: &str) -> Option<usize> {
         } else if !single && current == b'`' {
             backtick = !backtick;
         } else if !single
-            && !double
-            && !backtick
-            && current == b'#'
-            && is_shell_comment_boundary(line, index)
+        && !double
+        && !backtick
+        && current == b'#'
+        && is_shell_comment_boundary(line, index)
         {
             return Some(index);
         }
@@ -127,9 +127,9 @@ fn collect_shell_comment_ranges(text: &str) -> Vec<CommentRange> {
             if !(line_start == 0 && line.starts_with("#!")) {
                 if let Some(start) = comment_start {
                     ranges.push(CommentRange {
-                        start: line_start + start,
-                        end: content_end,
-                        kind: CommentKind::Line,
+                            start: line_start + start,
+                            end: content_end,
+                            kind: CommentKind::Line,
                     });
                 }
             }

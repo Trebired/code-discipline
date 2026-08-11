@@ -14,8 +14,8 @@ function normalizeFormatter(
 
   if (formatting !== undefined && (!formatting || typeof formatting !== "object" || Array.isArray(formatting))) {
     throw new InvalidCodeDisciplineConfigError("formatting must be an object when configured under rules", {
-      rule: "formatting",
-      value: formatting,
+        rule: "formatting",
+        value: formatting,
     });
   }
 
@@ -23,8 +23,8 @@ function normalizeFormatter(
   const unsupportedKeys = Object.keys(source).filter((key) => !["severity", "excludeDirs", "excludeFiles", "excludeFolders"].includes(key));
   if (unsupportedKeys.length > 0) {
     throw new InvalidCodeDisciplineConfigError("formatting does not accept formatter options", {
-      rule: "formatting",
-      keys: unsupportedKeys,
+        rule: "formatting",
+        keys: unsupportedKeys,
     });
   }
 

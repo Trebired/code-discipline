@@ -57,7 +57,7 @@ function recordLeadingConstStatements(
 }
 
 function recordConstStatement(statement: ts.VariableStatement, context: BehaviorContext, sourceFile: ts.SourceFile): boolean {
-  if (!(statement.declarationList.flags & ts.NodeFlags.Const)) return false;
+  if (!(statement.declarationList.flags&ts.NodeFlags.Const)) return false;
 
   for (const declaration of statement.declarationList.declarations) {
     if (!ts.isIdentifier(declaration.name) || !declaration.initializer) return false;
@@ -99,8 +99,8 @@ function normalizeIfReturn(
   const condition = normalizeCondition(statement.expression, context, sourceFile);
   const whenTrue = normalizeTerminalReturn(statement.thenStatement, cloneContext(context), sourceFile);
   const whenFalse = statement.elseStatement
-    ? normalizeTerminalReturn(statement.elseStatement, cloneContext(context), sourceFile)
-    : fallthrough;
+  ? normalizeTerminalReturn(statement.elseStatement, cloneContext(context), sourceFile)
+  : fallthrough;
 
   if (condition === undefined || whenTrue === undefined || whenFalse === undefined) return undefined;
   return normalizeConditional(condition, whenTrue, whenFalse);

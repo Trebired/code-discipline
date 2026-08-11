@@ -70,8 +70,8 @@ function serializeLiteralExpression(
       "template",
       node.head.text,
       node.templateSpans.map((span) => [
-        serialize(span.expression, context, sourceFile),
-        span.literal.text,
+          serialize(span.expression, context, sourceFile),
+          span.literal.text,
       ]),
     ];
   }
@@ -102,7 +102,11 @@ function serializeObjectProperty(
   }
 
   if (ts.isMethodDeclaration(property)) {
-    return ["method", serializePropertyName(property.name, context, sourceFile, serialize), serializeFunctionLike(property, context, sourceFile, serialize)];
+    return [
+      "method",
+      serializePropertyName(property.name, context, sourceFile, serialize),
+      serializeFunctionLike(property, context, sourceFile, serialize)
+    ];
   }
 
   return ["property", property.getText(sourceFile)];
@@ -118,7 +122,7 @@ function serializeContainerExpression(
     return [
       "array",
       node.elements.map((element) => (
-        ts.isSpreadElement(element)
+          ts.isSpreadElement(element)
           ? ["spread", serialize(element.expression, context, sourceFile)]
           : serialize(element, context, sourceFile)
       )),

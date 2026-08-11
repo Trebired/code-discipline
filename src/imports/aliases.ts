@@ -70,8 +70,8 @@ async function extractExistingPaths(
     }
 
     const pointsIntoSourceRoot = targets.some((target) => {
-      const absoluteTarget = normalizeTargetPath(options.projectRoot, target);
-      return absoluteTarget ? isInsideDirectory(absoluteTarget, options.sourceRoot) : false;
+        const absoluteTarget = normalizeTargetPath(options.projectRoot, target);
+        return absoluteTarget ? isInsideDirectory(absoluteTarget, options.sourceRoot) : false;
     });
 
     if (!pointsIntoSourceRoot) {
@@ -88,7 +88,7 @@ async function extractExistingPaths(
 async function readTsconfig(
   options: NormalizedImportsOptions,
   logger?: NormalizedCodeDisciplineLogger,
-): Promise<{ config: TsconfigJson; originalConfig: TsconfigJson }> {
+): Promise<{config:TsconfigJson;originalConfig:TsconfigJson}> {
   if (!await pathExists(options.tsconfigPath)) {
     return {
       config: { compilerOptions: {} },
@@ -104,9 +104,9 @@ async function readTsconfig(
       const parsed = parseTsconfigJson(text, options.tsconfigPath);
       if (attempt > 1) {
         logger?.warn("tsconfig-read-recovered", `tsconfig recovered after retries=${attempt - 1}`, {
-          tsconfigPath: options.tsconfigPath,
-          retries: attempt - 1,
-        }, { group: ruleLogGroup("imports") });
+            tsconfigPath: options.tsconfigPath,
+            retries: attempt - 1,
+          }, { group: ruleLogGroup("imports") });
       }
 
       return {
@@ -118,10 +118,10 @@ async function readTsconfig(
       if (attempt >= TSCONFIG_READ_RETRY_ATTEMPTS) break;
 
       logger?.warn("tsconfig-read-retry", `tsconfig parse failed retry=${attempt}`, {
-        tsconfigPath: options.tsconfigPath,
-        retry: attempt,
-        maxRetries: TSCONFIG_READ_RETRY_ATTEMPTS - 1,
-      }, { group: ruleLogGroup("imports") });
+          tsconfigPath: options.tsconfigPath,
+          retry: attempt,
+          maxRetries: TSCONFIG_READ_RETRY_ATTEMPTS - 1,
+        }, { group: ruleLogGroup("imports") });
       await wait(TSCONFIG_READ_RETRY_DELAY_MS);
     }
   }
@@ -147,14 +147,14 @@ async function syncTsconfigAliases(
 
     await fs.writeFile(options.tsconfigPath, toStableJson(result.tsconfig));
     logger.success("aliases-written", `aliases written count=${result.aliasesCount}`, {
-      tsconfigPath: options.tsconfigPath,
-      aliasesCount: result.aliasesCount,
-    }, { group: ruleLogGroup("imports") });
+        tsconfigPath: options.tsconfigPath,
+        aliasesCount: result.aliasesCount,
+      }, { group: ruleLogGroup("imports") });
   } else {
     logger.info("aliases-unchanged", `aliases unchanged count=${result.aliasesCount}`, {
-      tsconfigPath: options.tsconfigPath,
-      aliasesCount: result.aliasesCount,
-    }, { group: ruleLogGroup("imports") });
+        tsconfigPath: options.tsconfigPath,
+        aliasesCount: result.aliasesCount,
+      }, { group: ruleLogGroup("imports") });
   }
 
   return result;
@@ -172,9 +172,9 @@ async function planTsconfigAliases(
   const { config, originalConfig } = await readTsconfig(options, logger);
   const aliasMapAliasPaths = await readAliasMapAliasPaths(options);
   const packageJsonAliasPaths = await collectPackageJsonAliasImports({
-    configPath: options.configPath,
-    options: options.packageJsonImports,
-    projectRoot: options.projectRoot,
+      configPath: options.configPath,
+      options: options.packageJsonImports,
+      projectRoot: options.projectRoot,
   });
   const sourceFilesByPath = new Map(sourceFiles.map((file) => [file.absolutePath, file]));
   const compilerOptions = { ...(config.compilerOptions ?? {}) };
@@ -189,8 +189,8 @@ async function planTsconfigAliases(
   };
   const existingState = await extractExistingPaths(options, sourceFilesByPath, existingPaths);
   const reservedIds = new Set<string>([
-    ...Object.keys(existingState.passthroughPaths),
-    ...Array.from(existingState.preservedAliasesByPath.values()),
+      ...Object.keys(existingState.passthroughPaths),
+      ...Array.from(existingState.preservedAliasesByPath.values()),
   ]);
   const aliasRecords: AliasRecord[] = [];
 
@@ -199,9 +199,9 @@ async function planTsconfigAliases(
     const aliasId = preservedAlias ?? generateAliasId(file, options, Array.from(reservedIds));
     reservedIds.add(aliasId);
     aliasRecords.push({
-      id: aliasId,
-      absolutePath: file.absolutePath,
-      relativeFromProjectRoot: file.relativeFromProjectRoot,
+        id: aliasId,
+        absolutePath: file.absolutePath,
+        relativeFromProjectRoot: file.relativeFromProjectRoot,
     });
   }
 
@@ -211,8 +211,8 @@ async function planTsconfigAliases(
   }
 
   const nextPaths = sortPathsRecord({
-    ...existingState.passthroughPaths,
-    ...managedPaths,
+      ...existingState.passthroughPaths,
+      ...managedPaths,
   });
 
   const nextCompilerOptions = {

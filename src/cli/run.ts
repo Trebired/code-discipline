@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+
 import { codeDiscipline } from "#9epcrzq92bsw";
 import type { CodeDisciplineRuleSlug, FixableRuleSlug } from "#uqbg4indzud7";
 import { loadResolvedCodeDisciplineConfig } from "#rqu2hcvfcs4c";
@@ -7,6 +8,7 @@ import { isDirectExecution, isPlainRecord } from "#ntve5i5a0mol";
 import { createDefaultCliLogger, type CliLogContext, writeLogText } from "./logging.js";
 import { writeCheckOutput, writeFixOutput, writeSavedReport } from "./output.js";
 import { createCliScanObserver, formatDuration, timeTask } from "./progress.js";
+
 type CliRunOptions = {
   cwd?: string;
   now?: Date;
@@ -25,10 +27,12 @@ type CliWriters = {
   success: CliWriter;
   warn: CliWriter;
 };
+
 function shouldShowWarnings(config: Record<string, unknown>): boolean {
   const logging = config.logging;
   return !isPlainRecord(logging) || logging.warnings !== false;
 }
+
 function createCliWriters(options: CliRunOptions): CliWriters {
   const useDefaultLogger = !options.stdout && !options.stderr;
   const logger = useDefaultLogger ? createDefaultCliLogger() : null;
@@ -56,6 +60,7 @@ function createCliWriters(options: CliRunOptions): CliWriters {
       : ((text: string) => process.stdout.write(text))),
   };
 }
+
 function renderHelp(): string {
   return [
     "Usage: code-discipline <command> [rule-slug...] [save] [--config <path>]",
@@ -81,6 +86,7 @@ function renderHelp(): string {
     "",
   ].join("\n");
 }
+
 function parseArgs(args: string[]): {
   configPath?: string;
   saveOutput: boolean;
@@ -121,127 +127,38 @@ function parseArgs(args: string[]): {
   }
   return { configPath, saveOutput, selectors, commandArgs };
 }
+
 async function runCheckCommand(args: {
-  config: Record<string, unknown>;
-  configPath: string | undefined;
-  cwd: string;
-  fail: CliWriter;
-  now: Date;
-  parsed: ReturnType<typeof parseArgs>;
-  stderr: CliWriter;
-  stdout: CliWriter;
-  success: CliWriter;
-  warn: CliWriter;
+    config: Record<string, unknown>;
+    configPath: string | undefined;
+    cwd: string;
+    fail: CliWriter;
+    now: Date;
+    parsed: ReturnType<typeof parseArgs>;
+    stderr: CliWriter;
+    stdout: CliWriter;
+    success: CliWriter;
+    warn: CliWriter;
 }): Promise<CliRunResult> {
   if (args.parsed.commandArgs.length > 0) {
     throw new Error("Command separator -- is only supported with gate");
   }
   const timed = await timeTask(() => {
-    const progressObserver = createCliScanObserver(args.stderr);
-    return codeDiscipline({
-      ...args.config,
-      configPath: args.configPath,
-      mode: "check",
-      onlyRules: args.parsed.selectors as CodeDisciplineRuleSlug[],
-      projectRoot: args.cwd,
-      progressObserver,
-      scanObserver: progressObserver,
-    });
+      const progressObserver = createCliScanObserver(args.stderr);
+      return codeDiscipline({
+          ...args.config,
+          configPath: args.configPath,
+          mode: "check",
+          onlyRules: args.parsed.selectors as CodeDisciplineRuleSlug[],
+          projectRoot: args.cwd,
+          progressObserver,
+          scanObserver: progressObserver,
+      });
   });
   const result = timed.result;
   const warnings = shouldShowWarnings(args.config);
   args.stderr(`Total check: ${formatDuration(timed.elapsedMs)}.\n`, { event: "discipline-check-total" });
   const reportText = writeCheckOutput({
-    fail: args.fail,
-    stdout: args.stdout,
-    success: args.success,
-    violationCount: result.violationCount,
-    violations: result.violations,
-    warn: args.warn,
-    warnings,
-  });
-  await writeSavedReport({ ...args, reportText, saveOutput: args.parsed.saveOutput });
-  return { exitCode: result.ok ? 0 : 1 };
-}
-async function runFixCommand(args: {
-  config: Record<string, unknown>;
-  configPath: string | undefined;
-  cwd: string;
-  fail: CliWriter;
-  now: Date;
-  parsed: ReturnType<typeof parseArgs>;
-  stderr: CliWriter;
-  stdout: CliWriter;
-  success: CliWriter;
-  warn: CliWriter;
-}): Promise<CliRunResult> {
-  if (args.parsed.commandArgs.length > 0) {
-    throw new Error("Command separator -- is only supported with gate");
-  }
-  const timed = await timeTask(() => {
-    const progressObserver = createCliScanObserver(args.stderr);
-    return codeDiscipline({
-      ...args.config,
-      configPath: args.configPath,
-      mode: "fix",
-      onlyRules: args.parsed.selectors as FixableRuleSlug[],
-      projectRoot: args.cwd,
-      progressObserver,
-      scanObserver: progressObserver,
-    });
-  });
-  const result = timed.result;
-  const warnings = shouldShowWarnings(args.config);
-  const reportText = writeFixOutput({
-    deletedFiles: result.deleted_files,
-    fail: args.fail,
-    movedFiles: result.moved_files,
-    rewrittenFiles: result.rewritten_files,
-    rewrittenImports: result.rewritten_imports,
-    removedComments: result.removed_comments ?? 0,
-    formattedFiles: result.formatted_files,
-    unchangedFiles: result.unchanged_files,
-    success: args.success,
-    violationCount: result.violationCount,
-    violations: result.violations,
-    warn: args.warn,
-    warnings,
-  });
-  await writeSavedReport({ ...args, reportText, saveOutput: args.parsed.saveOutput });
-  return { exitCode: result.ok ? 0 : 1 };
-}
-async function runGateCommand(args: {
-  config: Record<string, unknown>;
-  configPath: string | undefined;
-  cwd: string;
-  fail: CliWriter;
-  now: Date;
-  parsed: ReturnType<typeof parseArgs>;
-  stderr: CliWriter;
-  stdout: CliWriter;
-  success: CliWriter;
-  warn: CliWriter;
-}): Promise<CliRunResult> {
-  if (args.parsed.commandArgs.length === 0) {
-    throw new Error("Missing child command after --");
-  }
-  const timed = await timeTask(() => {
-    const progressObserver = createCliScanObserver(args.stderr);
-    return codeDiscipline({
-      ...args.config,
-      configPath: args.configPath,
-      mode: "check",
-      onlyRules: args.parsed.selectors as CodeDisciplineRuleSlug[],
-      projectRoot: args.cwd,
-      progressObserver,
-      scanObserver: progressObserver,
-    });
-  });
-  const result = timed.result;
-  const warnings = shouldShowWarnings(args.config);
-  args.stderr(`Total gate check: ${formatDuration(timed.elapsedMs)}.\n`, { event: "discipline-gate-total" });
-  if (!result.ok) {
-    const reportText = writeCheckOutput({
       fail: args.fail,
       stdout: args.stdout,
       success: args.success,
@@ -249,6 +166,98 @@ async function runGateCommand(args: {
       violations: result.violations,
       warn: args.warn,
       warnings,
+  });
+  await writeSavedReport({ ...args, reportText, saveOutput: args.parsed.saveOutput });
+  return { exitCode: result.ok ? 0 : 1 };
+}
+
+async function runFixCommand(args: {
+    config: Record<string, unknown>;
+    configPath: string | undefined;
+    cwd: string;
+    fail: CliWriter;
+    now: Date;
+    parsed: ReturnType<typeof parseArgs>;
+    stderr: CliWriter;
+    stdout: CliWriter;
+    success: CliWriter;
+    warn: CliWriter;
+}): Promise<CliRunResult> {
+  if (args.parsed.commandArgs.length > 0) {
+    throw new Error("Command separator -- is only supported with gate");
+  }
+  const timed = await timeTask(() => {
+      const progressObserver = createCliScanObserver(args.stderr);
+      return codeDiscipline({
+          ...args.config,
+          configPath: args.configPath,
+          mode: "fix",
+          onlyRules: args.parsed.selectors as FixableRuleSlug[],
+          projectRoot: args.cwd,
+          progressObserver,
+          scanObserver: progressObserver,
+      });
+  });
+  const result = timed.result;
+  const warnings = shouldShowWarnings(args.config);
+  const reportText = writeFixOutput({
+      deletedFiles: result.deleted_files,
+      fail: args.fail,
+      movedFiles: result.moved_files,
+      rewrittenFiles: result.rewritten_files,
+      rewrittenImports: result.rewritten_imports,
+      removedComments: result.removed_comments ?? 0,
+      formattedFiles: result.formatted_files,
+      unchangedFiles: result.unchanged_files,
+      success: args.success,
+      violationCount: result.violationCount,
+      violations: result.violations,
+      warn: args.warn,
+      warnings,
+  });
+  await writeSavedReport({ ...args, reportText, saveOutput: args.parsed.saveOutput });
+  return { exitCode: result.ok ? 0 : 1 };
+}
+
+async function runGateCommand(args: {
+    config: Record<string, unknown>;
+    configPath: string | undefined;
+    cwd: string;
+    fail: CliWriter;
+    now: Date;
+    parsed: ReturnType<typeof parseArgs>;
+    stderr: CliWriter;
+    stdout: CliWriter;
+    success: CliWriter;
+    warn: CliWriter;
+}): Promise<CliRunResult> {
+  if (args.parsed.commandArgs.length === 0) {
+    throw new Error("Missing child command after --");
+  }
+  const timed = await timeTask(() => {
+      const progressObserver = createCliScanObserver(args.stderr);
+      return codeDiscipline({
+          ...args.config,
+          configPath: args.configPath,
+          mode: "check",
+          onlyRules: args.parsed.selectors as CodeDisciplineRuleSlug[],
+          projectRoot: args.cwd,
+          progressObserver,
+          scanObserver: progressObserver,
+      });
+  });
+  const result = timed.result;
+  const warnings = shouldShowWarnings(args.config);
+  args.stderr(`Total gate check: ${formatDuration(timed.elapsedMs)}.\n`, { event: "discipline-gate-total" });
+  if (!result.ok) {
+    const reportText = writeCheckOutput({
+        fail: args.fail,
+        stdout: args.stdout,
+        success: args.success,
+        violationCount: result.violationCount,
+        violations: result.violations,
+        warn: args.warn,
+        warnings,
     });
     await writeSavedReport({ ...args, reportText, saveOutput: args.parsed.saveOutput });
     return { exitCode: 1 };
@@ -256,6 +265,7 @@ async function runGateCommand(args: {
   const [childCommand, ...childArgs] = args.parsed.commandArgs;
   return runGatedCommand({ args: childArgs, command: childCommand, cwd: args.cwd });
 }
+
 async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliRunResult> {
   const cwd = options.cwd ?? process.cwd();
   const now = options.now ?? new Date();
@@ -295,15 +305,17 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
   } catch (caught) {
     const message = caught instanceof Error ? caught.message : String(caught);
     const context = message.startsWith("Selected rule") || message.startsWith("Selected selector") || message.startsWith("Unknown rule")
-      ? { event: "cli-config-error" }
-      : { event: "cli-error" };
+    ? { event: "cli-config-error" }
+    : { event: "cli-error" };
     writeError(`${message}\n`, context);
     return { exitCode: 1 };
   }
 }
+
 if (await isDirectExecution(import.meta.url, process.argv[1])) {
   const result = await runCli(process.argv.slice(2));
   process.exitCode = result.exitCode;
 }
+
 export { runCli };
 export type { CliRunOptions, CliRunResult };

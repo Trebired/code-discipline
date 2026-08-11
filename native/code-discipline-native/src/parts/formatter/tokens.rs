@@ -159,9 +159,9 @@ fn tokenize_script(text: &str) -> Vec<ScriptToken> {
     if text.starts_with("#!") {
         let end = scan_line_comment(text, 0);
         tokens.push(ScriptToken {
-            kind: ScriptTokenKind::LineComment,
-            start: 0,
-            end,
+                kind: ScriptTokenKind::LineComment,
+                start: 0,
+                end,
         });
         index = end;
     }
@@ -171,9 +171,9 @@ fn tokenize_script(text: &str) -> Vec<ScriptToken> {
 
         if current == b'\n' {
             tokens.push(ScriptToken {
-                kind: ScriptTokenKind::Newline,
-                start: index,
-                end: index + 1,
+                    kind: ScriptTokenKind::Newline,
+                    start: index,
+                    end: index + 1,
             });
             index += 1;
             continue;
@@ -187,9 +187,9 @@ fn tokenize_script(text: &str) -> Vec<ScriptToken> {
         if current == b'/' && bytes.get(index + 1) == Some(&b'/') {
             let end = scan_line_comment(text, index);
             tokens.push(ScriptToken {
-                kind: ScriptTokenKind::LineComment,
-                start: index,
-                end,
+                    kind: ScriptTokenKind::LineComment,
+                    start: index,
+                    end,
             });
             index = end;
             continue;
@@ -198,9 +198,9 @@ fn tokenize_script(text: &str) -> Vec<ScriptToken> {
         if current == b'/' && bytes.get(index + 1) == Some(&b'*') {
             let end = scan_block_comment(text, index, false);
             tokens.push(ScriptToken {
-                kind: ScriptTokenKind::BlockComment,
-                start: index,
-                end,
+                    kind: ScriptTokenKind::BlockComment,
+                    start: index,
+                    end,
             });
             index = end;
             continue;
@@ -209,9 +209,9 @@ fn tokenize_script(text: &str) -> Vec<ScriptToken> {
         if current == b'/' && regex_allowed_after(tokens.last(), text) {
             if let Some(end) = scan_script_regex_literal(text, index) {
                 tokens.push(ScriptToken {
-                    kind: ScriptTokenKind::Regex,
-                    start: index,
-                    end,
+                        kind: ScriptTokenKind::Regex,
+                        start: index,
+                        end,
                 });
                 index = end;
                 continue;
@@ -221,9 +221,9 @@ fn tokenize_script(text: &str) -> Vec<ScriptToken> {
         if current == b'"' || current == b'\'' {
             let end = scan_escaped_quoted_literal(text, index, current);
             tokens.push(ScriptToken {
-                kind: ScriptTokenKind::StringLiteral,
-                start: index,
-                end,
+                    kind: ScriptTokenKind::StringLiteral,
+                    start: index,
+                    end,
             });
             index = end;
             continue;
@@ -232,22 +232,22 @@ fn tokenize_script(text: &str) -> Vec<ScriptToken> {
         if current == b'`' {
             let end = scan_script_template_literal(text, index);
             tokens.push(ScriptToken {
-                kind: ScriptTokenKind::TemplateLiteral,
-                start: index,
-                end,
+                    kind: ScriptTokenKind::TemplateLiteral,
+                    start: index,
+                    end,
             });
             index = end;
             continue;
         }
 
         if current.is_ascii_digit()
-            || (current == b'.' && bytes.get(index + 1).is_some_and(u8::is_ascii_digit))
+        || (current == b'.' && bytes.get(index + 1).is_some_and(u8::is_ascii_digit))
         {
             let end = scan_script_number(text, index);
             tokens.push(ScriptToken {
-                kind: ScriptTokenKind::Number,
-                start: index,
-                end,
+                    kind: ScriptTokenKind::Number,
+                    start: index,
+                    end,
             });
             index = end;
             continue;
@@ -261,20 +261,20 @@ fn tokenize_script(text: &str) -> Vec<ScriptToken> {
                 ScriptTokenKind::Identifier
             };
             tokens.push(ScriptToken {
-                kind,
-                start: index,
-                end,
+                    kind,
+                    start: index,
+                    end,
             });
             index = end;
             continue;
         }
 
         let end = scan_script_punctuator(text, index)
-            .unwrap_or_else(|| index + char_width_at(text, index));
+        .unwrap_or_else(|| index + char_width_at(text, index));
         tokens.push(ScriptToken {
-            kind: ScriptTokenKind::Punctuator,
-            start: index,
-            end,
+                kind: ScriptTokenKind::Punctuator,
+                start: index,
+                end,
         });
         index = end;
     }

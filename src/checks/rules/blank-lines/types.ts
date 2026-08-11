@@ -1,21 +1,21 @@
 import type ts from "typescript";
 
 type StructuralGroup =
-  | "directive"
-  | "import"
-  | "type"
-  | "variable"
-  | "function"
-  | "class"
-  | "enum"
-  | "namespace"
-  | "export"
-  | "execution"
-  | "class-field"
-  | "class-method"
-  | "class-accessor"
-  | "class-constructor"
-  | "class-static-block";
+|"directive"
+|"import"
+|"type"
+|"variable"
+|"function"
+|"class"
+|"enum"
+|"namespace"
+|"export"
+|"execution"
+|"class-field"
+|"class-method"
+|"class-accessor"
+|"class-constructor"
+|"class-static-block";
 
 type StructuralUnit = {
   group: StructuralGroup;

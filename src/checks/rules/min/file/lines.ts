@@ -13,9 +13,9 @@ async function collectMinFileLineViolations(
   if (!options.rules.minFileLines) return [];
 
   const progress = createRuleProgress({
-    observer: options.progressObserver,
-    rule: "min-file-lines",
-    totalItems: sourceFiles.length,
+      observer: options.progressObserver,
+      rule: "min-file-lines",
+      totalItems: sourceFiles.length,
   });
   const violations: CodeDisciplineViolation[] = [];
 
@@ -27,14 +27,14 @@ async function collectMinFileLineViolations(
     if (lineCount <= options.rules.minFileLines.min) {
       const lineLabel = lineCount === 1 ? "line" : "lines";
       violations.push({
-        rule: "min-file-lines",
-        fix: false,
-        filePath: file.relativeFromProjectRoot,
-        message: `file has ${lineCount} ${lineLabel} and is at or below the banned minimum of ${options.rules.minFileLines.min}`,
-        details: {
-          lineCount,
-          min: options.rules.minFileLines.min,
-        },
+          rule: "min-file-lines",
+          fix: false,
+          filePath: file.relativeFromProjectRoot,
+          message: `file has ${lineCount} ${lineLabel} and is at or below the banned minimum of ${options.rules.minFileLines.min}`,
+          details: {
+            lineCount,
+            min: options.rules.minFileLines.min,
+          },
       });
     }
 

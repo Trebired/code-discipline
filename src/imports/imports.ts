@@ -25,9 +25,9 @@ function isNormalizedImportsOptions(options: ImportsOptions | NormalizedImportsO
 }
 
 function createCheckOnlyResult(args: {
-  aliasesChanged: boolean;
-  aliasesCount: number;
-  violations: CodeDisciplineViolation[];
+    aliasesChanged: boolean;
+    aliasesCount: number;
+    violations: CodeDisciplineViolation[];
 }): ImportsResult {
   return {
     ...summarizeImportViolations(args.violations),
@@ -67,17 +67,17 @@ async function applyImportFixes(
     const gitignore = await ensureGeneratedArtifactsGitignore(normalized.projectRoot);
     if (gitignore.changed) {
       logger.success("generated-gitignore-written", "generated artifact ignore entry written", {
-        gitignorePath: gitignore.path,
-      }, { group: ruleLogGroup("imports") });
+          gitignorePath: gitignore.path,
+        }, { group: ruleLogGroup("imports") });
     }
   }
 
   const aliasState = plannedAliases.aliasesChanged
-    ? await syncTsconfigAliases(normalized, sourceFiles, logger)
-    : plannedAliases;
+  ? await syncTsconfigAliases(normalized, sourceFiles, logger)
+  : plannedAliases;
   const rewriteState = await rewriteSourceImports(sourceFiles, aliasState.aliasRecords, normalized, logger);
   const packageJsonImportsState = normalized.output.type === "alias-map" && aliasState.aliasPathMap
-    ? await syncPackageJsonImportsFromAliasMap({
+  ? await syncPackageJsonImportsFromAliasMap({
       aliasPathMap: aliasState.aliasPathMap,
       cleanWhenDisabled: true,
       configPath: normalized.configPath,
@@ -86,13 +86,13 @@ async function applyImportFixes(
         enabled: false,
       },
       projectRoot: normalized.projectRoot,
-    })
-    : await syncPackageJsonImportsFromTsconfigPaths({
+  })
+  : await syncPackageJsonImportsFromTsconfigPaths({
       configPath: normalized.configPath,
       options: normalized.packageJsonImports,
       projectRoot: normalized.projectRoot,
       tsconfigPath: normalized.tsconfigPath,
-    });
+  });
   const result: ImportsResult = {
     ok: true,
     violationCount: 0,
@@ -106,28 +106,28 @@ async function applyImportFixes(
   };
 
   logger.flush("success", "sync-finished", "sync completed", {
-    aliasesChanged: result.aliases_changed,
-    aliasesCount: result.aliases_count,
-    rewrittenFiles: result.rewritten_files,
-    rewrittenImports: result.rewritten_imports,
-    packageJsonImportsChanged: packageJsonImportsState?.changed ?? false,
-  }, { group: ruleLogGroup("imports") });
+      aliasesChanged: result.aliases_changed,
+      aliasesCount: result.aliases_count,
+      rewrittenFiles: result.rewritten_files,
+      rewrittenImports: result.rewritten_imports,
+      packageJsonImportsChanged: packageJsonImportsState?.changed ?? false,
+    }, { group: ruleLogGroup("imports") });
   return result;
 }
 
 async function imports(options: ImportsOptions | NormalizedImportsOptions): Promise<ImportsResult> {
   const normalized = isNormalizedImportsOptions(options)
-    ? options
-    : await normalizeImportsOptions(options);
+  ? options
+  : await normalizeImportsOptions(options);
   const logger = resolveLogger(normalized.logging);
 
   logger.info("sync-started", "sync started", {
-    projectRoot: normalized.projectRoot,
-    sourceRoot: normalized.sourceRoot,
-    tsconfigPath: normalized.tsconfigPath,
-    output: normalized.output.type,
-    fix: normalized.fix,
-  }, { group: ruleLogGroup("imports") });
+      projectRoot: normalized.projectRoot,
+      sourceRoot: normalized.sourceRoot,
+      tsconfigPath: normalized.tsconfigPath,
+      output: normalized.output.type,
+      fix: normalized.fix,
+    }, { group: ruleLogGroup("imports") });
 
   try {
     const sourceFiles = filterSourceFilesForRule(
@@ -139,9 +139,9 @@ async function imports(options: ImportsOptions | NormalizedImportsOptions): Prom
 
     if (!normalized.fix) {
       const result = createCheckOnlyResult({
-        aliasesChanged: plannedAliases.aliasesChanged,
-        aliasesCount: plannedAliases.aliasesCount,
-        violations: driftViolations,
+          aliasesChanged: plannedAliases.aliasesChanged,
+          aliasesCount: plannedAliases.aliasesCount,
+          violations: driftViolations,
       });
       logCheckOnlyResult(result, logger);
       return result;
@@ -150,8 +150,8 @@ async function imports(options: ImportsOptions | NormalizedImportsOptions): Prom
     return applyImportFixes(normalized, sourceFiles, plannedAliases, logger);
   } catch (error) {
     logger.flush("error", "sync-failed", error instanceof Error ? error.message : "sync failed", {
-      cause: error instanceof Error ? error.name : typeof error,
-    }, { group: ruleLogGroup("imports") });
+        cause: error instanceof Error ? error.name : typeof error,
+      }, { group: ruleLogGroup("imports") });
     throw error;
   }
 }

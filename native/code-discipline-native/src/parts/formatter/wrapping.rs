@@ -51,11 +51,11 @@ fn line_comment_marker<'a>(extension: &str, trimmed: &'a str, line_number: usize
     }
 
     if is_ts_family_extension(extension)
-        || is_go_extension(extension)
-        || is_rust_extension(extension)
-        || is_cpp_extension(extension)
-        || is_csharp_extension(extension)
-        || is_qml_extension(extension)
+    || is_go_extension(extension)
+    || is_rust_extension(extension)
+    || is_cpp_extension(extension)
+    || is_csharp_extension(extension)
+    || is_qml_extension(extension)
     {
         if trimmed.starts_with("///") {
             return Some("///");
@@ -92,9 +92,9 @@ fn wrap_comment_line(line: &str, extension: &str, line_number: usize, max: usize
 
     Some(
         wrapped
-            .into_iter()
-            .map(|segment| format!("{prefix}{segment}"))
-            .collect(),
+        .into_iter()
+        .map(|segment| format!("{prefix}{segment}"))
+        .collect(),
     )
 }
 
@@ -132,20 +132,20 @@ fn wrap_long_source_line(
     }
 
     wrap_one_line_block(line, extension)
-        .or_else(|| wrap_array_or_call_line(line, extension, max))
-        .or_else(|| {
+    .or_else(|| wrap_array_or_call_line(line, extension, max))
+    .or_else(|| {
             is_rust_extension(extension)
-                .then(|| wrap_rust_raw_string_line(line, max))
-                .flatten()
-        })
-        .or_else(|| {
+            .then(|| wrap_rust_raw_string_line(line, max))
+            .flatten()
+    })
+    .or_else(|| {
             is_python_extension(extension)
-                .then(|| wrap_python_string_line(line, max))
-                .flatten()
-        })
-        .or_else(|| wrap_js_like_concatenation_line(line, extension))
-        .or_else(|| wrap_js_like_string_line(line, extension, max))
-        .or_else(|| wrap_markup_line(line, extension, max))
+            .then(|| wrap_python_string_line(line, max))
+            .flatten()
+    })
+    .or_else(|| wrap_js_like_concatenation_line(line, extension))
+    .or_else(|| wrap_js_like_string_line(line, extension, max))
+    .or_else(|| wrap_markup_line(line, extension, max))
 }
 
 fn expand_compact_source_line(line: &str, extension: &str) -> Option<Vec<String>> {

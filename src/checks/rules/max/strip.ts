@@ -55,8 +55,8 @@ function updateQuoteState(state: StripState, character: string): string {
   else if (!state.inSingle && !state.inDouble && character === "`") state.inTemplate = !state.inTemplate;
 
   return isQuoted(state)
-    ? character === "\n" ? "\n" : " "
-    : character;
+  ? character === "\n" ? "\n" : " "
+  : character;
 }
 
 function stripCommentsAndStrings(text: string): string {

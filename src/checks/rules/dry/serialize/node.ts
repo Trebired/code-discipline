@@ -28,10 +28,10 @@ const NODE_SERIALIZERS = [
 
 function isTypeOnlyNode(node: ts.Node): boolean {
   return ts.isTypeNode(node)
-    || ts.isTypeParameterDeclaration(node)
-    || ts.isTypeAliasDeclaration(node)
-    || ts.isInterfaceDeclaration(node)
-    || ts.isImportTypeNode(node);
+  ||ts.isTypeParameterDeclaration(node)
+  ||ts.isTypeAliasDeclaration(node)
+  ||ts.isInterfaceDeclaration(node)
+  ||ts.isImportTypeNode(node);
 }
 
 function serializeNode(

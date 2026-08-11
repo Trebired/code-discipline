@@ -73,7 +73,7 @@ function findDeclarationChange(
 
   if (pieces.length === 0) {
     const range = expandLineRemovalRange(text, node.getStart(sourceFile), node.getEnd())
-      ?? { start: node.getStart(sourceFile), end: node.getEnd() };
+    ?? { start: node.getStart(sourceFile), end: node.getEnd() };
     return {
       replacement: { start: range.start, end: range.end, value: "" },
       removedNames,
@@ -106,7 +106,7 @@ function collectDeadImportChanges(text: string, filePath: string): DeadImportDec
 
 function collectDeadImportViolations(text: string, filePath: string): DeadImportViolation[] {
   return collectDeadImportChanges(text, filePath)
-    .flatMap((change) => change.removedNames.map((name) => ({ name })));
+  .flatMap((change) => change.removedNames.map((name) => ({ name })));
 }
 
 function collectDeadImportRemovals(text: string, filePath: string): TextReplacement[] {

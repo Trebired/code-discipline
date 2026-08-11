@@ -6,9 +6,9 @@ import type { StructuralGroup, StructuralUnit } from "./types.js";
 function resolveDeclarationName(node: ts.Node): string | undefined {
   if (
     ts.isFunctionDeclaration(node)
-    || ts.isMethodDeclaration(node)
-    || ts.isGetAccessorDeclaration(node)
-    || ts.isSetAccessorDeclaration(node)
+    ||ts.isMethodDeclaration(node)
+    ||ts.isGetAccessorDeclaration(node)
+    ||ts.isSetAccessorDeclaration(node)
   ) {
     return node.name?.getText();
   }
@@ -48,16 +48,16 @@ function buildStatementUnits(
   let inDirectivePrologue = true;
 
   statements.forEach((node, index) => {
-    const isDirectiveCandidate = inDirectivePrologue && ts.isExpressionStatement(node) && ts.isStringLiteralLike(node.expression);
-    if (inDirectivePrologue && !isDirectiveCandidate) inDirectivePrologue = false;
+      const isDirectiveCandidate = inDirectivePrologue && ts.isExpressionStatement(node) && ts.isStringLiteralLike(node.expression);
+      if (inDirectivePrologue && !isDirectiveCandidate) inDirectivePrologue = false;
 
-    units.push({
-      group: classifyStatement(node, isDirectiveCandidate),
-      name: resolveDeclarationName(node),
-      startLine: resolveAttachedStartLine(sourceFile, fullText, node, index === 0 ? notBeforePos : 0),
-      endLine: getLine(sourceFile, node.getEnd()),
-      node,
-    });
+      units.push({
+          group: classifyStatement(node, isDirectiveCandidate),
+          name: resolveDeclarationName(node),
+          startLine: resolveAttachedStartLine(sourceFile, fullText, node, index === 0 ? notBeforePos : 0),
+          endLine: getLine(sourceFile, node.getEnd()),
+          node,
+      });
   });
 
   return units;
@@ -75,11 +75,11 @@ function buildMemberUnits(
     if (!group) continue;
 
     units.push({
-      group,
-      name: resolveDeclarationName(node),
-      startLine: resolveAttachedStartLine(sourceFile, fullText, node, 0),
-      endLine: getLine(sourceFile, node.getEnd()),
-      node,
+        group,
+        name: resolveDeclarationName(node),
+        startLine: resolveAttachedStartLine(sourceFile, fullText, node, 0),
+        endLine: getLine(sourceFile, node.getEnd()),
+        node,
     });
   }
 

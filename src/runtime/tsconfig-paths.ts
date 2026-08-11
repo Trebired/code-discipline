@@ -62,8 +62,8 @@ function rewriteCompilerPaths(
 
   const nextPaths = Object.fromEntries(
     Object.entries(existingPaths).map(([aliasId, targets]) => [
-      aliasId,
-      Array.isArray(targets)
+        aliasId,
+        Array.isArray(targets)
         ? targets.map((target) => normalizePathsValue(String(target), mode))
         : targets,
     ]),
@@ -82,7 +82,7 @@ async function prepareTsconfigPaths(
   projectRoot: string,
   options: ImportsRuntimeOptions | undefined,
   mode: "check" | "fix",
-): Promise<PreparedTsconfigPathsResult | null> {
+): Promise<PreparedTsconfigPathsResult|null> {
   const normalize = options?.normalize || "none";
   if (normalize === "none") return null;
 
@@ -109,7 +109,7 @@ async function prepareTsconfigPaths(
   };
 }
 
-async function restoreTsconfigPaths(prepared: PreparedTsconfigPathsResult | null): Promise<RuntimeTsconfigPathsState | null> {
+async function restoreTsconfigPaths(prepared: PreparedTsconfigPathsResult | null): Promise<RuntimeTsconfigPathsState|null> {
   if (!prepared) return null;
 
   let restored = false;

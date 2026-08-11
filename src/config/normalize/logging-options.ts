@@ -7,15 +7,15 @@ function normalizeLoggingOptions(options: LoggingOptions | undefined, label: str
   for (const key of ["enabled", "quiet"]) {
     if (key in source) {
       throw new InvalidCodeDisciplineConfigError(`${label}.${key} is no longer supported`, {
-        key,
+          key,
       });
     }
   }
 
   if (options?.warnings !== undefined && typeof options.warnings !== "boolean") {
     throw new InvalidCodeDisciplineConfigError(`${label}.warnings must be boolean when provided`, {
-      key: "warnings",
-      value: options.warnings,
+        key: "warnings",
+        value: options.warnings,
     });
   }
 

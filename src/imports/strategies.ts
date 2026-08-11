@@ -54,17 +54,17 @@ function generateAliasId(
   }
 
   const aliasId = strategy === "relative-path-hash"
-    ? createRelativePathHashAlias(input)
-    : strategy === "relative-path-slug"
-      ? createRelativePathSlugAlias(input)
-      : (strategy as AliasStrategyFn)(input);
+  ? createRelativePathHashAlias(input)
+  : strategy === "relative-path-slug"
+  ? createRelativePathSlugAlias(input)
+  : (strategy as AliasStrategyFn)(input);
 
   validateAliasId(aliasId, file);
 
   if (existingIds.includes(aliasId)) {
     throw new AliasCollisionError(aliasId, {
-      filePath: file.absolutePath,
-      strategy: isCustomStrategy ? "custom" : strategy,
+        filePath: file.absolutePath,
+        strategy: isCustomStrategy ? "custom" : strategy,
     });
   }
 

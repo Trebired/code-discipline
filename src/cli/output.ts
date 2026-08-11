@@ -89,8 +89,8 @@ function filterVisibleViolations(
 function renderCheckSummary(blockingCount: number, warningCount: number): string {
   if (blockingCount > 0) {
     return warningCount > 0
-      ? `Found ${blockingCount} discipline violation(s) and ${warningCount} warning(s).\n`
-      : `Found ${blockingCount} discipline violation(s).\n`;
+    ? `Found ${blockingCount} discipline violation(s) and ${warningCount} warning(s).\n`
+    : `Found ${blockingCount} discipline violation(s).\n`;
   }
 
   return `Found ${warningCount} discipline warning(s).\n`;
@@ -111,13 +111,13 @@ function renderCheckOutput(violations: CodeDisciplineViolation[], violationCount
 }
 
 function writeCheckOutput(args: {
-  fail: CliOutputWriter;
-  stdout: CliOutputWriter;
-  success: CliOutputWriter;
-  warn: CliOutputWriter;
-  warnings: boolean;
-  violationCount: number;
-  violations: CodeDisciplineViolation[];
+    fail: CliOutputWriter;
+    stdout: CliOutputWriter;
+    success: CliOutputWriter;
+    warn: CliOutputWriter;
+    warnings: boolean;
+    violationCount: number;
+    violations: CodeDisciplineViolation[];
 }): string {
   const visibleViolations = filterVisibleViolations(args.violations, args.warnings);
   const reportText = renderCheckOutput(visibleViolations, visibleViolations.length);
@@ -140,19 +140,19 @@ function writeCheckOutput(args: {
 }
 
 function renderFixOutput(args: {
-  deletedFiles: number;
-  movedFiles: number;
-  rewrittenFiles: number;
-  rewrittenImports: number;
-  removedComments: number;
-  formattedFiles?: number;
-  unchangedFiles?: number;
-  violationCount: number;
-  violations: CodeDisciplineViolation[];
+    deletedFiles: number;
+    movedFiles: number;
+    rewrittenFiles: number;
+    rewrittenImports: number;
+    removedComments: number;
+    formattedFiles?: number;
+    unchangedFiles?: number;
+    violationCount: number;
+    violations: CodeDisciplineViolation[];
 }): string {
   const formatterSummary = args.formattedFiles === undefined && args.unchangedFiles === undefined
-    ? ""
-    : ` formatted files ${args.formattedFiles ?? 0}, unchanged files ${args.unchangedFiles ?? 0}.`;
+  ? ""
+  : ` formatted files ${args.formattedFiles ?? 0}, unchanged files ${args.unchangedFiles ?? 0}.`;
   const summary = [
     `Fix summary: deleted files ${args.deletedFiles}`,
     `moved ${args.movedFiles}`,
@@ -169,25 +169,25 @@ function renderFixOutput(args: {
 }
 
 function writeFixOutput(args: {
-  deletedFiles: number;
-  movedFiles: number;
-  rewrittenFiles: number;
-  rewrittenImports: number;
-  removedComments: number;
-  formattedFiles?: number;
-  unchangedFiles?: number;
-  fail: CliOutputWriter;
-  success: CliOutputWriter;
-  violationCount: number;
-  violations: CodeDisciplineViolation[];
-  warn: CliOutputWriter;
-  warnings: boolean;
+    deletedFiles: number;
+    movedFiles: number;
+    rewrittenFiles: number;
+    rewrittenImports: number;
+    removedComments: number;
+    formattedFiles?: number;
+    unchangedFiles?: number;
+    fail: CliOutputWriter;
+    success: CliOutputWriter;
+    violationCount: number;
+    violations: CodeDisciplineViolation[];
+    warn: CliOutputWriter;
+    warnings: boolean;
 }): string {
   const visibleViolations = filterVisibleViolations(args.violations, args.warnings);
   const reportText = renderFixOutput({
-    ...args,
-    violationCount: visibleViolations.length,
-    violations: visibleViolations,
+      ...args,
+      violationCount: visibleViolations.length,
+      violations: visibleViolations,
   });
 
   for (const violation of visibleViolations) {
@@ -196,8 +196,8 @@ function writeFixOutput(args: {
   }
 
   const formatterSummary = args.formattedFiles === undefined && args.unchangedFiles === undefined
-    ? ""
-    : ` formatted files ${args.formattedFiles ?? 0}, unchanged files ${args.unchangedFiles ?? 0}.`;
+  ? ""
+  : ` formatted files ${args.formattedFiles ?? 0}, unchanged files ${args.unchangedFiles ?? 0}.`;
   const summary = [
     `Fix summary: deleted files ${args.deletedFiles}`,
     `moved ${args.movedFiles}`,

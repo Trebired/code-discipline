@@ -14,29 +14,29 @@ type CliLogContext = {
 };
 
 const RULE_SLUGS = new Set([
-  "banned-patterns",
-  "banned-files",
-  "min-file-lines",
-  "min-declaration-name",
-  "max-file-lines",
-  "max-characters-per-line",
-  "max-function-lines",
-  "redundant-path-segments",
-  "imports",
-  "remove-comments",
-  "dry",
-  "format",
+    "banned-patterns",
+    "banned-files",
+    "min-file-lines",
+    "min-declaration-name",
+    "max-file-lines",
+    "max-characters-per-line",
+    "max-function-lines",
+    "redundant-path-segments",
+    "imports",
+    "remove-comments",
+    "dry",
+    "format",
 ]);
 
 function createDefaultCliLogger(): LogInstance {
   return createLog({
-    console: {
-      metadata: false,
-      timestamp: false,
-    },
-    quiet: true,
-    save: false,
-    source: CODE_DISCIPLINE_PACKAGE_NAME,
+      console: {
+        metadata: false,
+        timestamp: false,
+      },
+      quiet: true,
+      save: false,
+      source: CODE_DISCIPLINE_PACKAGE_NAME,
   });
 }
 
@@ -65,12 +65,12 @@ function inferLogGroup(line: string, context: CliLogContext | undefined): string
 
 function writeLogText(logger: LogInstance, level: CliLogLevel, text: string, context?: CliLogContext): void {
   const method = level === "fail"
-    ? logger.fail
-    : level === "warn"
-      ? logger.warn
-      : level === "success"
-        ? logger.success
-        : logger.info;
+  ? logger.fail
+  : level === "warn"
+  ? logger.warn
+  : level === "success"
+  ? logger.success
+  : logger.info;
 
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.trimEnd();

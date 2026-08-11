@@ -32,30 +32,30 @@ async function createArtifactProject(name, gitignoreText) {
   await fs.writeFile(path.join(root, "src", "b.ts"), "import { a } from \"./a\";\nexport const b = a;\n", "utf8");
   await fs.writeFile(path.join(root, "base.json"), "{\"compilerOptions\":{\"lib\":[\"ES2020\"]}}\n", "utf8");
   await writeJson(path.join(root, "tsconfig.json"), {
-    extends: "./base.json",
-    compilerOptions: {
-      baseUrl: ".",
-      paths: {
-        "#old": ["./src/a.ts"],
+      extends: "./base.json",
+      compilerOptions: {
+        baseUrl: ".",
+        paths: {
+          "#old": ["./src/a.ts"],
+        },
+        strict: true,
       },
-      strict: true,
-    },
-    include: ["src/**/*.ts"],
+      include: ["src/**/*.ts"],
   });
   await fs.writeFile(path.join(root, ".trebired/code-discipline", "config.ts"), [
-    "export default {",
-    "  ignore: { use_gitignore: true },",
-    "  rules: {",
-    "    imports: {",
-    "      alias: { strategy: \"relative-path-slug\" },",
-    "      allowRelative: [],",
-    "      output: { type: \"alias-map\" },",
-    "      runtime: { restoreAfterRun: false },",
-    "    },",
-    "  },",
-    "};",
-    "",
-  ].join("\n"), "utf8");
+      "export default {",
+      "  ignore: { use_gitignore: true },",
+      "  rules: {",
+      "    imports: {",
+      "      alias: { strategy: \"relative-path-slug\" },",
+      "      allowRelative: [],",
+      "      output: { type: \"alias-map\" },",
+      "      runtime: { restoreAfterRun: false },",
+      "    },",
+      "  },",
+      "};",
+      "",
+    ].join("\n"), "utf8");
   if (gitignoreText !== undefined) {
     await fs.writeFile(path.join(root, ".gitignore"), gitignoreText, "utf8");
   }
@@ -79,9 +79,9 @@ function configOptions(projectRoot) {
 
 async function runSyncFix(projectRoot) {
   return codeDiscipline({
-    ...configOptions(projectRoot),
-    mode: "fix",
-    onlyRules: ["imports"],
+      ...configOptions(projectRoot),
+      mode: "fix",
+      onlyRules: ["imports"],
   });
 }
 
@@ -117,15 +117,15 @@ async function verifyGeneratedTsconfigWiring() {
   assert.ok(generatedTargets.includes("../../../src/b.ts"));
   assert.deepEqual(rootTsconfig.extends, ["./base.json", "./.trebired/code-discipline/generated/tsconfig.paths.json"]);
   assert.equal(rootTsconfig.compilerOptions.strict, true);
-  assert.equal("paths" in rootTsconfig.compilerOptions, false);
-  assert.equal("baseUrl" in rootTsconfig.compilerOptions, false);
+  assert.equal("paths"in rootTsconfig.compilerOptions, false);
+  assert.equal("baseUrl"in rootTsconfig.compilerOptions, false);
 
   rootTsconfig.extends = "./base.json";
   await writeJson(rootTsconfigPath, rootTsconfig);
   const check = await codeDiscipline({
-    ...configOptions(projectRoot),
-    mode: "check",
-    onlyRules: ["imports"],
+      ...configOptions(projectRoot),
+      mode: "check",
+      onlyRules: ["imports"],
   });
   const syncViolation = check.violations.find((violation) => violation.rule === "imports");
 
@@ -140,14 +140,14 @@ async function verifySavedReportPath() {
   let stderr = "";
   const now = new Date(2026, 0, 2, 3, 4, 5);
   await runCli(["check", "save", "--config", ".trebired/code-discipline/config.ts"], {
-    cwd: projectRoot,
-    now,
-    stdout: (text) => {
-      stdout += text;
-    },
-    stderr: (text) => {
-      stderr += text;
-    },
+      cwd: projectRoot,
+      now,
+      stdout: (text) => {
+        stdout += text;
+      },
+      stderr: (text) => {
+        stderr += text;
+      },
   });
 
   const relativeReport = ".trebired/code-discipline/generated/reports/cd-report-2026-01-02-03-04-05.txt";

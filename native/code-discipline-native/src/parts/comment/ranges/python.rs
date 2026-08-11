@@ -10,14 +10,14 @@ fn scan_python_string_literal(text: &str, start: usize) -> Option<usize> {
             return None;
         }
         while bytes
-            .get(quote_index)
-            .copied()
-            .is_some_and(is_python_string_prefix_byte)
+        .get(quote_index)
+        .copied()
+        .is_some_and(is_python_string_prefix_byte)
         {
             quote_index += 1;
         }
         if quote_index - start > 3
-            || (bytes.get(quote_index) != Some(&b'"') && bytes.get(quote_index) != Some(&b'\''))
+        || (bytes.get(quote_index) != Some(&b'"') && bytes.get(quote_index) != Some(&b'\''))
         {
             return None;
         }
@@ -25,7 +25,7 @@ fn scan_python_string_literal(text: &str, start: usize) -> Option<usize> {
 
     let quote = bytes[quote_index];
     let triple = bytes.get(quote_index + 1) == Some(&quote)
-        && bytes.get(quote_index + 2) == Some(&quote);
+    && bytes.get(quote_index + 2) == Some(&quote);
     if !triple {
         return Some(scan_escaped_quoted_literal(text, quote_index, quote));
     }
@@ -37,8 +37,8 @@ fn scan_python_string_literal(text: &str, start: usize) -> Option<usize> {
             continue;
         }
         if bytes[index] == quote
-            && bytes.get(index + 1) == Some(&quote)
-            && bytes.get(index + 2) == Some(&quote)
+        && bytes.get(index + 1) == Some(&quote)
+        && bytes.get(index + 2) == Some(&quote)
         {
             return Some(index + 3);
         }
@@ -53,14 +53,14 @@ fn is_protected_python_hash_comment(text: &str, start: usize) -> bool {
         return true;
     }
     let line_start = text[..start]
-        .rfind('\n')
-        .map(|index| index + 1)
-        .unwrap_or(0);
+    .rfind('\n')
+    .map(|index| index + 1)
+    .unwrap_or(0);
     let line_number = text[..line_start]
-        .bytes()
-        .filter(|byte| *byte == b'\n')
-        .count()
-        + 1;
+    .bytes()
+    .filter(|byte| *byte == b'\n')
+    .count()
+    + 1;
     if line_number > 2 {
         return false;
     }
@@ -84,9 +84,9 @@ fn collect_python_comment_ranges(text: &str) -> Vec<CommentRange> {
             let end = scan_hash_line_comment(text, index);
             if !is_protected_python_hash_comment(text, index) {
                 ranges.push(CommentRange {
-                    start: index,
-                    end,
-                    kind: CommentKind::Line,
+                        start: index,
+                        end,
+                        kind: CommentKind::Line,
                 });
             }
             index = end;

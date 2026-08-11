@@ -40,9 +40,9 @@ function resolveScriptKind(filePath: string): ts.ScriptKind {
 
 function parseSource(text: string, filePath: string): ts.SourceFile {
   const sourceFile = ts.createSourceFile(filePath, text, ts.ScriptTarget.Latest, true, resolveScriptKind(filePath));
-  const diagnostics = ((sourceFile as ts.SourceFile & {
-    parseDiagnostics?: readonly ts.Diagnostic[];
-  }).parseDiagnostics ?? []);
+  const diagnostics = ((sourceFile as ts.SourceFile& {
+        parseDiagnostics?: readonly ts.Diagnostic[];
+    }).parseDiagnostics ?? []);
   const errors = diagnostics.filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error);
 
   if (errors.length > 0) {
@@ -73,11 +73,11 @@ function collectTypeScriptModuleSpecifiers(text: string, filePath: string): Modu
 
   function addLiteral(node: ts.StringLiteralLike, removalRange?: { start: number; end: number } | null) {
     occurrences.push({
-      specifier: node.text,
-      start: node.getStart(sourceFile) + 1,
-      end: node.getEnd() - 1,
-      removalStart: removalRange?.start,
-      removalEnd: removalRange?.end,
+        specifier: node.text,
+        start: node.getStart(sourceFile) + 1,
+        end: node.getEnd() - 1,
+        removalStart: removalRange?.start,
+        removalEnd: removalRange?.end,
     });
   }
 
@@ -229,11 +229,11 @@ function collectQuotedSassSpecifiers(
       else if (char === "\\") escaping = true;
       else if (char === quote) {
         occurrences.push({
-          specifier: segment.slice(specifierStart, index),
-          start: baseOffset + specifierStart,
-          end: baseOffset + index,
-          removalStart: removalRange?.start,
-          removalEnd: removalRange?.end,
+            specifier: segment.slice(specifierStart, index),
+            start: baseOffset + specifierStart,
+            end: baseOffset + index,
+            removalStart: removalRange?.start,
+            removalEnd: removalRange?.end,
         });
         quote = "";
         specifierStart = -1;
@@ -267,8 +267,8 @@ function collectScssModuleSpecifiers(text: string): ModuleSpecifierOccurrence[] 
         const segment = text.slice(directiveStart, directiveEnd);
         const specifiers = collectQuotedSassSpecifiers(segment, directiveStart, removalRange);
         occurrences.push(...(directive === "import" && specifiers.length > 1
-          ? specifiers.map((specifier) => ({ ...specifier, removalStart: undefined, removalEnd: undefined }))
-          : directive === "import" ? specifiers : specifiers.slice(0, 1)));
+            ? specifiers.map((specifier) => ({ ...specifier, removalStart: undefined, removalEnd: undefined }))
+            : directive === "import" ? specifiers : specifiers.slice(0, 1)));
         index = directiveEnd;
         continue;
       }
@@ -282,8 +282,8 @@ function collectScssModuleSpecifiers(text: string): ModuleSpecifierOccurrence[] 
 
 function collectModuleSpecifiers(text: string, filePath: string): ModuleSpecifierOccurrence[] {
   return isScssExtension(filePath)
-    ? collectScssModuleSpecifiers(text)
-    : collectTypeScriptModuleSpecifiers(text, filePath);
+  ? collectScssModuleSpecifiers(text)
+  : collectTypeScriptModuleSpecifiers(text, filePath);
 }
 
 function applyTextReplacements(text: string, replacements: TextReplacement[]): { text: string; count: number } {

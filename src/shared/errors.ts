@@ -1,14 +1,14 @@
 type ImportsErrorCode =
-  | "invalid_project_root"
-  | "invalid_source_root"
-  | "invalid_tsconfig_path"
-  | "invalid_config"
-  | "alias_collision"
-  | "invalid_alias"
-  | "rewrite_failure"
-  | "parse_failure"
-  | "file_conflict"
-  | "fix_failure";
+|"invalid_project_root"
+|"invalid_source_root"
+|"invalid_tsconfig_path"
+|"invalid_config"
+|"alias_collision"
+|"invalid_alias"
+|"rewrite_failure"
+|"parse_failure"
+|"file_conflict"
+|"fix_failure";
 
 class ImportsError extends Error {
   code: ImportsErrorCode | string;
@@ -67,8 +67,8 @@ class InvalidAliasError extends ImportsError {
 class RewriteFailureError extends ImportsError {
   constructor(filePath: string, cause?: unknown) {
     super("rewrite_failure", `Failed to rewrite imports in ${filePath}`, {
-      filePath,
-      cause: cause instanceof Error ? cause.message : cause,
+        filePath,
+        cause: cause instanceof Error ? cause.message : cause,
     });
     this.name = "RewriteFailureError";
   }

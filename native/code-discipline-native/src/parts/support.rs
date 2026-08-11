@@ -117,16 +117,16 @@ fn normalize_relative_path(value: impl AsRef<str>) -> String {
 
 fn path_relative_from(base: &Path, value: &Path) -> String {
     value
-        .strip_prefix(base)
-        .map(to_posix_path)
-        .map(normalize_relative_path)
-        .unwrap_or_else(|_| to_posix_path(value))
+    .strip_prefix(base)
+    .map(to_posix_path)
+    .map(normalize_relative_path)
+    .unwrap_or_else(|_| to_posix_path(value))
 }
 
 fn extension_for_path(path: &Path) -> String {
     path.extension()
-        .map(|value| format!(".{}", value.to_string_lossy().to_lowercase()))
-        .unwrap_or_default()
+    .map(|value| format!(".{}", value.to_string_lossy().to_lowercase()))
+    .unwrap_or_default()
 }
 
 fn is_ts_family_extension(extension: &str) -> bool {

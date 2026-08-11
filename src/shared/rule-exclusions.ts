@@ -19,9 +19,9 @@ function matchesExcludedFolder(filePath: string, folderPattern: string): boolean
   if (directory === normalizedPattern || directory.startsWith(`${normalizedPattern}/`)) return true;
   if (filePath === normalizedPattern || filePath.startsWith(`${normalizedPattern}/`)) return true;
   return matchesGlob(directory, normalizedPattern)
-    || matchesGlob(directory, `**/${normalizedPattern}`)
-    || matchesGlob(filePath, `${normalizedPattern}/**`)
-    || matchesGlob(filePath, `**/${normalizedPattern}/**`);
+  ||matchesGlob(directory, `**/${normalizedPattern}`)
+  ||matchesGlob(filePath, `${normalizedPattern}/**`)
+  ||matchesGlob(filePath, `**/${normalizedPattern}/**`);
 }
 
 function isRuleExcludedFile(file: ScannedSourceFile, exclusions: NormalizedRuleExclusions): boolean {

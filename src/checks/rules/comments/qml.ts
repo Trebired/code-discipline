@@ -102,10 +102,10 @@ function maskQmlCommentsAndStrings(text: string): string {
   while (index < text.length) {
     const literalEnd = scanQmlLiteral(text, index);
     const commentEnd = literalEnd == null && text[index] === "/" && text[index + 1] === "/"
-      ? scanSlashLineComment(text, index)
-      : literalEnd == null && text[index] === "/" && text[index + 1] === "*"
-        ? scanSlashBlockComment(text, index, false)
-        : null;
+    ? scanSlashLineComment(text, index)
+    : literalEnd == null && text[index] === "/" && text[index + 1] === "*"
+    ? scanSlashBlockComment(text, index, false)
+    : null;
     const end = literalEnd ?? commentEnd;
     if (end != null) {
       result += text.slice(index, end).replace(/[^\r\n]/gu, " ");

@@ -24,32 +24,32 @@ type CodeDisciplineInvocationOptions = {
   scanObserver?: SourceScanObserver;
 };
 
-type CodeDisciplineOptions = CheckCodeDisciplineOptions & {
+type CodeDisciplineOptions = CheckCodeDisciplineOptions& {
   mode: CodeDisciplineRuntimeMode;
   logger?: unknown;
 };
 
-type CheckCodeDisciplineCommandOptions = Omit<CodeDisciplineOptions, "mode"> & {
+type CheckCodeDisciplineCommandOptions = Omit<CodeDisciplineOptions, "mode">& {
   mode: "check";
 };
 
-type FixCodeDisciplineCommandOptions = Omit<CodeDisciplineOptions, "mode"> & {
+type FixCodeDisciplineCommandOptions = Omit<CodeDisciplineOptions, "mode">& {
   mode: "fix";
 };
 
 type CodeDisciplineResult = CheckCodeDisciplineResult | FixCodeDisciplineResult;
 
-type CheckCodeDisciplineInvocationOptions = CodeDisciplineInvocationOptions & {
+type CheckCodeDisciplineInvocationOptions = CodeDisciplineInvocationOptions& {
   onlyRules?: CodeDisciplineRuleSlug[];
 };
 
-type FixCodeDisciplineInvocationOptions = CodeDisciplineInvocationOptions & {
+type FixCodeDisciplineInvocationOptions = CodeDisciplineInvocationOptions& {
   onlyRules?: FixableRuleSlug[];
 };
 
 type CodeDisciplineRunInvocationOptions =
-  | (CheckCodeDisciplineInvocationOptions & { mode: "check" })
-  | (FixCodeDisciplineInvocationOptions & { mode: "fix" });
+|(CheckCodeDisciplineInvocationOptions& { mode: "check" })
+|(FixCodeDisciplineInvocationOptions& { mode: "fix" });
 
 type CreatedCodeDiscipline = {
   config: CodeDisciplineConfig;
@@ -59,8 +59,8 @@ type CreatedCodeDiscipline = {
 };
 
 function resolveLoggingOptions(options: {
-  logging?: LoggingOptions;
-  logger?: unknown;
+    logging?: LoggingOptions;
+    logger?: unknown;
 }): LoggingOptions | undefined {
   const hasLogger = options.logger !== undefined;
 
@@ -82,13 +82,13 @@ function mergeLoggingOptions(
   },
 ): LoggingOptions | undefined {
   return resolveLoggingOptions({
-    logging: {
-      ...baseLogging,
-      ...options.logging,
-      logger: options.logging?.logger ?? baseLogging?.logger,
-      adapter: options.logging?.adapter ?? baseLogging?.adapter,
-    },
-    logger: options.logger,
+      logging: {
+        ...baseLogging,
+        ...options.logging,
+        logger: options.logging?.logger ?? baseLogging?.logger,
+        adapter: options.logging?.adapter ?? baseLogging?.adapter,
+      },
+      logger: options.logger,
   });
 }
 
@@ -101,6 +101,7 @@ function buildCheckOptions(options: Omit<CodeDisciplineOptions, "mode">): CheckC
     gitignorePath: options.gitignorePath,
     logging: resolveLoggingOptions(options),
     onlyRules: options.onlyRules,
+    presets: options.presets,
     progressObserver: options.progressObserver,
     rules: options.rules,
     scanObserver: options.scanObserver,
@@ -115,15 +116,15 @@ function buildFixOptions(options: Omit<CodeDisciplineOptions, "mode">): FixCodeD
 }
 
 function assertRemovedInvocationOptions(options: Record<string, unknown>): void {
-  if ("formatters" in options) {
+  if ("formatters"in options) {
     throw new InvalidCodeDisciplineConfigError("formatters is no longer supported; use rules.formatting instead", {
-      key: "formatters",
+        key: "formatters",
     });
   }
 
-  if ("formatter" in options) {
+  if ("formatter"in options) {
     throw new InvalidCodeDisciplineConfigError("formatter is no longer supported; use rules.formatting instead", {
-      key: "formatter",
+        key: "formatter",
     });
   }
 }
@@ -139,6 +140,7 @@ async function codeDiscipline(options: CodeDisciplineOptions): Promise<CodeDisci
     lifecycle: options.lifecycle,
     logging: options.logging,
     onlyRules: options.onlyRules,
+    presets: options.presets,
     rules: options.rules,
     excludeSourceExtensions: options.excludeSourceExtensions,
     progressObserver: options.progressObserver,
@@ -146,17 +148,17 @@ async function codeDiscipline(options: CodeDisciplineOptions): Promise<CodeDisci
   };
 
   return orchestrateCodeDisciplineRun({
-    config: baseConfig,
-    configPath: options.configPath,
-    mode: options.mode,
-    projectRoot: options.projectRoot,
-    async execute() {
-      if (options.mode === "check") {
-        return checkCodeDiscipline(buildCheckOptions(options));
-      }
+      config: baseConfig,
+      configPath: options.configPath,
+      mode: options.mode,
+      projectRoot: options.projectRoot,
+      async execute() {
+        if (options.mode === "check") {
+          return checkCodeDiscipline(buildCheckOptions(options));
+        }
 
-      return fixCodeDiscipline(buildFixOptions(options));
-    },
+        return fixCodeDiscipline(buildFixOptions(options));
+      },
   });
 }
 
@@ -164,22 +166,22 @@ function createCodeDiscipline(config: CodeDisciplineConfig): CreatedCodeDiscipli
   return {
     config,
     run: (options) => codeDiscipline({
-      ...config,
-      ...options,
-      mode: options.mode,
-      logging: mergeLoggingOptions(config.logging, options),
+        ...config,
+        ...options,
+        mode: options.mode,
+        logging: mergeLoggingOptions(config.logging, options),
     }),
     check: (options) => codeDiscipline({
-      ...config,
-      ...options,
-      mode: "check",
-      logging: mergeLoggingOptions(config.logging, options),
+        ...config,
+        ...options,
+        mode: "check",
+        logging: mergeLoggingOptions(config.logging, options),
     }) as Promise<CheckCodeDisciplineResult>,
     fix: (options) => codeDiscipline({
-      ...config,
-      ...options,
-      mode: "fix",
-      logging: mergeLoggingOptions(config.logging, options),
+        ...config,
+        ...options,
+        mode: "fix",
+        logging: mergeLoggingOptions(config.logging, options),
     }) as Promise<FixCodeDisciplineResult>,
   };
 }

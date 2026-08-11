@@ -1,14 +1,14 @@
 import path from "node:path";
 
 const TYPESCRIPT_FAMILY_EXTENSIONS = new Set([
-  ".cjs",
-  ".cts",
-  ".js",
-  ".jsx",
-  ".mjs",
-  ".mts",
-  ".ts",
-  ".tsx",
+    ".cjs",
+    ".cts",
+    ".js",
+    ".jsx",
+    ".mjs",
+    ".mts",
+    ".ts",
+    ".tsx",
 ]);
 
 const GO_FAMILY_EXTENSIONS = new Set([".go"]);
@@ -70,13 +70,13 @@ function supportsImports(value: string): boolean {
 
 function supportsMaxFunctionLines(value: string): boolean {
   return isTypeScriptFamilyExtension(value)
-    || isGoExtension(value)
-    || isRustExtension(value)
-    || isCppExtension(value)
-    || isCsharpExtension(value)
-    || isPythonExtension(value)
-    || isShellExtension(value)
-    || isQmlExtension(value);
+  ||isGoExtension(value)
+  ||isRustExtension(value)
+  ||isCppExtension(value)
+  ||isCsharpExtension(value)
+  ||isPythonExtension(value)
+  ||isShellExtension(value)
+  ||isQmlExtension(value);
 }
 
 function supportsMinDeclarationName(value: string): boolean {
@@ -89,14 +89,14 @@ function supportsDry(value: string): boolean {
 
 function supportsRemoveComments(value: string): boolean {
   return isTypeScriptFamilyExtension(value)
-    || isGoExtension(value)
-    || isRustExtension(value)
-    || isCppExtension(value)
-    || isCsharpExtension(value)
-    || isPythonExtension(value)
-    || isShellExtension(value)
-    || isQmlExtension(value)
-    || isStyleExtension(value);
+  ||isGoExtension(value)
+  ||isRustExtension(value)
+  ||isCppExtension(value)
+  ||isCsharpExtension(value)
+  ||isPythonExtension(value)
+  ||isShellExtension(value)
+  ||isQmlExtension(value)
+  ||isStyleExtension(value);
 }
 
 function supportsFormatter(value: string): boolean {

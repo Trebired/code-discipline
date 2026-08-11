@@ -18,9 +18,9 @@ function collectBannedFileViolations(
 
   const violations: CodeDisciplineViolation[] = [];
   const progress = createRuleProgress({
-    observer: options.progressObserver,
-    rule: "banned-files",
-    totalItems: sourceFiles.length,
+      observer: options.progressObserver,
+      rule: "banned-files",
+      totalItems: sourceFiles.length,
   });
 
   for (let index = 0; index < sourceFiles.length; index += 1) {
@@ -29,13 +29,13 @@ function collectBannedFileViolations(
       if (!matchesGlob(file.relativeFromProjectRoot, pattern.glob)) continue;
 
       violations.push({
-        rule: "banned-files",
-        fix: false,
-        filePath: file.relativeFromProjectRoot,
-        message: `file path matches banned glob "${pattern.glob}"`,
-        details: {
-          glob: pattern.glob,
-        },
+          rule: "banned-files",
+          fix: false,
+          filePath: file.relativeFromProjectRoot,
+          message: `file path matches banned glob "${pattern.glob}"`,
+          details: {
+            glob: pattern.glob,
+          },
       });
     }
 
@@ -62,14 +62,14 @@ async function fixBannedFilesRule(
 
   const filesByRelativePath = new Map(sourceFiles.map((file) => [file.relativeFromProjectRoot, file]));
   const filesToDelete = [...new Set(violations.map((violation) => violation.filePath))]
-    .map((filePath) => filesByRelativePath.get(filePath))
-    .filter((file): file is ScannedSourceFile => Boolean(file));
+  .map((filePath) => filesByRelativePath.get(filePath))
+  .filter((file): file is ScannedSourceFile => Boolean(file));
   const progress = createRuleProgress({
-    chunkSize: BANNED_FILES_FIX_CHUNK_SIZE,
-    observer: options.progressObserver,
-    rule: "banned-files",
-    stage: "fix",
-    totalItems: filesToDelete.length,
+      chunkSize: BANNED_FILES_FIX_CHUNK_SIZE,
+      observer: options.progressObserver,
+      rule: "banned-files",
+      stage: "fix",
+      totalItems: filesToDelete.length,
   });
   let deletedFiles = 0;
 
@@ -82,7 +82,7 @@ async function fixBannedFilesRule(
     }
   } catch (error) {
     throw new FixFailureError("banned-files fix failed", {
-      cause: error instanceof Error ? error.message : String(error),
+        cause: error instanceof Error ? error.message : String(error),
     });
   }
 

@@ -82,10 +82,10 @@ fn find_simple_quoted_span(line: &str, quotes: &[char]) -> Option<(usize, usize,
 
 fn is_import_like_line(trimmed: &str) -> bool {
     trimmed.starts_with("import ")
-        || trimmed.starts_with("export *")
-        || trimmed.starts_with("export {")
-        || trimmed.contains(" from \"")
-        || trimmed.contains(" from '")
+    || trimmed.starts_with("export *")
+    || trimmed.starts_with("export {")
+    || trimmed.contains(" from \"")
+    || trimmed.contains(" from '")
 }
 
 fn push_top_level_plus_term(terms: &mut Vec<String>, current: &mut String) -> Option<()> {
@@ -234,9 +234,9 @@ fn wrap_js_like_string_line(line: &str, extension: &str, max: usize) -> Option<V
     }
 
     output
-        .iter()
-        .all(|item| count_display_characters(item) <= max)
-        .then_some(output)
+    .iter()
+    .all(|item| count_display_characters(item) <= max)
+    .then_some(output)
 }
 
 fn wrap_python_string_line(line: &str, max: usize) -> Option<Vec<String>> {
@@ -264,15 +264,15 @@ fn wrap_python_string_line(line: &str, max: usize) -> Option<Vec<String>> {
     output.push(format!("{prefix}("));
     output.extend(
         segments
-            .iter()
-            .map(|segment| format!("{continuation_indent}{quote}{segment}{quote}")),
+        .iter()
+        .map(|segment| format!("{continuation_indent}{quote}{segment}{quote}")),
     );
     output.push(format!("{indent}){suffix}"));
 
     output
-        .iter()
-        .all(|item| count_display_characters(item) <= max)
-        .then_some(output)
+    .iter()
+    .all(|item| count_display_characters(item) <= max)
+    .then_some(output)
 }
 
 fn find_rust_raw_string_span(line: &str) -> Option<(usize, usize, usize, usize)> {
@@ -324,9 +324,9 @@ fn wrap_rust_raw_string_line(line: &str, max: usize) -> Option<Vec<String>> {
     let continuation_indent = format!("{indent}    ");
     let segment_capacity = max.saturating_sub(
         count_display_characters(&continuation_indent)
-            + count_display_characters(raw_start)
-            + count_display_characters(raw_end)
-            + 1,
+        + count_display_characters(raw_start)
+        + count_display_characters(raw_end)
+        + 1,
     );
     let segments = split_literal_for_width(content, segment_capacity, segment_capacity)?;
     let mut output = Vec::with_capacity(segments.len() + 2);
@@ -339,7 +339,7 @@ fn wrap_rust_raw_string_line(line: &str, max: usize) -> Option<Vec<String>> {
     output.push(format!("{indent}){suffix}"));
 
     output
-        .iter()
-        .all(|item| count_display_characters(item) <= max)
-        .then_some(output)
+    .iter()
+    .all(|item| count_display_characters(item) <= max)
+    .then_some(output)
 }

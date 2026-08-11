@@ -137,10 +137,10 @@ function planRedundantPathSegments(
   const matchesByPath = new Map<string, PrefixMatch>();
   const pathSegmentMatchesByPath = new Map<string, PrefixMatch>();
   const progress = createRuleProgress({
-    observer: options.progressObserver,
-    rule: "redundant-path-segments",
-    stage: "plan",
-    totalItems: sourceFiles.length,
+      observer: options.progressObserver,
+      rule: "redundant-path-segments",
+      stage: "plan",
+      totalItems: sourceFiles.length,
   });
 
   for (const file of sourceFiles) {
@@ -168,15 +168,15 @@ function planRedundantPathSegments(
     if (pathSegmentMatch) {
       const suggested = buildSuggestedPath(file, pathSegmentMatch.prefix, pathSegmentMatch.remainder, "redundant-path-segment");
       candidates.push({
-        absolutePath: file.absolutePath,
-        relativeFromProjectRoot: file.relativeFromProjectRoot,
-        suggestedAbsolutePath: suggested.absolutePath,
-        suggestedPath: suggested.relativeFromProjectRoot,
-        prefix: pathSegmentMatch.prefix,
-        remainder: pathSegmentMatch.remainder,
-        pathSegment: pathSegmentMatch.pathSegment,
-        separator: pathSegmentMatch.separator,
-        mode: "redundant-path-segment",
+          absolutePath: file.absolutePath,
+          relativeFromProjectRoot: file.relativeFromProjectRoot,
+          suggestedAbsolutePath: suggested.absolutePath,
+          suggestedPath: suggested.relativeFromProjectRoot,
+          prefix: pathSegmentMatch.prefix,
+          remainder: pathSegmentMatch.remainder,
+          pathSegment: pathSegmentMatch.pathSegment,
+          separator: pathSegmentMatch.separator,
+          mode: "redundant-path-segment",
       });
       emitRuleChunk(progress, index + 1, candidates.length);
       continue;
@@ -192,10 +192,10 @@ function planRedundantPathSegments(
     const directoryKey = `${path.posix.dirname(file.relativeFromSourceRoot)}::${match.prefix}`;
     const groupedCount = byDirectoryAndPrefix.get(directoryKey)?.length ?? 0;
     const mode = directoryName === match.prefix
-      ? "repeated-folder-prefix"
-      : groupedCount >= 2
-        ? "same-directory-group"
-        : null;
+    ? "repeated-folder-prefix"
+    : groupedCount >= 2
+    ? "same-directory-group"
+    : null;
 
     if (!mode) {
       emitRuleChunk(progress, index + 1, candidates.length);
@@ -204,14 +204,14 @@ function planRedundantPathSegments(
 
     const suggested = buildSuggestedPath(file, match.prefix, match.remainder, mode);
     candidates.push({
-      absolutePath: file.absolutePath,
-      relativeFromProjectRoot: file.relativeFromProjectRoot,
-      suggestedAbsolutePath: suggested.absolutePath,
-      suggestedPath: suggested.relativeFromProjectRoot,
-      prefix: match.prefix,
-      remainder: match.remainder,
-      separator: match.separator,
-      mode,
+        absolutePath: file.absolutePath,
+        relativeFromProjectRoot: file.relativeFromProjectRoot,
+        suggestedAbsolutePath: suggested.absolutePath,
+        suggestedPath: suggested.relativeFromProjectRoot,
+        prefix: match.prefix,
+        remainder: match.remainder,
+        separator: match.separator,
+        mode,
     });
     emitRuleChunk(progress, index + 1, candidates.length);
   }

@@ -3,7 +3,7 @@ const CONTINUATION_PUNCTUATORS: [&str; 9] = [
 ];
 
 const CONTROL_HEADER_KEYWORDS: [&str; 6] =
-    ["catch", "for", "if", "switch", "while", "with"];
+["catch", "for", "if", "switch", "while", "with"];
 
 const CONTINUATION_KEYWORDS: [&str; 8] = [
     "as", "extends", "from", "implements", "in", "instanceof", "of", "satisfies",
@@ -51,14 +51,14 @@ struct OwnedIndexToken {
 
 fn indexed_tokens(text: &str) -> Vec<OwnedIndexToken> {
     tokenize_script(text)
-        .into_iter()
-        .map(|token| OwnedIndexToken {
+    .into_iter()
+    .map(|token| OwnedIndexToken {
             kind: token.kind,
             text: text[token.start..token.end].to_string(),
             start: token.start,
             end: token.end,
-        })
-        .collect()
+    })
+    .collect()
 }
 
 fn is_code_token(token: &OwnedIndexToken) -> bool {
@@ -93,7 +93,7 @@ fn starts_a_continuation(token: &OwnedIndexToken) -> bool {
     match token.kind {
         ScriptTokenKind::Punctuator => {
             CONTINUATION_PUNCTUATORS.contains(&token.text.as_str())
-                || BINARY_PUNCTUATORS.contains(&token.text.as_str())
+            || BINARY_PUNCTUATORS.contains(&token.text.as_str())
         }
         ScriptTokenKind::Keyword => CONTINUATION_KEYWORDS.contains(&token.text.as_str()),
         ScriptTokenKind::TemplateLiteral => true,
@@ -129,9 +129,9 @@ fn collect_semicolon_edits(text: &str, tokens: &[OwnedIndexToken], edits: &mut V
         if token.kind == ScriptTokenKind::Punctuator {
             match token.text.as_str() {
                 "{" => brace_stack.push(if opens_object_literal(tokens, index) {
-                    BraceKind::ObjectLiteral
-                } else {
-                    BraceKind::Block
+                        BraceKind::ObjectLiteral
+                    } else {
+                        BraceKind::Block
                 }),
                 "}" => {
                     brace_stack.pop();
@@ -162,8 +162,8 @@ fn collect_semicolon_edits(text: &str, tokens: &[OwnedIndexToken], edits: &mut V
         let last_token = &tokens[last];
 
         if last_token.kind == ScriptTokenKind::Punctuator
-            && (STATEMENT_END_BLOCKERS.contains(&last_token.text.as_str())
-                || BINARY_PUNCTUATORS.contains(&last_token.text.as_str()))
+        && (STATEMENT_END_BLOCKERS.contains(&last_token.text.as_str())
+            || BINARY_PUNCTUATORS.contains(&last_token.text.as_str()))
         {
             continue;
         }
@@ -175,8 +175,8 @@ fn collect_semicolon_edits(text: &str, tokens: &[OwnedIndexToken], edits: &mut V
         }
 
         let closes_object_literal = last_token.kind == ScriptTokenKind::Punctuator
-            && last_token.text == "}"
-            && matches!(matching_brace_kind(tokens, last), Some(BraceKind::ObjectLiteral));
+        && last_token.text == "}"
+        && matches!(matching_brace_kind(tokens, last), Some(BraceKind::ObjectLiteral));
 
         if !ends_a_value(last_token) && !closes_object_literal {
             continue;
@@ -207,7 +207,7 @@ fn control_header_closers(tokens: &[OwnedIndexToken]) -> Vec<bool> {
                 probe = previous_code_token(tokens, probe.unwrap_or(0));
             }
             let is_header = probe.is_some_and(|previous| {
-                tokens[previous].kind == ScriptTokenKind::Keyword
+                    tokens[previous].kind == ScriptTokenKind::Keyword
                     && CONTROL_HEADER_KEYWORDS.contains(&tokens[previous].text.as_str())
             });
             stack.push(is_header);
@@ -225,20 +225,20 @@ fn control_header_closers(tokens: &[OwnedIndexToken]) -> Vec<bool> {
 
 fn generic_regions(text: &str, tokens: &[OwnedIndexToken]) -> Vec<(usize, usize)> {
     let plain: Vec<ScriptToken> = tokens
-        .iter()
-        .map(|token| ScriptToken {
+    .iter()
+    .map(|token| ScriptToken {
             kind: token.kind,
             start: token.start,
             end: token.end,
-        })
-        .collect();
+    })
+    .collect();
 
     (0..tokens.len())
-        .filter(|index| {
+    .filter(|index| {
             tokens[*index].kind == ScriptTokenKind::Punctuator && tokens[*index].text == "<"
-        })
-        .filter_map(|index| generic_arguments_end(text, &plain, index).map(|end| (index, end)))
-        .collect()
+    })
+    .filter_map(|index| generic_arguments_end(text, &plain, index).map(|end| (index, end)))
+    .collect()
 }
 
 fn matching_brace_kind(tokens: &[OwnedIndexToken], close: usize) -> Option<BraceKind> {
@@ -254,9 +254,9 @@ fn matching_brace_kind(tokens: &[OwnedIndexToken], close: usize) -> Option<Brace
             depth -= 1;
             if depth == 0 {
                 return Some(if opens_object_literal(tokens, index) {
-                    BraceKind::ObjectLiteral
-                } else {
-                    BraceKind::Block
+                        BraceKind::ObjectLiteral
+                    } else {
+                        BraceKind::Block
                 });
             }
         }
@@ -266,8 +266,8 @@ fn matching_brace_kind(tokens: &[OwnedIndexToken], close: usize) -> Option<Brace
 
 fn apply_script_edits(text: &str, mut edits: Vec<ScriptEdit>) -> String {
     edits.sort_by_key(|edit| match edit {
-        ScriptEdit::Insert(at) => *at,
-        ScriptEdit::ReplaceQuotes(start, _) => *start,
+            ScriptEdit::Insert(at) => *at,
+            ScriptEdit::ReplaceQuotes(start, _) => *start,
     });
 
     let mut result = String::with_capacity(text.len() + edits.len());

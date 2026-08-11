@@ -15,9 +15,9 @@ function readAliasMap() {
   if (!fs.existsSync(aliasMapDir)) return new Map();
   const aliases = new Map();
   const files = fs
-    .readdirSync(aliasMapDir)
-    .filter((file) => file.endsWith(".json"))
-    .sort((left, right) => left.localeCompare(right));
+  .readdirSync(aliasMapDir)
+  .filter((file) => file.endsWith(".json"))
+  .sort((left, right) => left.localeCompare(right));
 
   for (const file of files) {
     const raw = fs.readFileSync(path.join(aliasMapDir, file), "utf8");
@@ -63,6 +63,7 @@ function listBuildFiles(dir) {
 }
 
 const aliases = readAliasMap();
+
 if (aliases.size === 0 || !fs.existsSync(distRoot)) process.exit(0);
 
 for (const file of listBuildFiles(distRoot)) {

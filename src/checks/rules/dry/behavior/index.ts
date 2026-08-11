@@ -15,7 +15,7 @@ function createBehaviorFingerprint(node: ts.FunctionLikeDeclaration, sourceFile:
     parameters: new Map(parameterNames.map((name, index) => [name!, `p${index}`])),
   };
   const parameterDefaults = node.parameters.map((parameter) => (
-    parameter.initializer ? normalizeExpression(parameter.initializer, context, sourceFile) : null
+      parameter.initializer ? normalizeExpression(parameter.initializer, context, sourceFile) : null
   ));
   if (parameterDefaults.some((value) => value === undefined)) return null;
 

@@ -47,8 +47,8 @@ function nativeAddonCandidatePathsForCurrentPlatform(): string[] {
   const currentDir = path.dirname(fileURLToPath(import.meta.url));
   const binaryName = nativeBinaryBasenameForCurrentPlatform();
   const envOverride = process.env.TB_CODE_DISCIPLINE_NATIVE_BINARY
-    ? path.resolve(process.env.TB_CODE_DISCIPLINE_NATIVE_BINARY)
-    : "";
+  ? path.resolve(process.env.TB_CODE_DISCIPLINE_NATIVE_BINARY)
+  : "";
 
   return [
     envOverride,
@@ -84,12 +84,12 @@ function requireNativeBinding(): NativeBinding {
 
   const expected = nativeBinaryBasenameForCurrentPlatform();
   const reason = expected
-    ? `no loadable addon was found for ${process.platform}-${process.arch} (expected ${expected})`
-    : `${process.platform}-${process.arch} is not a supported platform`;
+  ? `no loadable addon was found for ${process.platform}-${process.arch} (expected ${expected})`
+  : `${process.platform}-${process.arch} is not a supported platform`;
 
   throw new Error(
     `${CODE_DISCIPLINE_PACKAGE_NAME} requires its native backend, but ${reason}. `
-    + "Build it with `bun run build:native` or install a release that ships a prebuilt addon.",
+    +"Build it with `bun run build:native` or install a release that ships a prebuilt addon.",
   );
 }
 

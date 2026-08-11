@@ -30,10 +30,10 @@ type CodeFormatterResult = {
 };
 
 function createFormatViolation(args: {
-  filePath: string;
-  fix: boolean;
-  message: string;
-  details?: Record<string, unknown>;
+    filePath: string;
+    fix: boolean;
+    message: string;
+    details?: Record<string, unknown>;
 }): CodeDisciplineViolation {
   return {
     rule: "format",
@@ -65,19 +65,19 @@ function toNativeFormatterOptions(formatter: NormalizedCodeFormatter): Record<st
 
 function createNativeUnavailableViolation(mode: CodeFormatterMode): CodeDisciplineViolation {
   return createFormatViolation({
-    filePath: ".",
-    fix: mode === "fix",
-    message: "native formatter backend is unavailable",
-    details: { formatter: "code", backend: "native" },
+      filePath: ".",
+      fix: mode === "fix",
+      message: "native formatter backend is unavailable",
+      details: { formatter: "code", backend: "native" },
   });
 }
 
 function createNativeErrorViolation(error: unknown, mode: CodeFormatterMode): CodeDisciplineViolation {
   return createFormatViolation({
-    filePath: ".",
-    fix: mode === "fix",
-    message: `native formatter failed: ${error instanceof Error ? error.message : String(error)}`,
-    details: { formatter: "code", backend: "native" },
+      filePath: ".",
+      fix: mode === "fix",
+      message: `native formatter failed: ${error instanceof Error ? error.message : String(error)}`,
+      details: { formatter: "code", backend: "native" },
   });
 }
 
@@ -97,20 +97,20 @@ function mapNativeResultViolations(
   for (const file of result.files) {
     if (file.error) {
       violations.push(createFormatViolation({
-        filePath: file.filePath,
-        fix: mode === "fix",
-        message: `failed to ${mode === "fix" ? "format" : "check"}: ${file.error}`,
-        details: { formatter: "code", backend: "native" },
+            filePath: file.filePath,
+            fix: mode === "fix",
+            message: `failed to ${mode === "fix" ? "format" : "check"}: ${file.error}`,
+            details: { formatter: "code", backend: "native" },
       }));
       continue;
     }
 
     if (mode === "check" && file.changed) {
       violations.push(createFormatViolation({
-        filePath: file.filePath,
-        fix: true,
-        message: "needs formatting",
-        details: { formatter: "code", backend: "native" },
+            filePath: file.filePath,
+            fix: true,
+            message: "needs formatting",
+            details: { formatter: "code", backend: "native" },
       }));
     }
   }
@@ -139,10 +139,10 @@ async function runCodeFormatter(
   const collected = await collectCodeFormatterFiles(options, formatting);
   const violations = [...collected.violations];
   const progress = createRuleProgress({
-    observer: options.progressObserver,
-    rule: "format",
-    stage: mode,
-    totalItems: collected.files.length,
+      observer: options.progressObserver,
+      rule: "format",
+      stage: mode,
+      totalItems: collected.files.length,
   });
   const binding = loadNativeBinding();
 
@@ -164,9 +164,9 @@ async function runCodeFormatter(
   let nativeResult: NativeFormatterResponse;
   try {
     nativeResult = parseNativeFormatterResponse(binding.formatSourceFiles(JSON.stringify({
-      mode,
-      options: toNativeFormatterOptions(formatting),
-      sourceFiles: collected.files.map(toNativeSourceFile),
+            mode,
+            options: toNativeFormatterOptions(formatting),
+            sourceFiles: collected.files.map(toNativeSourceFile),
     })));
   } catch (caught) {
     violations.push(createNativeErrorViolation(caught, mode));
@@ -191,11 +191,11 @@ async function runCodeFormatter(
   const erroredFiles = nativeResult.files.filter((file) => file.error).length + collected.violations.length;
 
   emitRuleChunk(progress, collected.files.length, violations.length, mode === "fix" ? {
-    rewrittenFiles: formattedFiles,
-  } : {});
+      rewrittenFiles: formattedFiles,
+    } : {});
   emitRuleCompleted(progress, violations.length, mode === "fix" ? {
-    rewrittenFiles: formattedFiles,
-  } : {});
+      rewrittenFiles: formattedFiles,
+    } : {});
 
   return {
     ok: violations.length === 0,

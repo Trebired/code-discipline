@@ -36,9 +36,9 @@ mod structure_tests {
         ];
         let violations = violations(&files);
         let paths = violations
-            .iter()
-            .map(|violation| violation.file_path.as_str())
-            .collect::<Vec<_>>();
+        .iter()
+        .map(|violation| violation.file_path.as_str())
+        .collect::<Vec<_>>();
 
         assert_eq!(violations.len(), 6);
         assert!(paths.contains(&"src/render_svg.rs"));
@@ -56,13 +56,13 @@ mod structure_tests {
         ];
         let violations = violations(&files);
         let home = violations
-            .iter()
-            .find(|violation| violation.file_path == "src/pages/home_page.ts")
-            .unwrap();
+        .iter()
+        .find(|violation| violation.file_path == "src/pages/home_page.ts")
+        .unwrap();
         let other = violations
-            .iter()
-            .find(|violation| violation.file_path == "src/pages/other_page.ts")
-            .unwrap();
+        .iter()
+        .find(|violation| violation.file_path == "src/pages/other_page.ts")
+        .unwrap();
 
         assert_eq!(home.suggested_path.as_deref(), Some("src/pages/home.ts"));
         assert_eq!(home.details["mode"], "redundant-path-segment");

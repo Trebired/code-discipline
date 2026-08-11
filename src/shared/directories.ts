@@ -7,7 +7,6 @@ async function removeEmptyDirectories(directories: string[]): Promise<void> {
     try {
       await fs.rmdir(directoryPath);
     } catch {
-      // The directory still contains files, which is expected in many cases.
     }
   }
 }

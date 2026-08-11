@@ -10,7 +10,7 @@ import type { NormalizedDryRule } from "#uqbg4indzud7";
 import { isTypeScriptFamilyExtension } from "#87jyjzn68rrk";
 import { createFunctionFingerprint, resolveClassification, resolveFunctionDisplayName } from "./fingerprint.js";
 import { collectGenericDryFunctionDescriptors } from "./generic.js";
-import { collectWithParseFailure } from "../../parse-failures.js";
+import { collectWithParseFailure } from "#lvwwpxtj6az5";
 import { collectDuplicateGroups } from "./matching.js";
 import type { DuplicateGroup } from "./matching.js";
 import { dryLanguageKey, normalizeDryFunctionName, type DryFunctionDescriptor } from "./model.js";
@@ -19,12 +19,12 @@ const DRY_PARSE_CHUNK_SIZE = 250;
 
 function isFingerprintableFunction(node: ts.Node): node is ts.FunctionLikeDeclaration {
   return (ts.isFunctionDeclaration(node) && Boolean(node.body))
-    || (ts.isFunctionExpression(node) && Boolean(node.body))
-    || (ts.isArrowFunction(node) && Boolean(node.body))
-    || (ts.isMethodDeclaration(node) && Boolean(node.body))
-    || (ts.isGetAccessorDeclaration(node) && Boolean(node.body))
-    || (ts.isSetAccessorDeclaration(node) && Boolean(node.body))
-    || (ts.isConstructorDeclaration(node) && Boolean(node.body));
+  ||(ts.isFunctionExpression(node) && Boolean(node.body))
+  ||(ts.isArrowFunction(node) && Boolean(node.body))
+  ||(ts.isMethodDeclaration(node) && Boolean(node.body))
+  ||(ts.isGetAccessorDeclaration(node) && Boolean(node.body))
+  ||(ts.isSetAccessorDeclaration(node) && Boolean(node.body))
+  ||(ts.isConstructorDeclaration(node) && Boolean(node.body));
 }
 
 function isTopLevelFunction(node: ts.FunctionLikeDeclaration): boolean {
@@ -38,8 +38,8 @@ function isTopLevelFunction(node: ts.FunctionLikeDeclaration): boolean {
   const declarationList = parent.parent;
   const statement = declarationList.parent;
   return ts.isVariableDeclarationList(declarationList)
-    && ts.isVariableStatement(statement)
-    && ts.isSourceFile(statement.parent);
+  &&ts.isVariableStatement(statement)
+  &&ts.isSourceFile(statement.parent);
 }
 
 function buildDryFunctionDescriptor(
@@ -93,28 +93,28 @@ function collectTypeScriptDryFunctions(file: ScannedSourceFile, text: string): D
 
 function collectDryFunctionsForFile(file: ScannedSourceFile, text: string): DryFunctionDescriptor[] {
   return isTypeScriptFamilyExtension(file.extension)
-    ? collectTypeScriptDryFunctions(file, text)
-    : collectGenericDryFunctionDescriptors(file, text);
+  ? collectTypeScriptDryFunctions(file, text)
+  : collectGenericDryFunctionDescriptors(file, text);
 }
 
 function emitDryParseChunk(args: {
-  completedItems: number;
-  discoveredFunctions: number;
-  observer?: SourceProgressObserver;
-  startedAt: number;
-  totalItems: number;
+    completedItems: number;
+    discoveredFunctions: number;
+    observer?: SourceProgressObserver;
+    startedAt: number;
+    totalItems: number;
 }): void {
   if (args.completedItems % DRY_PARSE_CHUNK_SIZE !== 0 && args.completedItems !== args.totalItems) return;
 
   args.observer?.({
-    phase: "rule-chunk",
-    rule: "dry",
-    stage: "parse",
-    chunkIndex: Math.ceil(args.completedItems / DRY_PARSE_CHUNK_SIZE),
-    completedItems: args.completedItems,
-    totalItems: args.totalItems,
-    discoveredFunctions: args.discoveredFunctions,
-    elapsedMs: performance.now() - args.startedAt,
+      phase: "rule-chunk",
+      rule: "dry",
+      stage: "parse",
+      chunkIndex: Math.ceil(args.completedItems / DRY_PARSE_CHUNK_SIZE),
+      completedItems: args.completedItems,
+      totalItems: args.totalItems,
+      discoveredFunctions: args.discoveredFunctions,
+      elapsedMs: performance.now() - args.startedAt,
   });
 }
 
@@ -138,30 +138,30 @@ async function collectDryFunctions(
     functions.push(...descriptors ?? []);
 
     emitDryParseChunk({
-      completedItems: fileIndex + 1,
-      discoveredFunctions: functions.length,
-      observer,
-      startedAt,
-      totalItems: sourceFiles.length,
+        completedItems: fileIndex + 1,
+        discoveredFunctions: functions.length,
+        observer,
+        startedAt,
+        totalItems: sourceFiles.length,
     });
   }
 
   const sortedFunctions = functions.sort((left, right) => left.filePath.localeCompare(right.filePath) || left.order - right.order);
   observer?.({
-    phase: "rule-completed",
-    rule: "dry",
-    stage: "parse",
-    totalItems: sourceFiles.length,
-    discoveredFunctions: sortedFunctions.length,
-    elapsedMs: performance.now() - startedAt,
+      phase: "rule-completed",
+      rule: "dry",
+      stage: "parse",
+      totalItems: sourceFiles.length,
+      discoveredFunctions: sortedFunctions.length,
+      elapsedMs: performance.now() - startedAt,
   });
   return sortedFunctions;
 }
 
 function formatFunctionLocation(descriptor: DryFunctionDescriptor): string {
   return descriptor.localName
-    ? `${descriptor.filePath}#${descriptor.localName}`
-    : descriptor.filePath;
+  ? `${descriptor.filePath}#${descriptor.localName}`
+  : descriptor.filePath;
 }
 
 function createDryGroupViolation(group: DuplicateGroup): CodeDisciplineViolation {
@@ -177,12 +177,12 @@ function createDryGroupViolation(group: DuplicateGroup): CodeDisciplineViolation
       files,
       fixable: false,
       functions: group.functions.map((descriptor) => ({
-        classification: descriptor.classification,
-        filePath: descriptor.filePath,
-        language: descriptor.language,
-        line: descriptor.startLine,
-        name: descriptor.localName,
-        topLevel: descriptor.topLevel,
+            classification: descriptor.classification,
+            filePath: descriptor.filePath,
+            language: descriptor.language,
+            line: descriptor.startLine,
+            name: descriptor.localName,
+            topLevel: descriptor.topLevel,
       })),
       locations: group.functions.map(formatFunctionLocation),
       reason: "duplicate function group requires human canonicalization",

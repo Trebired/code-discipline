@@ -1,6 +1,6 @@
 {
   "name": "@trebired/code-discipline",
-  "version": "5.4.0",
+  "version": "5.5.0",
   "description": "Configurable codebase discipline checks and rule-driven fixes for Bun projects.",
   "type": "module",
   "private": false,
@@ -40,7 +40,7 @@
     "demo": "bun run examples/dummy.ts",
     "discipline": "bun node_modules/@trebired/code-discipline/dist/cli.js check",
     "discipline:fix": "bun node_modules/@trebired/code-discipline/dist/cli.js fix",
-    "prepublishOnly": "bun run typecheck && bun run build && bun run build:native && bun run verify:max-line-fixer && bun run verify:language-support && bun run verify:language-dry && bun run verify:formatter && bun run verify:generated-artifacts",
+    "prepublishOnly": "bun run typecheck && bun run build && bun run build:native && bun run verify:max-line-fixer && bun run verify:language-support && bun run verify:language-dry && bun run verify:formatter && bun run verify:presets && bun run verify:generated-artifacts",
     "prepare:generated": "bun ./scripts/build/generated/tsconfig.mjs",
     "publish:package": "bun run build:native:matrix && bun publish",
     "publish:package:host": "bun run build:native && bun publish",
@@ -49,7 +49,8 @@
     "verify:formatter": "bun ./scripts/verify/formatter.mjs",
     "verify:language-dry": "bun ./scripts/verify/language/dry.mjs",
     "verify:language-support": "bun ./scripts/verify/language/support.mjs",
-    "verify:max-line-fixer": "bun ./scripts/verify/max/line/fixer.mjs"
+    "verify:max-line-fixer": "bun ./scripts/verify/max/line/fixer.mjs",
+    "verify:presets": "bun ./scripts/verify/presets.mjs"
   },
   "dependencies": {
     "@package/logger": "npm:@trebired/logger@^2.5.13",

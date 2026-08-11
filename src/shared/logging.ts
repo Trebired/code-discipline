@@ -28,10 +28,10 @@ let consoleOnlyLogger: LogInstance | null = null;
 
 function getConsoleOnlyLogger(): LogInstance {
   consoleOnlyLogger ??= createLog({
-    console: true,
-    quiet: true,
-    save: false,
-    source: CODE_DISCIPLINE_PACKAGE_NAME,
+      console: true,
+      quiet: true,
+      save: false,
+      source: CODE_DISCIPLINE_PACKAGE_NAME,
   });
   return consoleOnlyLogger;
 }
@@ -45,9 +45,9 @@ function getMethod(source: unknown, name: string): LogMethod | null {
 function looksLikePackageLogger(source: unknown): boolean {
   return Boolean(
     getMethod(source, "info")
-      && getMethod(source, "warn")
-      && (getMethod(source, "fail") || getMethod(source, "error"))
-      && getMethod(source, "success"),
+    &&getMethod(source, "warn")
+    &&(getMethod(source, "fail") || getMethod(source, "error"))
+    &&getMethod(source, "success"),
   );
 }
 
@@ -175,30 +175,30 @@ function summarizeBufferedEvents(store: BufferedEventStore): Record<string, unkn
     total_events: store.totalEvents,
     level_counts: store.levelCounts,
     events: Array.from(store.aggregates.values())
-      .sort((left, right) => left.group.localeCompare(right.group) || left.event.localeCompare(right.event))
-      .map((entry) => ({
-        count: entry.count,
-        event: entry.event,
-        group: entry.group,
-      })),
+    .sort((left, right) => left.group.localeCompare(right.group) || left.event.localeCompare(right.event))
+    .map((entry) => ({
+          count: entry.count,
+          event: entry.event,
+          group: entry.group,
+    })),
   };
 }
 
 function writeInitializedEvent(enabled: boolean, writer: (event: CodeDisciplineLogEvent) => void): void {
   if (enabled) {
     writer({
-      event: "package-initialized",
-      group: `${CODE_DISCIPLINE_LOG_GROUP}.initialize`,
-      level: "success",
-      message: `${CODE_DISCIPLINE_PACKAGE_NAME} initialized`,
+        event: "package-initialized",
+        group: `${CODE_DISCIPLINE_LOG_GROUP}.initialize`,
+        level: "success",
+        message: `${CODE_DISCIPLINE_PACKAGE_NAME} initialized`,
     });
   }
 }
 
 function createEmitter(args: {
-  enabled: boolean;
-  getStore: () => BufferedEventStore;
-  warnings: boolean;
+    enabled: boolean;
+    getStore: () => BufferedEventStore;
+    warnings: boolean;
 }) {
   return (
     level: CodeDisciplineLogLevel,
@@ -216,11 +216,11 @@ function createEmitter(args: {
 }
 
 function createFlusher(args: {
-  enabled: boolean;
-  getStore: () => BufferedEventStore;
-  resetStore: () => void;
-  warnings: boolean;
-  writer: (event: CodeDisciplineLogEvent) => void;
+    enabled: boolean;
+    getStore: () => BufferedEventStore;
+    resetStore: () => void;
+    warnings: boolean;
+    writer: (event: CodeDisciplineLogEvent) => void;
 }) {
   return (
     level: CodeDisciplineLogLevel,
@@ -238,11 +238,11 @@ function createFlusher(args: {
     const bufferedEvents = args.getStore();
     const diagnostics = summarizeBufferedEvents(bufferedEvents);
     const finalMetadata = bufferedEvents.totalEvents > 0
-      ? {
-          ...(metadata ?? {}),
-          diagnostics,
-      }
-      : metadata;
+    ? {
+      ...(metadata ?? {}),
+      diagnostics,
+    }
+    : metadata;
 
     args.writer(buildEvent(level, event, message, finalMetadata, context));
     args.resetStore();

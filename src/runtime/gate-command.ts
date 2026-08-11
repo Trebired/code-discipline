@@ -23,47 +23,46 @@ function toExitCodeFromSignal(signal: NodeJS.Signals | null): number {
 
 async function runGatedCommand(options: GateCommandOptions): Promise<GateCommandResult> {
   return await new Promise((resolve, reject) => {
-    const child = spawn(options.command, options.args, {
-      cwd: options.cwd,
-      env: options.env ?? process.env,
-      stdio: "inherit",
-    });
-
-    const listeners = new Map<NodeJS.Signals, () => void>();
-
-    function cleanupListeners() {
-      for (const [signal, listener] of listeners) {
-        process.removeListener(signal, listener);
-      }
-      listeners.clear();
-    }
-
-    for (const signal of FORWARDED_SIGNALS) {
-      const listener = () => {
-        if (!child.killed) {
-          child.kill(signal);
-        }
-      };
-
-      try {
-        process.on(signal, listener);
-        listeners.set(signal, listener);
-      } catch {
-        // Some signals such as SIGBREAK are not supported on every platform.
-      }
-    }
-
-    child.once("error", (error) => {
-      cleanupListeners();
-      reject(error);
-    });
-
-    child.once("exit", (code, signal) => {
-      cleanupListeners();
-      resolve({
-        exitCode: code ?? toExitCodeFromSignal(signal),
+      const child = spawn(options.command, options.args, {
+          cwd: options.cwd,
+          env: options.env ?? process.env,
+          stdio: "inherit",
       });
-    });
+
+      const listeners = new Map<NodeJS.Signals, ()=>void>();
+
+      function cleanupListeners() {
+        for (const [signal, listener] of listeners) {
+          process.removeListener(signal, listener);
+        }
+        listeners.clear();
+      }
+
+      for (const signal of FORWARDED_SIGNALS) {
+        const listener = () => {
+          if (!child.killed) {
+            child.kill(signal);
+          }
+        };
+
+        try {
+          process.on(signal, listener);
+          listeners.set(signal, listener);
+        } catch {
+        }
+      }
+
+      child.once("error", (error) => {
+          cleanupListeners();
+          reject(error);
+      });
+
+      child.once("exit", (code, signal) => {
+          cleanupListeners();
+          resolve({
+              exitCode: code ?? toExitCodeFromSignal(signal),
+          });
+      });
   });
 }
 

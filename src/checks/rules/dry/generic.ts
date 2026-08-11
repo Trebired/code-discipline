@@ -8,93 +8,93 @@ import type { DryFunctionDescriptor } from "./model.js";
 import { dryLanguageKey, normalizeDryFunctionName } from "./model.js";
 
 const GENERIC_DRY_KEYWORDS = new Set([
-  "abstract",
-  "and",
-  "as",
-  "async",
-  "auto",
-  "await",
-  "base",
-  "break",
-  "case",
-  "catch",
-  "class",
-  "const",
-  "constexpr",
-  "continue",
-  "def",
-  "default",
-  "defer",
-  "delete",
-  "do",
-  "done",
-  "elif",
-  "else",
-  "enum",
-  "esac",
-  "except",
-  "explicit",
-  "false",
-  "fi",
-  "finally",
-  "fn",
-  "for",
-  "friend",
-  "func",
-  "function",
-  "if",
-  "impl",
-  "in",
-  "internal",
-  "interface",
-  "let",
-  "local",
-  "loop",
-  "match",
-  "mut",
-  "namespace",
-  "new",
-  "nil",
-  "none",
-  "not",
-  "noexcept",
-  "null",
-  "nullptr",
-  "operator",
-  "or",
-  "override",
-  "package",
-  "pass",
-  "private",
-  "property",
-  "protected",
-  "pub",
-  "public",
-  "range",
-  "readonly",
-  "return",
-  "sealed",
-  "self",
-  "static",
-  "struct",
-  "switch",
-  "template",
-  "then",
-  "this",
-  "throw",
-  "trait",
-  "true",
-  "try",
-  "type",
-  "typename",
-  "unsafe",
-  "using",
-  "var",
-  "virtual",
-  "void",
-  "volatile",
-  "while",
-  "with",
+    "abstract",
+    "and",
+    "as",
+    "async",
+    "auto",
+    "await",
+    "base",
+    "break",
+    "case",
+    "catch",
+    "class",
+    "const",
+    "constexpr",
+    "continue",
+    "def",
+    "default",
+    "defer",
+    "delete",
+    "do",
+    "done",
+    "elif",
+    "else",
+    "enum",
+    "esac",
+    "except",
+    "explicit",
+    "false",
+    "fi",
+    "finally",
+    "fn",
+    "for",
+    "friend",
+    "func",
+    "function",
+    "if",
+    "impl",
+    "in",
+    "internal",
+    "interface",
+    "let",
+    "local",
+    "loop",
+    "match",
+    "mut",
+    "namespace",
+    "new",
+    "nil",
+    "none",
+    "not",
+    "noexcept",
+    "null",
+    "nullptr",
+    "operator",
+    "or",
+    "override",
+    "package",
+    "pass",
+    "private",
+    "property",
+    "protected",
+    "pub",
+    "public",
+    "range",
+    "readonly",
+    "return",
+    "sealed",
+    "self",
+    "static",
+    "struct",
+    "switch",
+    "template",
+    "then",
+    "this",
+    "throw",
+    "trait",
+    "true",
+    "try",
+    "type",
+    "typename",
+    "unsafe",
+    "using",
+    "var",
+    "virtual",
+    "void",
+    "volatile",
+    "while",
+    "with",
 ]);
 
 const HEADER_NAME_PREFIXES = new Set(["def", "fn", "func", "function"]);
@@ -166,11 +166,11 @@ function canonicalIdentifier(identifier: string, state: GenericTokenState): stri
 }
 
 function normalizeIdentifierToken(args: {
-  end: number;
-  identifier: string;
-  start: number;
-  state: GenericTokenState;
-  text: string;
+    end: number;
+    identifier: string;
+    start: number;
+    state: GenericTokenState;
+    text: string;
 }): string {
   const lower = args.identifier.toLowerCase();
   const previousToken = args.state.tokens[args.state.tokens.length - 1] ?? "";
@@ -199,8 +199,8 @@ function normalizeFunctionHeader(source: string, extension: string): string {
   if (extension === ".py") return source.replace(/^(\s*(?:async\s+)?def\s+)[A-Za-z_]\w*/u, "$1__dry_function");
   if (extension === ".qml") {
     return source
-      .replace(/(\bfunction\s+)[A-Za-z_$][\w$]*/u, "$1__dry_function")
-      .replace(/^(\s*)on[A-Z][\w$]*(\s*:)/u, "$1__dry_handler$2");
+    .replace(/(\bfunction\s+)[A-Za-z_$][\w$]*/u, "$1__dry_function")
+    .replace(/^(\s*)on[A-Z][\w$]*(\s*:)/u, "$1__dry_handler$2");
   }
   if (extension === ".sh" || extension === ".bash" || extension === ".zsh") {
     return source.replace(/^(\s*(?:function\s+)?)[A-Za-z_][\w-]*(\s*(?:\(\s*\))?\s*\{)/u, "$1__dry_function$2");
@@ -230,11 +230,11 @@ function tokenizeGenericDryText(text: string): string[] {
     } else if (IDENTIFIER_START_PATTERN.test(character)) {
       const identifier = readIdentifier(text, index);
       state.tokens.push(normalizeIdentifierToken({
-        end: identifier.end,
-        identifier: identifier.value,
-        start: index,
-        state,
-        text,
+            end: identifier.end,
+            identifier: identifier.value,
+            start: index,
+            state,
+            text,
       }));
       index = identifier.end;
     } else {
@@ -248,9 +248,9 @@ function tokenizeGenericDryText(text: string): string[] {
 
 function sliceFunctionSource(text: string, descriptor: FunctionDescriptor): string {
   return text
-    .split(/\r?\n/u)
-    .slice(descriptor.startLine - 1, descriptor.endLine)
-    .join("\n");
+  .split(/\r?\n/u)
+  .slice(descriptor.startLine - 1, descriptor.endLine)
+  .join("\n");
 }
 
 function createGenericFingerprint(source: string, extension: string) {
@@ -292,7 +292,7 @@ function createGenericDryDescriptor(
 
 function collectGenericDryFunctionDescriptors(file: ScannedSourceFile, text: string): DryFunctionDescriptor[] {
   return collectLanguageFunctionDescriptors(text, file.extension, file.absolutePath)
-    .map((descriptor) => createGenericDryDescriptor(file, text, descriptor));
+  .map((descriptor) => createGenericDryDescriptor(file, text, descriptor));
 }
 
 export { collectGenericDryFunctionDescriptors };

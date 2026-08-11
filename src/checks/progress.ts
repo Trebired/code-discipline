@@ -25,11 +25,11 @@ type RuleProgressState = {
 };
 
 function createRuleProgress(args: {
-  chunkSize?: number;
-  observer?: SourceProgressObserver;
-  rule: string;
-  stage?: string;
-  totalItems: number;
+    chunkSize?: number;
+    observer?: SourceProgressObserver;
+    rule: string;
+    stage?: string;
+    totalItems: number;
 }): RuleProgressState {
   return {
     chunkSize: args.chunkSize ?? DEFAULT_RULE_PROGRESS_CHUNK_SIZE,
@@ -50,15 +50,15 @@ function emitRuleChunk(
   if (completedItems % state.chunkSize !== 0 && completedItems !== state.totalItems) return;
 
   state.observer?.({
-    phase: "rule-chunk",
-    rule: state.rule,
-    stage: state.stage,
-    chunkIndex: Math.ceil(completedItems / state.chunkSize),
-    completedItems,
-    totalItems: state.totalItems,
-    violationCount,
-    elapsedMs: performance.now() - state.startedAt,
-    ...extras,
+      phase: "rule-chunk",
+      rule: state.rule,
+      stage: state.stage,
+      chunkIndex: Math.ceil(completedItems / state.chunkSize),
+      completedItems,
+      totalItems: state.totalItems,
+      violationCount,
+      elapsedMs: performance.now() - state.startedAt,
+      ...extras,
   });
 }
 
@@ -68,13 +68,13 @@ function emitRuleCompleted(
   extras: RuleProgressExtras = {},
 ): void {
   state.observer?.({
-    phase: "rule-completed",
-    rule: state.rule,
-    stage: state.stage,
-    totalItems: state.totalItems,
-    violationCount,
-    elapsedMs: performance.now() - state.startedAt,
-    ...extras,
+      phase: "rule-completed",
+      rule: state.rule,
+      stage: state.stage,
+      totalItems: state.totalItems,
+      violationCount,
+      elapsedMs: performance.now() - state.startedAt,
+      ...extras,
   });
 }
 

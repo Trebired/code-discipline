@@ -14,16 +14,16 @@ type CodeDisciplineOrchestratorOptions = {
   configPath?: string;
   mode: CodeDisciplineRuntimeMode;
   projectRoot: string;
-  execute: () => Promise<CheckCodeDisciplineResult | FixCodeDisciplineResult>;
+  execute: () => Promise<CheckCodeDisciplineResult|FixCodeDisciplineResult>;
 };
 
 type CodeDisciplineOrchestratorResult = CheckCodeDisciplineResult | FixCodeDisciplineResult;
 
 function createLifecycleContext(args: {
-  config: CodeDisciplineConfig;
-  configPath?: string;
-  mode: CodeDisciplineRuntimeMode;
-  projectRoot: string;
+    config: CodeDisciplineConfig;
+    configPath?: string;
+    mode: CodeDisciplineRuntimeMode;
+    projectRoot: string;
 }): CodeDisciplineLifecycleContext {
   return {
     config: args.config,
@@ -35,7 +35,7 @@ function createLifecycleContext(args: {
 }
 
 async function runLifecycleHook(
-  hook: ((context: CodeDisciplineLifecycleContext, result?: CodeDisciplineOrchestratorResult) => void | Promise<void>) | undefined,
+  hook: ((context: CodeDisciplineLifecycleContext, result?: CodeDisciplineOrchestratorResult) => void |Promise<void>) | undefined,
   context: CodeDisciplineLifecycleContext,
   result?: CodeDisciplineOrchestratorResult,
 ): Promise<void> {
@@ -47,15 +47,15 @@ async function orchestrateCodeDisciplineRun(
   options: CodeDisciplineOrchestratorOptions,
 ): Promise<CodeDisciplineOrchestratorResult> {
   const context = createLifecycleContext({
-    config: options.config,
-    configPath: options.configPath,
-    mode: options.mode,
-    projectRoot: options.projectRoot,
+      config: options.config,
+      configPath: options.configPath,
+      mode: options.mode,
+      projectRoot: options.projectRoot,
   });
   const lifecycle: CodeDisciplineLifecycleHooks | undefined = options.config.lifecycle;
-  if ("tsconfigPaths" in (options.config as Record<string, unknown>)) {
+  if ("tsconfigPaths"in(options.config as Record<string, unknown>)) {
     throw new InvalidCodeDisciplineConfigError("tsconfigPaths is no longer supported; use rules.imports.runtime instead", {
-      key: "tsconfigPaths",
+        key: "tsconfigPaths",
     });
   }
 

@@ -29,10 +29,10 @@ async function run(): Promise<void> {
   writeDemoFile(projectRoot, "src/shared/util.ts", "export const util = true;\n");
 
   const result = await imports({
-    projectRoot,
-    alias: {
-      strategy: "relative-path-slug",
-    },
+      projectRoot,
+      alias: {
+        strategy: "relative-path-slug",
+      },
   });
 
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
@@ -41,7 +41,7 @@ async function run(): Promise<void> {
   process.stdout.write(`demo project: ${projectRoot}\n`);
 }
 
-run().catch((error) => {
-  process.stderr.write(`${error instanceof Error ? error.stack || error.message : String(error)}\n`);
-  process.exitCode = 1;
+run().catch ((error) => {
+    process.stderr.write(`${error instanceof Error ? error.stack || error.message : String(error)}\n`);
+    process.exitCode = 1;
 });

@@ -74,24 +74,24 @@ type PackageJsonImportsSyncOptions = {
 };
 
 type ImportsOutputOptions =
-  | {
-    type?: "project-manifests";
-  }
-  | {
-    type: "alias-map";
-    maxEntriesPerFile?: number;
-  };
+| {
+  type?: "project-manifests";
+}
+| {
+  type: "alias-map";
+  maxEntriesPerFile?: number;
+};
 
 type NormalizedImportsOutput =
-  | {
-    type: "project-manifests";
-  }
-  | {
-    type: "alias-map";
-    dir: string;
-    generatedTsconfigPath: string;
-    maxEntriesPerFile: number;
-  };
+| {
+  type: "project-manifests";
+}
+| {
+  type: "alias-map";
+  dir: string;
+  generatedTsconfigPath: string;
+  maxEntriesPerFile: number;
+};
 
 type ImportsRuntimeNormalizeMode = "relative-dot-prefix" | "strip-dot-prefix" | "none";
 
@@ -188,7 +188,7 @@ type SourceScanOptions = {
   scanObserver?: SourceScanObserver;
 };
 
-type NormalizedImportsOptions = SourceScanOptions & {
+type NormalizedImportsOptions = SourceScanOptions& {
   sourceRootRelative: string;
   configPath?: string;
   tsconfigPath: string;
@@ -239,7 +239,7 @@ type SyncAliasesResult = {
     importsFolderChanged?: boolean;
     inlineTsconfigPaths?: boolean;
     aliasMapStateChanged?: boolean;
-    maxEntriesExceeded?: Array<{ filePath: string; count: number; max: number }>;
+    maxEntriesExceeded?: Array<{filePath:string;count:number;max:number}>;
     rootExtendsChanged?: boolean;
   };
   tsconfig: TsconfigJson;

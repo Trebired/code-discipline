@@ -22,7 +22,11 @@ function serializeBindingName(
 
   return [
     "array-binding",
-    name.elements.map((element) => (element && ts.isBindingElement(element)) ? serializeBindingElement(element, context, sourceFile, serialize) : ["hole"]),
+    name.elements.map((element) => {
+        return element && ts.isBindingElement(element)
+        ? serializeBindingElement(element, context, sourceFile, serialize)
+        : ["hole"];
+    }),
   ];
 }
 
@@ -69,19 +73,19 @@ function serializeFunctionLike(
   serialize: SerializeNodeFn,
 ): unknown {
   const isAsync = Boolean(node.modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.AsyncKeyword));
-  const isGenerator = ts.isFunctionLike(node) && "asteriskToken" in node && Boolean(node.asteriskToken);
+  const isGenerator = ts.isFunctionLike(node) && "asteriskToken"in node && Boolean(node.asteriskToken);
   pushScope(context);
 
   const parameters = node.parameters.map((parameter) => [
-    "param",
-    parameter.dotDotDotToken ? "rest" : "value",
-    serializeBindingName(parameter.name, context, sourceFile, serialize),
-    parameter.initializer ? serialize(parameter.initializer, context, sourceFile) : null,
+      "param",
+      parameter.dotDotDotToken ? "rest" : "value",
+      serializeBindingName(parameter.name, context, sourceFile, serialize),
+      parameter.initializer ? serialize(parameter.initializer, context, sourceFile) : null,
   ]);
 
   const body = node.body
-    ? serialize(node.body, context, sourceFile)
-    : null;
+  ? serialize(node.body, context, sourceFile)
+  : null;
 
   popScope(context);
 

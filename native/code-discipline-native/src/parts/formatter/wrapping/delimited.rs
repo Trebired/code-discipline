@@ -88,9 +88,9 @@ fn wrap_markup_line(line: &str, extension: &str, max: usize) -> Option<Vec<Strin
     let mut output = vec![format!("{indent}{}", tokens[0])];
     for token in tokens.iter().skip(1) {
         let candidate = output
-            .last()
-            .map(|last| format!("{last} {token}"))
-            .unwrap_or_default();
+        .last()
+        .map(|last| format!("{last} {token}"))
+        .unwrap_or_default();
 
         if output.len() > 1 && count_display_characters(&candidate) <= max {
             if let Some(last) = output.last_mut() {
@@ -102,9 +102,9 @@ fn wrap_markup_line(line: &str, extension: &str, max: usize) -> Option<Vec<Strin
     }
 
     output
-        .iter()
-        .all(|item| count_display_characters(item) <= max)
-        .then_some(output)
+    .iter()
+    .all(|item| count_display_characters(item) <= max)
+    .then_some(output)
 }
 
 fn split_top_level_items(content: &str, delimiter: char) -> Option<Vec<String>> {
@@ -208,9 +208,9 @@ fn wrap_delimited_line(line: &str, max: usize, open: char, close: char) -> Optio
     output.push(format!("{indent}{close}{suffix}"));
 
     output
-        .iter()
-        .all(|item| count_display_characters(item) <= max)
-        .then_some(output)
+    .iter()
+    .all(|item| count_display_characters(item) <= max)
+    .then_some(output)
 }
 
 fn wrap_array_or_call_line(line: &str, extension: &str, max: usize) -> Option<Vec<String>> {
@@ -230,19 +230,19 @@ fn wrap_array_or_call_line(line: &str, extension: &str, max: usize) -> Option<Ve
 
     let trimmed = line.trim_start();
     if trimmed.starts_with("if ")
-        || trimmed.starts_with("if(")
-        || trimmed.starts_with("for ")
-        || trimmed.starts_with("for(")
-        || trimmed.starts_with("while ")
-        || trimmed.starts_with("while(")
-        || trimmed.starts_with("switch ")
-        || trimmed.starts_with("function ")
+    || trimmed.starts_with("if(")
+    || trimmed.starts_with("for ")
+    || trimmed.starts_with("for(")
+    || trimmed.starts_with("while ")
+    || trimmed.starts_with("while(")
+    || trimmed.starts_with("switch ")
+    || trimmed.starts_with("function ")
     {
         return None;
     }
 
     wrap_delimited_line(line, max, '[', ']')
-        .or_else(|| wrap_delimited_line(line, max, '(', ')'))
+    .or_else(|| wrap_delimited_line(line, max, '(', ')'))
 }
 
 fn split_top_level_statements(content: &str) -> Option<Vec<String>> {

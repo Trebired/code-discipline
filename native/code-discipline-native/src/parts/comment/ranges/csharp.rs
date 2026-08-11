@@ -54,9 +54,9 @@ fn collect_csharp_comment_ranges(text: &str) -> Vec<CommentRange> {
         if current == b'/' && next == Some(b'/') {
             let end = scan_line_comment(text, index);
             ranges.push(CommentRange {
-                start: index,
-                end,
-                kind: CommentKind::Line,
+                    start: index,
+                    end,
+                    kind: CommentKind::Line,
             });
             index = end;
             continue;
@@ -65,9 +65,9 @@ fn collect_csharp_comment_ranges(text: &str) -> Vec<CommentRange> {
         if current == b'/' && next == Some(b'*') {
             let end = scan_block_comment(text, index, false);
             ranges.push(CommentRange {
-                start: index,
-                end,
-                kind: CommentKind::Block,
+                    start: index,
+                    end,
+                    kind: CommentKind::Block,
             });
             index = end;
             continue;

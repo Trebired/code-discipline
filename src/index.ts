@@ -125,6 +125,7 @@ export type {
   CodeDisciplineLifecycleHookResult,
   CodeDisciplineLifecycleHooks,
   CodeDisciplineCheckSelectorSlug,
+  CodeDisciplinePresetName,
   CodeDisciplinePresets,
   CodeDisciplineRuleSlug,
   CodeDisciplineRuntimeMode as SharedCodeDisciplineRuntimeMode,

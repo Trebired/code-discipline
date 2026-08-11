@@ -22,7 +22,10 @@ function toGeneratedTarget(targetPath) {
 async function readAliasPaths() {
   const entries = await fs.readdir(importsDir, { withFileTypes: true });
   const aliases = {};
-  for (const entry of entries.filter((item) => item.isFile() && item.name.endsWith(".json")).sort((left, right) => left.name.localeCompare(right.name))) {
+  const jsonEntries = entries
+  .filter((item) => item.isFile() && item.name.endsWith(".json"))
+  .sort((left, right) => left.name.localeCompare(right.name));
+  for (const entry of jsonEntries) {
     const parsed = JSON.parse(await fs.readFile(path.join(importsDir, entry.name), "utf8"));
     for (const [alias, target] of Object.entries(parsed)) {
       if (typeof target === "string" && !(alias in aliases)) {
@@ -35,6 +38,7 @@ async function readAliasPaths() {
 
 const aliasPaths = await readAliasPaths();
 const paths = {};
+
 for (const alias of Object.keys(aliasPaths).sort((left, right) => left.localeCompare(right))) {
   paths[alias] = [toGeneratedTarget(aliasPaths[alias])];
 }

@@ -305,7 +305,11 @@ mod formatter_tests {
     fn wraps_qml_strings_arrays_and_one_line_functions() {
         let source = [
             "Item {",
-            "function dateFormatIndex(format) { const formats = [\"date\", \"date_time\", \"full_date_time\", \"iso_date\", \"iso_date_time\", \"time\"]; const index = formats.indexOf(format || \"date\"); return index < 0 ? 0 : index }",
+            concat!(
+                "function dateFormatIndex(format) { const formats = [\"date\", \"date_time\", ",
+                "\"full_date_time\", \"iso_date\", \"iso_date_time\", \"time\"]; ",
+                "const index = formats.indexOf(format || \"date\"); return index < 0 ? 0 : index }",
+            ),
             "Controls.Label {",
             "text: \"This clears records and counters while preserving the label string as a JavaScript concatenation.\"",
             "}",
@@ -344,7 +348,11 @@ mod formatter_tests {
     fn wraps_rust_raw_strings_with_concat_macro() {
         let source = [
             "fn svg() -> &'static str {",
-            "r#\"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"80mm\" height=\"50mm\" viewBox=\"0 0 80 50\"><rect width=\"80\" height=\"50\" fill=\"white\"/></svg>\"#",
+            concat!(
+                "r#\"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"80mm\" ",
+                "height=\"50mm\" viewBox=\"0 0 80 50\"><rect width=\"80\" ",
+                "height=\"50\" fill=\"white\"/></svg>\"#",
+            ),
             "}",
             "",
         ]
@@ -362,7 +370,10 @@ mod formatter_tests {
             "fn render() -> String {",
             "format!(",
             "r#\"",
-            "<text x=\"10\" y=\"20\" text-anchor=\"middle\" font-family=\"Inter\" font-size=\"12\" font-weight=\"600\" fill=\"black\">{value}</text>",
+            concat!(
+                "<text x=\"10\" y=\"20\" text-anchor=\"middle\" font-family=\"Inter\" ",
+                "font-size=\"12\" font-weight=\"600\" fill=\"black\">{value}</text>",
+            ),
             "\"#,",
             "value = \"ok\",",
             ")",
@@ -383,7 +394,11 @@ mod formatter_tests {
             "fn render() {",
             "    svg.push_str(&format!(",
             "        r#\"",
-            "        <text x=\"{text_x}\" y=\"{y}\" text-anchor=\"{anchor}\" font-family=\"{family}\" font-size=\"{font_size_mm}\" font-weight=\"{weight}\" fill=\"black\">{escaped}</text>",
+            concat!(
+                "        <text x=\"{text_x}\" y=\"{y}\" text-anchor=\"{anchor}\" ",
+                "font-family=\"{family}\" font-size=\"{font_size_mm}\" ",
+                "font-weight=\"{weight}\" fill=\"black\">{escaped}</text>",
+            ),
             "        \"#,",
             "    ));",
             "}",
@@ -402,7 +417,10 @@ mod formatter_tests {
     fn wraps_qml_string_concatenation_properties() {
         let source = [
             "Kirigami.InlineMessage {",
-            "  text: \"Development output is enabled. Print actions create SVG files under \" + root.appState.data_dir + \"/development-prints and do not send paper to a printer.\"",
+            concat!(
+                "  text: \"Development output is enabled. Print actions create SVG files under \" ",
+                "+ root.appState.data_dir + \"/development-prints and do not send paper to a printer.\"",
+            ),
             "}",
             "",
         ]

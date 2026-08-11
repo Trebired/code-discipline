@@ -8,14 +8,14 @@ import { isTypeScriptFamilyExtension, supportsStructuralBlankLines } from "#87jy
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls019o";
 import type { FixCodeDisciplineRuleResult, NormalizedCheckCodeDisciplineOptions } from "#uqbg4indzud7";
 import { rewriteGenericStructuralBlankLines } from "./generic.js";
-import { collectWithParseFailure } from "../../parse-failures.js";
+import { collectWithParseFailure } from "#lvwwpxtj6az5";
 import { rewriteStructuralBlankLines } from "./rewrite.js";
 
 function createStructuralBlankLinesViolation(args: {
-  filePath: string;
-  boundaryCount: number;
-  insertedBlankLines: number;
-  removedBlankLines: number;
+    filePath: string;
+    boundaryCount: number;
+    insertedBlankLines: number;
+    removedBlankLines: number;
 }): CodeDisciplineViolation {
   return {
     rule: "structural-blank-lines",
@@ -44,9 +44,9 @@ async function collectStructuralBlankLinesViolations(
 ): Promise<CodeDisciplineViolation[]> {
   const violations: CodeDisciplineViolation[] = [];
   const progress = createRuleProgress({
-    observer: options.progressObserver,
-    rule: "structural-blank-lines",
-    totalItems: sourceFiles.length,
+      observer: options.progressObserver,
+      rule: "structural-blank-lines",
+      totalItems: sourceFiles.length,
   });
 
   for (let index = 0; index < sourceFiles.length; index += 1) {
@@ -66,10 +66,10 @@ async function collectStructuralBlankLinesViolations(
 
     if (result?.changed) {
       violations.push(createStructuralBlankLinesViolation({
-        filePath: file.relativeFromProjectRoot,
-        boundaryCount: result.boundaryCount,
-        insertedBlankLines: result.insertedBlankLines,
-        removedBlankLines: result.removedBlankLines,
+            filePath: file.relativeFromProjectRoot,
+            boundaryCount: result.boundaryCount,
+            insertedBlankLines: result.insertedBlankLines,
+            removedBlankLines: result.removedBlankLines,
       }));
     }
 
@@ -85,10 +85,10 @@ async function fixStructuralBlankLinesRule(
   options: NormalizedCheckCodeDisciplineOptions,
 ): Promise<FixCodeDisciplineRuleResult> {
   const progress = createRuleProgress({
-    observer: options.progressObserver,
-    rule: "structural-blank-lines",
-    stage: "fix",
-    totalItems: sourceFiles.length,
+      observer: options.progressObserver,
+      rule: "structural-blank-lines",
+      stage: "fix",
+      totalItems: sourceFiles.length,
   });
 
   let rewrittenFiles = 0;

@@ -42,25 +42,25 @@ function stripShellStringsAndComments(line: string): string {
 function hasShellCommentPrefix(line: string, index: number): boolean {
   const previous = index > 0 ? line.charCodeAt(index - 1) : 0;
   return previous === 0
-    || previous === 9
-    || previous === 10
-    || previous === 13
-    || previous === 32
-    || previous === 38
-    || previous === 40
-    || previous === 41
-    || previous === 59
-    || previous === 123
-    || previous === 124
-    || previous === 125;
+  ||previous === 9
+  ||previous === 10
+  ||previous === 13
+  ||previous === 32
+  ||previous === 38
+  ||previous === 40
+  ||previous === 41
+  ||previous === 59
+  ||previous === 123
+  ||previous === 124
+  ||previous === 125;
 }
 
 function countShellBraceDelta(line: string): number {
   return Array.from(stripShellStringsAndComments(line)).reduce((sum, char) => {
-    if (char === "{") return sum + 1;
-    if (char === "}") return sum - 1;
-    return sum;
-  }, 0);
+      if (char === "{") return sum + 1;
+      if (char === "}") return sum - 1;
+      return sum;
+    }, 0);
 }
 
 function findShellFunctionStart(line: string): string | null {

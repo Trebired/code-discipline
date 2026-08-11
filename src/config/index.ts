@@ -14,12 +14,12 @@ import { pathExists } from "#ntve5i5a0mol";
 const DEFAULT_CONFIG_FILENAMES = [".trebired/code-discipline/config.ts"];
 
 const NODE_TRANSPILE_EXTENSIONS = new Set([
-  ".js",
-  ".jsx",
-  ".mjs",
-  ".mts",
-  ".ts",
-  ".tsx",
+    ".js",
+    ".jsx",
+    ".mjs",
+    ".mts",
+    ".ts",
+    ".tsx",
 ]);
 
 const CONFIG_RESOLUTION_EXTENSIONS = [
@@ -56,14 +56,14 @@ async function createNativeImportUrl(filePath: string): Promise<string> {
 async function resolveLocalConfigImport(
   importerPath: string,
   specifier: string,
-): Promise<string | null> {
+): Promise<string|null> {
   if (!specifier.startsWith(".") && !path.isAbsolute(specifier)) {
     return null;
   }
 
   const basePath = path.isAbsolute(specifier)
-    ? path.resolve(specifier)
-    : path.resolve(path.dirname(importerPath), specifier);
+  ? path.resolve(specifier)
+  : path.resolve(path.dirname(importerPath), specifier);
 
   return resolveFileCandidate(basePath, CONFIG_RESOLUTION_EXTENSIONS);
 }
@@ -76,9 +76,9 @@ type NodeConfigCompileState = {
 
 function createCompiledConfigFilename(resolvedPath: string, mtimeMs: number): string {
   const digest = crypto.createHash("sha256")
-    .update(`${resolvedPath}:${Math.floor(mtimeMs)}`)
-    .digest("hex")
-    .slice(0, 16);
+  .update(`${resolvedPath}:${Math.floor(mtimeMs)}`)
+  .digest("hex")
+  .slice(0, 16);
   const basename = path.basename(resolvedPath).replace(/[^\w.-]/gu, "_");
   return `${basename}.${digest}.mjs`;
 }
@@ -90,15 +90,15 @@ async function transpileNodeConfigModule(
 ): Promise<void> {
   const sourceText = await fs.readFile(resolvedPath, "utf8");
   const transpiled = ts.transpileModule(sourceText, {
-    fileName: resolvedPath,
-    compilerOptions: {
-      allowJs: true,
-      esModuleInterop: true,
-      jsx: ts.JsxEmit.ReactJSX,
-      module: ts.ModuleKind.ESNext,
-      target: ts.ScriptTarget.ES2022,
-      verbatimModuleSyntax: false,
-    },
+      fileName: resolvedPath,
+      compilerOptions: {
+        allowJs: true,
+        esModuleInterop: true,
+        jsx: ts.JsxEmit.ReactJSX,
+        module: ts.ModuleKind.ESNext,
+        target: ts.ScriptTarget.ES2022,
+        verbatimModuleSyntax: false,
+      },
   });
 
   const replacements = [];
@@ -109,13 +109,13 @@ async function transpileNodeConfigModule(
 
     const extension = path.extname(localImportPath).toLowerCase();
     const importUrl = shouldCompileConfigModule(localImportPath) && extension !== ".cjs"
-      ? await compileNodeConfigModuleToUrl(localImportPath, state)
-      : await createNativeImportUrl(localImportPath);
+    ? await compileNodeConfigModuleToUrl(localImportPath, state)
+    : await createNativeImportUrl(localImportPath);
 
     replacements.push({
-      start: occurrence.start,
-      end: occurrence.end,
-      value: importUrl,
+        start: occurrence.start,
+        end: occurrence.end,
+        value: importUrl,
     });
   }
 
@@ -147,7 +147,7 @@ function validateLoadedConfig(
 ): LoadedCodeDisciplineConfig {
   if (!config || typeof config !== "object" || Array.isArray(config)) {
     throw new InvalidCodeDisciplineConfigError("Config module must default-export a config object", {
-      filePath: resolvedPath,
+        filePath: resolvedPath,
     });
   }
 
@@ -186,7 +186,7 @@ async function loadCodeDisciplineConfigModule(projectRoot: string, configPath: s
 
   if (!await pathExists(resolvedPath)) {
     throw new InvalidCodeDisciplineConfigError("Config module was not found", {
-      filePath: resolvedPath,
+        filePath: resolvedPath,
     });
   }
 
@@ -196,7 +196,7 @@ async function loadCodeDisciplineConfigModule(projectRoot: string, configPath: s
   );
 }
 
-async function findCodeDisciplineConfigModule(projectRoot: string): Promise<string | null> {
+async function findCodeDisciplineConfigModule(projectRoot: string): Promise<string|null> {
   for (const filename of DEFAULT_CONFIG_FILENAMES) {
     const resolvedPath = path.resolve(projectRoot, filename);
     if (await pathExists(resolvedPath)) {
@@ -209,12 +209,12 @@ async function findCodeDisciplineConfigModule(projectRoot: string): Promise<stri
 
 async function loadResolvedCodeDisciplineConfig(projectRoot: string, configPath?: string): Promise<LoadedCodeDisciplineConfig> {
   const resolvedPath = configPath
-    ? path.resolve(projectRoot, configPath)
-    : await findCodeDisciplineConfigModule(projectRoot);
+  ? path.resolve(projectRoot, configPath)
+  : await findCodeDisciplineConfigModule(projectRoot);
 
   if (!resolvedPath) {
     throw new InvalidCodeDisciplineConfigError("No code-discipline config module was found", {
-      tried: DEFAULT_CONFIG_FILENAMES,
+        tried: DEFAULT_CONFIG_FILENAMES,
     });
   }
 

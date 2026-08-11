@@ -25,6 +25,7 @@ type PlannedMove = {
   toAbsolutePath: string;
   toRelativePath: string;
 };
+
 function createRedundantPathSegmentsViolation(
   filePath: string,
   suggestedPath: string,
@@ -47,22 +48,22 @@ function buildMovePlan(
 ): { moves: PlannedMove[]; violations: CodeDisciplineViolation[] } {
   const candidates = planRedundantPathSegments(sourceFiles, options);
   const moves = candidates.map((candidate) => ({
-    fromAbsolutePath: candidate.absolutePath,
-    fromRelativePath: candidate.relativeFromProjectRoot,
-    toAbsolutePath: candidate.suggestedAbsolutePath,
-    toRelativePath: candidate.suggestedPath,
+        fromAbsolutePath: candidate.absolutePath,
+        fromRelativePath: candidate.relativeFromProjectRoot,
+        toAbsolutePath: candidate.suggestedAbsolutePath,
+        toRelativePath: candidate.suggestedPath,
   }));
   const violations = candidates.map((candidate) => createRedundantPathSegmentsViolation(
-    candidate.relativeFromProjectRoot,
-    candidate.suggestedPath,
-    options,
-    {
-      mode: candidate.mode,
-      prefix: candidate.prefix,
-      remainder: candidate.remainder,
-      ...(candidate.pathSegment ? { pathSegment: candidate.pathSegment } : {}),
-      separator: candidate.separator,
-    },
+      candidate.relativeFromProjectRoot,
+      candidate.suggestedPath,
+      options,
+      {
+        mode: candidate.mode,
+        prefix: candidate.prefix,
+        remainder: candidate.remainder,
+        ...(candidate.pathSegment ? { pathSegment: candidate.pathSegment } : {}),
+        separator: candidate.separator,
+      },
   ));
 
   return { moves, violations };
@@ -95,7 +96,7 @@ async function planImportRewritesForRedundantPathSegmentsMoves(
   moves: PlannedMove[],
   options: NormalizedCheckCodeDisciplineOptions,
 ): Promise<{
-  rewrittenByPath: Map<string, { text: string; count: number }>;
+  rewrittenByPath: Map<string, {text:string;count:number}>;
   rewrittenFiles: number;
   rewrittenImports: number;
 }> {
@@ -109,12 +110,12 @@ async function planImportRewritesForRedundantPathSegmentsMoves(
 
   const movedPaths = new Map(moves.map((move) => [move.fromAbsolutePath, move.toAbsolutePath]));
   const knownFiles = new Set(sourceFiles.map((file) => file.absolutePath));
-  const rewrittenByPath = new Map<string, { text: string; count: number }>();
+  const rewrittenByPath = new Map<string, {text:string;count:number}>();
   const progress = createRuleProgress({
-    observer: options.progressObserver,
-    rule: "redundant-path-segments",
-    stage: "rewrite-plan",
-    totalItems: sourceFiles.length,
+      observer: options.progressObserver,
+      rule: "redundant-path-segments",
+      stage: "rewrite-plan",
+      totalItems: sourceFiles.length,
   });
   let rewrittenFiles = 0;
   let rewrittenImports = 0;
@@ -148,9 +149,9 @@ async function planImportRewritesForRedundantPathSegmentsMoves(
         if (!sourceMoved && !targetMoved) continue;
 
         replacements.push({
-          start: occurrence.start,
-          end: occurrence.end,
-          value: formatRelativeSpecifier(occurrence.specifier, futureFilePath, futureTargetPath, options.sourceExtensions),
+            start: occurrence.start,
+            end: occurrence.end,
+            value: formatRelativeSpecifier(occurrence.specifier, futureFilePath, futureTargetPath, options.sourceExtensions),
         });
       }
     } catch (error) {
@@ -182,7 +183,7 @@ async function validateMovePlan(moves: PlannedMove[]): Promise<void> {
 
     if (seenTargets.has(move.toAbsolutePath)) {
       throw new FileConflictError(move.toRelativePath, {
-        reason: "duplicate-target",
+          reason: "duplicate-target",
       });
     }
 
@@ -191,7 +192,7 @@ async function validateMovePlan(moves: PlannedMove[]): Promise<void> {
     if (movingFrom.has(move.toAbsolutePath)) continue;
     if (await pathExists(move.toAbsolutePath)) {
       throw new FileConflictError(move.toRelativePath, {
-        reason: "existing-target",
+          reason: "existing-target",
       });
     }
   }
@@ -199,10 +200,10 @@ async function validateMovePlan(moves: PlannedMove[]): Promise<void> {
 
 async function moveFiles(moves: PlannedMove[], options: NormalizedCheckCodeDisciplineOptions): Promise<number> {
   const progress = createRuleProgress({
-    observer: options.progressObserver,
-    rule: "redundant-path-segments",
-    stage: "move",
-    totalItems: moves.length,
+      observer: options.progressObserver,
+      rule: "redundant-path-segments",
+      stage: "move",
+      totalItems: moves.length,
   });
   let movedFiles = 0;
 
@@ -223,30 +224,30 @@ async function moveFiles(moves: PlannedMove[], options: NormalizedCheckCodeDisci
 }
 
 async function writeRedundantPathSegmentsRewrites(
-  rewrites: Map<string, { text: string; count: number }>,
+  rewrites: Map<string, {text:string;count:number}>,
   options: NormalizedCheckCodeDisciplineOptions,
 ): Promise<void> {
   const entries = [...rewrites.entries()];
   const totalImports = entries.reduce((sum, [, rewrite]) => sum + rewrite.count, 0);
   const progress = createRuleProgress({
-    observer: options.progressObserver,
-    rule: "redundant-path-segments",
-    stage: "write",
-    totalItems: entries.length,
+      observer: options.progressObserver,
+      rule: "redundant-path-segments",
+      stage: "write",
+      totalItems: entries.length,
   });
 
   for (let index = 0; index < entries.length; index += 1) {
     const [filePath, next] = entries[index]!;
     await fs.writeFile(filePath, next.text);
     emitRuleChunk(progress, index + 1, 0, {
-      rewrittenFiles: index + 1,
-      rewrittenImports: totalImports,
+        rewrittenFiles: index + 1,
+        rewrittenImports: totalImports,
     });
   }
 
   emitRuleCompleted(progress, 0, {
-    rewrittenFiles: entries.length,
-    rewrittenImports: totalImports,
+      rewrittenFiles: entries.length,
+      rewrittenImports: totalImports,
   });
 }
 
@@ -259,8 +260,8 @@ async function fixRedundantPathSegments(
 
   if (!options.rules.redundantPathSegments || moves.length === 0) {
     logger.info("fix-redundant-path-segments-unchanged", "no redundant path segment moves required", {
-      moves: 0,
-    }, { group: ruleLogGroup("redundant-path-segments") });
+        moves: 0,
+      }, { group: ruleLogGroup("redundant-path-segments") });
     return {
       ok: true,
       violationCount: 0,
@@ -287,11 +288,12 @@ async function fixRedundantPathSegments(
 
     await removeEmptyDirectories(sourceDirectories);
 
-    logger.success("fix-redundant-path-segments-finished", `redundant path segment moves=${movedFiles} rewrittenImports=${rewriteState.rewrittenImports}`, {
-      movedFiles,
-      rewrittenFiles: rewriteState.rewrittenFiles,
-      rewrittenImports: rewriteState.rewrittenImports,
-    }, { group: ruleLogGroup("redundant-path-segments") });
+    const message = `redundant path segment moves=${movedFiles} rewrittenImports=${rewriteState.rewrittenImports}`;
+    logger.success("fix-redundant-path-segments-finished", message, {
+        movedFiles,
+        rewrittenFiles: rewriteState.rewrittenFiles,
+        rewrittenImports: rewriteState.rewrittenImports,
+      }, { group: ruleLogGroup("redundant-path-segments") });
 
     return {
       ok: true,
@@ -312,7 +314,7 @@ async function fixRedundantPathSegments(
     }
 
     throw new FixFailureError("Redundant path segments fix failed", {
-      cause: error instanceof Error ? error.message : String(error),
+        cause: error instanceof Error ? error.message : String(error),
     });
   }
 }

@@ -27,11 +27,11 @@ function applyConfiguredSeverity(
   options: NormalizedCheckCodeDisciplineOptions,
 ): CodeDisciplineViolation[] {
   return violations.map((violation) => {
-    const severity = violation.severity ?? resolveConfiguredSeverity(violation, options);
-    return {
-      ...violation,
-      severity: severity === "warning" ? "warning" : undefined,
-    };
+      const severity = violation.severity ?? resolveConfiguredSeverity(violation, options);
+      return {
+        ...violation,
+        severity: severity === "warning" ? "warning" : undefined,
+      };
   });
 }
 

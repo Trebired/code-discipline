@@ -12,11 +12,11 @@ function isGeneratedArtifactsGitignoreEntry(line: string): boolean {
   return normalized === GENERATED_ARTIFACTS_DIR;
 }
 
-async function ensureGeneratedArtifactsGitignore(projectRoot: string): Promise<{ changed: boolean; path: string }> {
+async function ensureGeneratedArtifactsGitignore(projectRoot: string): Promise<{changed:boolean;path:string}> {
   const gitignorePath = path.join(projectRoot, ".gitignore");
   const existing = await pathExists(gitignorePath)
-    ? await fs.readFile(gitignorePath, "utf8")
-    : "";
+  ? await fs.readFile(gitignorePath, "utf8")
+  : "";
   const lines = existing.split(/\r?\n/);
 
   if (lines.some(isGeneratedArtifactsGitignoreEntry)) {

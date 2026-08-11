@@ -30,20 +30,20 @@ type FixState = {
 };
 
 function mapFixRuleResult(result: {
-  ok: boolean;
-  violationCount: number;
-  violations: CodeDisciplineViolation[];
-  moved_files?: number;
-  rewritten_files?: number;
-  rewritten_imports?: number;
-  removed_comments?: number;
-  formatted_files?: number;
-  unchanged_files?: number;
-  removed_duplicates?: number;
-  added_imports?: number;
-  deleted_files?: number;
-  inserted_blank_lines?: number;
-  removed_blank_lines?: number;
+    ok: boolean;
+    violationCount: number;
+    violations: CodeDisciplineViolation[];
+    moved_files?: number;
+    rewritten_files?: number;
+    rewritten_imports?: number;
+    removed_comments?: number;
+    formatted_files?: number;
+    unchanged_files?: number;
+    removed_duplicates?: number;
+    added_imports?: number;
+    deleted_files?: number;
+    inserted_blank_lines?: number;
+    removed_blank_lines?: number;
 }): FixCodeDisciplineRuleResult {
   return {
     ok: result.ok,
@@ -89,7 +89,12 @@ async function applyMinFileLinesFix(
   if (!normalized.rules.minFileLines || !shouldRunFixRule("min-file-lines", normalized)) return;
 
   const syncOptions = await buildNormalizedSyncOptions(normalized, true);
-  const result = await fixMinFileLinesRule(filterSourceFilesForRule(state.sourceFiles, normalized.rules.minFileLines), normalized, logger, syncOptions);
+  const result = await fixMinFileLinesRule(
+    filterSourceFilesForRule(state.sourceFiles, normalized.rules.minFileLines),
+    normalized,
+    logger,
+    syncOptions
+  );
   const violations = applyConfiguredSeverity(result.violations, normalized);
   state.ruleResults["min-file-lines"] = mapFixRuleResult({ ...result, violations });
   state.violations.push(...violations);
@@ -109,7 +114,11 @@ async function applyRedundantPathSegmentsFix(
 ): Promise<void> {
   if (!normalized.rules.redundantPathSegments || !shouldRunFixRule("redundant-path-segments", normalized)) return;
 
-  const result = await fixRedundantPathSegments(filterSourceFilesForRule(state.sourceFiles, normalized.rules.redundantPathSegments), normalized, logger);
+  const result = await fixRedundantPathSegments(
+    filterSourceFilesForRule(state.sourceFiles, normalized.rules.redundantPathSegments),
+    normalized,
+    logger
+  );
   const violations = applyConfiguredSeverity(result.violations, normalized);
   state.ruleResults["redundant-path-segments"] = mapFixRuleResult({ ...result, violations });
   state.violations.push(...violations);

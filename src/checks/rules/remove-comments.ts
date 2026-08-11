@@ -5,10 +5,10 @@ import { createRuleProgress, emitRuleCompleted } from "#efe33sls019o";
 import type { FixCodeDisciplineRuleResult, NormalizedCheckCodeDisciplineOptions } from "#uqbg4indzud7";
 
 function createRemoveCommentsViolation(args: {
-  filePath: string;
-  commentCount: number;
-  lineComments: number;
-  blockComments: number;
+    filePath: string;
+    commentCount: number;
+    lineComments: number;
+    blockComments: number;
 }): CodeDisciplineViolation {
   return {
     rule: "remove-comments",
@@ -28,13 +28,13 @@ async function collectRemoveCommentsViolations(
   options: NormalizedCheckCodeDisciplineOptions,
 ): Promise<CodeDisciplineViolation[]> {
   const progress = createRuleProgress({
-    observer: options.progressObserver,
-    rule: "remove-comments",
-    totalItems: sourceFiles.length,
+      observer: options.progressObserver,
+      rule: "remove-comments",
+      totalItems: sourceFiles.length,
   });
   const violations = JSON.parse(requireNativeBinding().collectRemoveCommentsViolations(JSON.stringify({
-    sourceFiles,
-    excludedCommentPatterns: options.rules.removeComments?.exclude ?? [],
+          sourceFiles,
+          excludedCommentPatterns: options.rules.removeComments?.exclude ?? [],
   }))) as CodeDisciplineViolation[];
   emitRuleCompleted(progress, violations.length);
   return violations;
@@ -45,18 +45,18 @@ async function fixRemoveCommentsRule(
   options: NormalizedCheckCodeDisciplineOptions,
 ): Promise<FixCodeDisciplineRuleResult> {
   const progress = createRuleProgress({
-    observer: options.progressObserver,
-    rule: "remove-comments",
-    stage: "fix",
-    totalItems: sourceFiles.length,
+      observer: options.progressObserver,
+      rule: "remove-comments",
+      stage: "fix",
+      totalItems: sourceFiles.length,
   });
   const result = JSON.parse(requireNativeBinding().fixRemoveCommentsRule(JSON.stringify({
-    sourceFiles,
-    excludedCommentPatterns: options.rules.removeComments?.exclude ?? [],
+          sourceFiles,
+          excludedCommentPatterns: options.rules.removeComments?.exclude ?? [],
   }))) as FixCodeDisciplineRuleResult;
   emitRuleCompleted(progress, result.violationCount, {
-    removedComments: result.removed_comments,
-    rewrittenFiles: result.rewritten_files,
+      removedComments: result.removed_comments,
+      rewrittenFiles: result.rewritten_files,
   });
   return result;
 }

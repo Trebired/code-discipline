@@ -36,8 +36,8 @@ async function collectWithParseFailure<T>(
   rule: CodeDisciplineRuleName,
   filePath: string,
   violations: CodeDisciplineViolation[],
-  run: () => Promise<T> | T,
-): Promise<T | null> {
+  run: () => Promise<T>|T,
+): Promise<T|null> {
   try {
     return await run();
   } catch (caught) {

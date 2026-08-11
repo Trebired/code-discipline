@@ -69,10 +69,10 @@ function lineContextForNode(
   const lineStart = lineStarts[line] ?? 0;
   const nextLineStart = lineStarts[line + 1];
   const lineEnd = nextLineStart === undefined
-    ? text.length
-    : text[nextLineStart - 2] === "\r"
-      ? nextLineStart - 2
-      : nextLineStart - 1;
+  ? text.length
+  : text[nextLineStart - 2] === "\r"
+  ? nextLineStart - 2
+  : nextLineStart - 1;
   const lineText = text.slice(lineStart, lineEnd);
   const prefix = text.slice(lineStart, nodeStart);
   const indent = lineText.match(/^\s*/)?.[0] ?? "";
@@ -131,10 +131,10 @@ function splitLiteralValue(
 }
 
 function renderedLineLength(args: {
-  content: string;
-  indent: string;
-  quote: string;
-  suffix: string;
+    content: string;
+    indent: string;
+    quote: string;
+    suffix: string;
 }): number {
   return countCharacters(`${args.indent}${args.quote}${args.content}${args.quote}${args.suffix}`);
 }
@@ -145,14 +145,14 @@ function renderReplacement(
   continuationIndent: string,
 ): string {
   return segments
-    .map((segment, index) => `${quote}${segment}${quote}${index === segments.length - 1 ? "" : CONCATENATION_SUFFIX}`)
-    .join(`\n${continuationIndent}`);
+  .map((segment, index) => `${quote}${segment}${quote}${index === segments.length - 1 ? "" : CONCATENATION_SUFFIX}`)
+  .join(`\n${continuationIndent}`);
 }
 
 function createStringLiteralReplacement(args: {
-  context: LiteralLineContext;
-  max: number;
-  rawLiteral: string;
+    context: LiteralLineContext;
+    max: number;
+    rawLiteral: string;
 }): string | null {
   if (!canRewriteRawLiteral(args.rawLiteral)) return null;
 
@@ -162,20 +162,20 @@ function createStringLiteralReplacement(args: {
   if (URL_LITERAL_PATTERN.test(value)) return null;
 
   const firstCapacity = args.max
-    - countCharacters(args.context.prefix)
-    - countCharacters(`${quote}${quote}${CONCATENATION_SUFFIX}`);
+  -countCharacters(args.context.prefix)
+  -countCharacters(`${quote}${quote}${CONCATENATION_SUFFIX}`);
   const nextCapacity = args.max
-    - countCharacters(args.context.indent)
-    - countCharacters(`${quote}${quote}${CONCATENATION_SUFFIX}`);
+  -countCharacters(args.context.indent)
+  -countCharacters(`${quote}${quote}${CONCATENATION_SUFFIX}`);
   const segments = splitLiteralValue(value, firstCapacity, nextCapacity);
   if (!segments) return null;
 
   const allLinesFit = segments.every((segment, index) => {
-    const isFirst = index === 0;
-    const isLast = index === segments.length - 1;
-    const indent = isFirst ? args.context.prefix : args.context.indent;
-    const suffix = isLast ? "" : CONCATENATION_SUFFIX;
-    return renderedLineLength({ content: segment, indent, quote, suffix }) <= args.max;
+      const isFirst = index === 0;
+      const isLast = index === segments.length - 1;
+      const indent = isFirst ? args.context.prefix : args.context.indent;
+      const suffix = isLast ? "" : CONCATENATION_SUFFIX;
+      return renderedLineLength({ content: segment, indent, quote, suffix }) <= args.max;
   });
   return allLinesFit ? renderReplacement(segments, quote, args.context.indent) : null;
 }
@@ -198,7 +198,7 @@ function collectStringLiteralReplacements(
 
       if (
         countCharacters(context.lineText) > max
-        && !hasCommentOutsideLiteral(context.lineText, nodeColumn, rawLiteral)
+        &&!hasCommentOutsideLiteral(context.lineText, nodeColumn, rawLiteral)
       ) {
         const value = createStringLiteralReplacement({ context, max, rawLiteral });
         if (value) replacements.push({ start, end, value });
@@ -222,10 +222,10 @@ async function fixMaxCharactersPerLineRule(
   }
 
   const progress = createRuleProgress({
-    observer: options.progressObserver,
-    rule: "max-characters-per-line",
-    stage: "fix",
-    totalItems: sourceFiles.length,
+      observer: options.progressObserver,
+      rule: "max-characters-per-line",
+      stage: "fix",
+      totalItems: sourceFiles.length,
   });
   let rewrittenFiles = 0;
   let unchangedFiles = 0;

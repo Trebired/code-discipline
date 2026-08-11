@@ -5,19 +5,19 @@ import { resolveFileHeaderSegments } from "./comments.js";
 import type { BoundaryEdit, HeaderSegment, StructuralGroup, StructuralUnit } from "./types.js";
 
 const COMPACT_GROUPS = new Set<StructuralGroup>([
-  "directive",
-  "import",
-  "export",
-  "type",
-  "variable",
-  "execution",
-  "class-field",
+    "directive",
+    "import",
+    "export",
+    "type",
+    "variable",
+    "execution",
+    "class-field",
 ]);
 
 const OVERLOAD_LIKE_GROUPS = new Set<StructuralGroup>([
-  "function",
-  "class-method",
-  "class-accessor",
+    "function",
+    "class-method",
+    "class-accessor",
 ]);
 
 function isCompactPair(previous: StructuralUnit, next: StructuralUnit): boolean {
@@ -38,9 +38,9 @@ function computePairwiseEdits(units: StructuralUnit[]): BoundaryEdit[] {
     if (target === gap) continue;
 
     edits.push({
-      atLine: previous.endLine + 1,
-      removeCount: Math.max(0, gap - target),
-      insertCount: Math.max(0, target - gap),
+        atLine: previous.endLine + 1,
+        removeCount: Math.max(0, gap - target),
+        insertCount: Math.max(0, target - gap),
     });
   }
 
@@ -67,9 +67,9 @@ function computeHeaderEdits(headerSegments: HeaderSegment[], firstUnit: Structur
 
   if (gap !== 1) {
     edits.push({
-      atLine: lastHeader.endLine + 1,
-      removeCount: Math.max(0, gap - 1),
-      insertCount: Math.max(0, 1 - gap),
+        atLine: lastHeader.endLine + 1,
+        removeCount: Math.max(0, gap - 1),
+        insertCount: Math.max(0, 1 - gap),
     });
   }
 

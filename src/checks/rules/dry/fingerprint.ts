@@ -90,8 +90,8 @@ function resolveRemovalRange(node: ts.FunctionLikeDeclaration, sourceFile: ts.So
     const declarationList = parent.parent;
     const statement = declarationList?.parent;
     const isSingleDeclaration = ts.isVariableDeclarationList(declarationList)
-      && declarationList.declarations.length === 1
-      && ts.isVariableStatement(statement);
+    &&declarationList.declarations.length === 1
+    &&ts.isVariableStatement(statement);
 
     if (!isSingleDeclaration) {
       return {

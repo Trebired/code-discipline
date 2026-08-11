@@ -6,6 +6,13 @@ This project follows semantic versioning once published.
 
 ## Unreleased
 
+## 5.5.0
+
+- Added full-config preset support through `presets.use`, starting with the strict built-in `trebired` preset used by Trebired codebases.
+- Moved preset application before source and rule normalization, so presets can configure logging, ignore behavior, imports, and every rule instead of only appending one rule's patterns.
+- Added preset-aware config merging: repo config overrides scalar/object values, arrays append and dedupe, and duplicate `bannedPatterns.patterns` entries union their `allowedFiles`.
+- Fixed the direct `codeDiscipline()` runner preserving configured presets when building check and fix options.
+
 ## 5.4.0
 
 - Added C++ and C# language support across `removeComments`, `formatting`, `maxFunctionLines`, `minDeclarationName`, `structuralBlankLines`, `dry`, and `redundantPathSegments`. C++ recognizes `.cpp`, `.cc`, `.cxx`, `.c++`, `.hpp`, `.hh`, `.hxx`, `.h++`, and `.h`; C# recognizes `.cs`.

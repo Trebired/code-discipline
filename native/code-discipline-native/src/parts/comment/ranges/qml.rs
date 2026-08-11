@@ -8,8 +8,8 @@ fn scan_qml_literal(text: &str, start: usize) -> Option<usize> {
         return Some(scan_backtick_literal(text, start));
     }
     if current == b'/'
-        && bytes.get(start + 1) != Some(&b'/')
-        && bytes.get(start + 1) != Some(&b'*')
+    && bytes.get(start + 1) != Some(&b'/')
+    && bytes.get(start + 1) != Some(&b'*')
     {
         return scan_script_regex_literal(text, start);
     }
@@ -32,9 +32,9 @@ fn collect_qml_comment_ranges(text: &str) -> Vec<CommentRange> {
         if current == b'/' && next == Some(b'/') {
             let end = scan_line_comment(text, index);
             ranges.push(CommentRange {
-                start: index,
-                end,
-                kind: CommentKind::Line,
+                    start: index,
+                    end,
+                    kind: CommentKind::Line,
             });
             index = end;
             continue;
@@ -43,9 +43,9 @@ fn collect_qml_comment_ranges(text: &str) -> Vec<CommentRange> {
         if current == b'/' && next == Some(b'*') {
             let end = scan_block_comment(text, index, false);
             ranges.push(CommentRange {
-                start: index,
-                end,
-                kind: CommentKind::Block,
+                    start: index,
+                    end,
+                    kind: CommentKind::Block,
             });
             index = end;
             continue;

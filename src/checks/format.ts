@@ -23,7 +23,7 @@ async function collectFormatViolations(
 
 async function applyCodeFormatterFix(
   options: NormalizedCheckCodeDisciplineOptions,
-): Promise<CodeFormatterFixApplication | null> {
+): Promise<CodeFormatterFixApplication|null> {
   if (!options.rules.formatting || !shouldRunRule("format", options.onlyRules)) return null;
 
   const result = await runCodeFormatter(options, "fix");

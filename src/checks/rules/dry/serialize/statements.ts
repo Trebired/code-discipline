@@ -99,14 +99,14 @@ function serializeTryStatement(
     "try",
     serialize(node.tryBlock, context, sourceFile),
     node.catchClause
-      ? [
-        "catch",
-        node.catchClause.variableDeclaration
-          ? serializeBindingName(node.catchClause.variableDeclaration.name, context, sourceFile, serialize)
-          : null,
-        serialize(node.catchClause.block, context, sourceFile),
-      ]
+    ? [
+      "catch",
+      node.catchClause.variableDeclaration
+      ? serializeBindingName(node.catchClause.variableDeclaration.name, context, sourceFile, serialize)
       : null,
+      serialize(node.catchClause.block, context, sourceFile),
+    ]
+    : null,
     serialize(node.finallyBlock, context, sourceFile),
   ];
 }
@@ -126,8 +126,12 @@ function serializeBranchStatement(
       "switch",
       serialize(node.expression, context, sourceFile),
       node.caseBlock.clauses.map((clause) => (
-        ts.isCaseClause(clause)
-          ? ["case", serialize(clause.expression, context, sourceFile), clause.statements.map((statement) => serialize(statement, context, sourceFile))]
+          ts.isCaseClause(clause)
+          ? [
+            "case",
+            serialize(clause.expression, context, sourceFile),
+            clause.statements.map((statement) => serialize(statement, context, sourceFile))
+          ]
           : ["default", clause.statements.map((statement) => serialize(statement, context, sourceFile))]
       )),
     ];

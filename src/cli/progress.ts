@@ -36,7 +36,7 @@ function formatDuration(milliseconds: number): string {
 
 function shouldPrintScanChunk(event: SourceScanProgressEvent): boolean {
   return event.phase === "chunk"
-    && (event.chunkIndex <= 3 || event.chunkIndex % 10 === 0 || event.queuedDirectories === 0);
+  &&(event.chunkIndex <= 3 || event.chunkIndex % 10 === 0 || event.queuedDirectories === 0);
 }
 
 function formatRuleProgressDetails(event: SourceRuleProgressEvent | SourceRuleCompletedEvent): string {
@@ -76,8 +76,10 @@ function createCliScanObserver(writeLine: (text: string, context?: CliLogContext
     }
 
     if (event.phase === "rule-chunk") {
+      const message = `${event.rule} ${event.stage} ${event.chunkIndex}: `
+      +`${event.completedItems}/${event.totalItems}${formatRuleProgressDetails(event)}, ${formatDuration(event.elapsedMs)}.\n`;
       writeLine(
-        `${event.rule} ${event.stage} ${event.chunkIndex}: ${event.completedItems}/${event.totalItems}${formatRuleProgressDetails(event)}, ${formatDuration(event.elapsedMs)}.\n`,
+        message,
         { event: "rule-progress-chunk", rule: event.rule },
       );
       return;

@@ -3,12 +3,12 @@ import ts from "typescript";
 function isFunctionLikeWithBody(node: ts.Node): node is ts.FunctionLikeDeclaration {
   return (
     (ts.isFunctionDeclaration(node) && node.body !== undefined)
-    || (ts.isMethodDeclaration(node) && node.body !== undefined)
-    || (ts.isConstructorDeclaration(node) && node.body !== undefined)
-    || (ts.isGetAccessorDeclaration(node) && node.body !== undefined)
-    || (ts.isSetAccessorDeclaration(node) && node.body !== undefined)
-    || (ts.isFunctionExpression(node) && node.body !== undefined)
-    || (ts.isArrowFunction(node) && node.body !== undefined)
+    ||(ts.isMethodDeclaration(node) && node.body !== undefined)
+    ||(ts.isConstructorDeclaration(node) && node.body !== undefined)
+    ||(ts.isGetAccessorDeclaration(node) && node.body !== undefined)
+    ||(ts.isSetAccessorDeclaration(node) && node.body !== undefined)
+    ||(ts.isFunctionExpression(node) && node.body !== undefined)
+    ||(ts.isArrowFunction(node) && node.body !== undefined)
   );
 }
 
@@ -35,7 +35,7 @@ function getLineCount(sourceFile: ts.SourceFile, node: ts.Node): number {
 }
 
 function resolveFunctionName(node: ts.FunctionLikeDeclaration, sourceFile: ts.SourceFile): string {
-  if ("name" in node && node.name) {
+  if ("name"in node && node.name) {
     return node.name.getText(sourceFile);
   }
 

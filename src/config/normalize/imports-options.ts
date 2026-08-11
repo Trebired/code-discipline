@@ -18,37 +18,48 @@ const GENERATED_TSCONFIG_PATH = ".trebired/code-discipline/generated/tsconfig.pa
 const IMPORTS_FOLDER_DIR = ".trebired/code-discipline/imports";
 
 function assertValidImportsOptions(options: ImportsOptions): void {
-  if ("imports" in (options as Record<string, unknown>)) {
+  if ("imports"in(options as Record<string, unknown>)) {
     throw new InvalidCodeDisciplineConfigError("imports.imports is no longer supported; use allowRelative instead", {
-      key: "imports",
+        key: "imports",
     });
   }
 
-  for (const key of ["enabled", "stop", "rewrite", "keepRelative", "sourceRoot", "tsconfigPath", "importsFolder", "generatedTsconfig", "packageJsonImports"] as const) {
-    if (key in (options as Record<string, unknown>)) {
+  const removedKeys = [
+    "enabled",
+    "stop",
+    "rewrite",
+    "keepRelative",
+    "sourceRoot",
+    "tsconfigPath",
+    "importsFolder",
+    "generatedTsconfig",
+    "packageJsonImports",
+  ] as const;
+  for (const key of removedKeys) {
+    if (key in(options as Record<string, unknown>)) {
       throw new InvalidCodeDisciplineConfigError(`imports.${key} is no longer supported`, {
-        key,
+          key,
       });
     }
   }
 
-  if ("severity" in (options as Record<string, unknown>)) {
+  if ("severity"in(options as Record<string, unknown>)) {
     throw new InvalidCodeDisciplineConfigError("imports.severity is no longer supported", {
-      key: "severity",
+        key: "severity",
     });
   }
 
   for (const key of ["excludeFiles", "excludeFolders"] as const) {
-    if (key in (options as Record<string, unknown>)) {
+    if (key in(options as Record<string, unknown>)) {
       throw new InvalidCodeDisciplineConfigError(`${key} is no longer supported; use ignore.entries with type "file" or "folder"`, {
-        key,
+          key,
       });
     }
   }
 
-  if ("excludeDirs" in (options as Record<string, unknown>)) {
+  if ("excludeDirs"in(options as Record<string, unknown>)) {
     throw new InvalidCodeDisciplineConfigError("excludeDirs is no longer supported; use ignore", {
-      key: "excludeDirs",
+        key: "excludeDirs",
     });
   }
 }
@@ -58,8 +69,8 @@ function normalizeOutput(output: ImportsOptions["output"]): NormalizedImportsOpt
 
   if (!output || typeof output !== "object" || Array.isArray(output)) {
     throw new InvalidCodeDisciplineConfigError("imports.output must be an object when provided", {
-      key: "output",
-      value: output,
+        key: "output",
+        value: output,
     });
   }
 
@@ -78,8 +89,8 @@ function normalizeOutput(output: ImportsOptions["output"]): NormalizedImportsOpt
   }
 
   throw new InvalidCodeDisciplineConfigError('imports.output.type must be "project-manifests" or "alias-map"', {
-    key: "output.type",
-    value: type,
+      key: "output.type",
+      value: type,
   });
 }
 

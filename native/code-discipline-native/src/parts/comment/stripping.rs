@@ -1,8 +1,8 @@
 fn create_block_comment_replacement(comment_text: &str) -> String {
     let newline_only = comment_text
-        .chars()
-        .filter(|ch| *ch == '\r' || *ch == '\n')
-        .collect::<String>();
+    .chars()
+    .filter(|ch| *ch == '\r' || *ch == '\n')
+    .collect::<String>();
 
     if newline_only.is_empty() {
         " ".to_string()
@@ -13,9 +13,9 @@ fn create_block_comment_replacement(comment_text: &str) -> String {
 
 fn find_line_start(text: &str, index: usize) -> usize {
     text[..index]
-        .rfind('\n')
-        .map(|position| position + 1)
-        .unwrap_or(0)
+    .rfind('\n')
+    .map(|position| position + 1)
+    .unwrap_or(0)
 }
 
 fn find_line_end(text: &str, index: usize) -> (usize, usize) {
@@ -63,8 +63,8 @@ fn should_exclude_comment(
 
     let comment_text = &text[range.start..range.end];
     excluded_comment_patterns
-        .iter()
-        .any(|pattern| !pattern.is_empty() && comment_text.contains(pattern))
+    .iter()
+    .any(|pattern| !pattern.is_empty() && comment_text.contains(pattern))
 }
 
 fn strip_comments_internal(
@@ -73,9 +73,9 @@ fn strip_comments_internal(
     excluded_comment_patterns: &[String],
 ) -> CommentStripResult {
     let ranges = collect_comment_ranges(text, extension)
-        .into_iter()
-        .filter(|range| !should_exclude_comment(text, *range, excluded_comment_patterns))
-        .collect::<Vec<_>>();
+    .into_iter()
+    .filter(|range| !should_exclude_comment(text, *range, excluded_comment_patterns))
+    .collect::<Vec<_>>();
 
     if ranges.is_empty() {
         return CommentStripResult {

@@ -11,8 +11,8 @@ fn create_max_file_lines_violation(
         severity: None,
         suggested_path: None,
         details: json!({
-            "lineCount": line_count,
-            "max": max,
+                "lineCount": line_count,
+                "max": max,
         }),
     }
 }
@@ -33,9 +33,9 @@ fn create_max_file_lines_warning(
         severity: Some("warning".to_string()),
         suggested_path: None,
         details: json!({
-            "lineCount": physical_line_count,
-            "codeLineCount": code_line_count,
-            "max": max,
+                "lineCount": physical_line_count,
+                "codeLineCount": code_line_count,
+                "max": max,
         }),
     }
 }
@@ -55,9 +55,9 @@ fn create_remove_comments_violation(
         severity: None,
         suggested_path: None,
         details: json!({
-            "commentCount": result.comment_count,
-            "lineComments": result.line_comments,
-            "blockComments": result.block_comments,
+                "commentCount": result.comment_count,
+                "lineComments": result.line_comments,
+                "blockComments": result.block_comments,
         }),
     }
 }
@@ -72,10 +72,10 @@ fn create_redundant_path_segments_violation(
     separator: &str,
 ) -> CodeDisciplineViolation {
     let mut details = json!({
-        "mode": mode,
-        "prefix": prefix,
-        "remainder": remainder,
-        "separator": separator,
+            "mode": mode,
+            "prefix": prefix,
+            "remainder": remainder,
+            "separator": separator,
     });
     if let Some(path_segment) = path_segment {
         if let Some(object) = details.as_object_mut() {
@@ -111,12 +111,12 @@ fn create_max_function_lines_violation(
         severity: None,
         suggested_path: None,
         details: json!({
-            "functionKind": kind,
-            "functionName": name,
-            "lineCount": line_count,
-            "max": max,
-            "startLine": start_line,
-            "endLine": end_line,
+                "functionKind": kind,
+                "functionName": name,
+                "lineCount": line_count,
+                "max": max,
+                "startLine": start_line,
+                "endLine": end_line,
         }),
     }
 }
@@ -141,13 +141,13 @@ fn create_max_function_lines_warning(
         severity: Some("warning".to_string()),
         suggested_path: None,
         details: json!({
-            "functionKind": kind,
-            "functionName": name,
-            "lineCount": physical_line_count,
-            "codeLineCount": code_line_count,
-            "max": max,
-            "startLine": start_line,
-            "endLine": end_line,
+                "functionKind": kind,
+                "functionName": name,
+                "lineCount": physical_line_count,
+                "codeLineCount": code_line_count,
+                "max": max,
+                "startLine": start_line,
+                "endLine": end_line,
         }),
     }
 }

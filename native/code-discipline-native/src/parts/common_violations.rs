@@ -8,32 +8,32 @@ fn count_lines(text: &str) -> usize {
 
 fn count_code_lines(masked_text: &str, _extension: &str) -> usize {
     masked_text
-        .lines()
-        .filter(|line| !line.trim().is_empty())
-        .count()
+    .lines()
+    .filter(|line| !line.trim().is_empty())
+    .count()
 }
 
 fn count_code_lines_in_range(masked_text: &str, start_line: usize, end_line: usize) -> usize {
     masked_text
-        .lines()
-        .enumerate()
-        .filter(|(index, line)| {
+    .lines()
+    .enumerate()
+    .filter(|(index, line)| {
             let line_number = index + 1;
             line_number >= start_line && line_number <= end_line && !line.trim().is_empty()
-        })
-        .count()
+    })
+    .count()
 }
 
 fn supports_remove_comments(extension: &str) -> bool {
     is_ts_family_extension(extension)
-        || is_go_extension(extension)
-        || is_rust_extension(extension)
-        || is_cpp_extension(extension)
-        || is_csharp_extension(extension)
-        || is_python_extension(extension)
-        || is_shell_extension(extension)
-        || is_qml_extension(extension)
-        || is_style_extension(extension)
+    || is_go_extension(extension)
+    || is_rust_extension(extension)
+    || is_cpp_extension(extension)
+    || is_csharp_extension(extension)
+    || is_python_extension(extension)
+    || is_shell_extension(extension)
+    || is_qml_extension(extension)
+    || is_style_extension(extension)
 }
 
 fn supports_redundant_path_segments_fix(extension: &str) -> bool {
@@ -42,8 +42,8 @@ fn supports_redundant_path_segments_fix(extension: &str) -> bool {
 
 fn posix_dirname(path: &str) -> String {
     path.rsplit_once('/')
-        .map(|(dir, _)| dir.to_string())
-        .unwrap_or_else(|| ".".to_string())
+    .map(|(dir, _)| dir.to_string())
+    .unwrap_or_else(|| ".".to_string())
 }
 
 fn posix_basename(path: &str) -> &str {
@@ -126,12 +126,12 @@ fn strip_comments_and_strings_with(text: &str, regex_literals: bool) -> String {
         }
 
         if regex_literals
-            && !in_single
-            && !in_double
-            && !in_template
-            && current == b'/'
-            && next != Some(b'/')
-            && next != Some(b'*')
+        && !in_single
+        && !in_double
+        && !in_template
+        && current == b'/'
+        && next != Some(b'/')
+        && next != Some(b'*')
         {
             if let Some(end) = scan_script_regex_literal(text, index) {
                 for byte in &bytes[index..end] {
@@ -200,10 +200,4 @@ fn strip_comments_and_strings_with(text: &str, regex_literals: bool) -> String {
     }
 
     result
-}
-
-fn count_structural_tokens(text: &str) -> usize {
-    text.chars()
-        .filter(|ch| "{}()[],:?=>".contains(*ch))
-        .count()
 }

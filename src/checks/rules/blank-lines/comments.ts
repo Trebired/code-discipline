@@ -34,9 +34,9 @@ function resolveFileHeaderSegments(sourceFile: ts.SourceFile, fullText: string):
 
   if (shebangEnd > 0) {
     segments.push({
-      startLine: 1,
-      endLine: getLine(sourceFile, Math.max(0, shebangEnd - 1)),
-      endPos: shebangEnd,
+        startLine: 1,
+        endLine: getLine(sourceFile, Math.max(0, shebangEnd - 1)),
+        endPos: shebangEnd,
     });
   }
 
@@ -46,9 +46,9 @@ function resolveFileHeaderSegments(sourceFile: ts.SourceFile, fullText: string):
     if (!isHeaderCommentText(fullText.slice(range.pos, range.end))) break;
 
     segments.push({
-      startLine: getLine(sourceFile, range.pos),
-      endLine: getLine(sourceFile, range.end),
-      endPos: range.end,
+        startLine: getLine(sourceFile, range.pos),
+        endLine: getLine(sourceFile, range.end),
+        endPos: range.end,
     });
   }
 
@@ -64,7 +64,7 @@ function resolveAttachedStartLine(
   const nodeStart = node.getStart(sourceFile);
   const searchStart = Math.max(node.getFullStart(), notBeforePos);
   const commentRanges = (ts.getLeadingCommentRanges(fullText, searchStart) ?? [])
-    .filter((range) => range.pos >= notBeforePos && range.end <= nodeStart);
+  .filter((range) => range.pos >= notBeforePos && range.end <= nodeStart);
 
   if (commentRanges.length === 0) return getLine(sourceFile, nodeStart);
 

@@ -37,10 +37,10 @@ function normalizeWrappedExpression(
   sourceFile: ts.SourceFile,
 ): BehaviorExpression | undefined {
   if (ts.isParenthesizedExpression(node)
-    || ts.isAsExpression(node)
-    || ts.isTypeAssertionExpression(node)
-    || ts.isNonNullExpression(node)
-    || ts.isSatisfiesExpression(node)) {
+    ||ts.isAsExpression(node)
+    ||ts.isTypeAssertionExpression(node)
+    ||ts.isNonNullExpression(node)
+    ||ts.isSatisfiesExpression(node)) {
     return normalizeExpression(node.expression, context, sourceFile);
   }
 
@@ -88,13 +88,13 @@ function normalizeArrayLiteral(
   sourceFile: ts.SourceFile,
 ): BehaviorExpression | undefined {
   const elements = node.elements.map((element) => (
-    ts.isSpreadElement(element)
+      ts.isSpreadElement(element)
       ? ["spread", normalizeExpression(element.expression, context, sourceFile)]
       : normalizeExpression(element, context, sourceFile)
   ));
   return elements.some((element) => element === undefined || (Array.isArray(element) && element[1] === undefined))
-    ? undefined
-    : ["array", elements];
+  ? undefined
+  : ["array", elements];
 }
 
 function normalizeObjectLiteral(
@@ -141,8 +141,8 @@ function normalizeTemplateExpression(
   sourceFile: ts.SourceFile,
 ): BehaviorExpression | undefined {
   const spans = node.templateSpans.map((span) => [
-    normalizeExpression(span.expression, context, sourceFile),
-    span.literal.text,
+      normalizeExpression(span.expression, context, sourceFile),
+      span.literal.text,
   ]);
   return spans.some(([expression]) => expression === undefined) ? undefined : ["template", node.head.text, spans];
 }
@@ -204,8 +204,8 @@ function normalizeConditionalExpression(
   const whenTrue = normalizeExpression(node.whenTrue, context, sourceFile);
   const whenFalse = normalizeExpression(node.whenFalse, context, sourceFile);
   return condition === undefined || whenTrue === undefined || whenFalse === undefined
-    ? undefined
-    : normalizeConditional(condition, whenTrue, whenFalse);
+  ? undefined
+  : normalizeConditional(condition, whenTrue, whenFalse);
 }
 
 function normalizePrefixUnaryExpression(
@@ -237,8 +237,8 @@ function normalizeBinaryExpression(
   }
 
   return node.operatorToken.kind === ts.SyntaxKind.QuestionQuestionToken
-    ? ["coalesce", left, right]
-    : ["binary", ts.tokenToString(node.operatorToken.kind) ?? String(node.operatorToken.kind), left, right];
+  ? ["coalesce", left, right]
+  : ["binary", ts.tokenToString(node.operatorToken.kind) ?? String(node.operatorToken.kind), left, right];
 }
 
 function normalizeTypeOfExpression(

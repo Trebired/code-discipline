@@ -5,7 +5,7 @@ import type { NormalizedImportsOptions } from "./types.js";
 import { isInsideDirectory } from "#ntve5i5a0mol";
 import { isScssExtension } from "#87jyjzn68rrk";
 
-type ResolveRelativeImportOptions = Pick<NormalizedImportsOptions, "sourceExtensions" | "sourceRoot">;
+type ResolveRelativeImportOptions = Pick<NormalizedImportsOptions, "sourceExtensions"|"sourceRoot">;
 
 const RUNTIME_SPECIFIER_EXTENSIONS = new Set([".js", ".jsx", ".mjs", ".cjs"]);
 
@@ -38,7 +38,7 @@ function buildFileCandidates(candidatePath: string, sourceExtensions: string[]):
   return candidates;
 }
 
-async function resolveFileCandidate(candidatePath: string, sourceExtensions: string[]): Promise<string | null> {
+async function resolveFileCandidate(candidatePath: string, sourceExtensions: string[]): Promise<string|null> {
   for (const filePath of buildFileCandidates(candidatePath, sourceExtensions)) {
     try {
       const stat = await fs.stat(filePath);
@@ -78,7 +78,7 @@ function buildSassFileCandidates(candidatePath: string): string[] {
   return candidates;
 }
 
-async function resolveSassFileCandidate(candidatePath: string): Promise<string | null> {
+async function resolveSassFileCandidate(candidatePath: string): Promise<string|null> {
   for (const filePath of buildSassFileCandidates(candidatePath)) {
     try {
       const stat = await fs.stat(filePath);
@@ -89,7 +89,7 @@ async function resolveSassFileCandidate(candidatePath: string): Promise<string |
   return null;
 }
 
-async function resolveProjectPathTarget(targetPath: string, sourceExtensions: string[]): Promise<string | null> {
+async function resolveProjectPathTarget(targetPath: string, sourceExtensions: string[]): Promise<string|null> {
   return resolveFileCandidate(targetPath, sourceExtensions);
 }
 
@@ -97,13 +97,13 @@ async function resolveRelativeImport(
   specifier: string,
   sourceFile: string,
   options: ResolveRelativeImportOptions,
-): Promise<string | null> {
+): Promise<string|null> {
   if (!isRelativeImportSpecifier(specifier)) return null;
 
   const basePath = path.resolve(path.dirname(sourceFile), specifier);
   const resolved = isScssExtension(sourceFile)
-    ? await resolveSassFileCandidate(basePath)
-    : await resolveFileCandidate(basePath, options.sourceExtensions);
+  ? await resolveSassFileCandidate(basePath)
+  : await resolveFileCandidate(basePath, options.sourceExtensions);
 
   if (!resolved) return null;
   if (!isInsideDirectory(resolved, options.sourceRoot)) return null;

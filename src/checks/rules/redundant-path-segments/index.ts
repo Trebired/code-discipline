@@ -11,13 +11,13 @@ function runRedundantPathSegmentsRule(
   if (!options.rules.redundantPathSegments) return [];
 
   const progress = createRuleProgress({
-    observer: options.progressObserver,
-    rule: "redundant-path-segments",
-    totalItems: sourceFiles.length,
+      observer: options.progressObserver,
+      rule: "redundant-path-segments",
+      totalItems: sourceFiles.length,
   });
   const violations = JSON.parse(requireNativeBinding().runRedundantPathSegmentsRule(JSON.stringify({
-    sourceFiles,
-    separators: options.rules.redundantPathSegments.separators,
+          sourceFiles,
+          separators: options.rules.redundantPathSegments.separators,
   }))) as CodeDisciplineViolation[];
   emitRuleCompleted(progress, violations.length);
   return violations;

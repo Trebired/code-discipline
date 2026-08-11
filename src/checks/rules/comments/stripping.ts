@@ -14,9 +14,9 @@ type CommentStripOptions = {
 
 function stripComments(text: string, extension: string, options: CommentStripOptions = {}): CommentStripResult {
   return JSON.parse(requireNativeBinding().stripComments(JSON.stringify({
-    text,
-    extension,
-    excludedCommentPatterns: options.exclude ?? [],
+          text,
+          extension,
+          excludedCommentPatterns: options.exclude ?? [],
   }))) as CommentStripResult;
 }
 

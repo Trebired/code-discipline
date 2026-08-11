@@ -35,10 +35,10 @@ function isAllowedRelative(
   }
 
   return (policy as AllowRelativeFn)(specifier, {
-    sourceFile,
-    resolvedFile,
-    projectRoot: options.projectRoot,
-    sourceRoot: options.sourceRoot,
+      sourceFile,
+      resolvedFile,
+      projectRoot: options.projectRoot,
+      sourceRoot: options.sourceRoot,
   });
 }
 
@@ -52,8 +52,8 @@ async function rewriteSourceFile(
     const text = await fs.readFile(file.absolutePath, "utf8");
     const replacements: TextReplacement[] = [];
     const deadImportReplacements = options.removeDeadImports && isTypeScriptFamilyExtension(file.extension)
-      ? collectDeadImportRemovals(text, file.absolutePath)
-      : [];
+    ? collectDeadImportRemovals(text, file.absolutePath)
+    : [];
 
     for (const occurrence of collectModuleSpecifiers(text, file.absolutePath)) {
       if (!occurrence.specifier.startsWith(".")) continue;
@@ -63,21 +63,21 @@ async function rewriteSourceFile(
       if (!resolvedFile) {
         if (occurrence.removalStart !== undefined && occurrence.removalEnd !== undefined) {
           replacements.push({
-            start: occurrence.removalStart,
-            end: occurrence.removalEnd,
-            value: "",
+              start: occurrence.removalStart,
+              end: occurrence.removalEnd,
+              value: "",
           });
           logger.debug("rewrite-removed-unresolved", `removed unresolved import ${occurrence.specifier}`, {
-            sourceFile: file.absolutePath,
-            specifier: occurrence.specifier,
-          }, { group: ruleLogGroup("imports") });
+              sourceFile: file.absolutePath,
+              specifier: occurrence.specifier,
+            }, { group: ruleLogGroup("imports") });
           continue;
         }
 
         logger.debug("rewrite-skipped-unresolved", `skipped unresolved import ${occurrence.specifier}`, {
-          sourceFile: file.absolutePath,
-          specifier: occurrence.specifier,
-        }, { group: ruleLogGroup("imports") });
+            sourceFile: file.absolutePath,
+            specifier: occurrence.specifier,
+          }, { group: ruleLogGroup("imports") });
         continue;
       }
 
@@ -87,17 +87,17 @@ async function rewriteSourceFile(
       if (!aliasId) continue;
 
       replacements.push({
-        start: occurrence.start,
-        end: occurrence.end,
-        value: aliasId,
+          start: occurrence.start,
+          end: occurrence.end,
+          value: aliasId,
       });
     }
 
     if (deadImportReplacements.length > 0) {
       logger.debug("rewrite-removed-dead-imports", `removed ${deadImportReplacements.length} unused import(s)`, {
-        sourceFile: file.absolutePath,
-        count: deadImportReplacements.length,
-      }, { group: ruleLogGroup("imports") });
+          sourceFile: file.absolutePath,
+          count: deadImportReplacements.length,
+        }, { group: ruleLogGroup("imports") });
     }
 
     const applied = applyTextReplacements(text, [...replacements, ...deadImportReplacements]);
@@ -127,10 +127,10 @@ async function rewriteSourceImports(
 ): Promise<RewriteResult> {
   const aliasIdsByFilePath = new Map(aliasRecords.map((record) => [record.absolutePath, record.id]));
   const progress = createRuleProgress({
-    observer: options.progressObserver,
-    rule: "imports",
-    stage: "fix",
-    totalItems: sourceFiles.length,
+      observer: options.progressObserver,
+      rule: "imports",
+      stage: "fix",
+      totalItems: sourceFiles.length,
   });
   let rewrittenFiles = 0;
   let rewrittenImports = 0;

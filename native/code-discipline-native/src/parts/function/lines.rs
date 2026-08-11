@@ -1,11 +1,3 @@
-fn count_line_number(text: &str, byte_index: usize) -> usize {
-    text[..byte_index.min(text.len())]
-        .bytes()
-        .filter(|byte| *byte == b'\n')
-        .count()
-        + 1
-}
-
 fn strip_line_comments_and_strings(value: &str) -> String {
     let normalized = strip_comments_and_strings(value);
     normalized.lines().next().unwrap_or("").to_string()
@@ -14,13 +6,13 @@ fn strip_line_comments_and_strings(value: &str) -> String {
 fn count_brace_delta(value: &str) -> i32 {
     let normalized = strip_line_comments_and_strings(value);
     normalized.chars().fold(0_i32, |sum, ch| {
-        if ch == '{' {
-            sum + 1
-        } else if ch == '}' {
-            sum - 1
-        } else {
-            sum
-        }
+            if ch == '{' {
+                sum + 1
+            } else if ch == '}' {
+                sum - 1
+            } else {
+                sum
+            }
     })
 }
 
@@ -32,9 +24,9 @@ const C_FAMILY_HEADER_EXCLUDED_LEADING_WORDS: &[&str] = &[
 
 fn c_family_header_leading_word(trimmed: &str) -> &str {
     trimmed
-        .split(|ch: char| !(ch.is_ascii_alphanumeric() || ch == '_'))
-        .find(|word| !word.is_empty())
-        .unwrap_or("")
+    .split(|ch: char| !(ch.is_ascii_alphanumeric() || ch == '_'))
+    .find(|word| !word.is_empty())
+    .unwrap_or("")
 }
 
 fn is_c_family_header_start(line: &str) -> bool {
@@ -66,14 +58,14 @@ fn header_start_matches(line: &str, extension: &str) -> bool {
     }
 
     trimmed.starts_with("fn ")
-        || trimmed.starts_with("pub fn ")
-        || trimmed.starts_with("pub(crate) fn ")
-        || trimmed.starts_with("async fn ")
-        || trimmed.starts_with("unsafe fn ")
-        || trimmed.starts_with("const fn ")
-        || trimmed.starts_with("pub async fn ")
-        || trimmed.starts_with("pub unsafe fn ")
-        || trimmed.starts_with("pub const fn ")
+    || trimmed.starts_with("pub fn ")
+    || trimmed.starts_with("pub(crate) fn ")
+    || trimmed.starts_with("async fn ")
+    || trimmed.starts_with("unsafe fn ")
+    || trimmed.starts_with("const fn ")
+    || trimmed.starts_with("pub async fn ")
+    || trimmed.starts_with("pub unsafe fn ")
+    || trimmed.starts_with("pub const fn ")
 }
 
 fn extract_c_family_function_name(header: &str) -> String {
@@ -83,13 +75,13 @@ fn extract_c_family_function_name(header: &str) -> String {
     };
 
     let name: String = stripped[..paren_index]
-        .chars()
-        .rev()
-        .take_while(|ch| ch.is_ascii_alphanumeric() || *ch == '_')
-        .collect::<Vec<_>>()
-        .into_iter()
-        .rev()
-        .collect();
+    .chars()
+    .rev()
+    .take_while(|ch| ch.is_ascii_alphanumeric() || *ch == '_')
+    .collect::<Vec<_>>()
+    .into_iter()
+    .rev()
+    .collect();
 
     if name.is_empty() {
         "anonymous".to_string()
@@ -102,21 +94,21 @@ fn extract_function_name(header: &str, extension: &str) -> String {
     let normalized = header.trim_start();
     if is_go_extension(extension) {
         let after_func = normalized
-            .strip_prefix("func")
-            .unwrap_or(normalized)
-            .trim_start();
+        .strip_prefix("func")
+        .unwrap_or(normalized)
+        .trim_start();
         let after_receiver = if after_func.starts_with('(') {
             after_func
-                .find(')')
-                .map(|index| after_func[index + 1..].trim_start())
-                .unwrap_or(after_func)
+            .find(')')
+            .map(|index| after_func[index + 1..].trim_start())
+            .unwrap_or(after_func)
         } else {
             after_func
         };
         return after_receiver
-            .chars()
-            .take_while(|ch| ch.is_ascii_alphanumeric() || *ch == '_')
-            .collect::<String>();
+        .chars()
+        .take_while(|ch| ch.is_ascii_alphanumeric() || *ch == '_')
+        .collect::<String>();
     }
 
     if is_cpp_extension(extension) || is_csharp_extension(extension) {
@@ -127,9 +119,9 @@ fn extract_function_name(header: &str, extension: &str) -> String {
         return "anonymous".to_string();
     };
     normalized[fn_index + 3..]
-        .chars()
-        .take_while(|ch| ch.is_ascii_alphanumeric() || *ch == '_')
-        .collect::<String>()
+    .chars()
+    .take_while(|ch| ch.is_ascii_alphanumeric() || *ch == '_')
+    .collect::<String>()
 }
 
 fn collect_block_function_violations(
@@ -138,9 +130,9 @@ fn collect_block_function_violations(
     max: usize,
 ) -> Vec<CodeDisciplineViolation> {
     if !is_go_extension(&file.extension)
-        && !is_rust_extension(&file.extension)
-        && !is_cpp_extension(&file.extension)
-        && !is_csharp_extension(&file.extension)
+    && !is_rust_extension(&file.extension)
+    && !is_cpp_extension(&file.extension)
+    && !is_csharp_extension(&file.extension)
     {
         return Vec::new();
     }
@@ -181,17 +173,17 @@ fn collect_block_function_violations(
         let code_line_count = count_code_lines_in_range(&masked_text, pending_start_line, end_line);
         if code_line_count > max {
             violations.push(create_max_function_lines_violation(
-                file,
-                &pending_kind,
-                if pending_name.is_empty() {
-                    "anonymous"
-                } else {
-                    &pending_name
-                },
-                code_line_count,
-                max,
-                pending_start_line,
-                end_line,
+                    file,
+                    &pending_kind,
+                    if pending_name.is_empty() {
+                        "anonymous"
+                    } else {
+                        &pending_name
+                    },
+                    code_line_count,
+                    max,
+                    pending_start_line,
+                    end_line,
             ));
         }
 
@@ -213,9 +205,9 @@ fn collect_block_function_warnings(
     max: usize,
 ) -> Vec<CodeDisciplineViolation> {
     if !is_go_extension(&file.extension)
-        && !is_rust_extension(&file.extension)
-        && !is_cpp_extension(&file.extension)
-        && !is_csharp_extension(&file.extension)
+    && !is_rust_extension(&file.extension)
+    && !is_cpp_extension(&file.extension)
+    && !is_csharp_extension(&file.extension)
     {
         return Vec::new();
     }
@@ -257,18 +249,18 @@ fn collect_block_function_warnings(
         let code_line_count = count_code_lines_in_range(&masked_text, pending_start_line, end_line);
         if code_line_count <= max && line_count > max {
             warnings.push(create_max_function_lines_warning(
-                file,
-                &pending_kind,
-                if pending_name.is_empty() {
-                    "anonymous"
-                } else {
-                    &pending_name
-                },
-                line_count,
-                code_line_count,
-                max,
-                pending_start_line,
-                end_line,
+                    file,
+                    &pending_kind,
+                    if pending_name.is_empty() {
+                        "anonymous"
+                    } else {
+                        &pending_name
+                    },
+                    line_count,
+                    code_line_count,
+                    max,
+                    pending_start_line,
+                    end_line,
             ));
         }
 
@@ -322,13 +314,13 @@ fn collect_simple_typescript_function_violations(
         let code_line_count = count_code_lines_in_range(&masked_text, pending_start_line, end_line);
         if code_line_count > max {
             violations.push(create_max_function_lines_violation(
-                file,
-                &pending_kind,
-                &pending_name,
-                code_line_count,
-                max,
-                pending_start_line,
-                end_line,
+                    file,
+                    &pending_kind,
+                    &pending_name,
+                    code_line_count,
+                    max,
+                    pending_start_line,
+                    end_line,
             ));
         }
 
@@ -380,14 +372,14 @@ fn collect_simple_typescript_function_warnings(
         let code_line_count = count_code_lines_in_range(&masked_text, pending_start_line, end_line);
         if code_line_count <= max && line_count > max {
             warnings.push(create_max_function_lines_warning(
-                file,
-                &pending_kind,
-                &pending_name,
-                line_count,
-                code_line_count,
-                max,
-                pending_start_line,
-                end_line,
+                    file,
+                    &pending_kind,
+                    &pending_name,
+                    line_count,
+                    code_line_count,
+                    max,
+                    pending_start_line,
+                    end_line,
             ));
         }
 

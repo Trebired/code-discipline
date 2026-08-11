@@ -93,7 +93,12 @@ function isIdentifierValueReference(node: ts.Identifier): boolean {
   if (ts.isVariableDeclaration(parent) && parent.name === node) return false;
   if (ts.isBindingElement(parent) && parent.name === node) return false;
   if (ts.isParameter(parent) && parent.name === node) return false;
-  if ((ts.isFunctionDeclaration(parent) || ts.isClassDeclaration(parent) || ts.isFunctionExpression(parent) || ts.isClassExpression(parent)) && parent.name === node) return false;
+  const parentIsNamedExpression =
+  ts.isFunctionDeclaration(parent)
+  ||ts.isClassDeclaration(parent)
+  ||ts.isFunctionExpression(parent)
+  ||ts.isClassExpression(parent);
+  if (parentIsNamedExpression && parent.name === node) return false;
   if (ts.isImportSpecifier(parent) && (parent.name === node || parent.propertyName === node)) return false;
   if (ts.isImportClause(parent) && parent.name === node) return false;
   if (ts.isNamespaceImport(parent) && parent.name === node) return false;
@@ -146,11 +151,11 @@ function collectNestedDeclaredNames(sourceFile: ts.SourceFile): Set<string> {
 }
 
 function collectTopLevelSafeConstBindings(sourceFile: ts.SourceFile): Map<string, string> {
-  const candidates: Array<{ name: string; initializer: ts.Expression }> = [];
+  const candidates: Array<{name:string;initializer:ts.Expression}> = [];
 
   for (const statement of sourceFile.statements) {
     if (!ts.isVariableStatement(statement)) continue;
-    if ((ts.getCombinedNodeFlags(statement.declarationList) & ts.NodeFlags.Const) === 0) continue;
+    if ((ts.getCombinedNodeFlags(statement.declarationList)&ts.NodeFlags.Const) === 0) continue;
 
     for (const declaration of statement.declarationList.declarations) {
       if (!ts.isIdentifier(declaration.name) || !declaration.initializer) continue;
@@ -202,9 +207,9 @@ function collectFoldedStringMatches(sourceFile: ts.SourceFile): FoldedStringMatc
       const folded = tryFoldExpression(node, bindings);
       if (folded !== null) {
         matches.push({
-          value: folded,
-          line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
-          kind: resolveMatchKind(node),
+            value: folded,
+            line: sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile)).line + 1,
+            kind: resolveMatchKind(node),
         });
         return;
       }

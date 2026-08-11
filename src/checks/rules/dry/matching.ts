@@ -131,9 +131,9 @@ function isWithinDuplicateSizeThreshold(descriptor: DryFunctionDescriptor, optio
 
 function shouldIndexNameDuplicate(descriptor: DryFunctionDescriptor, options: NormalizedDryRule): boolean {
   return descriptor.classification === "standalone"
-    && descriptor.topLevel
-    && isWithinDuplicateSizeThreshold(descriptor, options)
-    && Boolean(descriptor.normalizedName);
+  &&descriptor.topLevel
+  &&isWithinDuplicateSizeThreshold(descriptor, options)
+  &&Boolean(descriptor.normalizedName);
 }
 
 function unionExactAndNamedGroups(state: DuplicateState, functions: DryFunctionDescriptor[], options: NormalizedDryRule): void {
@@ -153,23 +153,23 @@ function unionExactAndNamedGroups(state: DuplicateState, functions: DryFunctionD
 }
 
 function emitMatchChunk(args: {
-  comparedCandidates: number;
-  completedItems: number;
-  observer?: SourceProgressObserver;
-  startedAt: number;
-  totalItems: number;
+    comparedCandidates: number;
+    completedItems: number;
+    observer?: SourceProgressObserver;
+    startedAt: number;
+    totalItems: number;
 }): void {
   if (args.completedItems % DRY_MATCH_CHUNK_SIZE !== 0 && args.completedItems !== args.totalItems) return;
 
   args.observer?.({
-    phase: "rule-chunk",
-    rule: "dry",
-    stage: "match",
-    chunkIndex: Math.ceil(args.completedItems / DRY_MATCH_CHUNK_SIZE),
-    completedItems: args.completedItems,
-    totalItems: args.totalItems,
-    comparedCandidates: args.comparedCandidates,
-    elapsedMs: performance.now() - args.startedAt,
+      phase: "rule-chunk",
+      rule: "dry",
+      stage: "match",
+      chunkIndex: Math.ceil(args.completedItems / DRY_MATCH_CHUNK_SIZE),
+      completedItems: args.completedItems,
+      totalItems: args.totalItems,
+      comparedCandidates: args.comparedCandidates,
+      elapsedMs: performance.now() - args.startedAt,
   });
 }
 
@@ -217,11 +217,11 @@ function applyIndexedSimilarity(
     }
 
     emitMatchChunk({
-      comparedCandidates,
-      completedItems: functionIndex + 1,
-      observer,
-      startedAt,
-      totalItems: functions.length,
+        comparedCandidates,
+        completedItems: functionIndex + 1,
+        observer,
+        startedAt,
+        totalItems: functions.length,
     });
   }
 
@@ -281,13 +281,13 @@ function collectDuplicateGroups(
   const groups = buildDuplicateGroups(functions, state);
 
   observer?.({
-    phase: "rule-completed",
-    rule: "dry",
-    stage: "match",
-    totalItems: functions.length,
-    duplicateGroups: groups.length,
-    comparedCandidates,
-    elapsedMs: performance.now() - startedAt,
+      phase: "rule-completed",
+      rule: "dry",
+      stage: "match",
+      totalItems: functions.length,
+      duplicateGroups: groups.length,
+      comparedCandidates,
+      elapsedMs: performance.now() - startedAt,
   });
   return groups;
 }

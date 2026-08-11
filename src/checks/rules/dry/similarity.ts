@@ -123,9 +123,9 @@ function collectCandidateIndexes(index: SimilarityIndex, record: SimilarityRecor
 
 function sortSimilarityHits(index: SimilarityIndex, record: SimilarityRecord, hitsByIndex: Map<number, number>): number[] {
   return [...hitsByIndex.entries()]
-    .sort((left, right) => compareSimilarityHits(index, record, left, right))
-    .slice(0, MAX_SIMILARITY_CANDIDATES_PER_FUNCTION)
-    .map(([candidateIndex]) => candidateIndex);
+  .sort((left, right) => compareSimilarityHits(index, record, left, right))
+  .slice(0, MAX_SIMILARITY_CANDIDATES_PER_FUNCTION)
+  .map(([candidateIndex]) => candidateIndex);
 }
 
 function compareSimilarityHits(

@@ -64,44 +64,44 @@ fn resolve_scan_concurrency() -> usize {
     }
 
     let parallelism = std::thread::available_parallelism()
-        .map(|value| value.get())
-        .unwrap_or(4);
+    .map(|value| value.get())
+    .unwrap_or(4);
     std::cmp::min(64, std::cmp::max(8, parallelism.saturating_mul(4)))
 }
 
 fn create_directory_scan_context(options: &SourceScanRequest) -> DirectoryScanContext {
     let exclude_dirs = options
-        .exclude_dirs
-        .iter()
-        .map(normalize_relative_path)
-        .filter(|entry| !entry.is_empty())
-        .collect::<Vec<_>>();
+    .exclude_dirs
+    .iter()
+    .map(normalize_relative_path)
+    .filter(|entry| !entry.is_empty())
+    .collect::<Vec<_>>();
     let exclude_dirs = if exclude_dirs
-        .iter()
-        .any(|entry| entry == CODE_DISCIPLINE_STATE_DIR)
+    .iter()
+    .any(|entry| entry == CODE_DISCIPLINE_STATE_DIR)
     {
         exclude_dirs
     } else {
         [exclude_dirs, vec![CODE_DISCIPLINE_STATE_DIR.to_string()]].concat()
     };
     let excluded_directory_names = exclude_dirs
-        .iter()
-        .filter(|entry| !entry.contains('/'))
-        .cloned()
-        .collect::<HashSet<_>>();
+    .iter()
+    .filter(|entry| !entry.contains('/'))
+    .cloned()
+    .collect::<HashSet<_>>();
 
     DirectoryScanContext {
         project_root: PathBuf::from(&options.project_root),
         source_extensions: options
-            .source_extensions
-            .iter()
-            .map(|entry| entry.to_lowercase())
-            .collect::<HashSet<_>>(),
+        .source_extensions
+        .iter()
+        .map(|entry| entry.to_lowercase())
+        .collect::<HashSet<_>>(),
         exclude_dir_paths: exclude_dirs
-            .iter()
-            .filter(|entry| entry.contains('/'))
-            .map(|entry| (entry.clone(), format!("{entry}/")))
-            .collect::<Vec<_>>(),
+        .iter()
+        .filter(|entry| entry.contains('/'))
+        .map(|entry| (entry.clone(), format!("{entry}/")))
+        .collect::<Vec<_>>(),
         excluded_directory_names,
     }
 }
@@ -121,7 +121,7 @@ fn should_exclude_directory(
     }
 
     exclude_dir_paths.iter().any(|(exact, prefix)| {
-        normalized_relative_dir == *exact
+            normalized_relative_dir == *exact
             || normalized_relative_dir.starts_with(prefix)
             || normalized_project_relative_dir == *exact
             || normalized_project_relative_dir.starts_with(prefix)
@@ -130,9 +130,9 @@ fn should_exclude_directory(
 
 fn scan_directory(task: DirectoryTask, context: &DirectoryScanContext) -> Result<DirectoryScanResult> {
     let mut entries = fs::read_dir(&task.absolute_path)
-        .map_err(|error| err(error.to_string()))?
-        .filter_map(|entry| entry.ok())
-        .collect::<Vec<_>>();
+    .map_err(|error| err(error.to_string()))?
+    .filter_map(|entry| entry.ok())
+    .collect::<Vec<_>>();
     entries.sort_by(|left, right| left.file_name().cmp(&right.file_name()));
 
     let mut directories = Vec::new();
@@ -145,9 +145,9 @@ fn scan_directory(task: DirectoryTask, context: &DirectoryScanContext) -> Result
 
         if file_type.is_dir() {
             let relative_path = normalize_relative_path(if task.relative_dir.is_empty() {
-                file_name.clone()
-            } else {
-                format!("{}/{}", task.relative_dir, file_name)
+                    file_name.clone()
+                } else {
+                    format!("{}/{}", task.relative_dir, file_name)
             });
             let project_relative_path = path_relative_from(&context.project_root, &absolute_path);
             if should_exclude_directory(
@@ -161,8 +161,8 @@ fn scan_directory(task: DirectoryTask, context: &DirectoryScanContext) -> Result
             }
 
             directories.push(DirectoryTask {
-                absolute_path,
-                relative_dir: relative_path,
+                    absolute_path,
+                    relative_dir: relative_path,
             });
             continue;
         }
@@ -177,16 +177,16 @@ fn scan_directory(task: DirectoryTask, context: &DirectoryScanContext) -> Result
         }
 
         let relative_path = normalize_relative_path(if task.relative_dir.is_empty() {
-            file_name.clone()
-        } else {
-            format!("{}/{}", task.relative_dir, file_name)
+                file_name.clone()
+            } else {
+                format!("{}/{}", task.relative_dir, file_name)
         });
 
         files.push(ScannedSourceFile {
-            absolute_path: absolute_path.to_string_lossy().to_string(),
-            relative_from_project_root: path_relative_from(&context.project_root, &absolute_path),
-            relative_from_source_root: relative_path,
-            extension,
+                absolute_path: absolute_path.to_string_lossy().to_string(),
+                relative_from_project_root: path_relative_from(&context.project_root, &absolute_path),
+                relative_from_source_root: relative_path,
+                extension,
         });
     }
 
@@ -198,8 +198,8 @@ fn scan_source_directory(options: &SourceScanRequest) -> Result<SourceScanRespon
     let concurrency = resolve_scan_concurrency();
     let context = create_directory_scan_context(options);
     let mut queue = vec![DirectoryTask {
-        absolute_path: PathBuf::from(&options.source_root),
-        relative_dir: String::new(),
+            absolute_path: PathBuf::from(&options.source_root),
+            relative_dir: String::new(),
     }];
     let mut rows = Vec::new();
     let mut directory_count = 0_usize;
@@ -209,9 +209,9 @@ fn scan_source_directory(options: &SourceScanRequest) -> Result<SourceScanRespon
         let batch_size = std::cmp::min(concurrency, queue.len());
         let batch = queue.drain(..batch_size).collect::<Vec<_>>();
         let results = batch
-            .into_par_iter()
-            .map(|task| scan_directory(task, &context))
-            .collect::<Vec<_>>();
+        .into_par_iter()
+        .map(|task| scan_directory(task, &context))
+        .collect::<Vec<_>>();
         chunk_count += 1;
         directory_count += batch_size;
 
@@ -223,18 +223,18 @@ fn scan_source_directory(options: &SourceScanRequest) -> Result<SourceScanRespon
     }
 
     rows.sort_by(|left, right| {
-        left.relative_from_project_root
+            left.relative_from_project_root
             .cmp(&right.relative_from_project_root)
     });
 
     Ok(SourceScanResponse {
-        metrics: SourceScanSummary {
-            chunk_count,
-            concurrency,
-            directory_count,
-            elapsed_ms: started_at.elapsed().as_secs_f64() * 1000.0,
-            file_count: rows.len(),
-        },
-        rows,
+            metrics: SourceScanSummary {
+                chunk_count,
+                concurrency,
+                directory_count,
+                elapsed_ms: started_at.elapsed().as_secs_f64() * 1000.0,
+                file_count: rows.len(),
+            },
+            rows,
     })
 }
