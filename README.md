@@ -249,7 +249,7 @@ Reports duplicate function groups across the configured source tree.
 - Go, Rust, C++, C#, Python, QML, and shell use language-aware function spans with conservative token fingerprints
 - exact normalized structure is reported with 100% confidence
 - equivalent normalized behavior in simple pure functions is reported with 100% confidence
-- matching function names are reported with 100% confidence
+- matching function names are only diagnostic context; names alone do not create duplicate groups
 - highly similar normalized function structure is reported as a likely duplicate
 - `minDuplicateCharacters` defaults to `0`; raise it if you only want larger duplicate functions
 - whitespace, comments, function names, parameter names, and local identifier names do not matter

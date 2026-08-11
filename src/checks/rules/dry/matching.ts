@@ -92,11 +92,9 @@ function languageScopedKey(descriptor: DryFunctionDescriptor, value: string): st
 function indexExactAndNamedFunctions(functions: DryFunctionDescriptor[], options: NormalizedDryRule): {
   indexesByBehaviorFingerprint: Map<string, number[]>;
   indexesByFingerprint: Map<string, number[]>;
-  indexesByName: Map<string, number[]>;
 } {
   const indexesByBehaviorFingerprint = new Map<string, number[]>();
   const indexesByFingerprint = new Map<string, number[]>();
-  const indexesByName = new Map<string, number[]>();
 
   for (let index = 0; index < functions.length; index += 1) {
     const descriptor = functions[index]!;
@@ -113,31 +111,17 @@ function indexExactAndNamedFunctions(functions: DryFunctionDescriptor[], options
       indexes.push(index);
       indexesByFingerprint.set(key, indexes);
     }
-
-    if (shouldIndexNameDuplicate(descriptor, options)) {
-      const key = languageScopedKey(descriptor, descriptor.normalizedName!);
-      const indexes = indexesByName.get(key) ?? [];
-      indexes.push(index);
-      indexesByName.set(key, indexes);
-    }
   }
 
-  return { indexesByBehaviorFingerprint, indexesByFingerprint, indexesByName };
+  return { indexesByBehaviorFingerprint, indexesByFingerprint };
 }
 
 function isWithinDuplicateSizeThreshold(descriptor: DryFunctionDescriptor, options: NormalizedDryRule): boolean {
   return descriptor.characterCount >= options.minDuplicateCharacters;
 }
 
-function shouldIndexNameDuplicate(descriptor: DryFunctionDescriptor, options: NormalizedDryRule): boolean {
-  return descriptor.classification === "standalone"
-  &&descriptor.topLevel
-  &&isWithinDuplicateSizeThreshold(descriptor, options)
-  &&Boolean(descriptor.normalizedName);
-}
-
 function unionExactAndNamedGroups(state: DuplicateState, functions: DryFunctionDescriptor[], options: NormalizedDryRule): void {
-  const { indexesByBehaviorFingerprint, indexesByFingerprint, indexesByName } = indexExactAndNamedFunctions(functions, options);
+  const { indexesByBehaviorFingerprint, indexesByFingerprint } = indexExactAndNamedFunctions(functions, options);
 
   for (const indexes of indexesByBehaviorFingerprint.values()) {
     unionIndexGroup(state, indexes, "normalized-behavior");
@@ -147,9 +131,6 @@ function unionExactAndNamedGroups(state: DuplicateState, functions: DryFunctionD
     unionIndexGroup(state, indexes, "exact-normalized");
   }
 
-  for (const indexes of indexesByName.values()) {
-    unionIndexGroup(state, indexes, "matching-name");
-  }
 }
 
 function emitMatchChunk(args: {

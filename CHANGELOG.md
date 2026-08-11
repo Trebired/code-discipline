@@ -6,6 +6,10 @@ This project follows semantic versioning once published.
 
 ## Unreleased
 
+## 5.5.1
+
+- Fixed DRY matching so identical function names no longer create duplicate groups by themselves; exact normalized structure, equivalent behavior, and high structural similarity remain enforced.
+
 ## 5.5.0
 
 - Added full-config preset support through `presets.use`, starting with the strict built-in `trebired` preset used by Trebired codebases.
