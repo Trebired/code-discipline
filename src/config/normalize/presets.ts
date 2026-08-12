@@ -26,7 +26,7 @@ type PresetResolutionContext = {
 
 const PACKAGE_NAME_PATTERN = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/iu;
 
-function defineCodeDisciplinePreset(preset: CodeDisciplinePresetPackage): CodeDisciplinePresetPackage {
+function definePreset(preset: CodeDisciplinePresetPackage): CodeDisciplinePresetPackage {
   return preset;
 }
 
@@ -316,7 +316,7 @@ async function createNamedPresetConfig(
   return config;
 }
 
-async function resolveCodeDisciplinePresetConfig<T extends{presets?:CodeDisciplinePresets;helpers?:{nodeProcessBoundary?:unknown}}>(
+async function resolvePresetConfig<T extends{presets?:CodeDisciplinePresets;helpers?:{nodeProcessBoundary?:unknown}}>(
   options: T,
   context: PresetResolutionContext,
 ): Promise<T> {
@@ -332,10 +332,10 @@ async function resolveCodeDisciplinePresetConfig<T extends{presets?:CodeDiscipli
   return resolved as T;
 }
 
-const applyCodeDisciplinePresets = resolveCodeDisciplinePresetConfig;
+const applyPresets = resolvePresetConfig;
 
 export {
-  applyCodeDisciplinePresets,
-  defineCodeDisciplinePreset,
-  resolveCodeDisciplinePresetConfig,
+  applyPresets,
+  definePreset,
+  resolvePresetConfig,
 };

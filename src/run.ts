@@ -1,4 +1,4 @@
-import { checkCodeDiscipline, fixCodeDiscipline } from "./checks/index.js";
+import { check, fix } from "./checks/index.js";
 import type {
   CheckCodeDisciplineOptions,
   CheckCodeDisciplineResult,
@@ -11,10 +11,10 @@ import type {
   FixCodeDisciplineResult,
 } from "./checks/types.js";
 import type { SourceProgressObserver, SourceScanObserver } from "./imports/types.js";
-import { orchestrateCodeDisciplineRun } from "./runtime/orchestrate.js";
+import { orchestrateRun } from "./runtime/orchestrate.js";
 import { InvalidCodeDisciplineConfigError } from "./shared/errors.js";
 import type { LoggingOptions } from "./shared/logging-types.js";
-import { resolveCodeDisciplinePresetConfig } from "./config/normalize/presets.js";
+import { resolvePresetConfig } from "./config/normalize/presets.js";
 
 type CodeDisciplineInvocationOptions = {
   projectRoot: string;
@@ -39,7 +39,7 @@ type FixCodeDisciplineCommandOptions = Omit<CodeDisciplineOptions, "mode">& {
 };
 
 type CodeDisciplineResult = CheckCodeDisciplineResult | FixCodeDisciplineResult;
-type RuntimeCodeDisciplineOptions = CodeDisciplineConfig& {
+type RuntimeOptions = CodeDisciplineConfig& {
   projectRoot: string;
 };
 
@@ -55,7 +55,7 @@ type CodeDisciplineRunInvocationOptions =
 |(CheckCodeDisciplineInvocationOptions& { mode: "check" })
 |(FixCodeDisciplineInvocationOptions& { mode: "fix" });
 
-type CreatedCodeDiscipline = {
+type CreatedRunner = {
   config: CodeDisciplineConfig;
   run: (options: CodeDisciplineRunInvocationOptions) => Promise<CodeDisciplineResult>;
   check: (options: CheckCodeDisciplineInvocationOptions) => Promise<CheckCodeDisciplineResult>;
@@ -96,7 +96,7 @@ function mergeLoggingOptions(
   });
 }
 
-function buildCheckOptions(options: RuntimeCodeDisciplineOptions): CheckCodeDisciplineOptions {
+function buildCheckOptions(options: RuntimeOptions): CheckCodeDisciplineOptions {
   return {
     configPath: options.configPath,
     projectRoot: options.projectRoot,
@@ -112,7 +112,7 @@ function buildCheckOptions(options: RuntimeCodeDisciplineOptions): CheckCodeDisc
   };
 }
 
-function buildFixOptions(options: RuntimeCodeDisciplineOptions): FixCodeDisciplineOptions {
+function buildFixOptions(options: RuntimeOptions): FixCodeDisciplineOptions {
   return {
     ...buildCheckOptions(options),
     onlyRules: options.onlyRules as FixableRuleSlug[] | undefined,
@@ -133,10 +133,10 @@ function assertRemovedInvocationOptions(options: Record<string, unknown>): void 
   }
 }
 
-function codeDiscipline(options: CheckCodeDisciplineCommandOptions): Promise<CheckCodeDisciplineResult>;
-function codeDiscipline(options: FixCodeDisciplineCommandOptions): Promise<FixCodeDisciplineResult>;
-function codeDiscipline(options: CodeDisciplineOptions): Promise<CodeDisciplineResult>;
-async function codeDiscipline(options: CodeDisciplineOptions): Promise<CodeDisciplineResult> {
+function run(options: CheckCodeDisciplineCommandOptions): Promise<CheckCodeDisciplineResult>;
+function run(options: FixCodeDisciplineCommandOptions): Promise<FixCodeDisciplineResult>;
+function run(options: CodeDisciplineOptions): Promise<CodeDisciplineResult>;
+async function run(options: CodeDisciplineOptions): Promise<CodeDisciplineResult> {
   assertRemovedInvocationOptions(options as unknown as Record<string, unknown>);
   const baseConfig: CodeDisciplineConfig = {
     ignore: options.ignore,
@@ -151,46 +151,46 @@ async function codeDiscipline(options: CodeDisciplineOptions): Promise<CodeDisci
     progressObserver: options.progressObserver,
     scanObserver: options.scanObserver,
   };
-  const resolvedConfig = await resolveCodeDisciplinePresetConfig(baseConfig, {
+  const resolvedConfig = await resolvePresetConfig(baseConfig, {
       projectRoot: options.projectRoot,
   });
-  const resolvedOptions: RuntimeCodeDisciplineOptions = {
+  const resolvedOptions: RuntimeOptions = {
     ...resolvedConfig,
     configPath: options.configPath,
     projectRoot: options.projectRoot,
   };
 
-  return orchestrateCodeDisciplineRun({
+  return orchestrateRun({
       config: resolvedConfig,
       configPath: options.configPath,
       mode: options.mode,
       projectRoot: options.projectRoot,
       async execute() {
         if (options.mode === "check") {
-          return checkCodeDiscipline(buildCheckOptions(resolvedOptions));
+          return check(buildCheckOptions(resolvedOptions));
         }
 
-        return fixCodeDiscipline(buildFixOptions(resolvedOptions));
+        return fix(buildFixOptions(resolvedOptions));
       },
   });
 }
 
-function createCodeDiscipline(config: CodeDisciplineConfig): CreatedCodeDiscipline {
+function createRunner(config: CodeDisciplineConfig): CreatedRunner {
   return {
     config,
-    run: (options) => codeDiscipline({
+    run: (options) => run({
         ...config,
         ...options,
         mode: options.mode,
         logging: mergeLoggingOptions(config.logging, options),
     }),
-    check: (options) => codeDiscipline({
+    check: (options) => run({
         ...config,
         ...options,
         mode: "check",
         logging: mergeLoggingOptions(config.logging, options),
     }) as Promise<CheckCodeDisciplineResult>,
-    fix: (options) => codeDiscipline({
+    fix: (options) => run({
         ...config,
         ...options,
         mode: "fix",
@@ -199,7 +199,7 @@ function createCodeDiscipline(config: CodeDisciplineConfig): CreatedCodeDiscipli
   };
 }
 
-export { codeDiscipline, createCodeDiscipline };
+export { run, createRunner };
 export type {
   CheckCodeDisciplineCommandOptions,
   CodeDisciplineInvocationOptions,
@@ -208,7 +208,7 @@ export type {
   CodeDisciplineResult,
   CodeDisciplineRuntimeMode,
   CodeDisciplineRunInvocationOptions,
-  CreatedCodeDiscipline,
+  CreatedRunner,
   CheckCodeDisciplineInvocationOptions,
   FixCodeDisciplineInvocationOptions,
   FixCodeDisciplineCommandOptions,

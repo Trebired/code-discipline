@@ -1,20 +1,20 @@
 import { CODE_DISCIPLINE_LOG_GROUP } from "./constants.js";
 import type { CodeDisciplineRuleName } from "./discipline-types.js";
 
-function buildCodeDisciplineLogGroup(...parts: string[]): string {
+function buildLogGroup(...parts: string[]): string {
   return [CODE_DISCIPLINE_LOG_GROUP, ...parts.filter((part) => part.trim().length > 0)].join(".");
 }
 
 function ruleLogGroup(rule: CodeDisciplineRuleName | string): string {
-  return buildCodeDisciplineLogGroup("rules", rule);
+  return buildLogGroup("rules", rule);
 }
 
 function runLogGroup(command: string): string {
-  return buildCodeDisciplineLogGroup("runs", command);
+  return buildLogGroup("runs", command);
 }
 
 function sourceScanLogGroup(scope: string): string {
-  return buildCodeDisciplineLogGroup("scan", scope);
+  return buildLogGroup("scan", scope);
 }
 
-export { buildCodeDisciplineLogGroup, ruleLogGroup, runLogGroup, sourceScanLogGroup };
+export { buildLogGroup, ruleLogGroup, runLogGroup, sourceScanLogGroup };

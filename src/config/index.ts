@@ -11,8 +11,8 @@ import { resolveFileCandidate } from "#ay5rr8vjr5fh";
 import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
 import { pathExists } from "#ntve5i5a0mol";
 import {
-  defineCodeDisciplinePreset,
-  resolveCodeDisciplinePresetConfig,
+  definePreset,
+  resolvePresetConfig,
 } from "./normalize/presets.js";
 
 const DEFAULT_CONFIG_FILENAMES = [".trebired/code-discipline/config.ts"];
@@ -37,12 +37,12 @@ const CONFIG_RESOLUTION_EXTENSIONS = [
   ".cjs",
 ];
 
-type LoadedCodeDisciplineConfig = {
+type LoadedConfig = {
   config: CodeDisciplineConfig;
   configPath: string;
 };
 
-function defineCodeDisciplineConfig(config: CodeDisciplineConfig): CodeDisciplineConfig {
+function defineConfig(config: CodeDisciplineConfig): CodeDisciplineConfig {
   return config;
 }
 
@@ -148,7 +148,7 @@ async function compileNodeConfigModuleToUrl(
 function validateLoadedConfig(
   config: unknown,
   resolvedPath: string,
-): LoadedCodeDisciplineConfig {
+): LoadedConfig {
   if (!config || typeof config !== "object" || Array.isArray(config)) {
     throw new InvalidCodeDisciplineConfigError("Config module must default-export a config object", {
         filePath: resolvedPath,
@@ -161,7 +161,7 @@ function validateLoadedConfig(
   };
 }
 
-async function importCodeDisciplineConfigModule(projectRoot: string, resolvedPath: string): Promise<unknown> {
+async function importConfigModule(projectRoot: string, resolvedPath: string): Promise<unknown> {
   if (!shouldCompileConfigModule(resolvedPath)) {
     const imported = await import(await createNativeImportUrl(resolvedPath));
     return imported.default;
@@ -185,7 +185,7 @@ async function importCodeDisciplineConfigModule(projectRoot: string, resolvedPat
   return imported.default;
 }
 
-async function loadCodeDisciplineConfigModule(projectRoot: string, configPath: string): Promise<LoadedCodeDisciplineConfig> {
+async function loadConfigModule(projectRoot: string, configPath: string): Promise<LoadedConfig> {
   const resolvedPath = path.resolve(projectRoot, configPath);
 
   if (!await pathExists(resolvedPath)) {
@@ -195,12 +195,12 @@ async function loadCodeDisciplineConfigModule(projectRoot: string, configPath: s
   }
 
   return validateLoadedConfig(
-    await importCodeDisciplineConfigModule(projectRoot, resolvedPath),
+    await importConfigModule(projectRoot, resolvedPath),
     resolvedPath,
   );
 }
 
-async function findCodeDisciplineConfigModule(projectRoot: string): Promise<string|null> {
+async function findConfigModule(projectRoot: string): Promise<string|null> {
   for (const filename of DEFAULT_CONFIG_FILENAMES) {
     const resolvedPath = path.resolve(projectRoot, filename);
     if (await pathExists(resolvedPath)) {
@@ -211,10 +211,10 @@ async function findCodeDisciplineConfigModule(projectRoot: string): Promise<stri
   return null;
 }
 
-async function loadResolvedCodeDisciplineConfig(projectRoot: string, configPath?: string): Promise<LoadedCodeDisciplineConfig> {
+async function loadResolvedConfig(projectRoot: string, configPath?: string): Promise<LoadedConfig> {
   const resolvedPath = configPath
   ? path.resolve(projectRoot, configPath)
-  : await findCodeDisciplineConfigModule(projectRoot);
+  : await findConfigModule(projectRoot);
 
   if (!resolvedPath) {
     throw new InvalidCodeDisciplineConfigError("No code-discipline config module was found", {
@@ -222,18 +222,18 @@ async function loadResolvedCodeDisciplineConfig(projectRoot: string, configPath?
     });
   }
 
-  const loaded = await loadCodeDisciplineConfigModule(projectRoot, resolvedPath);
+  const loaded = await loadConfigModule(projectRoot, resolvedPath);
   return {
     ...loaded,
-    config: await resolveCodeDisciplinePresetConfig(loaded.config, { projectRoot }),
+    config: await resolvePresetConfig(loaded.config, { projectRoot }),
   };
 }
 
 export {
   DEFAULT_CONFIG_FILENAMES,
-  defineCodeDisciplinePreset,
-  defineCodeDisciplineConfig,
-  findCodeDisciplineConfigModule,
-  loadCodeDisciplineConfigModule,
-  loadResolvedCodeDisciplineConfig,
+  definePreset,
+  defineConfig,
+  findConfigModule,
+  loadConfigModule,
+  loadResolvedConfig,
 };

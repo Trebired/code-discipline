@@ -6,10 +6,15 @@ This project follows semantic versioning once published.
 
 ## Unreleased
 
+## 6.0.1
+
+- Renamed the public callable API to package-local names: `defineConfig`, `definePreset`, `run`, `createRunner`, `check`, `fix`, `findConfigModule`, `loadConfigModule`, and `loadResolvedConfig`.
+- Removed redundant Code Discipline wording from internal function identifiers.
+
 ## 6.0.0
 
 - Removed built-in preset names. `presets.use` now resolves npm preset packages from the checked project root, requires exact Code Discipline version alignment, and rejects nested preset declarations.
-- Added `defineCodeDisciplinePreset()` and `CodeDisciplinePresetPackage` for authoring external preset packages.
+- Added `definePreset()` and `CodeDisciplinePresetPackage` for authoring external preset packages.
 - Moved check-mode rule execution onto one native Rust aggregate runner, including TypeScript-family source checks, so the JavaScript side only prepares config, scan results, import manifest metadata, and output formatting.
 - Kept fix mode sequential while reusing the required native backend for the existing native-backed fixers.
 
@@ -27,7 +32,7 @@ This project follows semantic versioning once published.
 - Added full-config preset support through `presets.use`, starting with the strict built-in `trebired` preset used by Trebired codebases.
 - Moved preset application before source and rule normalization, so presets can configure logging, ignore behavior, imports, and every rule instead of only appending one rule's patterns.
 - Added preset-aware config merging: repo config overrides scalar/object values, arrays append and dedupe, and duplicate `bannedPatterns.patterns` entries union their `allowedFiles`.
-- Fixed the direct `codeDiscipline()` runner preserving configured presets when building check and fix options.
+- Fixed the direct `run()` runner preserving configured presets when building check and fix options.
 
 ## 5.4.0
 
@@ -392,7 +397,7 @@ This project follows semantic versioning once published.
 - Changed config auto-discovery to package-owned TypeScript config loading for Node and Bun.
 - Added the `dry` rule for canonical helper registration, duplicate detection, and full-removal standalone autofix.
 - Moved optional `package.json#imports` syncing under `rules.syncImports.packageJsonImports`.
-- Changed `fixCodeDiscipline()` from a folderization-only mutation path into a rule-ordered fix pipeline with `ruleResults`.
+- Changed `fix()` from a folderization-only mutation path into a rule-ordered fix pipeline with `ruleResults`.
 
 ## 1.5.0
 
@@ -408,8 +413,8 @@ This project follows semantic versioning once published.
 
 ## 1.4.0
 
-- Added `codeDiscipline({ mode, ... })` as the package-owned runtime dispatcher for `check`, `fix`, `sync`, and startup-style sync usage.
-- Added `createCodeDiscipline(config)` so consuming apps can bind repo config once and call `.check()`, `.fix()`, `.sync()`, or `.startup()`.
+- Added `run({ mode, ... })` as the package-owned runtime dispatcher for `check`, `fix`, `sync`, and startup-style sync usage.
+- Added `createRunner(config)` so consuming apps can bind repo config once and call `.check()`, `.fix()`, `.sync()`, or `.startup()`.
 - Refactored the package CLI to use the shared runtime dispatcher instead of maintaining separate command routing logic.
 - Updated the README and tests around the simpler logger-style consumption path.
 
@@ -423,7 +428,7 @@ This project follows semantic versioning once published.
 ## 1.2.0
 
 - Changed package logging to emit `@trebired/code-discipline initialized` on startup through the `code-discipline.initialize` group.
-- Changed `syncImports()`, `checkCodeDiscipline()`, and `fixCodeDiscipline()` to emit one final aggregated report instead of spamming per-step runtime logs.
+- Changed `syncImports()`, `check()`, and `fix()` to emit one final aggregated report instead of spamming per-step runtime logs.
 - Added buffered diagnostic summaries to final logging metadata so unresolved rewrites, tsconfig retry events, and other internal steps are preserved in one report payload.
 - Renamed the public logging type surface to package-wide `CodeDiscipline...` names while keeping compatibility aliases for the older sync-import-focused type exports.
 
@@ -444,7 +449,7 @@ This project follows semantic versioning once published.
 - made `check` fully read-only
 - made `sync` mutate imports and `tsconfig.json` only when `syncImports.fix` is `true`
 - added explicit `fix` support for folderization moves and affected import rewrites
-- added `fixCodeDiscipline()` as the structural mutation API
+- added `fix()` as the structural mutation API
 - added blocking-or-warning behavior through `stop` instead of severity levels
 - bumped the package to `1.0.0` for the config and API cleanup
 

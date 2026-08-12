@@ -1,6 +1,6 @@
-import { defineCodeDisciplineConfig } from "@trebired/code-discipline";
+import { defineConfig } from "@trebired/code-discipline";
 
-export default defineCodeDisciplineConfig({
+export default defineConfig({
   logging: {
     warnings: false,
   },

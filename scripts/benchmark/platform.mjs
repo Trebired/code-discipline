@@ -20,12 +20,12 @@ const rules = [
   "dry",
   "format",
 ];
-const { codeDiscipline, loadResolvedCodeDisciplineConfig } = await import(pathToFileURL(path.join(repoRoot, "dist/index.js")).href);
-const loaded = await loadResolvedCodeDisciplineConfig(repoRoot);
+const { run, loadResolvedConfig } = await import(pathToFileURL(path.join(repoRoot, "dist/index.js")).href);
+const loaded = await loadResolvedConfig(repoRoot);
 
 async function measure(label, onlyRules) {
   const startedAt = performance.now();
-  const result = await codeDiscipline({
+  const result = await run({
       ...loaded.config,
       projectRoot: targetRoot,
       configPath: loaded.configPath,

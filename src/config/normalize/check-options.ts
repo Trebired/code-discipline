@@ -9,7 +9,7 @@ import { normalizeOnlyRules } from "#ydyygm5y7vgb";
 import { normalizeFormatter } from "./formatter-options.js";
 import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
 import { normalizeLoggingOptions } from "./logging-options.js";
-import { applyCodeDisciplinePresets } from "./presets.js";
+import { applyPresets } from "./presets.js";
 import {
   normalizeBannedFilesRule,
   normalizeBannedPatternsRule,
@@ -69,12 +69,12 @@ function assertRemovedRuleKeys(rules: CodeDisciplineRules | undefined): void {
   }
 }
 
-async function normalizeCheckCodeDisciplineOptions(
+async function normalizeCheckOptions(
   options: CheckCodeDisciplineOptions | FixCodeDisciplineOptions,
   mode: CodeDisciplineMode,
 ): Promise<NormalizedCheckCodeDisciplineOptions> {
   assertRemovedCheckOptions(options as Record<string, unknown>);
-  const presetOptions = await applyCodeDisciplinePresets(options, {
+  const presetOptions = await applyPresets(options, {
       projectRoot: options.projectRoot,
   });
   const source = await normalizeSourceOptions(presetOptions);
@@ -111,4 +111,4 @@ async function normalizeCheckCodeDisciplineOptions(
   };
 }
 
-export { normalizeCheckCodeDisciplineOptions };
+export { normalizeCheckOptions };

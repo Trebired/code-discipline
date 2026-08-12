@@ -334,22 +334,21 @@ Rule severity is optional and now supports only `severity: "warning" | "fail"`. 
 Example `.trebired/code-discipline/config.ts`:
 
 ```ts
-import { defineCodeDisciplineConfig } from "@trebired/code-discipline";
+import { defineConfig } from "@trebired/code-discipline";
 
-export default defineCodeDisciplineConfig({
+export default defineConfig({
   lifecycle: {
     async beforeRun(context) {
       context.state.started = true;
     },
   },
   presets: {
-    use: ["trebired"],
+    use: ["@company/code-discipline-preset"],
+  },
+  helpers: {
     nodeProcessBoundary: {
       envBoundaryFiles: ["src/backend/core/env.ts"],
-      processBoundaryFiles: [
-        "src/backend/shared/process/index.ts",
-        "src/backend/shared/process/cjs.cjs",
-      ],
+      processBoundaryFiles: ["src/backend/shared/process/index.ts"],
     },
   },
   rules: {
@@ -374,64 +373,7 @@ export default defineCodeDisciplineConfig({
 });
 ```
 
-The `trebired` preset enables the strict shared Trebired rule set. Repo config merges on top, so local `rules`, `ignore`, and `logging` entries only describe repo-specific differences.
-
-Expanded, the preset enables:
-
-```ts
-{
-  logging: {
-    warnings: false,
-  },
-  ignore: {
-    entries: [],
-    use_gitignore: true,
-  },
-  rules: {
-    formatting: {},
-    bannedFiles: {
-      patterns: [
-        { glob: "**/*.spec.ts" },
-        { glob: "**/*.spec.tsx" },
-      ],
-    },
-    bannedPatterns: {
-      patterns: [
-        { value: "trebired", allowedFiles: ["package.json"] },
-      ],
-    },
-    minDeclarationName: {},
-    maxCharactersPerLine: {},
-    structuralBlankLines: {},
-    minFileLines: {},
-    maxFileLines: {
-      max: 350,
-    },
-    maxFunctionLines: {
-      max: 50,
-    },
-    redundantPathSegments: {},
-    removeComments: {},
-    imports: {
-      alias: {
-        strategy: "random",
-      },
-      allowRelative: ["./"],
-      output: {
-        type: "alias-map",
-      },
-      runtime: {
-        normalize: "relative-dot-prefix",
-        restoreAfterRun: false,
-      },
-      removeDeadImports: true,
-    },
-    dry: {},
-  },
-}
-```
-
-Manual arrays merge with the preset arrays. Duplicate `bannedPatterns.patterns` entries are merged by pattern value and their `allowedFiles` are unioned, so repos can widen preset allowlists without replacing the preset rule.
+Preset packages are resolved from the checked project root. Repo config merges on top, so local `rules`, `ignore`, and `logging` entries only describe repo-specific differences. Manual arrays merge with preset arrays. Duplicate `bannedPatterns.patterns` entries are merged by pattern value and their `allowedFiles` are unioned, so repos can widen preset allowlists without replacing the preset rule.
 
 Source scanning covers every built-in supported source family by default:
 
@@ -445,9 +387,9 @@ So you get the full supported scan set automatically and only opt out when neede
 Example scan configuration:
 
 ```ts
-export default defineCodeDisciplineConfig({
+export default defineConfig({
   presets: {
-    use: ["trebired"],
+    use: ["@company/code-discipline-preset"],
   },
 
   // Skip specific built-in file types when needed.
@@ -476,26 +418,41 @@ export default defineCodeDisciplineConfig({
 
 ### Presets
 
-#### `trebired`
+Preset packages are ordinary npm packages. They must default-export a preset object and declare an exact peer dependency on the same `@trebired/code-discipline` version that will load them.
 
-`presets.use: ["trebired"]` applies the strict shared Trebired codebase policy:
+```ts
+import { definePreset } from "@trebired/code-discipline";
 
-- all rules enabled
-- warnings disabled
-- `.gitignore` entries included
-- `maxFileLines.max: 350`
-- `maxFunctionLines.max: 50`
-- random import aliases with alias-map output
-- remove-comments, redundant path segment, structural blank-line, dry, formatting, import, min-name, min-file, max-line, banned-file, and banned-pattern checks enabled
+export default definePreset({
+  codeDisciplineVersion: "6.0.1",
+  config: {
+    logging: {
+      warnings: false,
+    },
+    ignore: {
+      use_gitignore: true,
+    },
+    rules: {
+      formatting: {},
+      maxFileLines: {
+        max: 350,
+      },
+      maxFunctionLines: {
+        max: 50,
+      },
+    },
+  },
+});
+```
 
-Repo config merges on top of the preset. Arrays append and dedupe. Duplicate `bannedPatterns.patterns` entries union their `allowedFiles`.
+Nested `presets` inside a preset package are rejected. Multiple project presets merge left to right, then the project config merges last.
 
-#### `nodeProcessBoundary`
+### Helpers
 
 `nodeProcessBoundary` is opt-in. It expands into ordinary `bannedPatterns` entries so projects can keep direct Node `process` access inside explicit boundary files.
 
 ```ts
-presets: {
+helpers: {
   nodeProcessBoundary: {
     envBoundaryFiles: ["src/backend/core/env.ts"],
     processBoundaryFiles: [
@@ -637,9 +594,9 @@ The package-owned runtime dispatcher now has two modes only:
 - `fix`
 
 ```ts
-import { codeDiscipline } from "@trebired/code-discipline";
+import { run } from "@trebired/code-discipline";
 
-const result = await codeDiscipline({
+const result = await run({
   mode: "fix",
   projectRoot: process.cwd(),
   onlyRules: ["imports"],
@@ -656,9 +613,9 @@ const result = await codeDiscipline({
 You can also bind config once:
 
 ```ts
-import { createCodeDiscipline } from "@trebired/code-discipline";
+import { createRunner } from "@trebired/code-discipline";
 
-const discipline = createCodeDiscipline({
+const discipline = createRunner({
   rules: {
     bannedPatterns: {
       patterns: [
@@ -695,12 +652,12 @@ Every violation is treated uniformly now. Results expose `ok`, `violationCount`,
 
 Low-level helpers are still exported for advanced tooling:
 
-- `checkCodeDiscipline()`
-- `fixCodeDiscipline()`
+- `check()`
+- `fix()`
 - `imports()`
-- `defineCodeDisciplineConfig()`
-- `findCodeDisciplineConfigModule()`
-- `loadResolvedCodeDisciplineConfig()`
+- `defineConfig()`
+- `findConfigModule()`
+- `loadResolvedConfig()`
 - `prepareTsconfigPaths()`
 - `restoreTsconfigPaths()`
 - `syncPackageJsonImportsFromTsconfigPaths()`

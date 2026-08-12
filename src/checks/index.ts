@@ -1,5 +1,5 @@
 import { result as createResult } from "@package/result";
-import { normalizeCheckCodeDisciplineOptions } from "#x458f9t6w4a6";
+import { normalizeCheckOptions } from "#x458f9t6w4a6";
 import { scanSourceFiles } from "#ua9whqppp94v";
 import { runLogGroup } from "#foa3t3ao5irq";
 import { resolveLogger } from "#5koja8ae2wwn";
@@ -129,8 +129,8 @@ function logFixResult(result: FixCodeDisciplineResult, logger: ReturnType<typeof
     }, { group: runLogGroup("fix") });
 }
 
-async function checkCodeDiscipline(options: CheckCodeDisciplineOptions): Promise<CheckCodeDisciplineResult> {
-  const normalized = await normalizeCheckCodeDisciplineOptions(options, "check");
+async function check(options: CheckCodeDisciplineOptions): Promise<CheckCodeDisciplineResult> {
+  const normalized = await normalizeCheckOptions(options, "check");
   const logger = resolveLogger(normalized.logging);
   const violations = await collectViolations(normalized);
   const result: CheckCodeDisciplineResult = attachDisciplineResult("check", summarizeViolations(violations));
@@ -138,8 +138,8 @@ async function checkCodeDiscipline(options: CheckCodeDisciplineOptions): Promise
   return result;
 }
 
-async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<FixCodeDisciplineResult> {
-  const normalized = await normalizeCheckCodeDisciplineOptions(options, "fix");
+async function fix(options: FixCodeDisciplineOptions): Promise<FixCodeDisciplineResult> {
+  const normalized = await normalizeCheckOptions(options, "fix");
   const logger = resolveLogger(normalized.logging);
   const state: FixState = {
     deletedFiles: 0,
@@ -166,4 +166,4 @@ async function fixCodeDiscipline(options: FixCodeDisciplineOptions): Promise<Fix
   return result;
 }
 
-export { buildNormalizedSyncOptions, checkCodeDiscipline, fixCodeDiscipline };
+export { buildNormalizedSyncOptions, check, fix };

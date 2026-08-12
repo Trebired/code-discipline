@@ -8,7 +8,7 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../
 const packageJson = JSON.parse(await fs.readFile(path.join(repoRoot, "package.json"), "utf8"));
 const packageName = packageJson.name;
 const packageVersion = packageJson.version;
-const { codeDiscipline } = await import(pathToFileURL(path.join(repoRoot, "dist/index.js")).href);
+const { run } = await import(pathToFileURL(path.join(repoRoot, "dist/index.js")).href);
 const { runCli } = await import(pathToFileURL(path.join(repoRoot, "dist/cli/run.js")).href);
 
 async function createProject(name) {
@@ -82,7 +82,7 @@ async function verifyExternalPresetEnablesStrictRules() {
   await writePresetPackage(projectRoot, "@fixture/strict-preset", strictPresetConfig());
   await writeSource(projectRoot, "src/large.ts", Array.from({ length: 351 }, (_, index) => `export const value${index} = ${index};`).join("\n"));
 
-  const result = await codeDiscipline(presetOptions(projectRoot, {
+  const result = await run(presetOptions(projectRoot, {
         onlyRules: ["max-file-lines"],
   }));
 
@@ -97,7 +97,7 @@ async function verifyRepoConfigOverridesPresetScalars() {
   await writePresetPackage(projectRoot, "@fixture/strict-preset", strictPresetConfig());
   await writeSource(projectRoot, "src/large.ts", Array.from({ length: 351 }, (_, index) => `export const value${index} = ${index};`).join("\n"));
 
-  const result = await codeDiscipline(presetOptions(projectRoot, {
+  const result = await run(presetOptions(projectRoot, {
         onlyRules: ["max-file-lines"],
         rules: {
           maxFileLines: {
@@ -127,7 +127,7 @@ async function verifyMultiplePresetsMergeLeftToRight() {
   await writeSource(projectRoot, "src/a.ts", "export const a = \"preset-token\";\n");
   await writeSource(projectRoot, "src/b.ts", "export const b = \"second-token\";\n");
 
-  const result = await codeDiscipline({
+  const result = await run({
       projectRoot,
       mode: "check",
       onlyRules: ["banned-patterns"],
@@ -143,7 +143,7 @@ async function verifyBannedPatternsMergeDuplicateAllowlists() {
   await writeSource(projectRoot, "src/allowed.ts", "export const packageName = \"preset-token\";\n");
   await writeSource(projectRoot, "src/custom.ts", "export const packageName = \"custom-token\";\n");
 
-  const result = await codeDiscipline(presetOptions(projectRoot, {
+  const result = await run(presetOptions(projectRoot, {
         onlyRules: ["banned-patterns"],
         rules: {
           bannedPatterns: {
@@ -166,7 +166,7 @@ async function verifyNodeProcessBoundaryStillMerges() {
   await writeSource(projectRoot, "src/env.ts", "export const value = process.env.TEST_VALUE;\n");
   await writeSource(projectRoot, "src/other.ts", "export const value = process.env.OTHER_VALUE;\n");
 
-  const result = await codeDiscipline(presetOptions(projectRoot, {
+  const result = await run(presetOptions(projectRoot, {
         onlyRules: ["banned-patterns"],
         helpers: {
           nodeProcessBoundary: {
@@ -185,7 +185,7 @@ async function verifyOldBuiltInPresetFailsClearly() {
   await writeSource(projectRoot, "src/main.ts", "export const value = 1;\n");
 
   await assert.rejects(
-    () => codeDiscipline({
+    () => run({
         projectRoot,
         mode: "check",
         presets: { use: ["trebired"] },
@@ -202,7 +202,7 @@ async function verifyVersionMismatchFailsClearly() {
   });
 
   await assert.rejects(
-    () => codeDiscipline(presetOptions(projectRoot)),
+    () => run(presetOptions(projectRoot)),
     /requires @trebired\/code-discipline@0\.0\.0/,
   );
 }
@@ -216,7 +216,7 @@ async function verifyPeerMismatchFailsClearly() {
   });
 
   await assert.rejects(
-    () => codeDiscipline(presetOptions(projectRoot)),
+    () => run(presetOptions(projectRoot)),
     /must declare peerDependencies\.\@trebired\/code-discipline exactly as/,
   );
 }
@@ -228,7 +228,7 @@ async function verifyNestedPresetFailsClearly() {
   }));
 
   await assert.rejects(
-    () => codeDiscipline(presetOptions(projectRoot)),
+    () => run(presetOptions(projectRoot)),
     /cannot declare nested presets/,
   );
 }

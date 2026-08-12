@@ -2,7 +2,7 @@ import { createLog, type LogInstance } from "@package/logger";
 
 import { CODE_DISCIPLINE_LOG_GROUP, CODE_DISCIPLINE_PACKAGE_NAME } from "#ik5y0pee4ah1";
 import type { CodeDisciplineCheckName } from "#bsmch74up4fm";
-import { buildCodeDisciplineLogGroup, ruleLogGroup, runLogGroup, sourceScanLogGroup } from "#foa3t3ao5irq";
+import { buildLogGroup, ruleLogGroup, runLogGroup, sourceScanLogGroup } from "#foa3t3ao5irq";
 
 type CliLogLevel = "fail" | "info" | "success" | "warn";
 
@@ -57,8 +57,8 @@ function inferLogGroup(line: string, context: CliLogContext | undefined): string
   if (line.startsWith("Total gate check:")) return runLogGroup("gate");
   if (line.startsWith("Total check:")) return runLogGroup("check");
   if (line.startsWith("Fix summary:")) return runLogGroup("fix");
-  if (line.startsWith("Found ")) return buildCodeDisciplineLogGroup("results");
-  if (line.startsWith("No discipline violations found.")) return buildCodeDisciplineLogGroup("results");
+  if (line.startsWith("Found ")) return buildLogGroup("results");
+  if (line.startsWith("No discipline violations found.")) return buildLogGroup("results");
 
   return `${CODE_DISCIPLINE_LOG_GROUP}.cli`;
 }

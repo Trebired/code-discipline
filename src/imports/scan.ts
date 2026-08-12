@@ -10,7 +10,7 @@ import type {
 import { requireNativeBinding } from "#q6u4pcd984qa";
 import { matchesGlob } from "#49ihfa399fpp";
 import { CODE_DISCIPLINE_STATE_DIR } from "#ik5y0pee4ah1";
-import { isCodeDisciplineStatePath, normalizeRelativePath, uniqueStrings } from "#ntve5i5a0mol";
+import { isStatePath, normalizeRelativePath, uniqueStrings } from "#ntve5i5a0mol";
 
 type NativeScanResult = ScannedSourceFile[] | {
   rows: ScannedSourceFile[];
@@ -66,7 +66,7 @@ function createExcludeMatcher(excludeDirs: ExcludeDirEntry[], type: ExcludeDirEn
 
 function shouldExcludeFile(file: ScannedSourceFile, options: SourceScanOptions): boolean {
   const relativeFromProjectRoot = normalizeRelativePath(file.relativeFromProjectRoot);
-  if (isCodeDisciplineStatePath(relativeFromProjectRoot)) return true;
+  if (isStatePath(relativeFromProjectRoot)) return true;
   return options.excludeDirs
   .filter((entry) => entry.type === "file")
   .some((entry) => matchesGlob(relativeFromProjectRoot, entry.pattern));

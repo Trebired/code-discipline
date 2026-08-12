@@ -10,13 +10,13 @@ export {
   DEFAULT_SOURCE_ROOT,
 } from "./shared/constants.js";
 
-export { checkCodeDiscipline, fixCodeDiscipline } from "./checks/index.js";
+export { check, fix } from "./checks/index.js";
 export {
   DEFAULT_CONFIG_FILENAMES,
-  defineCodeDisciplinePreset,
-  defineCodeDisciplineConfig,
-  findCodeDisciplineConfigModule,
-  loadResolvedCodeDisciplineConfig,
+  definePreset,
+  defineConfig,
+  findConfigModule,
+  loadResolvedConfig,
 } from "./config/index.js";
 export { normalizeImportsOptions } from "./config/normalize/imports-options.js";
 export { planTsconfigAliases, syncTsconfigAliases } from "./imports/aliases.js";
@@ -27,7 +27,7 @@ export { createRandomAlias, createRelativePathHashAlias, createRelativePathSlugA
 export { imports } from "./imports/imports.js";
 export { syncPackageJsonImportsFromTsconfigPaths } from "./runtime/imports-sync.js";
 export { prepareTsconfigPaths, restoreTsconfigPaths } from "./runtime/tsconfig-paths.js";
-export { codeDiscipline, createCodeDiscipline } from "./run.js";
+export { run, createRunner } from "./run.js";
 export { resolveLogger } from "./shared/logging.js";
 export {
   activeNativeBackendNotice,
@@ -105,10 +105,10 @@ export type {
   CodeDisciplineInvocationOptions,
   CodeDisciplineMode,
   CodeDisciplineOptions,
-  CodeDisciplineResult as RunCodeDisciplineResult,
+  CodeDisciplineResult as RunResult,
   CodeDisciplineRuntimeMode,
   CodeDisciplineRunInvocationOptions,
-  CreatedCodeDiscipline,
+  CreatedRunner,
   CheckCodeDisciplineInvocationOptions,
   FixCodeDisciplineInvocationOptions,
   FixCodeDisciplineCommandOptions,

@@ -18,7 +18,7 @@ function normalizeRelativePath(value: string): string {
   return normalized === "." ? "" : normalized;
 }
 
-function isCodeDisciplineStatePath(value: string): boolean {
+function isStatePath(value: string): boolean {
   const normalized = normalizeRelativePath(value).replace(/\/+$/g, "");
   return normalized === CODE_DISCIPLINE_STATE_DIR || normalized.startsWith(`${CODE_DISCIPLINE_STATE_DIR}/`);
 }
@@ -182,7 +182,7 @@ export {
   isAliasIdValid,
   isDirectory,
   isFile,
-  isCodeDisciplineStatePath,
+  isStatePath,
   isInsideDirectory,
   normalizeDotPrefixedTarget,
   normalizeRelativePath,

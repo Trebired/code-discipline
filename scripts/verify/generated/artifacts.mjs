@@ -7,7 +7,7 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const distUrl = pathToFileURL(path.join(repoRoot, "dist/index.js")).href;
 const cliUrl = pathToFileURL(path.join(repoRoot, "dist/cli/run.js")).href;
-const { codeDiscipline, loadResolvedCodeDisciplineConfig } = await import(distUrl);
+const { run, loadResolvedConfig } = await import(distUrl);
 const { runCli } = await import(cliUrl);
 
 async function fileExists(filePath) {
@@ -78,7 +78,7 @@ function configOptions(projectRoot) {
 }
 
 async function runSyncFix(projectRoot) {
-  return codeDiscipline({
+  return run({
       ...configOptions(projectRoot),
       mode: "fix",
       onlyRules: ["imports"],
@@ -122,7 +122,7 @@ async function verifyGeneratedTsconfigWiring() {
 
   rootTsconfig.extends = "./base.json";
   await writeJson(rootTsconfigPath, rootTsconfig);
-  const check = await codeDiscipline({
+  const check = await run({
       ...configOptions(projectRoot),
       mode: "check",
       onlyRules: ["imports"],
@@ -162,11 +162,11 @@ async function verifyConfigDiscoveryPath() {
   await fs.writeFile(path.join(projectRoot, ".code-discipline", "config.ts"), "export default {};\n", "utf8");
 
   await assert.rejects(
-    () => loadResolvedCodeDisciplineConfig(projectRoot),
+    () => loadResolvedConfig(projectRoot),
     /No code-discipline config module was found/,
   );
 
-  const explicit = await loadResolvedCodeDisciplineConfig(projectRoot, ".code-discipline/config.ts");
+  const explicit = await loadResolvedConfig(projectRoot, ".code-discipline/config.ts");
   assert.equal(explicit.configPath, path.join(projectRoot, ".code-discipline/config.ts"));
 }
 

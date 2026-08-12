@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import { codeDiscipline } from "#9epcrzq92bsw";
+import { run } from "#9epcrzq92bsw";
 import type { CodeDisciplineRuleSlug, FixableRuleSlug } from "#uqbg4indzud7";
-import { loadResolvedCodeDisciplineConfig } from "#rqu2hcvfcs4c";
+import { loadResolvedConfig } from "#rqu2hcvfcs4c";
 import { runGatedCommand } from "#arhoe19ayg60";
 import { isDirectExecution, isPlainRecord } from "#ntve5i5a0mol";
 import { createDefaultCliLogger, type CliLogContext, writeLogText } from "./logging.js";
@@ -145,7 +145,7 @@ async function runCheckCommand(args: {
   }
   const timed = await timeTask(() => {
       const progressObserver = createCliScanObserver(args.stderr);
-      return codeDiscipline({
+      return run({
           ...args.config,
           configPath: args.configPath,
           mode: "check",
@@ -188,7 +188,7 @@ async function runFixCommand(args: {
   }
   const timed = await timeTask(() => {
       const progressObserver = createCliScanObserver(args.stderr);
-      return codeDiscipline({
+      return run({
           ...args.config,
           configPath: args.configPath,
           mode: "fix",
@@ -236,7 +236,7 @@ async function runGateCommand(args: {
   }
   const timed = await timeTask(() => {
       const progressObserver = createCliScanObserver(args.stderr);
-      return codeDiscipline({
+      return run({
           ...args.config,
           configPath: args.configPath,
           mode: "check",
@@ -277,7 +277,7 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
   }
   try {
     const parsed = parseArgs(rest);
-    const { config, configPath } = await loadResolvedCodeDisciplineConfig(cwd, parsed.configPath);
+    const { config, configPath } = await loadResolvedConfig(cwd, parsed.configPath);
     const commandArgs = {
       config,
       configPath,

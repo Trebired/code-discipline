@@ -9,7 +9,7 @@ import type {
 import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
 import { prepareTsconfigPaths, restoreTsconfigPaths } from "./tsconfig-paths.js";
 
-type CodeDisciplineOrchestratorOptions = {
+type OrchestratorOptions = {
   config: CodeDisciplineConfig;
   configPath?: string;
   mode: CodeDisciplineRuntimeMode;
@@ -17,7 +17,7 @@ type CodeDisciplineOrchestratorOptions = {
   execute: () => Promise<CheckCodeDisciplineResult|FixCodeDisciplineResult>;
 };
 
-type CodeDisciplineOrchestratorResult = CheckCodeDisciplineResult | FixCodeDisciplineResult;
+type OrchestratorResult = CheckCodeDisciplineResult | FixCodeDisciplineResult;
 
 function createLifecycleContext(args: {
     config: CodeDisciplineConfig;
@@ -35,17 +35,17 @@ function createLifecycleContext(args: {
 }
 
 async function runLifecycleHook(
-  hook: ((context: CodeDisciplineLifecycleContext, result?: CodeDisciplineOrchestratorResult) => void |Promise<void>) | undefined,
+  hook: ((context: CodeDisciplineLifecycleContext, result?: OrchestratorResult) => void |Promise<void>) | undefined,
   context: CodeDisciplineLifecycleContext,
-  result?: CodeDisciplineOrchestratorResult,
+  result?: OrchestratorResult,
 ): Promise<void> {
   if (!hook) return;
   await hook(context, result);
 }
 
-async function orchestrateCodeDisciplineRun(
-  options: CodeDisciplineOrchestratorOptions,
-): Promise<CodeDisciplineOrchestratorResult> {
+async function orchestrateRun(
+  options: OrchestratorOptions,
+): Promise<OrchestratorResult> {
   const context = createLifecycleContext({
       config: options.config,
       configPath: options.configPath,
@@ -74,7 +74,7 @@ async function orchestrateCodeDisciplineRun(
     };
   }
 
-  let result: CodeDisciplineOrchestratorResult | undefined;
+  let result: OrchestratorResult | undefined;
 
   try {
     await runLifecycleHook(lifecycle?.beforeRun as any, context);
@@ -93,5 +93,5 @@ async function orchestrateCodeDisciplineRun(
   }
 }
 
-export { createLifecycleContext, orchestrateCodeDisciplineRun };
-export type { CodeDisciplineOrchestratorOptions, CodeDisciplineOrchestratorResult };
+export { createLifecycleContext, orchestrateRun };
+export type { OrchestratorOptions, OrchestratorResult };

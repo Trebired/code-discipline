@@ -7,7 +7,7 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 import ts from "typescript";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
-const { codeDiscipline } = await import(pathToFileURL(path.join(repoRoot, "dist/index.js")).href);
+const { run } = await import(pathToFileURL(path.join(repoRoot, "dist/index.js")).href);
 
 async function createLineProject(name) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), `cd-${name}-`));
@@ -34,7 +34,7 @@ function baseOptions(projectRoot, max = 96) {
 }
 
 async function runMaxFix(projectRoot, max = 96) {
-  return codeDiscipline({
+  return run({
       ...baseOptions(projectRoot, max),
       mode: "fix",
       onlyRules: ["max-characters-per-line"],

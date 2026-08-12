@@ -5,7 +5,7 @@ import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const { codeDiscipline } = await import(pathToFileURL(path.join(repoRoot, "dist/index.js")).href);
+const { run } = await import(pathToFileURL(path.join(repoRoot, "dist/index.js")).href);
 
 async function writeFixtureFile(args) {
   const destination = path.join(args.root, args.relativePath);
@@ -295,16 +295,16 @@ async function verifyFormatter() {
   const projectRoot = await createFormatterProject();
   const statePath = path.join(projectRoot, ".trebired/code-discipline/config.ts");
   const stateBefore = await fs.readFile(statePath, "utf8");
-  const check = await codeDiscipline(formatterOptions(projectRoot, "check"));
+  const check = await run(formatterOptions(projectRoot, "check"));
 
   assertInitialCheck(check);
 
-  const fix = await codeDiscipline(formatterOptions(projectRoot, "fix"));
+  const fix = await run(formatterOptions(projectRoot, "fix"));
   assert.equal(fix.ok, true);
   assert.ok(fix.formatted_files >= 4);
   assert.equal(await fs.readFile(statePath, "utf8"), stateBefore);
 
-  const clean = await codeDiscipline(formatterOptions(projectRoot, "check", ["format", "max-characters-per-line"]));
+  const clean = await run(formatterOptions(projectRoot, "check", ["format", "max-characters-per-line"]));
   assert.equal(clean.ok, true, JSON.stringify(clean.violations, null, 2));
   assert.equal(clean.violationCount, 0);
 
@@ -314,7 +314,7 @@ async function verifyFormatter() {
 async function verifyTopLevelFormatterIsRejected() {
   const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cd-formatter-rejected-"));
   await assert.rejects(
-    () => codeDiscipline({
+    () => run({
         projectRoot,
         ignore: { use_gitignore: false },
         mode: "check",

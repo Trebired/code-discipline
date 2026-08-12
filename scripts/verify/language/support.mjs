@@ -6,7 +6,7 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 import { languageFixtures, redundantPathSegmentsFiles } from "./fixtures.mjs";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
-const { codeDiscipline } = await import(pathToFileURL(path.join(repoRoot, "dist/index.js")).href);
+const { run } = await import(pathToFileURL(path.join(repoRoot, "dist/index.js")).href);
 
 async function createLanguageProject() {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), "cd-language-"));
@@ -81,7 +81,7 @@ function declarationNameOptions(projectRoot) {
 }
 
 async function verifyLanguageCheck(projectRoot) {
-  const result = await codeDiscipline(options(projectRoot, "check", ["max-function-lines", "remove-comments"]));
+  const result = await run(options(projectRoot, "check", ["max-function-lines", "remove-comments"]));
   const files = result.violations.map((violation) => violation.filePath).sort();
   assert.equal(result.violations.some((violation) => violation.filePath.startsWith(".trebired/code-discipline/")), false);
   assert.ok(files.includes("src/tool.py"));
@@ -98,7 +98,7 @@ async function verifyLanguageCheck(projectRoot) {
 }
 
 async function verifyDeclarationNameAcrossLanguages(projectRoot) {
-  const result = await codeDiscipline(declarationNameOptions(projectRoot));
+  const result = await run(declarationNameOptions(projectRoot));
   const files = result.violations.map((violation) => violation.filePath).sort();
 
   assert.equal(result.ok, false);
@@ -116,7 +116,7 @@ async function verifyDeclarationNameAcrossLanguages(projectRoot) {
 
 async function verifyPackageStateExclusion(projectRoot) {
   const packageStatePattern = ["tre", "bired"].join(process.env.CD_VERIFY_PATTERN_SEPARATOR ?? "");
-  const result = await codeDiscipline({
+  const result = await run({
       projectRoot,
       ignore: { use_gitignore: false },
       mode: "check",
@@ -153,7 +153,7 @@ async function verifyBannedPatternImportSpecifierExclusion(projectRoot) {
   );
   await fs.writeFile(path.join(projectRoot, "src", "banned-literal.ts"), 'export const brand = "trebired";\n', "utf8");
 
-  const result = await codeDiscipline({
+  const result = await run({
       projectRoot,
       ignore: { use_gitignore: false },
       mode: "check",
@@ -169,7 +169,7 @@ async function verifyBannedPatternImportSpecifierExclusion(projectRoot) {
 }
 
 async function verifyLanguageFix(projectRoot) {
-  await codeDiscipline(options(projectRoot, "fix", ["remove-comments"]));
+  await run(options(projectRoot, "fix", ["remove-comments"]));
   const python = await fs.readFile(path.join(projectRoot, "src", "tool.py"), "utf8");
   const shell = await fs.readFile(path.join(projectRoot, "src", "run.sh"), "utf8");
   const qml = await fs.readFile(path.join(projectRoot, "src", "View.qml"), "utf8");
@@ -200,7 +200,7 @@ async function verifyLanguageFix(projectRoot) {
 }
 
 async function verifyStructuralBlankLines(projectRoot) {
-  const check = await codeDiscipline(structuralOptions(projectRoot, "check"));
+  const check = await run(structuralOptions(projectRoot, "check"));
   const files = check.violations.map((violation) => violation.filePath).sort();
 
   assert.equal(check.ok, false);
@@ -213,17 +213,17 @@ async function verifyStructuralBlankLines(projectRoot) {
   assert.ok(files.includes("src/spacing.cpp"));
   assert.ok(files.includes("src/spacing.cs"));
 
-  const fix = await codeDiscipline(structuralOptions(projectRoot, "fix"));
+  const fix = await run(structuralOptions(projectRoot, "fix"));
   assert.equal(fix.ok, true);
   assert.ok((fix.ruleResults["structural-blank-lines"]?.rewritten_files ?? 0) >= 8);
 
-  const clean = await codeDiscipline(structuralOptions(projectRoot, "check"));
+  const clean = await run(structuralOptions(projectRoot, "check"));
   assert.equal(clean.ok, true, JSON.stringify(clean.violations, null, 2));
 }
 
 async function verifyRedundantPathSegmentsAcrossLanguages() {
   const projectRoot = await createRedundantPathSegmentsProject();
-  const check = await codeDiscipline(redundantPathSegmentsOptions(projectRoot, "check"));
+  const check = await run(redundantPathSegmentsOptions(projectRoot, "check"));
   const files = check.violations.map((violation) => violation.filePath).sort();
 
   assert.equal(check.ok, false);
@@ -245,7 +245,7 @@ async function verifyRedundantPathSegmentsAcrossLanguages() {
     "pages",
   );
 
-  const fix = await codeDiscipline(redundantPathSegmentsOptions(projectRoot, "fix"));
+  const fix = await run(redundantPathSegmentsOptions(projectRoot, "fix"));
   assert.equal(fix.ok, true);
   assert.equal(fix.moved_files, 18);
   await fs.access(path.join(projectRoot, "src", "app", "main.go"));

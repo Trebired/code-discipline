@@ -5,7 +5,7 @@ import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
-const { codeDiscipline } = await import(pathToFileURL(path.join(repoRoot, "dist/index.js")).href);
+const { run } = await import(pathToFileURL(path.join(repoRoot, "dist/index.js")).href);
 
 async function writeFixture(root, relativePath, text) {
   const destination = path.join(root, relativePath);
@@ -53,7 +53,7 @@ function dryOptions(projectRoot) {
 }
 
 async function verifyDryAcrossLanguages() {
-  const result = await codeDiscipline(dryOptions(await createDryProject()));
+  const result = await run(dryOptions(await createDryProject()));
   const functions = result.violations.flatMap((violation) => violation.details?.functions ?? []);
   const languages = new Set(functions.map((entry) => entry.language));
 
