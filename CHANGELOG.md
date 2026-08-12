@@ -6,6 +6,11 @@ This project follows semantic versioning once published.
 
 ## Unreleased
 
+## 5.5.2
+
+- Split preset definitions into `src/config/presets/*` and kept preset normalization focused on validation and merging.
+- Resolved presets in the config loader and before runner orchestration, so preset-provided logging config behaves the same as directly declared logging config.
+
 ## 5.5.1
 
 - Fixed DRY matching so identical function names no longer create duplicate groups by themselves; exact normalized structure, equivalent behavior, and high structural similarity remain enforced.

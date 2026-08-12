@@ -9,8 +9,8 @@ import { collectWithParseFailure } from "#lvwwpxtj6az5";
 import {
   collectLanguageDeclarations,
   measureDeclarationName,
-} from "./declarations.js";
-import type { NamedDeclaration } from "./declarations.js";
+} from "#nwpxjl4s2zib";
+import type { NamedDeclaration } from "./shared.js";
 
 function createMinDeclarationNameViolation(
   file: ScannedSourceFile,

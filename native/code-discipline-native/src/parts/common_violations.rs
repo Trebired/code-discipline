@@ -87,117 +87,170 @@ fn strip_comments_and_strings(text: &str) -> String {
     strip_comments_and_strings_with(text, false)
 }
 
-fn strip_comments_and_strings_with(text: &str, regex_literals: bool) -> String {
-    let bytes = text.as_bytes();
-    let mut result = String::with_capacity(text.len());
-    let mut index = 0_usize;
-    let mut in_single = false;
-    let mut in_double = false;
-    let mut in_template = false;
-    let mut in_block_comment = false;
-    let mut in_line_comment = false;
-    let mut escaped = false;
+struct CommentStringStripState {
+    result: String,
+    index: usize,
+    in_single: bool,
+    in_double: bool,
+    in_template: bool,
+    in_block_comment: bool,
+    in_line_comment: bool,
+    escaped: bool,
+}
 
-    while index < bytes.len() {
-        let current = bytes[index];
-        let next = bytes.get(index + 1).copied();
-
-        if in_line_comment {
-            if current == b'\n' {
-                in_line_comment = false;
-                result.push('\n');
-            } else {
-                result.push(' ');
-            }
-            index += 1;
-            continue;
+impl CommentStringStripState {
+    fn new(capacity: usize) -> Self {
+        Self {
+            result: String::with_capacity(capacity),
+            index: 0,
+            in_single: false,
+            in_double: false,
+            in_template: false,
+            in_block_comment: false,
+            in_line_comment: false,
+            escaped: false,
         }
-
-        if in_block_comment {
-            if current == b'*' && next == Some(b'/') {
-                in_block_comment = false;
-                result.push_str("  ");
-                index += 2;
-            } else {
-                result.push(if current == b'\n' { '\n' } else { ' ' });
-                index += 1;
-            }
-            continue;
-        }
-
-        if regex_literals
-        && !in_single
-        && !in_double
-        && !in_template
-        && current == b'/'
-        && next != Some(b'/')
-        && next != Some(b'*')
-        {
-            if let Some(end) = scan_script_regex_literal(text, index) {
-                for byte in &bytes[index..end] {
-                    result.push(if *byte == b'\n' { '\n' } else { ' ' });
-                }
-                index = end;
-                continue;
-            }
-        }
-
-        if !in_single && !in_double && !in_template && current == b'/' && next == Some(b'/') {
-            in_line_comment = true;
-            result.push_str("  ");
-            index += 2;
-            continue;
-        }
-
-        if !in_single && !in_double && !in_template && current == b'/' && next == Some(b'*') {
-            in_block_comment = true;
-            result.push_str("  ");
-            index += 2;
-            continue;
-        }
-
-        if escaped {
-            escaped = false;
-            result.push(' ');
-            index += 1;
-            continue;
-        }
-
-        if (in_single || in_double || in_template) && current == b'\\' {
-            escaped = true;
-            result.push(' ');
-            index += 1;
-            continue;
-        }
-
-        if !in_double && !in_template && current == b'\'' {
-            in_single = !in_single;
-            result.push(' ');
-            index += 1;
-            continue;
-        }
-
-        if !in_single && !in_template && current == b'"' {
-            in_double = !in_double;
-            result.push(' ');
-            index += 1;
-            continue;
-        }
-
-        if !in_single && !in_double && current == b'`' {
-            in_template = !in_template;
-            result.push(' ');
-            index += 1;
-            continue;
-        }
-
-        if in_single || in_double || in_template {
-            result.push(if current == b'\n' { '\n' } else { ' ' });
-        } else {
-            result.push(current as char);
-        }
-        index += 1;
     }
 
-    result
+    fn inside_string(&self) -> bool {
+        self.in_single || self.in_double || self.in_template
+    }
+
+    fn outside_string(&self) -> bool {
+        !self.inside_string()
+    }
+}
+
+fn strip_comments_and_strings_with(text: &str, regex_literals: bool) -> String {
+    let bytes = text.as_bytes();
+    let mut state = CommentStringStripState::new(text.len());
+
+    while state.index < bytes.len() {
+        let current = bytes[state.index];
+        if consume_active_comment(&mut state, bytes)
+        || consume_regex_literal(&mut state, text, bytes, regex_literals)
+        || consume_comment_start(&mut state, bytes)
+        || consume_string_escape(&mut state, current)
+        || consume_string_delimiter(&mut state, current)
+        {
+            continue;
+        }
+        push_visible_or_masked_character(&mut state, current);
+    }
+
+    state.result
+}
+
+fn consume_active_comment(state: &mut CommentStringStripState, bytes: &[u8]) -> bool {
+    let current = bytes[state.index];
+    let next = bytes.get(state.index + 1).copied();
+
+    if state.in_line_comment {
+        state.in_line_comment = current != b'\n';
+        state.result.push(if current == b'\n' { '\n' } else { ' ' });
+        state.index += 1;
+        return true;
+    }
+
+    if !state.in_block_comment {
+        return false;
+    }
+
+    if current == b'*' && next == Some(b'/') {
+        state.in_block_comment = false;
+        state.result.push_str("  ");
+        state.index += 2;
+    } else {
+        state.result.push(if current == b'\n' { '\n' } else { ' ' });
+        state.index += 1;
+    }
+    true
+}
+
+fn consume_regex_literal(
+    state: &mut CommentStringStripState,
+    text: &str,
+    bytes: &[u8],
+    regex_literals: bool,
+) -> bool {
+    let current = bytes[state.index];
+    let next = bytes.get(state.index + 1).copied();
+    let can_start_regex = regex_literals
+    && state.outside_string()
+    && current == b'/'
+    && next != Some(b'/')
+    && next != Some(b'*');
+
+    if !can_start_regex {
+        return false;
+    }
+
+    let Some(end) = scan_script_regex_literal(text, state.index) else {
+        return false;
+    };
+
+    for byte in &bytes[state.index..end] {
+        state.result.push(if *byte == b'\n' { '\n' } else { ' ' });
+    }
+    state.index = end;
+    true
+}
+
+fn consume_comment_start(state: &mut CommentStringStripState, bytes: &[u8]) -> bool {
+    let current = bytes[state.index];
+    let next = bytes.get(state.index + 1).copied();
+
+    if !state.outside_string() || current != b'/' {
+        return false;
+    }
+
+    match next {
+        Some(b'/') => state.in_line_comment = true,
+        Some(b'*') => state.in_block_comment = true,
+        _ => return false,
+    }
+
+    state.result.push_str("  ");
+    state.index += 2;
+    true
+}
+
+fn consume_string_escape(state: &mut CommentStringStripState, current: u8) -> bool {
+    if state.escaped {
+        state.escaped = false;
+        state.result.push(' ');
+        state.index += 1;
+        return true;
+    }
+
+    if state.inside_string() && current == b'\\' {
+        state.escaped = true;
+        state.result.push(' ');
+        state.index += 1;
+        return true;
+    }
+
+    false
+}
+
+fn consume_string_delimiter(state: &mut CommentStringStripState, current: u8) -> bool {
+    match current {
+        b'\'' if !state.in_double && !state.in_template => state.in_single = !state.in_single,
+        b'"' if !state.in_single && !state.in_template => state.in_double = !state.in_double,
+        b'`' if !state.in_single && !state.in_double => state.in_template = !state.in_template,
+        _ => return false,
+    }
+
+    state.result.push(' ');
+    state.index += 1;
+    true
+}
+
+fn push_visible_or_masked_character(state: &mut CommentStringStripState, current: u8) {
+    if state.inside_string() {
+        state.result.push(if current == b'\n' { '\n' } else { ' ' });
+    } else {
+        state.result.push(current as char);
+    }
+    state.index += 1;
 }

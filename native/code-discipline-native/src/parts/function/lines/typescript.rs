@@ -31,7 +31,7 @@ fn extract_assignment_name(line: &str) -> String {
 }
 
 fn find_typescript_function_start(line: &str) -> Option<(String, String)> {
-    let stripped = strip_line_comments_and_strings(line);
+    let stripped = strip_line_comments_and_strings(line, ".ts");
     if stripped.contains("function ") && stripped.contains('{') {
         let name = extract_word_after(&stripped, "function ");
         return Some((

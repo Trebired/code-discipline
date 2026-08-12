@@ -185,6 +185,24 @@ fn js_like_string_continuation_indent(prefix: &str, indent: &str) -> String {
     }
 }
 
+fn build_js_like_string_segments(
+    prefix: &str,
+    suffix: &str,
+    quote: char,
+    continuation_indent: &str,
+    segments: &[String],
+) -> Vec<String> {
+    segments
+    .iter()
+    .enumerate()
+    .map(|(index, segment)| {
+            let current_prefix = if index == 0 { prefix } else { continuation_indent };
+            let current_suffix = if index == segments.len() - 1 { suffix } else { " +" };
+            format!("{current_prefix}{quote}{segment}{quote}{current_suffix}")
+    })
+    .collect()
+}
+
 fn wrap_js_like_string_line(line: &str, extension: &str, max: usize) -> Option<Vec<String>> {
     if !(is_ts_family_extension(extension)
         || is_qml_extension(extension)
@@ -217,21 +235,7 @@ fn wrap_js_like_string_line(line: &str, extension: &str, max: usize) -> Option<V
     let first_capacity = max.saturating_sub(count_display_characters(prefix) + 4);
     let next_capacity = max.saturating_sub(count_display_characters(&continuation_indent) + 4);
     let segments = split_literal_for_width(value, first_capacity, next_capacity)?;
-    let mut output = Vec::with_capacity(segments.len());
-
-    for (index, segment) in segments.iter().enumerate() {
-        let current_prefix = if index == 0 {
-            prefix.to_string()
-        } else {
-            continuation_indent.clone()
-        };
-        let current_suffix = if index == segments.len() - 1 {
-            suffix.to_string()
-        } else {
-            " +".to_string()
-        };
-        output.push(format!("{current_prefix}{quote}{segment}{quote}{current_suffix}"));
-    }
+    let output = build_js_like_string_segments(prefix, suffix, quote, &continuation_indent, &segments);
 
     output
     .iter()

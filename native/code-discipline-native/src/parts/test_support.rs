@@ -7,3 +7,27 @@ fn test_source_file(path: &str, extension: &str) -> ScannedSourceFile {
         extension: extension.to_string(),
     }
 }
+
+#[cfg(test)]
+fn formatter_test_options(max: usize) -> NativeFormatterOptions {
+    NativeFormatterOptions {
+        max_characters_per_line: max,
+        indent_width: None,
+        final_newline: true,
+        trim_trailing_whitespace: true,
+        collapse_blank_lines: true,
+    }
+}
+
+#[cfg(test)]
+fn assert_formatter_lines_fit(text: &str, max: usize) {
+    for (index, line) in text.lines().enumerate() {
+        assert!(
+            count_display_characters(line) <= max,
+            "line {} has {} characters: {}",
+            index + 1,
+            count_display_characters(line),
+            line,
+        );
+    }
+}

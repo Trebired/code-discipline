@@ -6,24 +6,24 @@ import type {
   NormalizedCheckCodeDisciplineOptions,
 } from "#uqbg4indzud7";
 import { normalizeOnlyRules } from "#ydyygm5y7vgb";
+import { normalizeFormatter } from "./formatter-options.js";
+import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
+import { normalizeLoggingOptions } from "./logging-options.js";
+import { applyCodeDisciplinePresets } from "./presets.js";
 import {
-  normalizeBannedPatternsRule,
   normalizeBannedFilesRule,
+  normalizeBannedPatternsRule,
   normalizeDryRule,
-  normalizeRedundantPathSegmentsRule,
+  normalizeImportsRule,
   normalizeMaxCharactersPerLineRule,
   normalizeMaxFileLinesRule,
   normalizeMaxFunctionLinesRule,
   normalizeMinDeclarationNameRule,
   normalizeMinFileLinesRule,
+  normalizeRedundantPathSegmentsRule,
   normalizeRemoveCommentsRule,
   normalizeStructuralBlankLinesRule,
-  normalizeImportsRule,
-} from "./rule-options.js";
-import { normalizeFormatter } from "./formatter-options.js";
-import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
-import { normalizeLoggingOptions } from "./logging-options.js";
-import { applyCodeDisciplinePresets } from "./presets.js";
+} from "./rule/options.js";
 import { normalizeSourceOptions } from "./source-options.js";
 
 function assertRemovedCheckOptions(options: Record<string, unknown>): void {

@@ -139,58 +139,72 @@ fn scan_directory(task: DirectoryTask, context: &DirectoryScanContext) -> Result
     let mut files = Vec::new();
 
     for entry in entries {
-        let absolute_path = entry.path();
-        let file_name = entry.file_name().to_string_lossy().to_string();
         let file_type = entry.file_type().map_err(|error| err(error.to_string()))?;
-
         if file_type.is_dir() {
-            let relative_path = normalize_relative_path(if task.relative_dir.is_empty() {
-                    file_name.clone()
-                } else {
-                    format!("{}/{}", task.relative_dir, file_name)
-            });
-            let project_relative_path = path_relative_from(&context.project_root, &absolute_path);
-            if should_exclude_directory(
-                &relative_path,
-                &project_relative_path,
-                &file_name,
-                &context.exclude_dir_paths,
-                &context.excluded_directory_names,
-            ) {
-                continue;
-            }
-
-            directories.push(DirectoryTask {
-                    absolute_path,
-                    relative_dir: relative_path,
-            });
+            push_scanned_directory(&task, context, entry, &mut directories);
             continue;
         }
-
-        if !file_type.is_file() {
-            continue;
+        if file_type.is_file() {
+            push_scanned_file(&task, context, entry, &mut files);
         }
-
-        let extension = extension_for_path(&absolute_path);
-        if !context.source_extensions.contains(&extension) {
-            continue;
-        }
-
-        let relative_path = normalize_relative_path(if task.relative_dir.is_empty() {
-                file_name.clone()
-            } else {
-                format!("{}/{}", task.relative_dir, file_name)
-        });
-
-        files.push(ScannedSourceFile {
-                absolute_path: absolute_path.to_string_lossy().to_string(),
-                relative_from_project_root: path_relative_from(&context.project_root, &absolute_path),
-                relative_from_source_root: relative_path,
-                extension,
-        });
     }
 
     Ok(DirectoryScanResult { directories, files })
+}
+
+fn relative_entry_path(task: &DirectoryTask, file_name: &str) -> String {
+    normalize_relative_path(if task.relative_dir.is_empty() {
+            file_name.to_string()
+        } else {
+            format!("{}/{}", task.relative_dir, file_name)
+    })
+}
+
+fn push_scanned_directory(
+    task: &DirectoryTask,
+    context: &DirectoryScanContext,
+    entry: fs::DirEntry,
+    directories: &mut Vec<DirectoryTask>,
+) {
+    let absolute_path = entry.path();
+    let file_name = entry.file_name().to_string_lossy().to_string();
+    let relative_path = relative_entry_path(task, &file_name);
+    let project_relative_path = path_relative_from(&context.project_root, &absolute_path);
+    if should_exclude_directory(
+        &relative_path,
+        &project_relative_path,
+        &file_name,
+        &context.exclude_dir_paths,
+        &context.excluded_directory_names,
+    ) {
+        return;
+    }
+
+    directories.push(DirectoryTask {
+            absolute_path,
+            relative_dir: relative_path,
+    });
+}
+
+fn push_scanned_file(
+    task: &DirectoryTask,
+    context: &DirectoryScanContext,
+    entry: fs::DirEntry,
+    files: &mut Vec<ScannedSourceFile>,
+) {
+    let absolute_path = entry.path();
+    let extension = extension_for_path(&absolute_path);
+    if !context.source_extensions.contains(&extension) {
+        return;
+    }
+    let file_name = entry.file_name().to_string_lossy().to_string();
+
+    files.push(ScannedSourceFile {
+            absolute_path: absolute_path.to_string_lossy().to_string(),
+            relative_from_project_root: path_relative_from(&context.project_root, &absolute_path),
+            relative_from_source_root: relative_entry_path(task, &file_name),
+            extension,
+    });
 }
 
 fn scan_source_directory(options: &SourceScanRequest) -> Result<SourceScanResponse> {

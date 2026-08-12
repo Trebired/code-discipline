@@ -128,154 +128,6 @@ impl SpacingContext {
     }
 }
 
-fn needs_space_between(
-    text: &str,
-    tokens: &[ScriptToken],
-    generic_opens: &[Option<(usize, bool)>],
-    generic_closes: &[Option<bool>],
-    optional_markers: &[bool],
-    left_index: usize,
-    right_index: usize,
-    context: &SpacingContext,
-    left_is_binary: bool,
-    right_is_binary: bool,
-    right_is_ternary_colon: bool,
-    left_is_ternary_colon: bool,
-) -> bool {
-    let left = &tokens[left_index];
-    let right = &tokens[right_index];
-    let left_text = token_text(text, left);
-    let right_text = token_text(text, right);
-
-    if right.kind == ScriptTokenKind::LineComment || right.kind == ScriptTokenKind::BlockComment {
-        return true;
-    }
-    if left.kind == ScriptTokenKind::BlockComment {
-        return true;
-    }
-
-    if optional_markers[left_index] || optional_markers[right_index] {
-        return false;
-    }
-
-    if generic_opens[right_index].is_some()
-    || generic_opens[left_index].is_some()
-    || generic_closes[right_index].is_some()
-    {
-        return false;
-    }
-
-    if context.generic_depth > 0 {
-        if right_text == "," {
-            return false;
-        }
-        if left_text == "," {
-            return true;
-        }
-        return is_word_token(left) && is_word_token(right);
-    }
-
-    if matches!(right_text, "," | ";") {
-        return false;
-    }
-    if matches!(left_text, "," | ";") {
-        return true;
-    }
-
-    if left_text == "." || right_text == "." || left_text == "?." || right_text == "?." {
-        return false;
-    }
-
-    if right_is_ternary_colon || left_is_ternary_colon {
-        return true;
-    }
-    if right_text == ":" {
-        return false;
-    }
-    if left_text == ":" {
-        return true;
-    }
-
-    if left.kind == ScriptTokenKind::Punctuator && PREFIX_ONLY_PUNCTUATORS.contains(&left_text) {
-        return false;
-    }
-
-    if left_text == "?" && left.kind == ScriptTokenKind::Punctuator {
-        return true;
-    }
-    if right_text == "?" && right.kind == ScriptTokenKind::Punctuator {
-        return true;
-    }
-
-    if right_text == "(" {
-        if left.kind == ScriptTokenKind::Keyword {
-            return CONTROL_KEYWORDS_BEFORE_PAREN.contains(&left_text);
-        }
-        return left_is_binary;
-    }
-
-    if matches!(left_text, "(" | "[") {
-        return false;
-    }
-    if matches!(right_text, ")" | "]") {
-        return false;
-    }
-    if right_text == "[" {
-        return left.kind == ScriptTokenKind::Keyword || left_is_binary;
-    }
-
-    if matches!(left_text, ")" | "]") && is_word_token(right) {
-        return true;
-    }
-
-    if right_text == "{" {
-        return !matches!(left_text, "(" | "[" | "!");
-    }
-    if left_text == "{" {
-        return right_text != "}";
-    }
-    if right_text == "}" {
-        return true;
-    }
-    if left_text == "}" {
-        return !matches!(right_text, ")" | "]" | ";" | ",");
-    }
-
-    if left_is_binary || right_is_binary {
-        return true;
-    }
-
-    if matches!(left_text, "++" | "--") && left.kind == ScriptTokenKind::Punctuator {
-        return false;
-    }
-    if matches!(right_text, "++" | "--") {
-        return false;
-    }
-
-    let left_is_word = matches!(
-        left.kind,
-        ScriptTokenKind::Identifier | ScriptTokenKind::Keyword | ScriptTokenKind::Number
-    );
-    let right_is_word = matches!(
-        right.kind,
-        ScriptTokenKind::Identifier
-        | ScriptTokenKind::Keyword
-        | ScriptTokenKind::Number
-        | ScriptTokenKind::StringLiteral
-        | ScriptTokenKind::TemplateLiteral
-        | ScriptTokenKind::Regex
-    );
-
-    if left_is_word && right_is_word {
-        return true;
-    }
-    if left.kind == ScriptTokenKind::Keyword && !right_is_word {
-        return !matches!(right_text, ")" | "]" | "}" | ";" | ",");
-    }
-
-    false
-}
-
 fn token_signature(text: &str) -> Vec<String> {
     tokenize_script(text)
     .iter()
@@ -293,139 +145,119 @@ fn normalize_script_spacing(text: &str) -> String {
     }
 }
 
+struct ScriptSpacingRewriteState {
+    context: SpacingContext,
+    result: String,
+    previous_index: Option<usize>,
+    previous_was_binary: bool,
+    previous_was_ternary_colon: bool,
+}
+
+impl ScriptSpacingRewriteState {
+    fn new(capacity: usize) -> Self {
+        Self {
+            context: SpacingContext::new(),
+            result: String::with_capacity(capacity),
+            previous_index: None,
+            previous_was_binary: false,
+            previous_was_ternary_colon: false,
+        }
+    }
+
+    fn reset_line(&mut self) {
+        self.result.push('\n');
+        self.previous_index = None;
+        self.previous_was_binary = false;
+        self.previous_was_ternary_colon = false;
+    }
+}
+
 fn rewrite_script_spacing(text: &str) -> String {
     let tokens = tokenize_script(text);
     if tokens.is_empty() {
         return text.to_string();
     }
 
-    let mut generic_opens: Vec<Option<(usize, bool)>> = vec![None; tokens.len()];
-    let mut generic_closes: Vec<Option<bool>> = vec![None; tokens.len()];
-    for index in 0..tokens.len() {
-        if tokens[index].kind != ScriptTokenKind::Punctuator
-        || token_text(text, &tokens[index]) != "<"
-        {
-            continue;
-        }
-        if let Some(end) = generic_arguments_end(text, &tokens, index) {
-            let multiline = tokens[index..=end]
-            .iter()
-            .any(|token| token.kind == ScriptTokenKind::Newline);
-            generic_opens[index] = Some((end, multiline));
-            generic_closes[end] = Some(!multiline);
-        }
-    }
-
-    let mut optional_markers = vec![false; tokens.len()];
-    for index in 0..tokens.len() {
-        if tokens[index].kind != ScriptTokenKind::Punctuator
-        || token_text(text, &tokens[index]) != "?"
-        {
-            continue;
-        }
-        let next = (index + 1..tokens.len()).find(|candidate| {
-                !matches!(
-                    tokens[*candidate].kind,
-                    ScriptTokenKind::Newline
-                    | ScriptTokenKind::LineComment
-                    | ScriptTokenKind::BlockComment
-                )
-        });
-        if let Some(next) = next {
-            if token_text(text, &tokens[next]) == ":" {
-                optional_markers[index] = true;
-            }
-        }
-    }
-
-    let mut context = SpacingContext::new();
-    let mut result = String::with_capacity(text.len());
-    let mut previous_index: Option<usize> = None;
-    let mut previous_was_binary = false;
-    let mut previous_was_ternary_colon = false;
+    let (generic_opens, generic_closes) = collect_generic_spacing_markers(text, &tokens);
+    let optional_markers = collect_optional_ternary_markers(text, &tokens);
+    let mut state = ScriptSpacingRewriteState::new(text.len());
 
     for index in 0..tokens.len() {
-        let token = &tokens[index];
-        let value = token_text(text, token);
-
-        if token.kind == ScriptTokenKind::Newline {
-            result.push('\n');
-            previous_index = None;
-            previous_was_binary = false;
-            previous_was_ternary_colon = false;
-            continue;
-        }
-
-        let mut is_binary = false;
-        let mut is_ternary_colon = false;
-
-        if token.kind == ScriptTokenKind::Punctuator {
-            match value {
-                "<" => {
-                    if let Some((_, multiline)) = generic_opens[index] {
-                        if !multiline {
-                            context.generic_depth += 1;
-                        }
-                    } else if previous_index
-                    .is_some_and(|left| is_value_end_token(text, &tokens[left]))
-                    {
-                        is_binary = true;
-                    }
-                }
-                ">" | ">>" | ">>>" => {
-                    if let Some(compact) = generic_closes[index] {
-                        if compact {
-                            context.generic_depth =
-                            context.generic_depth.saturating_sub(value.len());
-                        }
-                    } else if previous_index
-                    .is_some_and(|left| is_value_end_token(text, &tokens[left]))
-                    {
-                        is_binary = true;
-                    }
-                }
-                "(" | "[" | "{" => context.push_bracket(value.chars().next().unwrap_or('(')),
-                ")" | "]" | "}" => context.pop_bracket(),
-                "?" => {
-                    if !optional_markers[index] {
-                        context.mark_ternary();
-                    }
-                }
-                ":" => is_ternary_colon = context.take_ternary(),
-                _ => {
-                    if BINARY_PUNCTUATORS.contains(&value) {
-                        is_binary = previous_index
-                        .is_some_and(|left| is_value_end_token(text, &tokens[left]))
-                        || matches!(value, "=" | "=>" | "==" | "===" | "!=" | "!==");
-                    }
-                }
-            }
-        }
-
-        if let Some(left_index) = previous_index {
-            if needs_space_between(
-                text,
-                &tokens,
-                &generic_opens,
-                &generic_closes,
-                &optional_markers,
-                left_index,
-                index,
-                &context,
-                previous_was_binary,
-                is_binary,
-                is_ternary_colon,
-                previous_was_ternary_colon,
-            ) {
-                result.push(' ');
-            }
-        }
-
-        result.push_str(value);
-        previous_index = Some(index);
-        previous_was_binary = is_binary;
-        previous_was_ternary_colon = is_ternary_colon;
+        push_rewritten_script_spacing_token(
+            &mut state,
+            text,
+            &tokens,
+            &generic_opens,
+            &generic_closes,
+            &optional_markers,
+            index,
+        );
     }
 
-    result
+    state.result
+}
+
+fn push_rewritten_script_spacing_token(
+    state: &mut ScriptSpacingRewriteState,
+    text: &str,
+    tokens: &[ScriptToken],
+    generic_opens: &GenericOpenMarkers,
+    generic_closes: &GenericCloseMarkers,
+    optional_markers: &[bool],
+    index: usize,
+) {
+    let token = &tokens[index];
+    if token.kind == ScriptTokenKind::Newline {
+        state.reset_line();
+        return;
+    }
+
+    let current = classify_spacing_token(
+        text,
+        tokens,
+        generic_opens,
+        generic_closes,
+        optional_markers,
+        index,
+        state.previous_index,
+        &mut state.context,
+    );
+
+    push_inter_token_space(state, text, tokens, generic_opens, generic_closes, optional_markers, index, &current);
+    state.result.push_str(token_text(text, token));
+    state.previous_index = Some(index);
+    state.previous_was_binary = current.is_binary;
+    state.previous_was_ternary_colon = current.is_ternary_colon;
+}
+
+fn push_inter_token_space(
+    state: &mut ScriptSpacingRewriteState,
+    text: &str,
+    tokens: &[ScriptToken],
+    generic_opens: &GenericOpenMarkers,
+    generic_closes: &GenericCloseMarkers,
+    optional_markers: &[bool],
+    index: usize,
+    current: &SpacingTokenState,
+) {
+    let Some(left_index) = state.previous_index else {
+        return;
+    };
+
+    if needs_space_between(
+        text,
+        tokens,
+        generic_opens,
+        generic_closes,
+        optional_markers,
+        left_index,
+        index,
+        &state.context,
+        state.previous_was_binary,
+        current.is_binary,
+        current.is_ternary_colon,
+        state.previous_was_ternary_colon,
+    ) {
+        state.result.push(' ');
+    }
 }

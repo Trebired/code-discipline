@@ -12,6 +12,7 @@ import {
   isTypeScriptFamilyExtension,
 } from "#87jyjzn68rrk";
 import { scanSlashBlockComment, scanSlashLineComment } from "./c-like.js";
+import { collectCsharpCommentRanges } from "./csharp.js";
 import { collectPythonCommentRanges } from "./python.js";
 import { collectQmlCommentRanges } from "./qml.js";
 import { scanEscapedQuotedLiteral } from "./quoted.js";
@@ -260,77 +261,6 @@ function collectCppCommentRanges(text: string): CommentRange[] {
 
     if (char === "\"" || char === "'") {
       index = scanEscapedQuotedLiteral(text, index, char);
-      continue;
-    }
-
-    index += 1;
-  }
-
-  return ranges;
-}
-
-function scanCsharpVerbatimString(text: string, quoteStart: number): number {
-  let index = quoteStart + 1;
-
-  while (index < text.length) {
-    if (text[index] === "\"") {
-      if (text[index + 1] === "\"") {
-        index += 2;
-        continue;
-      }
-      return index + 1;
-    }
-    index += 1;
-  }
-
-  return text.length;
-}
-
-function collectCsharpCommentRanges(text: string): CommentRange[] {
-  const ranges: CommentRange[] = [];
-  let index = 0;
-
-  while (index < text.length) {
-    const char = text[index];
-    const next = text[index + 1];
-    const afterNext = text[index + 2];
-
-    if (char === "@" && next === "\"") {
-      index = scanCsharpVerbatimString(text, index + 1);
-      continue;
-    }
-
-    if (char === "@" && next === "$" && afterNext === "\"") {
-      index = scanCsharpVerbatimString(text, index + 2);
-      continue;
-    }
-
-    if (char === "$" && next === "@" && afterNext === "\"") {
-      index = scanCsharpVerbatimString(text, index + 2);
-      continue;
-    }
-
-    if (char === "$" && next === "\"") {
-      index = scanEscapedQuotedLiteral(text, index + 1, "\"");
-      continue;
-    }
-
-    if (char === "\"" || char === "'") {
-      index = scanEscapedQuotedLiteral(text, index, char);
-      continue;
-    }
-
-    if (char === "/" && next === "/") {
-      const end = scanSlashLineComment(text, index);
-      ranges.push({ start: index, end, kind: "line" });
-      index = end;
-      continue;
-    }
-
-    if (char === "/" && next === "*") {
-      const end = scanSlashBlockComment(text, index, false);
-      ranges.push({ start: index, end, kind: "block" });
-      index = end;
       continue;
     }
 

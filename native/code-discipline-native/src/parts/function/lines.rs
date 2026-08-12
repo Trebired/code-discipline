@@ -1,10 +1,42 @@
-fn strip_line_comments_and_strings(value: &str) -> String {
-    let normalized = strip_comments_and_strings(value);
+fn strip_line_comments_and_strings(value: &str, extension: &str) -> String {
+    let prepared = if is_rust_extension(extension) {
+        strip_rust_lifetime_tokens(value)
+    } else {
+        value.to_string()
+    };
+    let normalized = strip_comments_and_strings(&prepared);
     normalized.lines().next().unwrap_or("").to_string()
 }
 
-fn count_brace_delta(value: &str) -> i32 {
-    let normalized = strip_line_comments_and_strings(value);
+fn strip_rust_lifetime_tokens(value: &str) -> String {
+    let bytes = value.as_bytes();
+    let mut result = String::with_capacity(value.len());
+    let mut index = 0_usize;
+
+    while index < bytes.len() {
+        if bytes[index] == b'\''
+        && bytes
+        .get(index + 1)
+        .is_some_and(|byte| is_identifier_start_byte(*byte))
+        {
+            result.push(' ');
+            index += 1;
+            while index < bytes.len() && is_identifier_part_byte(bytes[index]) {
+                result.push(' ');
+                index += 1;
+            }
+            continue;
+        }
+        let character = value[index..].chars().next().unwrap_or(' ');
+        result.push(character);
+        index += character.len_utf8();
+    }
+
+    result
+}
+
+fn count_brace_delta(value: &str, extension: &str) -> i32 {
+    let normalized = strip_line_comments_and_strings(value, extension);
     normalized.chars().fold(0_i32, |sum, ch| {
             if ch == '{' {
                 sum + 1
@@ -30,7 +62,7 @@ fn c_family_header_leading_word(trimmed: &str) -> &str {
 }
 
 fn is_c_family_header_start(line: &str) -> bool {
-    let trimmed = strip_line_comments_and_strings(line);
+    let trimmed = strip_line_comments_and_strings(line, ".cpp");
     let trimmed = trimmed.trim();
 
     if trimmed.is_empty() || trimmed.ends_with(';') || trimmed.ends_with(':') {
@@ -124,22 +156,47 @@ fn extract_function_name(header: &str, extension: &str) -> String {
     .collect::<String>()
 }
 
-fn collect_block_function_violations(
+enum FunctionLineReportKind {
+    Violation,
+    Warning,
+}
+
+struct FunctionLineSpan {
+    kind: String,
+    name: String,
+    start_line: usize,
+    end_line: usize,
+    code_line_count: usize,
+    line_count: usize,
+}
+
+fn supports_block_function_lines(extension: &str) -> bool {
+    is_go_extension(extension)
+    || is_rust_extension(extension)
+    || is_cpp_extension(extension)
+    || is_csharp_extension(extension)
+}
+
+fn collect_block_function_reports(
     file: &ScannedSourceFile,
     text: &str,
     max: usize,
+    report_kind: FunctionLineReportKind,
 ) -> Vec<CodeDisciplineViolation> {
-    if !is_go_extension(&file.extension)
-    && !is_rust_extension(&file.extension)
-    && !is_cpp_extension(&file.extension)
-    && !is_csharp_extension(&file.extension)
-    {
+    if !supports_block_function_lines(&file.extension) {
         return Vec::new();
     }
 
+    collect_block_function_spans(file, text)
+    .iter()
+    .filter_map(|span| create_function_line_report(file, span, max, &report_kind))
+    .collect()
+}
+
+fn collect_block_function_spans(file: &ScannedSourceFile, text: &str) -> Vec<FunctionLineSpan> {
     let lines = text.lines().collect::<Vec<_>>();
     let masked_text = mask_comments_for_line_count(text, &file.extension);
-    let mut violations = Vec::new();
+    let mut spans = Vec::new();
     let mut pending_header = String::new();
     let mut pending_start_line = 0_usize;
     let mut pending_brace_depth = 0_i32;
@@ -147,147 +204,53 @@ fn collect_block_function_violations(
     let mut pending_kind = "function".to_string();
 
     for (index, line) in lines.iter().enumerate() {
-        if !update_pending_block_function(
+        if !advance_block_function_state(
             file,
             line,
+            index,
             &mut pending_header,
             &mut pending_start_line,
             &mut pending_name,
             &mut pending_kind,
-            index,
+            &mut pending_brace_depth,
         ) {
             continue;
         }
-
-        if should_continue_pending_block_function(&pending_header, pending_brace_depth) {
-            continue;
-        }
-
-        pending_brace_depth += count_brace_delta(line);
-
-        if pending_brace_depth > 0 {
-            continue;
-        }
-
-        let end_line = index + 1;
-        let code_line_count = count_code_lines_in_range(&masked_text, pending_start_line, end_line);
-        if code_line_count > max {
-            violations.push(create_max_function_lines_violation(
-                    file,
-                    &pending_kind,
-                    if pending_name.is_empty() {
-                        "anonymous"
-                    } else {
-                        &pending_name
-                    },
-                    code_line_count,
-                    max,
-                    pending_start_line,
-                    end_line,
-            ));
-        }
-
-        reset_pending_function_state(
+        push_completed_function_span(
+            &mut spans,
+            &masked_text,
             &mut pending_header,
             &mut pending_start_line,
             &mut pending_brace_depth,
             &mut pending_name,
             &mut pending_kind,
+            index
         );
     }
 
-    violations
+    spans
 }
 
-fn collect_block_function_warnings(
+fn collect_simple_typescript_function_reports(
     file: &ScannedSourceFile,
     text: &str,
     max: usize,
-) -> Vec<CodeDisciplineViolation> {
-    if !is_go_extension(&file.extension)
-    && !is_rust_extension(&file.extension)
-    && !is_cpp_extension(&file.extension)
-    && !is_csharp_extension(&file.extension)
-    {
-        return Vec::new();
-    }
-
-    let lines = text.lines().collect::<Vec<_>>();
-    let masked_text = mask_comments_for_line_count(text, &file.extension);
-    let mut warnings = Vec::new();
-    let mut pending_header = String::new();
-    let mut pending_start_line = 0_usize;
-    let mut pending_brace_depth = 0_i32;
-    let mut pending_name = String::new();
-    let mut pending_kind = "function".to_string();
-
-    for (index, line) in lines.iter().enumerate() {
-        if !update_pending_block_function(
-            file,
-            line,
-            &mut pending_header,
-            &mut pending_start_line,
-            &mut pending_name,
-            &mut pending_kind,
-            index,
-        ) {
-            continue;
-        }
-
-        if should_continue_pending_block_function(&pending_header, pending_brace_depth) {
-            continue;
-        }
-
-        pending_brace_depth += count_brace_delta(line);
-
-        if pending_brace_depth > 0 {
-            continue;
-        }
-
-        let end_line = index + 1;
-        let line_count = end_line - pending_start_line + 1;
-        let code_line_count = count_code_lines_in_range(&masked_text, pending_start_line, end_line);
-        if code_line_count <= max && line_count > max {
-            warnings.push(create_max_function_lines_warning(
-                    file,
-                    &pending_kind,
-                    if pending_name.is_empty() {
-                        "anonymous"
-                    } else {
-                        &pending_name
-                    },
-                    line_count,
-                    code_line_count,
-                    max,
-                    pending_start_line,
-                    end_line,
-            ));
-        }
-
-        reset_pending_function_state(
-            &mut pending_header,
-            &mut pending_start_line,
-            &mut pending_brace_depth,
-            &mut pending_name,
-            &mut pending_kind,
-        );
-    }
-
-    warnings
-}
-
-fn collect_simple_typescript_function_violations(
-    file: &ScannedSourceFile,
-    text: &str,
-    max: usize,
+    report_kind: FunctionLineReportKind,
 ) -> Vec<CodeDisciplineViolation> {
     if !is_ts_family_extension(&file.extension) || !is_simple_typescript_function_file(text) {
         return Vec::new();
     }
 
+    collect_simple_typescript_function_spans(file, text)
+    .iter()
+    .filter_map(|span| create_function_line_report(file, span, max, &report_kind))
+    .collect()
+}
+
+fn collect_simple_typescript_function_spans(file: &ScannedSourceFile, text: &str) -> Vec<FunctionLineSpan> {
     let lines = text.lines().collect::<Vec<_>>();
     let masked_text = mask_comments_for_line_count(text, &file.extension);
-    let mut violations = Vec::new();
+    let mut spans = Vec::new();
     let mut pending_kind = String::new();
     let mut pending_name = String::new();
     let mut pending_start_line = 0_usize;
@@ -304,90 +267,19 @@ fn collect_simple_typescript_function_violations(
             pending_brace_depth = 0;
         }
 
-        pending_brace_depth += count_brace_delta(line);
+        pending_brace_depth += count_brace_delta(line, &file.extension);
 
         if pending_brace_depth > 0 {
             continue;
         }
 
         let end_line = index + 1;
-        let code_line_count = count_code_lines_in_range(&masked_text, pending_start_line, end_line);
-        if code_line_count > max {
-            violations.push(create_max_function_lines_violation(
-                    file,
-                    &pending_kind,
-                    &pending_name,
-                    code_line_count,
-                    max,
-                    pending_start_line,
-                    end_line,
-            ));
-        }
-
+        spans.push(function_line_span(&pending_kind, &pending_name, pending_start_line, end_line, &masked_text));
         pending_kind.clear();
         pending_name.clear();
         pending_start_line = 0;
         pending_brace_depth = 0;
     }
 
-    violations
-}
-
-fn collect_simple_typescript_function_warnings(
-    file: &ScannedSourceFile,
-    text: &str,
-    max: usize,
-) -> Vec<CodeDisciplineViolation> {
-    if !is_ts_family_extension(&file.extension) || !is_simple_typescript_function_file(text) {
-        return Vec::new();
-    }
-
-    let lines = text.lines().collect::<Vec<_>>();
-    let masked_text = mask_comments_for_line_count(text, &file.extension);
-    let mut warnings = Vec::new();
-    let mut pending_kind = String::new();
-    let mut pending_name = String::new();
-    let mut pending_start_line = 0_usize;
-    let mut pending_brace_depth = 0_i32;
-
-    for (index, line) in lines.iter().enumerate() {
-        if pending_start_line == 0 {
-            let Some((kind, name)) = find_typescript_function_start(line) else {
-                continue;
-            };
-            pending_kind = kind;
-            pending_name = name;
-            pending_start_line = index + 1;
-            pending_brace_depth = 0;
-        }
-
-        pending_brace_depth += count_brace_delta(line);
-
-        if pending_brace_depth > 0 {
-            continue;
-        }
-
-        let end_line = index + 1;
-        let line_count = end_line - pending_start_line + 1;
-        let code_line_count = count_code_lines_in_range(&masked_text, pending_start_line, end_line);
-        if code_line_count <= max && line_count > max {
-            warnings.push(create_max_function_lines_warning(
-                    file,
-                    &pending_kind,
-                    &pending_name,
-                    line_count,
-                    code_line_count,
-                    max,
-                    pending_start_line,
-                    end_line,
-            ));
-        }
-
-        pending_kind.clear();
-        pending_name.clear();
-        pending_start_line = 0;
-        pending_brace_depth = 0;
-    }
-
-    warnings
+    spans
 }

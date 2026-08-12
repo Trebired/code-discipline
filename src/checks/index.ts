@@ -27,7 +27,7 @@ import { runMaxCharactersPerLineRule } from "./rules/max/characters-per-line.js"
 import { runMaxFileLinesRule } from "./rules/max/file-lines.js";
 import { runMaxFunctionLinesRule } from "./rules/max/function-lines.js";
 import { runRedundantPathSegmentsRule } from "./rules/redundant-path-segments/index.js";
-import { runMinDeclarationNameRule } from "./rules/min/declaration-name.js";
+import { runMinDeclarationNameRule } from "./rules/min/declaration/name.js";
 import { runMinFileLinesRule } from "./rules/min/file/lines.js";
 import { collectRemoveCommentsViolations } from "./rules/remove-comments.js";
 import { applyConfiguredSeverity } from "./severity.js";

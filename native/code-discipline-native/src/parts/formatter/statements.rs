@@ -25,6 +25,24 @@ enum ScriptEdit {
     ReplaceQuotes(usize, usize),
 }
 
+struct SemicolonScanState {
+    brace_stack: Vec<BraceKind>,
+    paren_depth: usize,
+    generic_spans: Vec<(usize, usize)>,
+    header_closers: Vec<bool>,
+}
+
+impl SemicolonScanState {
+    fn new(text: &str, tokens: &[OwnedIndexToken]) -> Self {
+        Self {
+            brace_stack: Vec::new(),
+            paren_depth: 0,
+            generic_spans: generic_regions(text, tokens),
+            header_closers: control_header_closers(tokens),
+        }
+    }
+}
+
 fn opens_object_literal(tokens: &[OwnedIndexToken], open: usize) -> bool {
     let Some(previous) = previous_code_token(tokens, open) else {
         return false;
@@ -118,78 +136,82 @@ fn collect_quote_edits(tokens: &[OwnedIndexToken], edits: &mut Vec<ScriptEdit>) 
 }
 
 fn collect_semicolon_edits(text: &str, tokens: &[OwnedIndexToken], edits: &mut Vec<ScriptEdit>) {
-    let mut brace_stack: Vec<BraceKind> = Vec::new();
-    let mut paren_depth = 0_usize;
-    let generic_spans = generic_regions(text, tokens);
-    let header_closers = control_header_closers(tokens);
+    let mut state = SemicolonScanState::new(text, tokens);
 
     for index in 0..tokens.len() {
-        let token = &tokens[index];
-
-        if token.kind == ScriptTokenKind::Punctuator {
-            match token.text.as_str() {
-                "{" => brace_stack.push(if opens_object_literal(tokens, index) {
-                        BraceKind::ObjectLiteral
-                    } else {
-                        BraceKind::Block
-                }),
-                "}" => {
-                    brace_stack.pop();
-                }
-                "(" | "[" => paren_depth += 1,
-                ")" | "]" => paren_depth = paren_depth.saturating_sub(1),
-                _ => {}
-            }
+        update_semicolon_scan_state(tokens, index, &mut state);
+        if let Some(insert_at) = semicolon_insert_target(tokens, index, &state) {
+            edits.push(ScriptEdit::Insert(insert_at));
         }
-
-        if token.kind != ScriptTokenKind::Newline {
-            continue;
-        }
-
-        if paren_depth > 0 {
-            continue;
-        }
-        if generic_spans.iter().any(|(open, close)| index > *open && index < *close) {
-            continue;
-        }
-        if matches!(brace_stack.last(), Some(BraceKind::ObjectLiteral)) {
-            continue;
-        }
-
-        let Some(last) = previous_code_token(tokens, index) else {
-            continue;
-        };
-        let last_token = &tokens[last];
-
-        if last_token.kind == ScriptTokenKind::Punctuator
-        && (STATEMENT_END_BLOCKERS.contains(&last_token.text.as_str())
-            || BINARY_PUNCTUATORS.contains(&last_token.text.as_str()))
-        {
-            continue;
-        }
-        if last_token.kind == ScriptTokenKind::Keyword {
-            continue;
-        }
-        if header_closers[last] {
-            continue;
-        }
-
-        let closes_object_literal = last_token.kind == ScriptTokenKind::Punctuator
-        && last_token.text == "}"
-        && matches!(matching_brace_kind(tokens, last), Some(BraceKind::ObjectLiteral));
-
-        if !ends_a_value(last_token) && !closes_object_literal {
-            continue;
-        }
-
-        if let Some(next) = next_code_token(tokens, index) {
-            if starts_a_continuation(&tokens[next]) {
-                continue;
-            }
-        }
-
-        edits.push(ScriptEdit::Insert(last_token.end));
     }
+}
+
+fn update_semicolon_scan_state(
+    tokens: &[OwnedIndexToken],
+    index: usize,
+    state: &mut SemicolonScanState,
+) {
+    let token = &tokens[index];
+    if token.kind != ScriptTokenKind::Punctuator {
+        return;
+    }
+
+    match token.text.as_str() {
+        "{" => state.brace_stack.push(if opens_object_literal(tokens, index) {
+                BraceKind::ObjectLiteral
+            } else {
+                BraceKind::Block
+        }),
+        "}" => {
+            state.brace_stack.pop();
+        }
+        "(" | "[" => state.paren_depth += 1,
+        ")" | "]" => state.paren_depth = state.paren_depth.saturating_sub(1),
+        _ => {}
+    }
+}
+
+fn semicolon_insert_target(
+    tokens: &[OwnedIndexToken],
+    index: usize,
+    state: &SemicolonScanState,
+) -> Option<usize> {
+    if tokens[index].kind != ScriptTokenKind::Newline || state.paren_depth > 0 {
+        return None;
+    }
+    if state.generic_spans.iter().any(|(open, close)| index > *open && index < *close) {
+        return None;
+    }
+    if matches!(state.brace_stack.last(), Some(BraceKind::ObjectLiteral)) {
+        return None;
+    }
+
+    let last = previous_code_token(tokens, index)?;
+    let last_token = &tokens[last];
+
+    if last_token.kind == ScriptTokenKind::Punctuator
+    && (STATEMENT_END_BLOCKERS.contains(&last_token.text.as_str())
+        || BINARY_PUNCTUATORS.contains(&last_token.text.as_str()))
+    {
+        return None;
+    }
+    if last_token.kind == ScriptTokenKind::Keyword || state.header_closers[last] {
+        return None;
+    }
+
+    let closes_object_literal = last_token.kind == ScriptTokenKind::Punctuator
+    && last_token.text == "}"
+    && matches!(matching_brace_kind(tokens, last), Some(BraceKind::ObjectLiteral));
+
+    if !ends_a_value(last_token) && !closes_object_literal {
+        return None;
+    }
+
+    if next_code_token(tokens, index).is_some_and(|next| starts_a_continuation(&tokens[next])) {
+        return None;
+    }
+
+    Some(last_token.end)
 }
 
 fn control_header_closers(tokens: &[OwnedIndexToken]) -> Vec<bool> {

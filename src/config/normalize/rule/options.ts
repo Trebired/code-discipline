@@ -21,56 +21,18 @@ import type {
   StructuralBlankLinesRuleOptions,
 } from "#uqbg4indzud7";
 import { normalizeRelativePath, uniqueStrings } from "#ntve5i5a0mol";
-import { normalizeRuleExclusions } from "./exclusions.js";
-import { normalizeLoggingOptions } from "./logging-options.js";
+import { normalizeRuleExclusions } from "#gqxxrd6ye9fj";
+import { normalizeLoggingOptions } from "#2z5qe6gxtgnl";
+import {
+  assertRemovedKeys,
+  normalizeMinDuplicateCharacters,
+  normalizeSeverity,
+  normalizeThreshold,
+} from "./validation.js";
 
 const DEFAULT_MIN_FILE_LINES = 1;
 const DEFAULT_MIN_DECLARATION_NAME = 2;
 const DEFAULT_MAX_CHARACTERS_PER_LINE = 150;
-
-function assertRemovedKeys(ruleName: string, source: Record<string, unknown>, keys: string[]) {
-  for (const key of keys) {
-    if (key in source) {
-      throw new InvalidCodeDisciplineConfigError(`${ruleName}.${key} is no longer supported`, {
-          rule: ruleName,
-          key,
-      });
-    }
-  }
-}
-
-function normalizeSeverity(
-  value: unknown,
-  ruleName: string,
-): "warning" | "fail" {
-  if (value === undefined) return "fail";
-  if (value === "warning" || value === "fail") return value;
-  throw new InvalidCodeDisciplineConfigError(`${ruleName}.severity must be "warning" or "fail" when provided`, {
-      rule: ruleName,
-      value,
-  });
-}
-
-function normalizeMinDuplicateCharacters(value: unknown): number {
-  if (value === undefined) return 0;
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    throw new InvalidCodeDisciplineConfigError("dry.minDuplicateCharacters must be a finite number when provided", {
-        rule: "dry",
-        value,
-    });
-  }
-  return Math.max(0, Math.floor(value as number));
-}
-
-function normalizeThreshold(value: unknown, fallback: number, label: string): number {
-  if (value === undefined) return fallback;
-  if (!Number.isFinite(value)) {
-    throw new InvalidCodeDisciplineConfigError(`${label} must be a finite number`, {
-        value,
-    });
-  }
-  return Math.max(1, Math.floor(value as number));
-}
 
 function normalizeMinFileLinesRule(rule: MinFileLinesRuleOptions | undefined) {
   if (!rule) return undefined;

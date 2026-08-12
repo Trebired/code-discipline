@@ -1,7 +1,7 @@
 import type { FormattingRuleOptions, NormalizedFormattingRule } from "#uqbg4indzud7";
 import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
 import { normalizeRuleExclusions } from "./exclusions.js";
-import { normalizeSeverity } from "./rule-options.js";
+import { normalizeSeverity } from "./rule/validation.js";
 
 const DEFAULT_CODE_FORMATTER_TARGETS = ["."];
 const DEFAULT_CODE_FORMATTER_LINE_LIMIT = 100;

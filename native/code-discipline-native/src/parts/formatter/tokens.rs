@@ -151,6 +151,79 @@ fn scan_script_punctuator(text: &str, start: usize) -> Option<usize> {
     None
 }
 
+fn script_token(kind: ScriptTokenKind, start: usize, end: usize) -> ScriptToken {
+    ScriptToken { kind, start, end }
+}
+
+fn scan_script_comment_or_regex_token(
+    text: &str,
+    tokens: &[ScriptToken],
+    index: usize,
+) -> Option<ScriptToken> {
+    let bytes = text.as_bytes();
+    let current = bytes[index];
+
+    if current == b'/' && bytes.get(index + 1) == Some(&b'/') {
+        return Some(script_token(ScriptTokenKind::LineComment, index, scan_line_comment(text, index)));
+    }
+    if current == b'/' && bytes.get(index + 1) == Some(&b'*') {
+        return Some(script_token(ScriptTokenKind::BlockComment, index, scan_block_comment(text, index, false)));
+    }
+    if current == b'/' && regex_allowed_after(tokens.last(), text) {
+        return scan_script_regex_literal(text, index)
+        .map(|end| script_token(ScriptTokenKind::Regex, index, end));
+    }
+
+    None
+}
+
+fn scan_script_literal_or_number_token(text: &str, index: usize) -> Option<ScriptToken> {
+    let bytes = text.as_bytes();
+    let current = bytes[index];
+
+    if current == b'"' || current == b'\'' {
+        return Some(script_token(
+                ScriptTokenKind::StringLiteral,
+                index,
+                scan_escaped_quoted_literal(text, index, current),
+        ));
+    }
+    if current == b'`' {
+        return Some(script_token(ScriptTokenKind::TemplateLiteral, index, scan_script_template_literal(text, index)));
+    }
+    if current.is_ascii_digit()
+    || (current == b'.' && bytes.get(index + 1).is_some_and(u8::is_ascii_digit))
+    {
+        return Some(script_token(ScriptTokenKind::Number, index, scan_script_number(text, index)));
+    }
+
+    None
+}
+
+fn scan_script_word_or_punctuator_token(text: &str, index: usize) -> ScriptToken {
+    let current = text.as_bytes()[index];
+
+    if is_identifier_start_byte(current) {
+        let end = scan_script_identifier(text, index);
+        let kind = if SCRIPT_KEYWORDS.contains(&&text[index..end]) {
+            ScriptTokenKind::Keyword
+        } else {
+            ScriptTokenKind::Identifier
+        };
+        return script_token(kind, index, end);
+    }
+
+    let end = scan_script_punctuator(text, index)
+    .unwrap_or_else(|| index + char_width_at(text, index));
+    script_token(ScriptTokenKind::Punctuator, index, end)
+}
+
+fn scan_next_script_token(text: &str, tokens: &[ScriptToken], index: usize) -> ScriptToken {
+    scan_script_comment_or_regex_token(text, tokens, index)
+    .or_else(|| scan_script_literal_or_number_token(text, index))
+    .unwrap_or_else(|| scan_script_word_or_punctuator_token(text, index))
+}
+
 fn tokenize_script(text: &str) -> Vec<ScriptToken> {
     let bytes = text.as_bytes();
     let mut tokens: Vec<ScriptToken> = Vec::new();
@@ -168,115 +241,19 @@ fn tokenize_script(text: &str) -> Vec<ScriptToken> {
 
     while index < bytes.len() {
         let current = bytes[index];
-
         if current == b'\n' {
-            tokens.push(ScriptToken {
-                    kind: ScriptTokenKind::Newline,
-                    start: index,
-                    end: index + 1,
-            });
+            tokens.push(script_token(ScriptTokenKind::Newline, index, index + 1));
             index += 1;
             continue;
         }
-
         if current.is_ascii_whitespace() {
             index += 1;
             continue;
         }
 
-        if current == b'/' && bytes.get(index + 1) == Some(&b'/') {
-            let end = scan_line_comment(text, index);
-            tokens.push(ScriptToken {
-                    kind: ScriptTokenKind::LineComment,
-                    start: index,
-                    end,
-            });
-            index = end;
-            continue;
-        }
-
-        if current == b'/' && bytes.get(index + 1) == Some(&b'*') {
-            let end = scan_block_comment(text, index, false);
-            tokens.push(ScriptToken {
-                    kind: ScriptTokenKind::BlockComment,
-                    start: index,
-                    end,
-            });
-            index = end;
-            continue;
-        }
-
-        if current == b'/' && regex_allowed_after(tokens.last(), text) {
-            if let Some(end) = scan_script_regex_literal(text, index) {
-                tokens.push(ScriptToken {
-                        kind: ScriptTokenKind::Regex,
-                        start: index,
-                        end,
-                });
-                index = end;
-                continue;
-            }
-        }
-
-        if current == b'"' || current == b'\'' {
-            let end = scan_escaped_quoted_literal(text, index, current);
-            tokens.push(ScriptToken {
-                    kind: ScriptTokenKind::StringLiteral,
-                    start: index,
-                    end,
-            });
-            index = end;
-            continue;
-        }
-
-        if current == b'`' {
-            let end = scan_script_template_literal(text, index);
-            tokens.push(ScriptToken {
-                    kind: ScriptTokenKind::TemplateLiteral,
-                    start: index,
-                    end,
-            });
-            index = end;
-            continue;
-        }
-
-        if current.is_ascii_digit()
-        || (current == b'.' && bytes.get(index + 1).is_some_and(u8::is_ascii_digit))
-        {
-            let end = scan_script_number(text, index);
-            tokens.push(ScriptToken {
-                    kind: ScriptTokenKind::Number,
-                    start: index,
-                    end,
-            });
-            index = end;
-            continue;
-        }
-
-        if is_identifier_start_byte(current) {
-            let end = scan_script_identifier(text, index);
-            let kind = if SCRIPT_KEYWORDS.contains(&&text[index..end]) {
-                ScriptTokenKind::Keyword
-            } else {
-                ScriptTokenKind::Identifier
-            };
-            tokens.push(ScriptToken {
-                    kind,
-                    start: index,
-                    end,
-            });
-            index = end;
-            continue;
-        }
-
-        let end = scan_script_punctuator(text, index)
-        .unwrap_or_else(|| index + char_width_at(text, index));
-        tokens.push(ScriptToken {
-                kind: ScriptTokenKind::Punctuator,
-                start: index,
-                end,
-        });
-        index = end;
+        let token = scan_next_script_token(text, &tokens, index);
+        index = token.end;
+        tokens.push(token);
     }
 
     tokens

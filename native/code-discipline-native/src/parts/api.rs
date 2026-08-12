@@ -84,40 +84,11 @@ pub fn run_max_block_function_lines_rule(request_json: String) -> Result<String>
     let mut handled_paths = Vec::new();
 
     for file in request.source_files.iter() {
-        if is_go_extension(&file.extension)
-        || is_rust_extension(&file.extension)
-        || is_cpp_extension(&file.extension)
-        || is_csharp_extension(&file.extension)
-        {
-            let text =
-            fs::read_to_string(&file.absolute_path).map_err(|error| err(error.to_string()))?;
-            violations.extend(collect_block_function_violations(file, &text, request.max));
-            if request.warning {
-                violations.extend(collect_block_function_warnings(file, &text, request.max));
-            }
-            handled_paths.push(file.absolute_path.clone());
+        if push_block_function_file_result(file, &request, &mut violations, &mut handled_paths)? {
             continue;
         }
 
-        if is_ts_family_extension(&file.extension) {
-            let text =
-            fs::read_to_string(&file.absolute_path).map_err(|error| err(error.to_string()))?;
-            if is_simple_typescript_function_file(&text) {
-                violations.extend(collect_simple_typescript_function_violations(
-                        file,
-                        &text,
-                        request.max,
-                ));
-                if request.warning {
-                    violations.extend(collect_simple_typescript_function_warnings(
-                            file,
-                            &text,
-                            request.max,
-                    ));
-                }
-                handled_paths.push(file.absolute_path.clone());
-            }
-        }
+        push_simple_typescript_function_file_result(file, &request, &mut violations, &mut handled_paths)?;
     }
 
     serde_json::to_string(&NativeMaxFunctionLinesResult {
@@ -125,6 +96,74 @@ pub fn run_max_block_function_lines_rule(request_json: String) -> Result<String>
             handled_paths,
     })
     .map_err(|error| err(error.to_string()))
+}
+
+fn read_source_file_text(file: &ScannedSourceFile) -> Result<String> {
+    fs::read_to_string(&file.absolute_path).map_err(|error| err(error.to_string()))
+}
+
+fn push_block_function_file_result(
+    file: &ScannedSourceFile,
+    request: &MaxFunctionLinesRequest,
+    violations: &mut Vec<CodeDisciplineViolation>,
+    handled_paths: &mut Vec<String>,
+) -> Result<bool> {
+    if !supports_block_function_lines(&file.extension) {
+        return Ok(false);
+    }
+
+    let text = read_source_file_text(file)?;
+    push_function_line_reports(
+        violations,
+        file,
+        &text,
+        request.max,
+        request.warning,
+        collect_block_function_reports,
+    );
+    handled_paths.push(file.absolute_path.clone());
+    Ok(true)
+}
+
+fn push_simple_typescript_function_file_result(
+    file: &ScannedSourceFile,
+    request: &MaxFunctionLinesRequest,
+    violations: &mut Vec<CodeDisciplineViolation>,
+    handled_paths: &mut Vec<String>,
+) -> Result<()> {
+    if !is_ts_family_extension(&file.extension) {
+        return Ok(());
+    }
+
+    let text = read_source_file_text(file)?;
+    if !is_simple_typescript_function_file(&text) {
+        return Ok(());
+    }
+
+    push_function_line_reports(
+        violations,
+        file,
+        &text,
+        request.max,
+        request.warning,
+        collect_simple_typescript_function_reports,
+    );
+    handled_paths.push(file.absolute_path.clone());
+    Ok(())
+}
+
+fn push_function_line_reports(
+    violations: &mut Vec<CodeDisciplineViolation>,
+    file: &ScannedSourceFile,
+    text: &str,
+    max: usize,
+    include_warning: bool,
+    collector: fn(&ScannedSourceFile, &str, usize, FunctionLineReportKind) -> Vec<CodeDisciplineViolation>,
+) {
+    violations.extend(collector(file, text, max, FunctionLineReportKind::Violation));
+    if include_warning {
+        violations.extend(collector(file, text, max, FunctionLineReportKind::Warning));
+    }
 }
 
 #[napi]
