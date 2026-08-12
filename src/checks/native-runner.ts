@@ -7,12 +7,23 @@ import { filterSourceFilesForRule } from "#jizekc8duh4i";
 import type { NormalizedImportsOptions, ScannedSourceFile } from "#pkb9x3eo56l7";
 import { supportsImports } from "#87jyjzn68rrk";
 import { requireNativeBinding } from "#q6u4pcd984qa";
+import { createRuleProgress, emitRuleCompleted } from "./progress.js";
 import { shouldRunRule } from "./rule-slugs.js";
 import { buildNormalizedSyncOptions } from "./sync-options.js";
 import type { NormalizedCheckCodeDisciplineOptions } from "./types.js";
 
 type NativeCheckRulesResponse = {
   violations: CodeDisciplineViolation[];
+};
+
+type NativeCheckRules = ReturnType<typeof selectNativeRules>;
+type NativeCheckRuleKey = keyof NativeCheckRules;
+type NativeCheckRuleEntry = {
+  key: NativeCheckRuleKey;
+  rule: string;
+  ruleConfig: NonNullable<NativeCheckRules[NativeCheckRuleKey]>;
+  sourceFiles: ScannedSourceFile[];
+  syncViolations?: CodeDisciplineViolation[];
 };
 
 type NativeImportsRule = {
@@ -142,19 +153,77 @@ function selectNativeRules(
   };
 }
 
+function runNativeCheckRule(entry: NativeCheckRuleEntry): CodeDisciplineViolation[] {
+  const response = JSON.parse(requireNativeBinding().runCheckRules(JSON.stringify({
+          sourceFiles: entry.sourceFiles,
+          rules: {
+            [entry.key]: entry.ruleConfig,
+          },
+  }))) as NativeCheckRulesResponse;
+  return Array.isArray(response.violations) ? response.violations : [];
+}
+
+function pushNativeCheckRule(
+  entries: NativeCheckRuleEntry[],
+  sourceFiles: ScannedSourceFile[],
+  key: NativeCheckRuleKey,
+  rule: string,
+  ruleConfig: NativeCheckRules[NativeCheckRuleKey],
+  syncViolations: CodeDisciplineViolation[] = [],
+): void {
+  if (!ruleConfig) return;
+  entries.push({
+      key,
+      rule,
+      ruleConfig,
+      sourceFiles: filterSourceFilesForRule(sourceFiles, ruleConfig),
+      syncViolations,
+  });
+}
+
+function createNativeCheckRuleEntries(
+  sourceFiles: ScannedSourceFile[],
+  rules: NativeCheckRules,
+  importState: NativeImportState,
+): NativeCheckRuleEntry[] {
+  const entries: NativeCheckRuleEntry[] = [];
+  pushNativeCheckRule(entries, sourceFiles, "bannedPatterns", "banned-patterns", rules.bannedPatterns);
+  pushNativeCheckRule(entries, sourceFiles, "bannedFiles", "banned-files", rules.bannedFiles);
+  pushNativeCheckRule(entries, sourceFiles, "minFileLines", "min-file-lines", rules.minFileLines);
+  pushNativeCheckRule(entries, sourceFiles, "minDeclarationName", "min-declaration-name", rules.minDeclarationName);
+  pushNativeCheckRule(entries, sourceFiles, "maxFileLines", "max-file-lines", rules.maxFileLines);
+  pushNativeCheckRule(entries, sourceFiles, "maxCharactersPerLine", "max-characters-per-line", rules.maxCharactersPerLine);
+  pushNativeCheckRule(entries, sourceFiles, "maxFunctionLines", "max-function-lines", rules.maxFunctionLines);
+  pushNativeCheckRule(entries, sourceFiles, "redundantPathSegments", "redundant-path-segments", rules.redundantPathSegments);
+  pushNativeCheckRule(entries, sourceFiles, "imports", "imports", rules.imports, importState.syncViolations);
+  pushNativeCheckRule(entries, sourceFiles, "removeComments", "remove-comments", rules.removeComments);
+  pushNativeCheckRule(entries, sourceFiles, "structuralBlankLines", "structural-blank-lines", rules.structuralBlankLines);
+  pushNativeCheckRule(entries, sourceFiles, "dry", "dry", rules.dry);
+  return entries;
+}
+
 async function collectNativeCheckViolations(
   sourceFiles: ScannedSourceFile[],
   options: NormalizedCheckCodeDisciplineOptions,
 ): Promise<CodeDisciplineViolation[]> {
   const importState = await createNativeImportState(sourceFiles, options);
-  const response = JSON.parse(requireNativeBinding().runCheckRules(JSON.stringify({
-          sourceFiles,
-          rules: selectNativeRules(options, importState.rule),
-  }))) as NativeCheckRulesResponse;
-  return [
-    ...importState.syncViolations,
-    ...(Array.isArray(response.violations) ? response.violations : []),
-  ];
+  const ruleEntries = createNativeCheckRuleEntries(
+    sourceFiles,
+    selectNativeRules(options, importState.rule),
+    importState,
+  );
+  const violations: CodeDisciplineViolation[] = [];
+  for (const entry of ruleEntries) {
+    const progress = createRuleProgress({
+        observer: options.progressObserver,
+        rule: entry.rule,
+        totalItems: entry.sourceFiles.length,
+    });
+    const ruleViolations = runNativeCheckRule(entry);
+    violations.push(...(entry.syncViolations ?? []), ...ruleViolations);
+    emitRuleCompleted(progress, (entry.syncViolations?.length ?? 0) + ruleViolations.length);
+  }
+  return violations;
 }
 
 export { collectNativeCheckViolations };

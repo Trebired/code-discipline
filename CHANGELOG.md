@@ -6,6 +6,10 @@ This project follows semantic versioning once published.
 
 ## Unreleased
 
+## 6.0.9
+
+- Restored check-mode rule progress logging for the native Rust runner by emitting progress after each native rule instead of only after the whole aggregate native check returns.
+
 ## 6.0.8
 
 - Fixed external preset package loading when a preset package exports a TypeScript `config.ts` file from `node_modules`.
