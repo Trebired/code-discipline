@@ -94,6 +94,7 @@
   "#q6u4pcd984qa": "./src/native/native.ts",
   "#qsmgwga53vic": "./src/checks/rules/blank-lines/generic.ts",
   "#r4k0t5wqgwq6": "./src/imports/format.ts",
+  "#rpaq8jfzp0xk": "./src/config/module-loader.ts",
   "#rqu2hcvfcs4c": "./src/config/index.ts",
   "#rv3slybxi6wc": "./src/checks/rules/blank-lines/types.ts",
   "#rv6x2jl41o3a": "./src/checks/native-runner.ts",

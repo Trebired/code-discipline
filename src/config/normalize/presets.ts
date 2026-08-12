@@ -1,7 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { createRequire } from "node:module";
-import { pathToFileURL } from "node:url";
 
 import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
 import type {
@@ -12,6 +11,7 @@ import type {
 } from "#uqbg4indzud7";
 import { isPlainRecord, normalizeRelativePath, pathExists, uniqueStrings } from "#ntve5i5a0mol";
 import { CODE_DISCIPLINE_PACKAGE_VERSION } from "#ik5y0pee4ah1";
+import { importConfigModule } from "#rpaq8jfzp0xk";
 import { createNodeProcessBoundaryConfig } from "./node-process-boundary.js";
 import { normalizeAllowedFiles } from "./path-lists.js";
 
@@ -195,7 +195,7 @@ function readVersionCompatibility(version: string): { compatibilityKey: string }
 async function loadPresetPackageConfig(packageName: string, context: PresetResolutionContext): Promise<CodeDisciplineConfig> {
   const modulePath = await resolvePresetPackageModulePath(packageName, context);
 
-  return readPresetPackageConfig(packageName, await import(pathToFileURL(modulePath).href));
+  return readPresetPackageConfig(packageName, await importConfigModule(context.projectRoot, modulePath));
 }
 
 function readBannedPatternEntry(entry: BannedPatternRuleEntry): { value: string; allowedFiles: string[] } | undefined {

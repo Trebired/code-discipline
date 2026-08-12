@@ -6,6 +6,10 @@ This project follows semantic versioning once published.
 
 ## Unreleased
 
+## 6.0.8
+
+- Fixed external preset package loading when a preset package exports a TypeScript `config.ts` file from `node_modules`.
+
 ## 6.0.7
 
 - Fixed native dead-import detection so side-effect imports are not glued to the following import or export statement.

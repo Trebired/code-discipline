@@ -47,6 +47,26 @@ async function writePresetPackage(root, packageNameInput, preset, packageJsonExt
     ].join(""), "utf8");
 }
 
+async function writeTypeScriptPresetPackage(root, packageNameInput, preset) {
+  const packageRoot = path.join(root, "node_modules", packageNameInput);
+  await fs.mkdir(packageRoot, { recursive: true });
+  await fs.writeFile(path.join(packageRoot, "package.json"), `${JSON.stringify({
+    name: packageNameInput,
+    type: "module",
+    exports: {
+    ".": {
+    import: "./config.ts",
+    types: "./config.ts",
+    },
+    },
+    }, null, 2)}\n`, "utf8");
+  await fs.writeFile(path.join(packageRoot, "config.ts"), [
+      "export default ",
+      JSON.stringify(preset, null, 2),
+      ";\n",
+    ].join(""), "utf8");
+}
+
 function strictPresetConfig(extra = {}) {
   return {
     forVersion: packageVersion,
@@ -96,6 +116,20 @@ async function verifyImportOnlyPresetPackageLoads() {
         },
       },
   });
+  await writeSource(projectRoot, "src/large.ts", Array.from({ length: 351 }, (_, index) => `export const value${index} = ${index};`).join("\n"));
+
+  const result = await run(presetOptions(projectRoot, {
+        onlyRules: ["max-file-lines"],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.equal(result.violations.length, 1);
+  assert.equal(result.violations[0].rule, "max-file-lines");
+}
+
+async function verifyTypeScriptPresetPackageLoadsFromNodeModules() {
+  const projectRoot = await createProject("typescript-preset-package");
+  await writeTypeScriptPresetPackage(projectRoot, "@fixture/strict-preset", strictPresetConfig());
   await writeSource(projectRoot, "src/large.ts", Array.from({ length: 351 }, (_, index) => `export const value${index} = ${index};`).join("\n"));
 
   const result = await run(presetOptions(projectRoot, {
@@ -305,6 +339,7 @@ async function verifyCliUsesPresetLoggingConfig() {
 
 await verifyExternalPresetEnablesStrictRules();
 await verifyImportOnlyPresetPackageLoads();
+await verifyTypeScriptPresetPackageLoadsFromNodeModules();
 await verifyRepoConfigOverridesPresetScalars();
 await verifyMultiplePresetsMergeLeftToRight();
 await verifyBannedPatternsMergeDuplicateAllowlists();
