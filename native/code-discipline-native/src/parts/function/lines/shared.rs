@@ -17,14 +17,14 @@ fn function_line_span(
     name: &str,
     start_line: usize,
     end_line: usize,
-    masked_text: &str,
+    code_line_counts: &[usize],
 ) -> FunctionLineSpan {
     FunctionLineSpan {
         kind: kind.to_string(),
         name: safe_function_name(name),
         start_line,
         end_line,
-        code_line_count: count_code_lines_in_range(masked_text, start_line, end_line),
+        code_line_count: count_code_lines_from_prefix(code_line_counts, start_line, end_line),
         line_count: end_line - start_line + 1,
     }
 }
@@ -63,21 +63,28 @@ fn update_pending_block_function(
 
     pending_header.push('\n');
     pending_header.push_str(line);
-    if pending_name.is_empty() || pending_name == "anonymous" {
+    if pending_name.is_empty() {
         *pending_name = extract_function_name(pending_header, &file.extension);
     }
     true
 }
 
 fn should_continue_pending_block_function(
-    pending_header: &str,
+    line: &str,
     pending_brace_depth: i32,
     extension: &str,
 ) -> bool {
     pending_brace_depth == 0
-    && !pending_header
-    .lines()
-    .any(|line| strip_line_comments_and_strings(line, extension).contains('{'))
+    && !strip_line_comments_and_strings(line, extension).contains('{')
+}
+
+fn pending_block_function_ended_without_body(line: &str, pending_brace_depth: i32, extension: &str) -> bool {
+    if pending_brace_depth != 0 {
+        return false;
+    }
+    let normalized = strip_line_comments_and_strings(line, extension);
+    let before_body = normalized.split('{').next().unwrap_or(&normalized);
+    before_body.contains(';')
 }
 
 fn advance_block_function_state(
@@ -93,7 +100,17 @@ fn advance_block_function_state(
     if !update_pending_block_function(file, line, pending_header, pending_start_line, pending_name, pending_kind, index) {
         return false;
     }
-    if should_continue_pending_block_function(pending_header, *pending_brace_depth, &file.extension) {
+    if pending_block_function_ended_without_body(line, *pending_brace_depth, &file.extension) {
+        reset_pending_function_state(
+            pending_header,
+            pending_start_line,
+            pending_brace_depth,
+            pending_name,
+            pending_kind,
+        );
+        return false;
+    }
+    if should_continue_pending_block_function(line, *pending_brace_depth, &file.extension) {
         return false;
     }
     *pending_brace_depth += count_brace_delta(line, &file.extension);
@@ -102,13 +119,13 @@ fn advance_block_function_state(
 
 fn push_completed_function_span(
     spans: &mut Vec<FunctionLineSpan>,
-    masked_text: &str,
     pending_header: &mut String,
     pending_start_line: &mut usize,
     pending_brace_depth: &mut i32,
     pending_name: &mut String,
     pending_kind: &mut String,
     index: usize,
+    code_line_counts: &[usize],
 ) {
     if *pending_brace_depth > 0 {
         return;
@@ -120,7 +137,7 @@ fn push_completed_function_span(
             pending_name,
             *pending_start_line,
             end_line,
-            masked_text,
+            code_line_counts,
     ));
     reset_pending_function_state(
         pending_header,

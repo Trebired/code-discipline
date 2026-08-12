@@ -4,7 +4,25 @@ struct SourceScanRequest {
     project_root: String,
     source_root: String,
     source_extensions: Vec<String>,
-    exclude_dirs: Vec<String>,
+    #[serde(default)]
+    exclude_dirs: Vec<SourceScanExcludeInput>,
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct SourceScanExcludeEntry {
+    #[serde(default)]
+    #[serde(rename = "type")]
+    entry_type: String,
+    #[serde(default)]
+    pattern: String,
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(untagged)]
+enum SourceScanExcludeInput {
+    Entry(SourceScanExcludeEntry),
+    Pattern(String),
 }
 
 #[derive(Clone, Deserialize, Serialize)]
@@ -14,6 +32,8 @@ struct ScannedSourceFile {
     relative_from_project_root: String,
     relative_from_source_root: String,
     extension: String,
+    #[serde(default)]
+    byte_size: u64,
 }
 
 #[derive(Serialize)]
@@ -43,7 +63,9 @@ struct DirectoryTask {
 struct DirectoryScanContext {
     project_root: PathBuf,
     source_extensions: HashSet<String>,
-    exclude_dir_paths: Vec<(String, String)>,
+    exclude_file_patterns: Vec<String>,
+    exclude_folder_patterns: Vec<String>,
+    exclude_folder_paths: Vec<(String, String)>,
     excluded_directory_names: HashSet<String>,
 }
 
@@ -70,21 +92,23 @@ fn resolve_scan_concurrency() -> usize {
 }
 
 fn create_directory_scan_context(options: &SourceScanRequest) -> DirectoryScanContext {
-    let exclude_dirs = options
+    let exclude_entries = options
     .exclude_dirs
     .iter()
-    .map(normalize_relative_path)
-    .filter(|entry| !entry.is_empty())
+    .filter_map(normalize_source_scan_exclude_entry)
     .collect::<Vec<_>>();
-    let exclude_dirs = if exclude_dirs
+    let mut exclude_folder_patterns = exclude_entries
+    .iter()
+    .filter(|entry| entry.entry_type != "file")
+    .map(|entry| entry.pattern.clone())
+    .collect::<Vec<_>>();
+    if !exclude_folder_patterns
     .iter()
     .any(|entry| entry == CODE_DISCIPLINE_STATE_DIR)
     {
-        exclude_dirs
-    } else {
-        [exclude_dirs, vec![CODE_DISCIPLINE_STATE_DIR.to_string()]].concat()
-    };
-    let excluded_directory_names = exclude_dirs
+        exclude_folder_patterns.push(CODE_DISCIPLINE_STATE_DIR.to_string());
+    }
+    let excluded_directory_names = exclude_folder_patterns
     .iter()
     .filter(|entry| !entry.contains('/'))
     .cloned()
@@ -97,12 +121,36 @@ fn create_directory_scan_context(options: &SourceScanRequest) -> DirectoryScanCo
         .iter()
         .map(|entry| entry.to_lowercase())
         .collect::<HashSet<_>>(),
-        exclude_dir_paths: exclude_dirs
+        exclude_file_patterns: exclude_entries
+        .iter()
+        .filter(|entry| entry.entry_type == "file")
+        .map(|entry| entry.pattern.clone())
+        .collect::<Vec<_>>(),
+        exclude_folder_paths: exclude_folder_patterns
         .iter()
         .filter(|entry| entry.contains('/'))
         .map(|entry| (entry.clone(), format!("{entry}/")))
         .collect::<Vec<_>>(),
+        exclude_folder_patterns,
         excluded_directory_names,
+    }
+}
+
+fn normalize_source_scan_exclude_entry(entry: &SourceScanExcludeInput) -> Option<SourceScanExcludeEntry> {
+    let normalized = match entry {
+        SourceScanExcludeInput::Entry(entry) => SourceScanExcludeEntry {
+            entry_type: if entry.entry_type == "file" { "file".to_string() } else { "folder".to_string() },
+            pattern: normalize_relative_path(entry.pattern.trim_end_matches('/')),
+        },
+        SourceScanExcludeInput::Pattern(pattern) => SourceScanExcludeEntry {
+            entry_type: "folder".to_string(),
+            pattern: normalize_relative_path(pattern.trim_end_matches('/')),
+        },
+    };
+    if normalized.pattern.is_empty() {
+        None
+    } else {
+        Some(normalized)
     }
 }
 
@@ -110,7 +158,8 @@ fn should_exclude_directory(
     relative_dir: &str,
     project_relative_dir: &str,
     directory_name: &str,
-    exclude_dir_paths: &[(String, String)],
+    exclude_folder_patterns: &[String],
+    exclude_folder_paths: &[(String, String)],
     excluded_directory_names: &HashSet<String>,
 ) -> bool {
     let normalized_relative_dir = normalize_relative_path(relative_dir);
@@ -120,12 +169,31 @@ fn should_exclude_directory(
         return true;
     }
 
-    exclude_dir_paths.iter().any(|(exact, prefix)| {
+    if exclude_folder_patterns.iter().any(|entry| {
+            check_matches_glob(directory_name, entry)
+            || check_matches_glob(&normalized_relative_dir, entry)
+            || check_matches_glob(&normalized_project_relative_dir, entry)
+    }) {
+        return true;
+    }
+
+    exclude_folder_paths.iter().any(|(exact, prefix)| {
             normalized_relative_dir == *exact
             || normalized_relative_dir.starts_with(prefix)
             || normalized_project_relative_dir == *exact
             || normalized_project_relative_dir.starts_with(prefix)
     })
+}
+
+fn should_exclude_file(file: &ScannedSourceFile, context: &DirectoryScanContext) -> bool {
+    let relative_path = normalize_relative_path(&file.relative_from_project_root);
+    if check_is_state_path(&relative_path) {
+        return true;
+    }
+    context
+    .exclude_file_patterns
+    .iter()
+    .any(|pattern| check_matches_glob(&relative_path, pattern))
 }
 
 fn scan_directory(task: DirectoryTask, context: &DirectoryScanContext) -> Result<DirectoryScanResult> {
@@ -174,7 +242,8 @@ fn push_scanned_directory(
         &relative_path,
         &project_relative_path,
         &file_name,
-        &context.exclude_dir_paths,
+        &context.exclude_folder_patterns,
+        &context.exclude_folder_paths,
         &context.excluded_directory_names,
     ) {
         return;
@@ -199,12 +268,17 @@ fn push_scanned_file(
     }
     let file_name = entry.file_name().to_string_lossy().to_string();
 
-    files.push(ScannedSourceFile {
-            absolute_path: absolute_path.to_string_lossy().to_string(),
-            relative_from_project_root: path_relative_from(&context.project_root, &absolute_path),
-            relative_from_source_root: relative_entry_path(task, &file_name),
-            extension,
-    });
+    let file = ScannedSourceFile {
+        absolute_path: absolute_path.to_string_lossy().to_string(),
+        relative_from_project_root: path_relative_from(&context.project_root, &absolute_path),
+        relative_from_source_root: relative_entry_path(task, &file_name),
+        extension,
+        byte_size: entry.metadata().map(|metadata| metadata.len()).unwrap_or(0),
+    };
+    if should_exclude_file(&file, context) {
+        return;
+    }
+    files.push(file);
 }
 
 fn scan_source_directory(options: &SourceScanRequest) -> Result<SourceScanResponse> {

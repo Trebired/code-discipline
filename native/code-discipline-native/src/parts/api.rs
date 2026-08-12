@@ -45,6 +45,64 @@ pub fn scan_source_files(request_json: String) -> Result<String> {
 }
 
 #[napi]
+pub fn collect_dry_descriptors(request_json: String) -> Result<String> {
+    let request: NativeDryDescriptorRequest =
+    serde_json::from_str(&request_json).map_err(|error| err(error.to_string()))?;
+    let text_files = check_read_text_files(request.source_files)
+    .into_iter()
+    .filter(|entry| check_supports_dry(&entry.file.extension))
+    .collect::<Vec<_>>();
+    let descriptors = check_collect_dry_descriptors(&text_files);
+    serde_json::to_string(&NativeDryDescriptorResponse { descriptors })
+    .map_err(|error| err(error.to_string()))
+}
+
+#[napi]
+pub fn collect_dry_violations_from_descriptors(request_json: String) -> Result<String> {
+    let request: NativeDryViolationsFromDescriptorsRequest =
+    serde_json::from_str(&request_json).map_err(|error| err(error.to_string()))?;
+    let violations = check_collect_dry_violations_from_descriptors(
+        request.descriptors,
+        &request.rule,
+    );
+    serde_json::to_string(&NativeCheckRulesResponse { violations })
+    .map_err(|error| err(error.to_string()))
+}
+
+#[napi]
+pub fn start_dry_descriptor_session() -> Result<String> {
+    check_start_dry_descriptor_session()
+}
+
+#[napi]
+pub fn append_dry_descriptors_to_session(request_json: String) -> Result<String> {
+    let request: NativeDrySessionAppendRequest =
+    serde_json::from_str(&request_json).map_err(|error| err(error.to_string()))?;
+    let response = check_append_dry_descriptors_to_session(
+        &request.session_id,
+        request.source_files,
+    )?;
+    serde_json::to_string(&response).map_err(|error| err(error.to_string()))
+}
+
+#[napi]
+pub fn finish_dry_descriptor_session(request_json: String) -> Result<String> {
+    let request: NativeDrySessionFinishRequest =
+    serde_json::from_str(&request_json).map_err(|error| err(error.to_string()))?;
+    let violations = check_finish_dry_descriptor_session(&request.session_id, &request.rule)?;
+    serde_json::to_string(&NativeCheckRulesResponse { violations })
+    .map_err(|error| err(error.to_string()))
+}
+
+#[napi]
+pub fn discard_dry_descriptor_session(request_json: String) -> Result<String> {
+    let request: NativeDrySessionRequest =
+    serde_json::from_str(&request_json).map_err(|error| err(error.to_string()))?;
+    check_discard_dry_descriptor_session(&request.session_id)?;
+    Ok("{}".to_string())
+}
+
+#[napi]
 pub fn run_max_file_lines_rule(request_json: String) -> Result<String> {
     let request: MaxFileLinesRequest =
     serde_json::from_str(&request_json).map_err(|error| err(error.to_string()))?;

@@ -168,9 +168,10 @@ fn collect_redundant_path_segments_violations(
     .iter()
     .map(|(file, _)| file.absolute_path.clone())
     .collect();
+    let prefix_group_counts = collect_prefix_segment_group_counts(&matches);
 
     push_path_segment_violations(&mut violations, &path_segment_matches);
-    push_prefix_segment_violations(&mut violations, &matches, &path_segment_paths);
+    push_prefix_segment_violations(&mut violations, &matches, &path_segment_paths, &prefix_group_counts);
 
     violations.sort_by(|left, right| left.file_path.cmp(&right.file_path));
     violations
@@ -221,12 +222,13 @@ fn push_prefix_segment_violations(
     violations: &mut Vec<CodeDisciplineViolation>,
     matches: &[(ScannedSourceFile, PrefixMatch)],
     path_segment_paths: &HashSet<String>,
+    prefix_group_counts: &HashMap<String, usize>,
 ) {
     for (file, prefix_match) in matches.iter() {
         if path_segment_paths.contains(&file.absolute_path) {
             continue;
         }
-        let Some(mode) = prefix_segment_violation_mode(file, prefix_match, matches) else {
+        let Some(mode) = prefix_segment_violation_mode(file, prefix_match, prefix_group_counts) else {
             continue;
         };
         let suggested_path = suggested_prefix_segment_path(file, prefix_match, mode);
@@ -243,42 +245,44 @@ fn push_prefix_segment_violations(
     }
 }
 
+fn collect_prefix_segment_group_counts(
+    matches: &[(ScannedSourceFile, PrefixMatch)],
+) -> HashMap<String, usize> {
+    let mut counts = HashMap::new();
+    for (file, prefix_match) in matches {
+        let key = prefix_segment_group_key(file, prefix_match);
+        *counts.entry(key).or_insert(0) += 1;
+    }
+    counts
+}
+
+fn prefix_segment_group_key(file: &ScannedSourceFile, prefix_match: &PrefixMatch) -> String {
+    format!(
+        "{}::{}",
+        posix_dirname(&file.relative_from_source_root),
+        prefix_match.prefix
+    )
+}
+
 fn prefix_segment_violation_mode(
     file: &ScannedSourceFile,
     prefix_match: &PrefixMatch,
-    matches: &[(ScannedSourceFile, PrefixMatch)],
+    prefix_group_counts: &HashMap<String, usize>,
 ) -> Option<&'static str> {
     let directory_name = posix_basename(&posix_dirname(&file.relative_from_project_root)).to_string();
     if directory_name == prefix_match.prefix {
         return Some("repeated-folder-prefix");
     }
-    if prefix_segment_grouped_count(file, prefix_match, matches) >= 2 {
+    if prefix_group_counts
+    .get(&prefix_segment_group_key(file, prefix_match))
+    .copied()
+    .unwrap_or(0)
+    >= 2
+    {
         return Some("same-directory-group");
     }
 
     None
-}
-
-fn prefix_segment_grouped_count(
-    file: &ScannedSourceFile,
-    prefix_match: &PrefixMatch,
-    matches: &[(ScannedSourceFile, PrefixMatch)],
-) -> usize {
-    let directory_key = format!(
-        "{}::{}",
-        posix_dirname(&file.relative_from_source_root),
-        prefix_match.prefix
-    );
-    matches
-    .iter()
-    .filter(|(candidate, candidate_match)| {
-            format!(
-                "{}::{}",
-                posix_dirname(&candidate.relative_from_source_root),
-                candidate_match.prefix
-            ) == directory_key
-    })
-    .count()
 }
 
 fn suggested_prefix_segment_path(

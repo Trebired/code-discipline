@@ -301,7 +301,7 @@ async function planImportsFolderAliases(
   const managedAliasPathMap: Record<string, string> = { ...preservedAliasPathMap };
   for (const file of sourceFiles) {
     const preservedAlias = preservedAliasesByPath.get(file.absolutePath);
-    const aliasId = preservedAlias ?? generateAliasId(file, options, Array.from(reservedIds));
+    const aliasId = preservedAlias ?? generateAliasId(file, options, reservedIds);
     reservedIds.add(aliasId);
     managedAliasPathMap[aliasId] = normalizeDotPrefixedTarget(file.relativeFromProjectRoot);
     aliasRecords.push({

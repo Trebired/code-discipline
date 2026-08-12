@@ -5,7 +5,10 @@ import type { SourceProgressObserver } from "#pkb9x3eo56l7";
 const DEFAULT_RULE_PROGRESS_CHUNK_SIZE = 250;
 
 type RuleProgressExtras = {
+  chunkBytes?: number;
+  chunkItems?: number;
   comparedCandidates?: number;
+  currentFile?: string;
   deletedFiles?: number;
   discoveredFunctions?: number;
   duplicateGroups?: number;
@@ -61,14 +64,42 @@ function emitRuleChunk(
 ): void {
   if (completedItems % state.chunkSize !== 0 && completedItems !== state.totalItems) return;
 
+  emitRuleChunkAt(state, Math.ceil(completedItems / state.chunkSize), completedItems, violationCount, extras);
+}
+
+function emitRuleChunkAt(
+  state: RuleProgressState,
+  chunkIndex: number,
+  completedItems: number,
+  violationCount: number,
+  extras: RuleProgressExtras = {},
+): void {
   state.observer?.({
       phase: "rule-chunk",
       rule: state.rule,
       stage: state.stage,
-      chunkIndex: Math.ceil(completedItems / state.chunkSize),
+      chunkIndex,
       completedItems,
       totalItems: state.totalItems,
       violationCount,
+      elapsedMs: performance.now() - state.startedAt,
+      ...extras,
+  });
+}
+
+function emitRuleChunkStarted(
+  state: RuleProgressState,
+  chunkIndex: number,
+  completedItems: number,
+  extras: Required<Pick<RuleProgressExtras, "chunkBytes"|"chunkItems">>&Pick<RuleProgressExtras, "currentFile">,
+): void {
+  state.observer?.({
+      phase: "rule-chunk-started",
+      rule: state.rule,
+      stage: state.stage,
+      chunkIndex,
+      completedItems,
+      totalItems: state.totalItems,
       elapsedMs: performance.now() - state.startedAt,
       ...extras,
   });
@@ -90,4 +121,4 @@ function emitRuleCompleted(
   });
 }
 
-export { createRuleProgress, emitRuleChunk, emitRuleCompleted, emitRuleStarted };
+export { createRuleProgress, emitRuleChunk, emitRuleChunkAt, emitRuleChunkStarted, emitRuleCompleted, emitRuleStarted };

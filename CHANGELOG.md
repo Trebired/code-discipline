@@ -6,6 +6,15 @@ This project follows semantic versioning once published.
 
 ## Unreleased
 
+## 6.0.11
+
+- Moved source-scan ignore filtering into the native backend and carried file byte sizes through scan results so chunked rules can report file and byte progress.
+- Added chunk start/completion progress for native rules and formatter batches, plus imports sync progress before native rule execution begins.
+- Reworked `dry` to collect descriptors into a Rust-side session in chunks, then run one native cross-file duplicate match so progress stays visible without breaking duplicate detection.
+- Fixed C-family function scanning for large headers by terminating multiline prototypes before a body and avoiding repeated rescans of accumulated pending headers.
+- Optimized redundant path segment checks, formatter target matching, large generated script formatting, dry descriptor extraction, and alias ID planning.
+- Updated the platform benchmark script to load the target repo's config and skip rules that target config does not enable.
+
 ## 6.0.10
 
 - Added immediate CLI progress output for config loading, command start, scan start, scan result parsing, and rule start events so large check runs never appear stalled before the first completed scan or rule.

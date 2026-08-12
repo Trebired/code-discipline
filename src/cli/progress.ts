@@ -36,12 +36,24 @@ function formatDuration(milliseconds: number): string {
   return `${milliseconds.toFixed(1)}ms`;
 }
 
+function formatBytes(bytes: number): string {
+  if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)}MiB`;
+  if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)}KiB`;
+  return `${bytes}B`;
+}
+
 function shouldPrintScanChunk(event: SourceScanProgressEvent): boolean {
   return event.phase === "chunk"
   &&(event.chunkIndex <= 3 || event.chunkIndex % 10 === 0 || event.queuedDirectories === 0);
 }
 
 function formatRuleProgressDetails(event: SourceRuleProgressEvent | SourceRuleCompletedEvent): string {
+  const chunkItems = event.phase === "rule-chunk" && typeof event.chunkItems === "number"
+  ? `${event.chunkItems} files`
+  : "";
+  const chunkBytes = event.phase === "rule-chunk" && typeof event.chunkBytes === "number"
+  ? formatBytes(event.chunkBytes)
+  : "";
   const details = [
     typeof event.violationCount === "number" ? `${event.violationCount} violations` : "",
     typeof event.deletedFiles === "number" ? `${event.deletedFiles} deleted` : "",
@@ -52,6 +64,8 @@ function formatRuleProgressDetails(event: SourceRuleProgressEvent | SourceRuleCo
     typeof event.discoveredFunctions === "number" ? `${event.discoveredFunctions} functions` : "",
     typeof event.duplicateGroups === "number" ? `${event.duplicateGroups} groups` : "",
     typeof event.comparedCandidates === "number" ? `${event.comparedCandidates} comparisons` : "",
+    chunkItems,
+    chunkBytes,
   ].filter(Boolean);
 
   return details.length > 0 ? `, ${details.join(", ")}` : "";
@@ -91,6 +105,16 @@ function writeRuleEvent(
     writeLine(
       `${event.rule} ${event.stage} started: ${event.totalItems} items.\n`,
       { event: "rule-progress-started", rule: event.rule },
+    );
+    return;
+  }
+  if (event.phase === "rule-chunk-started") {
+    const currentFile = event.currentFile ? `, next ${event.currentFile}` : "";
+    const itemProgress = `${event.completedItems}/${event.totalItems}`;
+    writeLine(
+      `${event.rule} ${event.stage} ${event.chunkIndex} started: `
+      +`${itemProgress}, ${event.chunkItems} files, ${formatBytes(event.chunkBytes)}${currentFile}.\n`,
+      { event: "rule-progress-chunk-started", rule: event.rule },
     );
     return;
   }

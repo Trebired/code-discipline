@@ -98,6 +98,7 @@ fn check_close_python_functions(
         let (_, kind, name, start_line) = stack.pop().unwrap();
         let resolved_end = start_line.max(end_line);
         spans.push(CheckFunctionSpan {
+                code_line_count: None,
                 kind,
                 name,
                 start_line,
@@ -201,6 +202,7 @@ fn check_collect_shell_function_spans(text: &str) -> Vec<CheckFunctionSpan> {
         let (_, name, start_line) = pending.take().unwrap();
         let end_line = index + 1;
         spans.push(CheckFunctionSpan {
+                code_line_count: None,
                 kind: "function".to_string(),
                 name,
                 start_line,
@@ -265,6 +267,7 @@ fn check_collect_qml_function_spans(text: &str) -> Vec<CheckFunctionSpan> {
         let (_, _, kind, name, start_line) = pending.take().unwrap();
         let end_line = index + 1;
         spans.push(CheckFunctionSpan {
+                code_line_count: None,
                 kind,
                 name,
                 start_line,
@@ -280,6 +283,7 @@ fn check_collect_function_spans(file: &ScannedSourceFile, text: &str) -> Vec<Che
         return collect_block_function_spans(file, text)
         .into_iter()
         .map(|span| CheckFunctionSpan {
+                code_line_count: Some(span.code_line_count),
                 kind: span.kind,
                 name: span.name,
                 start_line: span.start_line,
@@ -292,6 +296,7 @@ fn check_collect_function_spans(file: &ScannedSourceFile, text: &str) -> Vec<Che
         return collect_simple_typescript_function_spans(file, text)
         .into_iter()
         .map(|span| CheckFunctionSpan {
+                code_line_count: Some(span.code_line_count),
                 kind: span.kind,
                 name: span.name,
                 start_line: span.start_line,

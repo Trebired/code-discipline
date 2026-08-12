@@ -1,10 +1,70 @@
+static CHECK_DRY_SESSION_COUNTER: AtomicU64 = AtomicU64::new(1);
+static CHECK_DRY_DESCRIPTOR_SESSIONS: OnceLock<Mutex<HashMap<String, Vec<CheckDryDescriptor>>>> = OnceLock::new();
+
+fn check_dry_descriptor_sessions() -> &'static Mutex<HashMap<String, Vec<CheckDryDescriptor>>> {
+    CHECK_DRY_DESCRIPTOR_SESSIONS.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn check_start_dry_descriptor_session() -> Result<String> {
+    let id = format!("dry-{}", CHECK_DRY_SESSION_COUNTER.fetch_add(1, Ordering::Relaxed));
+    check_dry_descriptor_sessions()
+    .lock()
+    .map_err(|_| err("dry descriptor session lock poisoned"))?
+    .insert(id.clone(), Vec::new());
+    Ok(id)
+}
+
+fn check_append_dry_descriptors_to_session(
+    session_id: &str,
+    source_files: Vec<ScannedSourceFile>,
+) -> Result<NativeDrySessionAppendResponse> {
+    let text_files = check_read_text_files(source_files)
+    .into_iter()
+    .filter(|entry| check_supports_dry(&entry.file.extension))
+    .collect::<Vec<_>>();
+    let descriptors = check_collect_dry_descriptors(&text_files);
+    let added_descriptor_count = descriptors.len();
+    let mut sessions = check_dry_descriptor_sessions()
+    .lock()
+    .map_err(|_| err("dry descriptor session lock poisoned"))?;
+    let Some(session) = sessions.get_mut(session_id) else {
+        return Err(err(format!("unknown dry descriptor session {session_id}")));
+    };
+    session.extend(descriptors);
+    Ok(NativeDrySessionAppendResponse {
+            added_descriptor_count,
+            descriptor_count: session.len(),
+    })
+}
+
+fn check_finish_dry_descriptor_session(
+    session_id: &str,
+    rule: &NativeDryRule,
+) -> Result<Vec<CodeDisciplineViolation>> {
+    let descriptors = check_dry_descriptor_sessions()
+    .lock()
+    .map_err(|_| err("dry descriptor session lock poisoned"))?
+    .remove(session_id)
+    .ok_or_else(|| err(format!("unknown dry descriptor session {session_id}")))?;
+    Ok(check_collect_dry_violations_from_descriptors(descriptors, rule))
+}
+
+fn check_discard_dry_descriptor_session(session_id: &str) -> Result<()> {
+    check_dry_descriptor_sessions()
+    .lock()
+    .map_err(|_| err("dry descriptor session lock poisoned"))?
+    .remove(session_id);
+    Ok(())
+}
+
 fn check_collect_dry_descriptors(files: &[CheckTextFile]) -> Vec<CheckDryDescriptor> {
     let mut descriptors = files
     .par_iter()
     .flat_map(|entry| {
+            let line_offsets = check_line_start_offsets(&entry.text);
             check_collect_function_spans(&entry.file, &entry.text)
             .into_iter()
-            .map(|span| check_create_dry_descriptor(entry, span))
+            .map(|span| check_create_dry_descriptor(entry, span, &line_offsets))
             .collect::<Vec<_>>()
     })
     .collect::<Vec<_>>();
@@ -12,8 +72,8 @@ fn check_collect_dry_descriptors(files: &[CheckTextFile]) -> Vec<CheckDryDescrip
     descriptors
 }
 
-fn check_create_dry_descriptor(file: &CheckTextFile, span: CheckFunctionSpan) -> CheckDryDescriptor {
-    let source = check_slice_lines(&file.text, span.start_line, span.end_line);
+fn check_create_dry_descriptor(file: &CheckTextFile, span: CheckFunctionSpan, line_offsets: &[usize]) -> CheckDryDescriptor {
+    let source = check_slice_lines(&file.text, line_offsets, span.start_line, span.end_line);
     let normalized_text = check_normalize_dry_source(&source, &file.file.extension);
     CheckDryDescriptor {
         character_count: normalized_text.chars().count(),
@@ -26,26 +86,41 @@ fn check_create_dry_descriptor(file: &CheckTextFile, span: CheckFunctionSpan) ->
     }
 }
 
-fn check_slice_lines(text: &str, start_line: usize, end_line: usize) -> String {
-    text.lines()
-    .skip(start_line.saturating_sub(1))
-    .take(end_line.saturating_sub(start_line) + 1)
-    .collect::<Vec<_>>()
-    .join("\n")
+fn check_line_start_offsets(text: &str) -> Vec<usize> {
+    let mut offsets = Vec::new();
+    offsets.push(0);
+    for (index, byte) in text.bytes().enumerate() {
+        if byte == b'\n' {
+            offsets.push(index + 1);
+        }
+    }
+    offsets
+}
+
+fn check_slice_lines<'a>(text: &'a str, line_offsets: &[usize], start_line: usize, end_line: usize) -> &'a str {
+    if start_line == 0 || end_line < start_line {
+        return "";
+    }
+    let start = line_offsets
+    .get(start_line.saturating_sub(1))
+    .copied()
+    .unwrap_or(text.len());
+    let end = line_offsets.get(end_line).copied().unwrap_or(text.len());
+    text[start.min(text.len())..end.min(text.len())].trim_end_matches(['\n', '\r'])
 }
 
 fn check_normalize_dry_source(source: &str, extension: &str) -> String {
     let header_normalized = check_normalize_function_header(source, extension);
     let comment_masked = mask_comments_for_line_count(&header_normalized, extension);
-    check_tokenize_dry_text(&comment_masked).join("")
+    check_tokenize_dry_text(&comment_masked)
 }
 
 fn check_normalize_function_header(source: &str, extension: &str) -> String {
-    let mut lines = source.lines().collect::<Vec<_>>();
-    if lines.is_empty() {
+    if source.is_empty() {
         return source.to_string();
     }
-    let first = lines[0];
+    let first_end = source.find('\n').unwrap_or(source.len());
+    let first = &source[..first_end];
     let normalized = if is_go_extension(extension) {
         check_replace_after_marker(first, "func ")
     } else if is_python_extension(extension) {
@@ -59,12 +134,13 @@ fn check_normalize_function_header(source: &str, extension: &str) -> String {
     } else {
         check_replace_after_marker(first, "fn ").or_else(|| check_replace_after_marker(first, "function "))
     };
-    if let Some(line) = normalized {
-        lines[0] = Box::leak(line.into_boxed_str());
-        lines.join("\n")
-    } else {
-        source.to_string()
+    let Some(line) = normalized else {
+        return source.to_string();
+    };
+    if first_end >= source.len() {
+        return line;
     }
+    format!("{line}{}", &source[first_end..])
 }
 
 fn check_replace_after_marker(line: &str, marker: &str) -> Option<String> {
@@ -98,8 +174,8 @@ fn check_replace_leading_identifier(line: &str) -> Option<String> {
     (name_len > 0).then(|| format!("{}__dry_function{}", &line[..trimmed_start], &line[trimmed_start + name_len..]))
 }
 
-fn check_tokenize_dry_text(text: &str) -> Vec<String> {
-    let mut tokens = Vec::new();
+fn check_tokenize_dry_text(text: &str) -> String {
+    let mut output = String::with_capacity(text.len());
     let mut identifiers: HashMap<String, String> = HashMap::new();
     let chars = text.chars().collect::<Vec<_>>();
     let mut index = 0_usize;
@@ -109,23 +185,25 @@ fn check_tokenize_dry_text(text: &str) -> Vec<String> {
             index += 1;
         } else if matches!(ch, '"' | '\'' | '`') {
             let end = check_scan_quoted_literal(&chars, index);
-            tokens.push(format!("STR:{}", chars[index..end].iter().collect::<String>()));
+            output.push_str("STR:");
+            output.extend(chars[index..end].iter());
             index = end;
         } else if ch.is_ascii_digit() {
             let end = check_scan_while(&chars, index, |item| item.is_ascii_alphanumeric() || item == '.');
-            tokens.push(format!("NUM:{}", chars[index..end].iter().collect::<String>()));
+            output.push_str("NUM:");
+            output.extend(chars[index..end].iter());
             index = end;
         } else if ch.is_ascii_alphabetic() || ch == '_' || ch == '$' {
             let end = check_scan_while(&chars, index, |item| item.is_ascii_alphanumeric() || item == '_' || item == '$');
             let identifier = chars[index..end].iter().collect::<String>();
-            tokens.push(check_normalize_identifier(&identifier, &chars, index, end, &mut identifiers));
+            output.push_str(&check_normalize_identifier(&identifier, &chars, index, end, &mut identifiers));
             index = end;
         } else {
-            tokens.push(ch.to_string());
+            output.push(ch);
             index += 1;
         }
     }
-    tokens
+    output
 }
 
 fn check_scan_quoted_literal(chars: &[char], start: usize) -> usize {
@@ -209,6 +287,13 @@ fn check_dry_keyword(value: &str) -> bool {
 
 fn check_collect_dry_violations(files: &[CheckTextFile], rule: &NativeDryRule) -> Vec<CodeDisciplineViolation> {
     let descriptors = check_collect_dry_descriptors(files);
+    check_collect_dry_violations_from_descriptors(descriptors, rule)
+}
+
+fn check_collect_dry_violations_from_descriptors(
+    descriptors: Vec<CheckDryDescriptor>,
+    rule: &NativeDryRule,
+) -> Vec<CodeDisciplineViolation> {
     let mut by_fingerprint: HashMap<String, Vec<CheckDryDescriptor>> = HashMap::new();
     for descriptor in descriptors {
         if descriptor.character_count < check_effective_min_duplicate_characters(rule, &descriptor) {
@@ -216,11 +301,26 @@ fn check_collect_dry_violations(files: &[CheckTextFile], rule: &NativeDryRule) -
         }
         by_fingerprint.entry(descriptor.fingerprint.clone()).or_default().push(descriptor);
     }
-    let mut violations = Vec::new();
-    for group in by_fingerprint.values().filter(|group| group.len() > 1) {
-        violations.push(check_dry_violation(group));
-    }
-    violations
+    let mut groups = by_fingerprint
+    .into_values()
+    .filter(|group| group.len() > 1)
+    .collect::<Vec<_>>();
+    groups.sort_by(|left, right| {
+            check_dry_group_sort_key(left)
+            .cmp(&check_dry_group_sort_key(right))
+    });
+    groups
+    .iter()
+    .map(|group| check_dry_violation(group))
+    .collect()
+}
+
+fn check_dry_group_sort_key(group: &[CheckDryDescriptor]) -> String {
+    group
+    .iter()
+    .map(|entry| format!("{}:{}", entry.file_path, entry.start_line))
+    .min()
+    .unwrap_or_default()
 }
 
 fn check_effective_min_duplicate_characters(rule: &NativeDryRule, descriptor: &CheckDryDescriptor) -> usize {

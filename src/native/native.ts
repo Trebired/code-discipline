@@ -5,7 +5,12 @@ import { fileURLToPath } from "node:url";
 import { CODE_DISCIPLINE_PACKAGE_NAME } from "#ik5y0pee4ah1";
 
 type NativeBinding = {
+  appendDryDescriptorsToSession(requestJson: string): string;
+  collectDryDescriptors(requestJson: string): string;
+  collectDryViolationsFromDescriptors(requestJson: string): string;
   collectRemoveCommentsViolations(requestJson: string): string;
+  discardDryDescriptorSession(requestJson: string): string;
+  finishDryDescriptorSession(requestJson: string): string;
   formatSourceFiles(requestJson: string): string;
   formatSourceText(requestJson: string): string;
   fixRemoveCommentsRule(requestJson: string): string;
@@ -14,6 +19,7 @@ type NativeBinding = {
   runMaxBlockFunctionLinesRule(requestJson: string): string;
   runMaxFileLinesRule(requestJson: string): string;
   scanSourceFiles(requestJson: string): string;
+  startDryDescriptorSession(): string;
   stripComments(requestJson: string): string;
 };
 

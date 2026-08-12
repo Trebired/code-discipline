@@ -196,7 +196,7 @@ async function planTsconfigAliases(
 
   for (const file of sourceFiles) {
     const preservedAlias = existingState.preservedAliasesByPath.get(file.absolutePath);
-    const aliasId = preservedAlias ?? generateAliasId(file, options, Array.from(reservedIds));
+    const aliasId = preservedAlias ?? generateAliasId(file, options, reservedIds);
     reservedIds.add(aliasId);
     aliasRecords.push({
         id: aliasId,

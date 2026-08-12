@@ -1,10 +1,15 @@
 import type { CodeDisciplineViolation } from "#bsmch74up4fm";
+import type { ScannedSourceFile } from "#pkb9x3eo56l7";
 import { loadNativeBinding } from "#q6u4pcd984qa";
-import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls019o";
+import { createRuleProgress, emitRuleChunkAt, emitRuleChunkStarted, emitRuleCompleted } from "#efe33sls019o";
 import type { NormalizedCheckCodeDisciplineOptions, NormalizedCodeFormatter } from "#uqbg4indzud7";
-import { collectCodeFormatterFiles, type CodeFormatterFile } from "./files.js";
+import { collectCodeFormatterFiles, collectCodeFormatterFilesFromSourceFiles, type CodeFormatterFile } from "./files.js";
 
 type CodeFormatterMode = "check" | "fix";
+type CodeFormatterBatch = {
+  byteSize: number;
+  files: CodeFormatterFile[];
+};
 
 type NativeFormatterFileResult = {
   filePath: string;
@@ -29,6 +34,11 @@ type CodeFormatterResult = {
   errored_files: number;
 };
 
+const FORMATTER_BATCH_LIMITS = {
+  maxBytes: 512 * 1024,
+  maxFiles: 64,
+};
+
 function createFormatViolation(args: {
     filePath: string;
     fix: boolean;
@@ -47,6 +57,7 @@ function createFormatViolation(args: {
 function toNativeSourceFile(file: CodeFormatterFile) {
   return {
     absolutePath: file.absolutePath,
+    byteSize: file.byteSize,
     relativeFromProjectRoot: file.relativePath,
     relativeFromSourceRoot: file.relativePath,
     extension: file.extension,
@@ -118,9 +129,38 @@ function mapNativeResultViolations(
   return violations;
 }
 
+function createCodeFormatterBatches(files: CodeFormatterFile[]): CodeFormatterBatch[] {
+  const batches: CodeFormatterBatch[] = [];
+  let batchFiles: CodeFormatterFile[] = [];
+  let byteSize = 0;
+
+  for (const file of files) {
+    const nextSize = Math.max(1, file.byteSize);
+    if (batchFiles.length > 0 && (batchFiles.length >= FORMATTER_BATCH_LIMITS.maxFiles || byteSize + nextSize > FORMATTER_BATCH_LIMITS.maxBytes)) {
+      batches.push({ byteSize, files: batchFiles });
+      batchFiles = [];
+      byteSize = 0;
+    }
+    batchFiles.push(file);
+    byteSize += nextSize;
+  }
+
+  if (batchFiles.length > 0) {
+    batches.push({ byteSize, files: batchFiles });
+  }
+  return batches;
+}
+
+function countFormattedFiles(files: NativeFormatterFileResult[], mode: CodeFormatterMode): number {
+  return mode === "fix"
+  ? files.filter((file) => file.checked && file.changed && !file.error).length
+  : 0;
+}
+
 async function runCodeFormatter(
   options: NormalizedCheckCodeDisciplineOptions,
   mode: CodeFormatterMode,
+  sourceFiles?: ScannedSourceFile[],
 ): Promise<CodeFormatterResult> {
   const formatting = options.rules.formatting;
   if (!formatting) {
@@ -136,7 +176,9 @@ async function runCodeFormatter(
     };
   }
 
-  const collected = await collectCodeFormatterFiles(options, formatting);
+  const collected = sourceFiles
+  ? await collectCodeFormatterFilesFromSourceFiles(options, formatting, sourceFiles)
+  : await collectCodeFormatterFiles(options, formatting);
   const violations = [...collected.violations];
   const progress = createRuleProgress({
       observer: options.progressObserver,
@@ -161,13 +203,32 @@ async function runCodeFormatter(
     };
   }
 
-  let nativeResult: NativeFormatterResponse;
+  const nativeFiles: NativeFormatterFileResult[] = [];
   try {
-    nativeResult = parseNativeFormatterResponse(binding.formatSourceFiles(JSON.stringify({
-            mode,
-            options: toNativeFormatterOptions(formatting),
-            sourceFiles: collected.files.map(toNativeSourceFile),
-    })));
+    let completedItems = 0;
+    let chunkIndex = 0;
+    for (const batch of createCodeFormatterBatches(collected.files)) {
+      chunkIndex += 1;
+      const extras = {
+        chunkBytes: batch.byteSize,
+        chunkItems: batch.files.length,
+        currentFile: batch.files[0]?.relativePath,
+        ...(mode === "fix" ? { rewrittenFiles: countFormattedFiles(nativeFiles, mode) } : {}),
+      };
+      emitRuleChunkStarted(progress, chunkIndex, completedItems, extras);
+      const batchResult = parseNativeFormatterResponse(binding.formatSourceFiles(JSON.stringify({
+              mode,
+              options: toNativeFormatterOptions(formatting),
+              sourceFiles: batch.files.map(toNativeSourceFile),
+      })));
+      nativeFiles.push(...batchResult.files);
+      violations.push(...mapNativeResultViolations(batchResult, mode));
+      completedItems += batch.files.length;
+      emitRuleChunkAt(progress, chunkIndex, completedItems, violations.length, {
+          ...extras,
+          ...(mode === "fix" ? { rewrittenFiles: countFormattedFiles(nativeFiles, mode) } : {}),
+      });
+    }
   } catch (caught) {
     violations.push(createNativeErrorViolation(caught, mode));
     emitRuleCompleted(progress, violations.length);
@@ -183,16 +244,13 @@ async function runCodeFormatter(
     };
   }
 
-  violations.push(...mapNativeResultViolations(nativeResult, mode));
+  const nativeResult: NativeFormatterResponse = { files: nativeFiles };
   const checkedFiles = nativeResult.files.filter((file) => file.checked).length;
-  const formattedFiles = mode === "fix" ? nativeResult.files.filter((file) => file.checked && file.changed && !file.error).length : 0;
+  const formattedFiles = countFormattedFiles(nativeResult.files, mode);
   const unchangedFiles = nativeResult.files.filter((file) => file.checked && !file.changed && !file.error).length;
   const ignoredFiles = collected.ignoredFiles + nativeResult.files.filter((file) => file.ignored).length;
   const erroredFiles = nativeResult.files.filter((file) => file.error).length + collected.violations.length;
 
-  emitRuleChunk(progress, collected.files.length, violations.length, mode === "fix" ? {
-      rewrittenFiles: formattedFiles,
-    } : {});
   emitRuleCompleted(progress, violations.length, mode === "fix" ? {
       rewrittenFiles: formattedFiles,
     } : {});

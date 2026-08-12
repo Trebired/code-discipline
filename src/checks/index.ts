@@ -16,7 +16,7 @@ import {
 } from "./apply-fixes.js";
 import type { FixState } from "./apply-fixes.js";
 import { collectFormatViolations } from "./format.js";
-import { collectNativeCheckViolations } from "./native-runner.js";
+import { collectNativeCheckViolations } from "./native/runner.js";
 import { applyConfiguredSeverity } from "./severity.js";
 import { buildNormalizedSyncOptions } from "./sync-options.js";
 import type {
@@ -93,7 +93,7 @@ function attachDisciplineResult<T extends CodeDisciplineResult>(
 async function collectViolations(options: NormalizedCheckCodeDisciplineOptions): Promise<CodeDisciplineViolation[]> {
   const sourceFiles = await scanSourceFiles(options);
   const violations = await collectNativeCheckViolations(sourceFiles, options);
-  violations.push(...await collectFormatViolations(options));
+  violations.push(...await collectFormatViolations(options, sourceFiles));
   return sortViolations(applyConfiguredSeverity(violations, options));
 }
 

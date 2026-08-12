@@ -21,27 +21,41 @@ const rules = [
   "format",
 ];
 const { run, loadResolvedConfig } = await import(pathToFileURL(path.join(repoRoot, "dist/index.js")).href);
-const loaded = await loadResolvedConfig(repoRoot);
+const loaded = await loadResolvedConfig(targetRoot);
 
 async function measure(label, onlyRules) {
   const startedAt = performance.now();
-  const result = await run({
-      ...loaded.config,
-      projectRoot: targetRoot,
-      configPath: loaded.configPath,
-      mode: "check",
-      onlyRules,
-      logging: {
-        ...loaded.config.logging,
-        warnings: false,
-      },
-  });
-  return {
-    label,
-    milliseconds: Math.round(performance.now() - startedAt),
-    ok: result.ok,
-    violations: result.violationCount,
-  };
+  try {
+    const result = await run({
+        ...loaded.config,
+        projectRoot: targetRoot,
+        configPath: loaded.configPath,
+        mode: "check",
+        onlyRules,
+        logging: {
+          ...loaded.config.logging,
+          warnings: false,
+        },
+    });
+    return {
+      label,
+      milliseconds: Math.round(performance.now() - startedAt),
+      ok: result.ok,
+      skipped: false,
+      violations: result.violationCount,
+    };
+  } catch (error) {
+    if (onlyRules && error instanceof Error && error.message.includes("Selected rule is not configured")) {
+      return {
+        label,
+        milliseconds: Math.round(performance.now() - startedAt),
+        ok: false,
+        skipped: true,
+        violations: 0,
+      };
+    }
+    throw error;
+  }
 }
 
 const rows = [];
@@ -56,5 +70,6 @@ const width = Math.max(...rows.map((row) => row.label.length), "rule".length);
 console.log(`target ${targetRoot}`);
 console.log(`${"rule".padEnd(width)}  ms       ok     violations`);
 for (const row of rows) {
-  console.log(`${row.label.padEnd(width)}  ${String(row.milliseconds).padStart(7)}  ${String(row.ok).padEnd(5)}  ${row.violations}`);
+  const ok = row.skipped ? "skip" : String(row.ok);
+  console.log(`${row.label.padEnd(width)}  ${String(row.milliseconds).padStart(7)}  ${ok.padEnd(5)}  ${row.violations}`);
 }

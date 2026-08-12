@@ -61,6 +61,12 @@ fn default_true() -> bool {
     true
 }
 
+const DEEP_SCRIPT_FORMAT_BYTE_LIMIT: usize = 2 * 1024 * 1024;
+
+fn uses_lightweight_large_script_format(text: &str, extension: &str) -> bool {
+    is_ts_family_extension(extension) && text.len() > DEEP_SCRIPT_FORMAT_BYTE_LIMIT
+}
+
 fn is_brace_indented_extension(extension: &str) -> bool {
     is_ts_family_extension(extension)
     || is_go_extension(extension)
@@ -258,6 +264,13 @@ fn format_source_internal(
     options: &NativeFormatterOptions,
 ) -> String {
     let normalized = normalize_line_endings(text);
+    if uses_lightweight_large_script_format(&normalized, extension) {
+        return finalize_formatted_lines(
+            format_indentation_preserving_text(&normalized, extension, options),
+            options,
+        );
+    }
+
     let normalized = if is_ts_family_extension(extension) && !is_jsx_extension(extension) {
         normalize_script_statements(&normalized)
     } else {

@@ -6,6 +6,8 @@ import { AliasCollisionError, InvalidAliasError } from "#4f8hale01wb4";
 import type { AliasStrategyFn, AliasStrategyInput, NormalizedImportsOptions, ScannedSourceFile } from "./types.js";
 import { createHashToken, createRandomToken, createSlugToken, isAliasIdValid, stripKnownExtension } from "#ntve5i5a0mol";
 
+type ExistingAliasIds = ReadonlySet<string>|readonly string[];
+
 function buildStrategyInput(file: ScannedSourceFile, existingIds: string[], prefix: string, sourceExtensions: string[]): AliasStrategyInput {
   return {
     absolutePath: file.absolutePath,
@@ -14,6 +16,10 @@ function buildStrategyInput(file: ScannedSourceFile, existingIds: string[], pref
     existingIds: [...existingIds],
     prefix,
   };
+}
+
+function existingAliasIdsSet(existingIds: ExistingAliasIds): ReadonlySet<string> {
+  return existingIds instanceof Set ? existingIds : new Set(existingIds);
 }
 
 function createRandomAlias(input: AliasStrategyInput, length = DEFAULT_ALIAS_RANDOM_LENGTH): string {
@@ -37,22 +43,31 @@ function validateAliasId(aliasId: unknown, file: ScannedSourceFile) {
 function generateAliasId(
   file: ScannedSourceFile,
   options: NormalizedImportsOptions,
-  existingIds: string[],
+  existingIds: ExistingAliasIds,
 ): string {
-  const input = buildStrategyInput(file, existingIds, options.alias.prefix, options.sourceExtensions);
   const strategy = options.alias.strategy;
   const isCustomStrategy = typeof strategy === "function";
+  const existingSet = existingAliasIdsSet(existingIds);
 
   if (strategy === "random") {
     for (let attempt = 0; attempt < 64; attempt += 1) {
-      const aliasId = createRandomAlias(input, options.alias.randomLength);
+      const aliasId = createRandomAlias(
+        buildStrategyInput(file, [], options.alias.prefix, options.sourceExtensions),
+        options.alias.randomLength,
+      );
       validateAliasId(aliasId, file);
-      if (!existingIds.includes(aliasId)) return aliasId;
+      if (!existingSet.has(aliasId)) return aliasId;
     }
 
     throw new AliasCollisionError(`${options.alias.prefix}<random>`, { filePath: file.absolutePath });
   }
 
+  const input = buildStrategyInput(
+    file,
+    isCustomStrategy ? Array.from(existingSet) : [],
+    options.alias.prefix,
+    options.sourceExtensions,
+  );
   const aliasId = strategy === "relative-path-hash"
   ? createRelativePathHashAlias(input)
   : strategy === "relative-path-slug"
@@ -61,7 +76,7 @@ function generateAliasId(
 
   validateAliasId(aliasId, file);
 
-  if (existingIds.includes(aliasId)) {
+  if (existingSet.has(aliasId)) {
     throw new AliasCollisionError(aliasId, {
         filePath: file.absolutePath,
         strategy: isCustomStrategy ? "custom" : strategy,

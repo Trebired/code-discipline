@@ -13,15 +13,29 @@ fn count_code_lines(masked_text: &str, _extension: &str) -> usize {
     .count()
 }
 
-fn count_code_lines_in_range(masked_text: &str, start_line: usize, end_line: usize) -> usize {
-    masked_text
-    .lines()
-    .enumerate()
-    .filter(|(index, line)| {
-            let line_number = index + 1;
-            line_number >= start_line && line_number <= end_line && !line.trim().is_empty()
-    })
-    .count()
+fn code_line_prefix_counts(masked_text: &str) -> Vec<usize> {
+    let mut counts = Vec::new();
+    let mut current = 0_usize;
+    counts.push(current);
+
+    for line in masked_text.lines() {
+        if !line.trim().is_empty() {
+            current += 1;
+        }
+        counts.push(current);
+    }
+
+    counts
+}
+
+fn count_code_lines_from_prefix(counts: &[usize], start_line: usize, end_line: usize) -> usize {
+    if counts.is_empty() || start_line == 0 || end_line < start_line {
+        return 0;
+    }
+    let last_index = counts.len().saturating_sub(1);
+    let start_index = start_line.saturating_sub(1).min(last_index);
+    let end_index = end_line.min(last_index);
+    counts[end_index].saturating_sub(counts[start_index])
 }
 
 fn supports_remove_comments(extension: &str) -> bool {

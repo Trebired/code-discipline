@@ -61,6 +61,22 @@ type SourceRuleProgressEvent = {
   removedComments?: number;
   rewrittenFiles?: number;
   rewrittenImports?: number;
+  chunkBytes?: number;
+  chunkItems?: number;
+  currentFile?: string;
+};
+
+type SourceRuleChunkStartedEvent = {
+  phase: "rule-chunk-started";
+  rule: string;
+  stage: string;
+  chunkIndex: number;
+  completedItems: number;
+  totalItems: number;
+  elapsedMs: number;
+  chunkBytes: number;
+  chunkItems: number;
+  currentFile?: string;
 };
 
 type SourceRuleStartedEvent = {
@@ -88,8 +104,17 @@ type SourceRuleCompletedEvent = {
   rewrittenImports?: number;
 };
 
-type SourceScanProgressEvent = SourceScanStartedEvent | SourceScanStageEvent | SourceScanChunkEvent | SourceScanCompletedEvent;
-type SourceProgressEvent = SourceScanProgressEvent | SourceRuleStartedEvent | SourceRuleProgressEvent | SourceRuleCompletedEvent;
+type SourceScanProgressEvent =
+|SourceScanStartedEvent
+|SourceScanStageEvent
+|SourceScanChunkEvent
+|SourceScanCompletedEvent;
+type SourceProgressEvent =
+|SourceScanProgressEvent
+|SourceRuleStartedEvent
+|SourceRuleChunkStartedEvent
+|SourceRuleProgressEvent
+|SourceRuleCompletedEvent;
 type SourceScanObserver = (event: SourceScanProgressEvent) => void;
 type SourceProgressObserver = (event: SourceProgressEvent) => void;
 
@@ -234,6 +259,7 @@ type NormalizedImportsOptions = SourceScanOptions& {
 
 type ScannedSourceFile = {
   absolutePath: string;
+  byteSize?: number;
   relativeFromProjectRoot: string;
   relativeFromSourceRoot: string;
   extension: string;
@@ -306,6 +332,7 @@ export type {
   SourceScanStartedEvent,
   SourceProgressEvent,
   SourceProgressObserver,
+  SourceRuleChunkStartedEvent,
   SourceRuleCompletedEvent,
   SourceRuleProgressEvent,
   SourceRuleStartedEvent,

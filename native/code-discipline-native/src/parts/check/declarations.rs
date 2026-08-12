@@ -180,10 +180,55 @@ fn check_collect_csharp_declarations(file: &ScannedSourceFile, text: &str) -> Ve
 }
 
 fn check_collect_c_family_function_declarations(file: &ScannedSourceFile, text: &str) -> Vec<CheckDeclaration> {
-    check_collect_function_spans(file, text)
-    .into_iter()
-    .map(|span| check_declaration(&span.kind, span.name, span.start_line))
-    .collect()
+    check_collect_block_function_declarations(file, text)
+}
+
+fn check_collect_block_function_declarations(file: &ScannedSourceFile, text: &str) -> Vec<CheckDeclaration> {
+    let mut declarations = Vec::new();
+    let mut pending_header = String::new();
+    let mut pending_start_line = 0_usize;
+
+    for (index, line) in text.lines().enumerate() {
+        if pending_header.is_empty() {
+            if !header_start_matches(line, &file.extension) {
+                continue;
+            }
+            pending_header = line.to_string();
+            pending_start_line = index + 1;
+        } else {
+            pending_header.push('\n');
+            pending_header.push_str(line);
+        }
+
+        if !check_c_family_header_complete(&pending_header, &file.extension) {
+            continue;
+        }
+        if check_c_family_header_has_body(&pending_header, &file.extension) {
+            declarations.push(check_declaration(
+                    if is_go_extension(&file.extension) && pending_header.contains("func (") { "method" } else { "function" },
+                    extract_function_name(&pending_header, &file.extension),
+                    pending_start_line,
+            ));
+        }
+        pending_header.clear();
+        pending_start_line = 0;
+    }
+    declarations
+}
+
+fn check_c_family_header_complete(header: &str, extension: &str) -> bool {
+    header
+    .lines()
+    .any(|line| {
+            let stripped = strip_line_comments_and_strings(line, extension);
+            stripped.contains('{') || stripped.trim_end().ends_with(';')
+    })
+}
+
+fn check_c_family_header_has_body(header: &str, extension: &str) -> bool {
+    header
+    .lines()
+    .any(|line| strip_line_comments_and_strings(line, extension).contains('{'))
 }
 
 fn check_collect_prefixed_line_declarations(text: String, entries: &[(&str, &str)]) -> Vec<CheckDeclaration> {

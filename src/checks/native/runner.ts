@@ -7,12 +7,12 @@ import { filterSourceFilesForRule } from "#jizekc8duh4i";
 import type { NormalizedImportsOptions, ScannedSourceFile } from "#pkb9x3eo56l7";
 import { supportsImports } from "#87jyjzn68rrk";
 import { requireNativeBinding } from "#q6u4pcd984qa";
-import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "./progress.js";
-import { shouldRunRule } from "./rule-slugs.js";
-import { buildNormalizedSyncOptions } from "./sync-options.js";
-import type { NormalizedCheckCodeDisciplineOptions } from "./types.js";
+import { createRuleProgress, emitRuleChunkAt, emitRuleChunkStarted, emitRuleCompleted } from "#efe33sls019o";
+import { shouldRunRule } from "#ydyygm5y7vgb";
+import { buildNormalizedSyncOptions } from "#ug46qontqfe9";
+import type { NormalizedCheckCodeDisciplineOptions } from "#uqbg4indzud7";
+import { runProgressiveNativeDryRule } from "./dry.js";
 
-const NATIVE_RULE_CHUNK_SIZE = 1000;
 const CHUNKABLE_NATIVE_RULES = new Set<NativeCheckRuleKey>([
     "bannedPatterns",
     "bannedFiles",
@@ -24,6 +24,18 @@ const CHUNKABLE_NATIVE_RULES = new Set<NativeCheckRuleKey>([
     "removeComments",
     "structuralBlankLines",
 ]);
+const DEFAULT_NATIVE_RULE_CHUNK_LIMITS = {
+  maxBytes: 1024 * 1024,
+  maxFiles: 128,
+};
+const HEAVY_NATIVE_RULE_CHUNK_LIMITS: Partial<Record<NativeCheckRuleKey, NativeRuleChunkLimits>> = {
+  bannedPatterns: { maxBytes: 256 * 1024, maxFiles: 64 },
+  dry: { maxBytes: 1024 * 1024, maxFiles: 256 },
+  minDeclarationName: { maxBytes: 128 * 1024, maxFiles: 64 },
+  maxFunctionLines: { maxBytes: 128 * 1024, maxFiles: 64 },
+  removeComments: { maxBytes: 256 * 1024, maxFiles: 64 },
+  structuralBlankLines: { maxBytes: 256 * 1024, maxFiles: 64 },
+};
 
 type NativeCheckRulesResponse = {
   violations: CodeDisciplineViolation[];
@@ -31,6 +43,14 @@ type NativeCheckRulesResponse = {
 
 type NativeCheckRules = ReturnType<typeof selectNativeRules>;
 type NativeCheckRuleKey = keyof NativeCheckRules;
+type NativeRuleChunkLimits = {
+  maxBytes: number;
+  maxFiles: number;
+};
+type NativeRuleBatch = {
+  byteSize: number;
+  files: ScannedSourceFile[];
+};
 type NativeCheckRuleEntry = {
   key: NativeCheckRuleKey;
   rule: string;
@@ -119,22 +139,44 @@ async function createNativeImportState(
   if (!options.rules.imports || !shouldRunRule("imports", options.onlyRules)) {
     return { syncViolations: [] };
   }
+  const progress = createRuleProgress({
+      chunkSize: 1,
+      observer: options.progressObserver,
+      rule: "imports",
+      stage: "sync",
+      totalItems: sourceFiles.length,
+  });
   const normalized = await buildNormalizedSyncOptions(options, false);
-  if (!normalized) return { syncViolations: [] };
+  if (!normalized) {
+    emitRuleCompleted(progress, 0);
+    return { syncViolations: [] };
+  }
   if (!Array.isArray(normalized.allowRelative)) {
     throw new Error("imports.allowRelative functions are not supported by the native check backend");
   }
   const supportedSourceFiles = filterSourceFilesForRule(sourceFiles, options.rules.imports)
   .filter((file) => supportsImports(file.extension));
+  emitRuleChunkAt(progress, 1, sourceFiles.length, 0, {
+      chunkBytes: 0,
+      chunkItems: supportedSourceFiles.length,
+      currentFile: "imports source filter",
+  });
   const aliasPlan = await planTsconfigAliases(normalized, supportedSourceFiles);
+  emitRuleChunkAt(progress, 2, sourceFiles.length, 0, {
+      chunkBytes: 0,
+      chunkItems: aliasPlan.aliasRecords.length,
+      currentFile: "tsconfig alias plan",
+  });
   const packageJsonSyncState = await collectPackageSyncState(normalized, aliasPlan);
+  const syncViolations = createImportSyncViolation({
+      aliasesChanged: aliasPlan.aliasesChanged,
+      aliasPlan,
+      normalized,
+      packageJsonSyncState,
+  });
+  emitRuleCompleted(progress, syncViolations.length);
   return {
-    syncViolations: createImportSyncViolation({
-        aliasesChanged: aliasPlan.aliasesChanged,
-        aliasPlan,
-        normalized,
-        packageJsonSyncState,
-    }),
+    syncViolations,
     rule: {
       excludeDirs: options.rules.imports.excludeDirs,
       allowRelative: normalized.allowRelative,
@@ -177,19 +219,63 @@ function runNativeCheckRule(entry: NativeCheckRuleEntry, sourceFiles = entry.sou
 }
 
 function canChunkNativeCheckRule(entry: NativeCheckRuleEntry): boolean {
-  return CHUNKABLE_NATIVE_RULES.has(entry.key) && entry.sourceFiles.length > NATIVE_RULE_CHUNK_SIZE;
+  if (!CHUNKABLE_NATIVE_RULES.has(entry.key)) return false;
+  const limits = nativeRuleChunkLimits(entry.key);
+  return entry.sourceFiles.length > limits.maxFiles || entry.sourceFiles.reduce((sum, file) => sum + sourceFileByteSize(file), 0) > limits.maxBytes;
 }
 
 function runChunkedNativeCheckRule(entry: NativeCheckRuleEntry, progress: ReturnType<typeof createRuleProgress>): CodeDisciplineViolation[] {
   const violations: CodeDisciplineViolation[] = [];
+  let completedItems = 0;
+  let chunkIndex = 0;
 
-  for (let start = 0; start < entry.sourceFiles.length; start += NATIVE_RULE_CHUNK_SIZE) {
-    const end = Math.min(start + NATIVE_RULE_CHUNK_SIZE, entry.sourceFiles.length);
-    violations.push(...runNativeCheckRule(entry, entry.sourceFiles.slice(start, end)));
-    emitRuleChunk(progress, end, violations.length);
+  for (const batch of createNativeRuleBatches(entry.sourceFiles, nativeRuleChunkLimits(entry.key))) {
+    chunkIndex += 1;
+    emitRuleChunkStarted(progress, chunkIndex, completedItems, {
+        chunkBytes: batch.byteSize,
+        chunkItems: batch.files.length,
+        currentFile: batch.files[0]?.relativeFromProjectRoot,
+    });
+    violations.push(...runNativeCheckRule(entry, batch.files));
+    completedItems += batch.files.length;
+    emitRuleChunkAt(progress, chunkIndex, completedItems, violations.length, {
+        chunkBytes: batch.byteSize,
+        chunkItems: batch.files.length,
+        currentFile: batch.files[0]?.relativeFromProjectRoot,
+    });
   }
 
   return violations;
+}
+
+function nativeRuleChunkLimits(key: NativeCheckRuleKey): NativeRuleChunkLimits {
+  return HEAVY_NATIVE_RULE_CHUNK_LIMITS[key] ?? DEFAULT_NATIVE_RULE_CHUNK_LIMITS;
+}
+
+function sourceFileByteSize(file: ScannedSourceFile): number {
+  return Math.max(1, file.byteSize ?? 0);
+}
+
+function createNativeRuleBatches(sourceFiles: ScannedSourceFile[], limits: NativeRuleChunkLimits): NativeRuleBatch[] {
+  const batches: NativeRuleBatch[] = [];
+  let files: ScannedSourceFile[] = [];
+  let byteSize = 0;
+
+  for (const file of sourceFiles) {
+    const nextSize = sourceFileByteSize(file);
+    if (files.length > 0 && (files.length >= limits.maxFiles || byteSize + nextSize > limits.maxBytes)) {
+      batches.push({ byteSize, files });
+      files = [];
+      byteSize = 0;
+    }
+    files.push(file);
+    byteSize += nextSize;
+  }
+
+  if (files.length > 0) {
+    batches.push({ byteSize, files });
+  }
+  return batches;
 }
 
 function pushNativeCheckRule(
@@ -244,12 +330,14 @@ async function collectNativeCheckViolations(
   const violations: CodeDisciplineViolation[] = [];
   for (const entry of ruleEntries) {
     const progress = createRuleProgress({
-        chunkSize: NATIVE_RULE_CHUNK_SIZE,
+        chunkSize: nativeRuleChunkLimits(entry.key).maxFiles,
         observer: options.progressObserver,
         rule: entry.rule,
         totalItems: entry.sourceFiles.length,
     });
-    const ruleViolations = canChunkNativeCheckRule(entry)
+    const ruleViolations = entry.key === "dry"
+    ? runProgressiveNativeDryRule(entry, nativeRuleChunkLimits(entry.key), progress)
+    : canChunkNativeCheckRule(entry)
     ? runChunkedNativeCheckRule(entry, progress)
     : runNativeCheckRule(entry);
     violations.push(...(entry.syncViolations ?? []), ...ruleViolations);

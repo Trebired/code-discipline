@@ -188,6 +188,7 @@ struct CheckModuleSpecifier {
 
 #[derive(Clone)]
 struct CheckFunctionSpan {
+    code_line_count: Option<usize>,
     kind: String,
     name: String,
     start_line: usize,
@@ -210,7 +211,8 @@ struct CheckBoundaryRewrite {
     removed_blank_lines: usize,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct CheckDryDescriptor {
     character_count: usize,
     classification: String,
@@ -219,4 +221,50 @@ struct CheckDryDescriptor {
     language: String,
     name: String,
     start_line: usize,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct NativeDryDescriptorRequest {
+    source_files: Vec<ScannedSourceFile>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct NativeDryDescriptorResponse {
+    descriptors: Vec<CheckDryDescriptor>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct NativeDrySessionAppendRequest {
+    session_id: String,
+    source_files: Vec<ScannedSourceFile>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct NativeDrySessionAppendResponse {
+    added_descriptor_count: usize,
+    descriptor_count: usize,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct NativeDryViolationsFromDescriptorsRequest {
+    descriptors: Vec<CheckDryDescriptor>,
+    rule: NativeDryRule,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct NativeDrySessionRequest {
+    session_id: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct NativeDrySessionFinishRequest {
+    session_id: String,
+    rule: NativeDryRule,
 }

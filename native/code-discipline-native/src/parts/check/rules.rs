@@ -295,35 +295,49 @@ fn check_push_max_function_line_violations(
 }
 
 fn check_max_function_file_violations(entry: &CheckTextFile, max: usize) -> Vec<CodeDisciplineViolation> {
-    let masked = mask_comments_for_line_count(&entry.text, &entry.file.extension);
-    check_collect_function_spans(&entry.file, &entry.text)
-    .into_iter()
-    .flat_map(|span| {
-            let code_count = count_code_lines_in_range(&masked, span.start_line, span.end_line);
-            if code_count > max {
-                vec![create_max_function_lines_violation(
-                        &entry.file,
-                        &span.kind,
-                        &span.name,
-                        code_count,
-                        max,
-                        span.start_line,
-                        span.end_line,
-                )]
-            } else if span.line_count > max {
-                vec![create_max_function_lines_warning(
-                        &entry.file,
-                        &span.kind,
-                        &span.name,
-                        span.line_count,
-                        code_count,
-                        max,
-                        span.start_line,
-                        span.end_line,
-                )]
-            } else {
-                Vec::new()
+    let spans = check_collect_function_spans(&entry.file, &entry.text);
+    if spans.is_empty() {
+        return Vec::new();
+    }
+
+    let mut violations = Vec::new();
+    let mut code_line_counts: Option<Vec<usize>> = None;
+
+    for span in spans {
+        let code_count = match span.code_line_count {
+            Some(count) => count,
+            None => {
+                let counts = code_line_counts.get_or_insert_with(|| {
+                        let masked = mask_comments_for_line_count(&entry.text, &entry.file.extension);
+                        code_line_prefix_counts(&masked)
+                });
+                count_code_lines_from_prefix(counts, span.start_line, span.end_line)
             }
-    })
-    .collect()
+        };
+
+        if code_count > max {
+            violations.push(create_max_function_lines_violation(
+                    &entry.file,
+                    &span.kind,
+                    &span.name,
+                    code_count,
+                    max,
+                    span.start_line,
+                    span.end_line,
+            ));
+        } else if span.line_count > max {
+            violations.push(create_max_function_lines_warning(
+                    &entry.file,
+                    &span.kind,
+                    &span.name,
+                    span.line_count,
+                    code_count,
+                    max,
+                    span.start_line,
+                    span.end_line,
+            ));
+        }
+    }
+
+    violations
 }

@@ -178,7 +178,7 @@ async function applyStructuralBlankLinesFix(state: FixState, normalized: Normali
 }
 
 async function applyCodeFormatFix(state: FixState, normalized: NormalizedCheckCodeDisciplineOptions): Promise<void> {
-  const result = await applyCodeFormatterFix(normalized);
+  const result = await applyCodeFormatterFix(normalized, state.sourceFiles);
   if (!result) return;
 
   const violations = applyConfiguredSeverity(result.violations, normalized);

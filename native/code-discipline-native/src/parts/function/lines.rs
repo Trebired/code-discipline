@@ -62,7 +62,24 @@ fn c_family_header_leading_word(trimmed: &str) -> &str {
 }
 
 fn is_c_family_header_start(line: &str) -> bool {
-    let trimmed = strip_line_comments_and_strings(line, ".cpp");
+    let raw = line.trim();
+
+    if raw.is_empty() || raw.ends_with(';') || raw.ends_with(':') {
+        return false;
+    }
+    if raw.starts_with('#')
+    || raw.starts_with('[')
+    || raw.starts_with('@')
+    || raw.starts_with('/')
+    || raw.starts_with('*')
+    {
+        return false;
+    }
+    if !raw.contains('(') {
+        return false;
+    }
+
+    let trimmed = strip_line_comments_and_strings(raw, ".cpp");
     let trimmed = trimmed.trim();
 
     if trimmed.is_empty() || trimmed.ends_with(';') || trimmed.ends_with(':') {
@@ -196,6 +213,7 @@ fn collect_block_function_reports(
 fn collect_block_function_spans(file: &ScannedSourceFile, text: &str) -> Vec<FunctionLineSpan> {
     let lines = text.lines().collect::<Vec<_>>();
     let masked_text = mask_comments_for_line_count(text, &file.extension);
+    let code_line_counts = code_line_prefix_counts(&masked_text);
     let mut spans = Vec::new();
     let mut pending_header = String::new();
     let mut pending_start_line = 0_usize;
@@ -218,13 +236,13 @@ fn collect_block_function_spans(file: &ScannedSourceFile, text: &str) -> Vec<Fun
         }
         push_completed_function_span(
             &mut spans,
-            &masked_text,
             &mut pending_header,
             &mut pending_start_line,
             &mut pending_brace_depth,
             &mut pending_name,
             &mut pending_kind,
-            index
+            index,
+            &code_line_counts,
         );
     }
 
@@ -250,6 +268,7 @@ fn collect_simple_typescript_function_reports(
 fn collect_simple_typescript_function_spans(file: &ScannedSourceFile, text: &str) -> Vec<FunctionLineSpan> {
     let lines = text.lines().collect::<Vec<_>>();
     let masked_text = mask_comments_for_line_count(text, &file.extension);
+    let code_line_counts = code_line_prefix_counts(&masked_text);
     let mut spans = Vec::new();
     let mut pending_kind = String::new();
     let mut pending_name = String::new();
@@ -274,7 +293,7 @@ fn collect_simple_typescript_function_spans(file: &ScannedSourceFile, text: &str
         }
 
         let end_line = index + 1;
-        spans.push(function_line_span(&pending_kind, &pending_name, pending_start_line, end_line, &masked_text));
+        spans.push(function_line_span(&pending_kind, &pending_name, pending_start_line, end_line, &code_line_counts));
         pending_kind.clear();
         pending_name.clear();
         pending_start_line = 0;
