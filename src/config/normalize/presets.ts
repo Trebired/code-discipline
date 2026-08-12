@@ -159,14 +159,16 @@ function readPresetPackageConfig(packageName: string, imported: unknown): CodeDi
     });
   }
 
-  if (exported.forVersion !== CODE_DISCIPLINE_PACKAGE_VERSION) {
+  const targetVersion = readVersionCompatibility(exported.forVersion);
+  const runningVersion = readVersionCompatibility(CODE_DISCIPLINE_PACKAGE_VERSION);
+  if (targetVersion.compatibilityKey !== runningVersion.compatibilityKey) {
     const message = [
       `Preset ${packageName} targets Code Discipline ${exported.forVersion},`,
       `but the running version is ${CODE_DISCIPLINE_PACKAGE_VERSION}`,
     ].join(" ");
     throw new InvalidCodeDisciplineConfigError(message, {
         preset: packageName,
-        expected: CODE_DISCIPLINE_PACKAGE_VERSION,
+        expected: runningVersion.compatibilityKey,
         actual: exported.forVersion,
     });
   }
@@ -181,6 +183,13 @@ function readPresetPackageConfig(packageName: string, imported: unknown): CodeDi
   const config = { ...exported };
   delete config.forVersion;
   return config as CodeDisciplineConfig;
+}
+
+function readVersionCompatibility(version: string): { compatibilityKey: string } {
+  const [major = "", minor = ""] = version.split(".");
+  return {
+    compatibilityKey: `${major}.${minor}`,
+  };
 }
 
 async function loadPresetPackageConfig(packageName: string, context: PresetResolutionContext): Promise<CodeDisciplineConfig> {

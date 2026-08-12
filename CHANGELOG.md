@@ -6,6 +6,10 @@ This project follows semantic versioning once published.
 
 ## Unreleased
 
+## 6.0.6
+
+- Relaxed external preset `forVersion` matching so only the Code Discipline major and minor versions must match.
+
 ## 6.0.5
 
 - Fixed native dead-import detection for compact namespace imports such as `import *as value from "package"`.

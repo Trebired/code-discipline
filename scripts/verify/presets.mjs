@@ -233,6 +233,25 @@ async function verifyVersionMismatchFailsClearly() {
   );
 }
 
+async function verifyPresetPatchVersionCanDrift() {
+  const projectRoot = await createProject("patch-compatible");
+  const [major, minor, patch = "0"] = packageVersion.split(".");
+  const compatiblePatch = patch === "0" ? "1" : "0";
+  await writePresetPackage(projectRoot, "@fixture/strict-preset", {
+      ...strictPresetConfig(),
+      forVersion: `${major}.${minor}.${compatiblePatch}`,
+  });
+  await writeSource(projectRoot, "src/large.ts", Array.from({ length: 351 }, (_, index) => `export const value${index} = ${index};`).join("\n"));
+
+  const result = await run(presetOptions(projectRoot, {
+        onlyRules: ["max-file-lines"],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.equal(result.violations.length, 1);
+  assert.equal(result.violations[0].rule, "max-file-lines");
+}
+
 async function verifyWrappedPresetFailsClearly() {
   const projectRoot = await createProject("wrapped");
   await writePresetPackage(projectRoot, "@fixture/strict-preset", {
@@ -293,6 +312,7 @@ await verifyNodeProcessBoundaryStillMerges();
 await verifyOldBuiltInPresetFailsClearly();
 await verifyMissingVersionFailsClearly();
 await verifyVersionMismatchFailsClearly();
+await verifyPresetPatchVersionCanDrift();
 await verifyWrappedPresetFailsClearly();
 await verifyNestedPresetFailsClearly();
 await verifyCliUsesPresetLoggingConfig();
