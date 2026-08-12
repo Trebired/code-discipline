@@ -74,7 +74,9 @@ async function normalizeCheckCodeDisciplineOptions(
   mode: CodeDisciplineMode,
 ): Promise<NormalizedCheckCodeDisciplineOptions> {
   assertRemovedCheckOptions(options as Record<string, unknown>);
-  const presetOptions = applyCodeDisciplinePresets(options);
+  const presetOptions = await applyCodeDisciplinePresets(options, {
+      projectRoot: options.projectRoot,
+  });
   const source = await normalizeSourceOptions(presetOptions);
   assertRemovedRuleKeys(presetOptions.rules);
   const rules = presetOptions.rules;

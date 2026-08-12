@@ -10,7 +10,10 @@ import { applyTextReplacements, collectModuleSpecifiers } from "#27pccnhol1ci";
 import { resolveFileCandidate } from "#ay5rr8vjr5fh";
 import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
 import { pathExists } from "#ntve5i5a0mol";
-import { resolveCodeDisciplinePresetConfig } from "./normalize/presets.js";
+import {
+  defineCodeDisciplinePreset,
+  resolveCodeDisciplinePresetConfig,
+} from "./normalize/presets.js";
 
 const DEFAULT_CONFIG_FILENAMES = [".trebired/code-discipline/config.ts"];
 
@@ -222,12 +225,13 @@ async function loadResolvedCodeDisciplineConfig(projectRoot: string, configPath?
   const loaded = await loadCodeDisciplineConfigModule(projectRoot, resolvedPath);
   return {
     ...loaded,
-    config: resolveCodeDisciplinePresetConfig(loaded.config),
+    config: await resolveCodeDisciplinePresetConfig(loaded.config, { projectRoot }),
   };
 }
 
 export {
   DEFAULT_CONFIG_FILENAMES,
+  defineCodeDisciplinePreset,
   defineCodeDisciplineConfig,
   findCodeDisciplineConfigModule,
   loadCodeDisciplineConfigModule,

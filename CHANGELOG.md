@@ -6,6 +6,13 @@ This project follows semantic versioning once published.
 
 ## Unreleased
 
+## 6.0.0
+
+- Removed built-in preset names. `presets.use` now resolves npm preset packages from the checked project root, requires exact Code Discipline version alignment, and rejects nested preset declarations.
+- Added `defineCodeDisciplinePreset()` and `CodeDisciplinePresetPackage` for authoring external preset packages.
+- Moved check-mode rule execution onto one native Rust aggregate runner, including TypeScript-family source checks, so the JavaScript side only prepares config, scan results, import manifest metadata, and output formatting.
+- Kept fix mode sequential while reusing the required native backend for the existing native-backed fixers.
+
 ## 5.5.2
 
 - Split preset definitions into `src/config/presets/*` and kept preset normalization focused on validation and merging.

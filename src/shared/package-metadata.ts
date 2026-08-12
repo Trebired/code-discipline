@@ -9,6 +9,7 @@ type PackageJson = {
     };
   };
   name?: string;
+  version?: string;
 };
 
 function findPackageJsonPath(): string | null {
@@ -51,11 +52,13 @@ function packageSlug(name: string): string {
 
 const packageJson = readOwnPackageJson();
 const PACKAGE_JSON_NAME = cleanSegment(packageJson.name);
+const PACKAGE_JSON_VERSION = cleanSegment(packageJson.version);
 const PACKAGE_CONFIG_ORGANIZATION_NAME = cleanSegment(packageJson.config?.organization?.name);
 const PACKAGE_NAME = PACKAGE_JSON_NAME || (PACKAGE_CONFIG_ORGANIZATION_NAME ? `@${PACKAGE_CONFIG_ORGANIZATION_NAME}/code-discipline` : "code-discip" +
   "line");
 const PACKAGE_ORGANIZATION_NAME = PACKAGE_CONFIG_ORGANIZATION_NAME || packageScope(PACKAGE_JSON_NAME);
 const PACKAGE_SLUG = packageSlug(PACKAGE_NAME) || "code-discipline";
+const PACKAGE_VERSION = PACKAGE_JSON_VERSION || "0.0.0";
 
 function buildPackageLogGroup(...parts: string[]): string {
   return [PACKAGE_ORGANIZATION_NAME, PACKAGE_SLUG, ...parts]
@@ -69,4 +72,5 @@ export {
   PACKAGE_NAME,
   PACKAGE_ORGANIZATION_NAME,
   PACKAGE_SLUG,
+  PACKAGE_VERSION,
 };

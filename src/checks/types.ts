@@ -43,10 +43,15 @@ type NodeProcessBoundaryPresetOptions = {
   envBoundaryFiles?: string[];
   processBoundaryFiles?: string[];
 };
-type CodeDisciplinePresetName = "trebired";
 type CodeDisciplinePresets = {
-  use?: CodeDisciplinePresetName | CodeDisciplinePresetName[];
+  use?: string | string[];
+};
+type CodeDisciplineHelpers = {
   nodeProcessBoundary?: NodeProcessBoundaryPresetOptions;
+};
+type CodeDisciplinePresetPackage = {
+  codeDisciplineVersion: string;
+  config: CodeDisciplineConfig;
 };
 type BannedFileRuleEntry = string | {
   glob: string;
@@ -134,6 +139,7 @@ type CheckCodeDisciplineOptions = {
   gitignorePath?: string;
   logging?: LoggingOptions;
   presets?: CodeDisciplinePresets;
+  helpers?: CodeDisciplineHelpers;
   rules?: CodeDisciplineRules;
   lifecycle?: CodeDisciplineLifecycleHooks;
   onlyRules?: CodeDisciplineCheckSelectorSlug[];
@@ -281,8 +287,9 @@ export type {
   CodeDisciplineLifecycleHookResult,
   CodeDisciplineLifecycleHooks,
   CodeDisciplineMode,
-  CodeDisciplinePresetName,
+  CodeDisciplinePresetPackage,
   CodeDisciplinePresets,
+  CodeDisciplineHelpers,
   CodeDisciplineRuleSlug,
   CodeDisciplineRuleSeverity,
   CodeDisciplineRuntimeMode,

@@ -1,4 +1,4 @@
-import { buildPackageLogGroup, PACKAGE_NAME } from "./package-metadata.js";
+import { buildPackageLogGroup, PACKAGE_NAME, PACKAGE_VERSION } from "./package-metadata.js";
 
 const DEFAULT_SOURCE_ROOT = ".";
 const CODE_DISCIPLINE_STATE_DIR = ".trebired/code-discipline";
@@ -41,6 +41,7 @@ const DEFAULT_REMOVE_DEAD_IMPORTS = false;
 const DEFAULT_REDUNDANT_PATH_SEGMENTS_SEPARATORS = ["_", "-"];
 const CODE_DISCIPLINE_LOG_GROUP = buildPackageLogGroup();
 const CODE_DISCIPLINE_PACKAGE_NAME = PACKAGE_NAME;
+const CODE_DISCIPLINE_PACKAGE_VERSION = PACKAGE_VERSION;
 const RANDOM_ALIAS_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
 const HASH_ALIAS_LENGTH = 12;
 
@@ -60,4 +61,5 @@ export {
   RANDOM_ALIAS_ALPHABET,
   CODE_DISCIPLINE_LOG_GROUP,
   CODE_DISCIPLINE_PACKAGE_NAME,
+  CODE_DISCIPLINE_PACKAGE_VERSION,
 };

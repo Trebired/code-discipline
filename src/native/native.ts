@@ -9,6 +9,7 @@ type NativeBinding = {
   formatSourceFiles(requestJson: string): string;
   formatSourceText(requestJson: string): string;
   fixRemoveCommentsRule(requestJson: string): string;
+  runCheckRules(requestJson: string): string;
   runRedundantPathSegmentsRule(requestJson: string): string;
   runMaxBlockFunctionLinesRule(requestJson: string): string;
   runMaxFileLinesRule(requestJson: string): string;

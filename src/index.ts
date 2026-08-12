@@ -13,6 +13,7 @@ export {
 export { checkCodeDiscipline, fixCodeDiscipline } from "./checks/index.js";
 export {
   DEFAULT_CONFIG_FILENAMES,
+  defineCodeDisciplinePreset,
   defineCodeDisciplineConfig,
   findCodeDisciplineConfigModule,
   loadResolvedCodeDisciplineConfig,
@@ -125,7 +126,8 @@ export type {
   CodeDisciplineLifecycleHookResult,
   CodeDisciplineLifecycleHooks,
   CodeDisciplineCheckSelectorSlug,
-  CodeDisciplinePresetName,
+  CodeDisciplineHelpers,
+  CodeDisciplinePresetPackage,
   CodeDisciplinePresets,
   CodeDisciplineRuleSlug,
   CodeDisciplineRuntimeMode as SharedCodeDisciplineRuntimeMode,

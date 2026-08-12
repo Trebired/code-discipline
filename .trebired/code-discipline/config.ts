@@ -1,27 +1,60 @@
-import type { CodeDisciplineConfig } from "@trebired/code-discipline";
-
-function defineCodeDisciplineConfig(config: CodeDisciplineConfig): CodeDisciplineConfig {
-  return config;
-}
+import { defineCodeDisciplineConfig } from "@trebired/code-discipline";
 
 export default defineCodeDisciplineConfig({
-  presets: {
-    use: ["trebired"],
+  logging: {
+    warnings: false,
+  },
+  ignore: {
+    entries: [],
+    use_gitignore: true,
   },
   rules: {
+    formatting: {},
+    bannedFiles: {
+      patterns: [
+        { glob: "**/*.spec.ts" },
+        { glob: "**/*.spec.tsx" },
+      ],
+    },
     bannedPatterns: {
       patterns: [
         {
           value: "trebired",
           allowedFiles: [
+            "package.json",
             "src/checks/types.ts",
-            "src/config/presets/index.ts",
-            "src/config/presets/trebired.ts",
             "scripts/verify/language/support.mjs",
             "scripts/verify/presets.mjs",
           ],
         },
       ],
     },
+    minDeclarationName: {},
+    maxCharactersPerLine: {},
+    structuralBlankLines: {},
+    minFileLines: {},
+    maxFileLines: {
+      max: 350,
+    },
+    maxFunctionLines: {
+      max: 50,
+    },
+    redundantPathSegments: {},
+    removeComments: {},
+    imports: {
+      alias: {
+        strategy: "random",
+      },
+      allowRelative: ["./"],
+      output: {
+        type: "alias-map",
+      },
+      runtime: {
+        normalize: "relative-dot-prefix",
+        restoreAfterRun: false,
+      },
+      removeDeadImports: true,
+    },
+    dry: {},
   },
 });

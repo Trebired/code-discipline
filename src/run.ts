@@ -145,12 +145,15 @@ async function codeDiscipline(options: CodeDisciplineOptions): Promise<CodeDisci
     logging: options.logging,
     onlyRules: options.onlyRules,
     presets: options.presets,
+    helpers: options.helpers,
     rules: options.rules,
     excludeSourceExtensions: options.excludeSourceExtensions,
     progressObserver: options.progressObserver,
     scanObserver: options.scanObserver,
   };
-  const resolvedConfig = resolveCodeDisciplinePresetConfig(baseConfig);
+  const resolvedConfig = await resolveCodeDisciplinePresetConfig(baseConfig, {
+      projectRoot: options.projectRoot,
+  });
   const resolvedOptions: RuntimeCodeDisciplineOptions = {
     ...resolvedConfig,
     configPath: options.configPath,

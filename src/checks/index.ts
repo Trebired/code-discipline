@@ -1,10 +1,8 @@
 import { result as createResult } from "@package/result";
 import { normalizeCheckCodeDisciplineOptions } from "#x458f9t6w4a6";
-import { collectImportViolations } from "#zdmj0zb82kk1";
 import { scanSourceFiles } from "#ua9whqppp94v";
 import { runLogGroup } from "#foa3t3ao5irq";
 import { resolveLogger } from "#5koja8ae2wwn";
-import { filterSourceFilesForRule } from "#jizekc8duh4i";
 import type { CodeDisciplineResult, CodeDisciplineViolation } from "#bsmch74up4fm";
 import {
   applyBannedFilesFix,
@@ -18,18 +16,7 @@ import {
 } from "./apply-fixes.js";
 import type { FixState } from "./apply-fixes.js";
 import { collectFormatViolations } from "./format.js";
-import { shouldRunRule } from "./rule-slugs.js";
-import { collectBannedFileViolations } from "./rules/banned/files.js";
-import { collectBannedPatternViolations } from "./rules/banned/patterns.js";
-import { collectStructuralBlankLinesViolations } from "./rules/blank-lines/index.js";
-import { collectDryViolations } from "./rules/dry/index.js";
-import { runMaxCharactersPerLineRule } from "./rules/max/characters-per-line.js";
-import { runMaxFileLinesRule } from "./rules/max/file-lines.js";
-import { runMaxFunctionLinesRule } from "./rules/max/function-lines.js";
-import { runRedundantPathSegmentsRule } from "./rules/redundant-path-segments/index.js";
-import { runMinDeclarationNameRule } from "./rules/min/declaration/name.js";
-import { runMinFileLinesRule } from "./rules/min/file/lines.js";
-import { collectRemoveCommentsViolations } from "./rules/remove-comments.js";
+import { collectNativeCheckViolations } from "./native-runner.js";
 import { applyConfiguredSeverity } from "./severity.js";
 import { buildNormalizedSyncOptions } from "./sync-options.js";
 import type {
@@ -105,47 +92,7 @@ function attachDisciplineResult<T extends CodeDisciplineResult>(
 
 async function collectViolations(options: NormalizedCheckCodeDisciplineOptions): Promise<CodeDisciplineViolation[]> {
   const sourceFiles = await scanSourceFiles(options);
-  const violations: CodeDisciplineViolation[] = [];
-  if (options.rules.bannedPatterns && shouldRunRule("banned-patterns", options.onlyRules)) {
-    violations.push(...await collectBannedPatternViolations(filterSourceFilesForRule(sourceFiles, options.rules.bannedPatterns), options));
-  }
-  if (options.rules.bannedFiles && shouldRunRule("banned-files", options.onlyRules)) {
-    violations.push(...collectBannedFileViolations(filterSourceFilesForRule(sourceFiles, options.rules.bannedFiles), options));
-  }
-  if (options.rules.minFileLines && shouldRunRule("min-file-lines", options.onlyRules)) {
-    violations.push(...await runMinFileLinesRule(filterSourceFilesForRule(sourceFiles, options.rules.minFileLines), options));
-  }
-  if (options.rules.minDeclarationName && shouldRunRule("min-declaration-name", options.onlyRules)) {
-    violations.push(...await runMinDeclarationNameRule(filterSourceFilesForRule(sourceFiles, options.rules.minDeclarationName), options));
-  }
-  if (options.rules.maxFileLines && shouldRunRule("max-file-lines", options.onlyRules)) {
-    violations.push(...await runMaxFileLinesRule(filterSourceFilesForRule(sourceFiles, options.rules.maxFileLines), options));
-  }
-  if (options.rules.maxCharactersPerLine && shouldRunRule("max-characters-per-line", options.onlyRules)) {
-    violations.push(...await runMaxCharactersPerLineRule(filterSourceFilesForRule(sourceFiles, options.rules.maxCharactersPerLine), options));
-  }
-  if (options.rules.maxFunctionLines && shouldRunRule("max-function-lines", options.onlyRules)) {
-    violations.push(...await runMaxFunctionLinesRule(filterSourceFilesForRule(sourceFiles, options.rules.maxFunctionLines), options));
-  }
-  if (options.rules.redundantPathSegments && shouldRunRule("redundant-path-segments", options.onlyRules)) {
-    violations.push(...runRedundantPathSegmentsRule(filterSourceFilesForRule(sourceFiles, options.rules.redundantPathSegments), options));
-  }
-  if (options.rules.dry && shouldRunRule("dry", options.onlyRules)) {
-    violations.push(...await collectDryViolations(filterSourceFilesForRule(sourceFiles, options.rules.dry), options));
-  }
-  if (options.rules.imports && shouldRunRule("imports", options.onlyRules)) {
-    const normalizedSyncOptions = await buildNormalizedSyncOptions(options, false);
-    if (normalizedSyncOptions) {
-      violations.push(...await collectImportViolations(filterSourceFilesForRule(sourceFiles, options.rules.imports), normalizedSyncOptions));
-    }
-  }
-  if (options.rules.removeComments && shouldRunRule("remove-comments", options.onlyRules)) {
-    violations.push(...await collectRemoveCommentsViolations(filterSourceFilesForRule(sourceFiles, options.rules.removeComments), options));
-  }
-  if (options.rules.structuralBlankLines && shouldRunRule("structural-blank-lines", options.onlyRules)) {
-    const files = filterSourceFilesForRule(sourceFiles, options.rules.structuralBlankLines);
-    violations.push(...await collectStructuralBlankLinesViolations(files, options));
-  }
+  const violations = await collectNativeCheckViolations(sourceFiles, options);
   violations.push(...await collectFormatViolations(options));
   return sortViolations(applyConfiguredSeverity(violations, options));
 }
