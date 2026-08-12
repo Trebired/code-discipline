@@ -422,7 +422,7 @@ Preset packages are ordinary npm packages. They default-export a Code Discipline
 
 ```ts
 export default {
-  forVersion: "6.0.3",
+  forVersion: "6.0.4",
   logging: {
     warnings: false,
   },

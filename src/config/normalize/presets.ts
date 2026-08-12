@@ -1,3 +1,4 @@
+import fs from "node:fs/promises";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
@@ -9,13 +10,18 @@ import type {
   CodeDisciplineConfig,
   CodeDisciplinePresets,
 } from "#uqbg4indzud7";
-import { isPlainRecord, normalizeRelativePath, uniqueStrings } from "#ntve5i5a0mol";
+import { isPlainRecord, normalizeRelativePath, pathExists, uniqueStrings } from "#ntve5i5a0mol";
 import { CODE_DISCIPLINE_PACKAGE_VERSION } from "#ik5y0pee4ah1";
 import { createNodeProcessBoundaryConfig } from "./node-process-boundary.js";
 import { normalizeAllowedFiles } from "./path-lists.js";
 
 type PresetResolutionContext = {
   projectRoot: string;
+};
+type PackageJson = {
+  exports?: unknown;
+  main?: string;
+  module?: string;
 };
 
 const PACKAGE_NAME_PATTERN = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/iu;
@@ -62,6 +68,73 @@ function isPresetPackageName(value: unknown): value is string {
 
 function createProjectRequire(projectRoot: string): NodeRequire {
   return createRequire(path.join(projectRoot, "package.json"));
+}
+
+async function readJsonFile<T>(filePath: string): Promise<T> {
+  return JSON.parse(await fs.readFile(filePath, "utf8")) as T;
+}
+
+function readConditionalExportEntry(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
+  if (!isPlainRecord(value)) return undefined;
+
+  for (const condition of ["import", "default", "node", "bun"]) {
+    const entry = readConditionalExportEntry(value[condition]);
+    if (entry) return entry;
+  }
+
+  return undefined;
+}
+
+function readPackageExportEntry(exportsValue: unknown): string | undefined {
+  if (typeof exportsValue === "string") return exportsValue;
+  if (!isPlainRecord(exportsValue)) return undefined;
+  return readConditionalExportEntry(exportsValue["."] ?? exportsValue);
+}
+
+async function resolvePackageJsonPresetModule(
+  packageName: string,
+  context: PresetResolutionContext,
+): Promise<string|undefined> {
+  const packageRoot = path.join(context.projectRoot, "node_modules", ...packageName.split("/"));
+  const packageJsonPath = path.join(packageRoot, "package.json");
+  if (!await pathExists(packageJsonPath)) return undefined;
+
+  const packageJson = await readJsonFile<PackageJson>(packageJsonPath);
+  const entry = readPackageExportEntry(packageJson.exports)
+  ??packageJson.module
+  ??packageJson.main
+  ??"index.js";
+  const modulePath = path.resolve(packageRoot, entry);
+
+  if (!await pathExists(modulePath)) {
+    throw new InvalidCodeDisciplineConfigError(`Preset ${packageName} package entry was not found`, {
+        preset: packageName,
+        entry,
+        modulePath,
+    });
+  }
+
+  return modulePath;
+}
+
+async function resolvePresetPackageModulePath(
+  packageName: string,
+  context: PresetResolutionContext,
+): Promise<string> {
+  const require = createProjectRequire(context.projectRoot);
+
+  try {
+    return require.resolve(packageName);
+  } catch (error) {
+    const modulePath = await resolvePackageJsonPresetModule(packageName, context);
+    if (modulePath) return modulePath;
+
+    throw new InvalidCodeDisciplineConfigError(`Code discipline preset package was not found: ${packageName}`, {
+        preset: packageName,
+        cause: error instanceof Error ? error.message : String(error),
+    });
+  }
 }
 
 function readPresetPackageConfig(packageName: string, imported: unknown): CodeDisciplineConfig {
@@ -111,17 +184,7 @@ function readPresetPackageConfig(packageName: string, imported: unknown): CodeDi
 }
 
 async function loadPresetPackageConfig(packageName: string, context: PresetResolutionContext): Promise<CodeDisciplineConfig> {
-  const require = createProjectRequire(context.projectRoot);
-  let modulePath: string;
-
-  try {
-    modulePath = require.resolve(packageName);
-  } catch (error) {
-    throw new InvalidCodeDisciplineConfigError(`Code discipline preset package was not found: ${packageName}`, {
-        preset: packageName,
-        cause: error instanceof Error ? error.message : String(error),
-    });
-  }
+  const modulePath = await resolvePresetPackageModulePath(packageName, context);
 
   return readPresetPackageConfig(packageName, await import(pathToFileURL(modulePath).href));
 }

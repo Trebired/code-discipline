@@ -86,6 +86,27 @@ async function verifyExternalPresetEnablesStrictRules() {
   assert.equal(result.violations[0].filePath, "src/large.ts");
 }
 
+async function verifyImportOnlyPresetPackageLoads() {
+  const projectRoot = await createProject("import-only");
+  await writePresetPackage(projectRoot, "@fixture/strict-preset", strictPresetConfig(), {
+      exports: {
+        ".": {
+          import: "./index.mjs",
+          types: "./index.d.ts",
+        },
+      },
+  });
+  await writeSource(projectRoot, "src/large.ts", Array.from({ length: 351 }, (_, index) => `export const value${index} = ${index};`).join("\n"));
+
+  const result = await run(presetOptions(projectRoot, {
+        onlyRules: ["max-file-lines"],
+  }));
+
+  assert.equal(result.ok, false);
+  assert.equal(result.violations.length, 1);
+  assert.equal(result.violations[0].rule, "max-file-lines");
+}
+
 async function verifyRepoConfigOverridesPresetScalars() {
   const projectRoot = await createProject("override");
   await writePresetPackage(projectRoot, "@fixture/strict-preset", strictPresetConfig());
@@ -264,6 +285,7 @@ async function verifyCliUsesPresetLoggingConfig() {
 }
 
 await verifyExternalPresetEnablesStrictRules();
+await verifyImportOnlyPresetPackageLoads();
 await verifyRepoConfigOverridesPresetScalars();
 await verifyMultiplePresetsMergeLeftToRight();
 await verifyBannedPatternsMergeDuplicateAllowlists();

@@ -6,6 +6,10 @@ This project follows semantic versioning once published.
 
 ## Unreleased
 
+## 6.0.4
+
+- Fixed external preset package resolution for import-only package `exports`.
+
 ## 6.0.3
 
 - Added mandatory top-level `forVersion` metadata to external preset package exports and validate it against the running Code Discipline version.
