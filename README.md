@@ -418,10 +418,11 @@ export default defineConfig({
 
 ### Presets
 
-Preset packages are ordinary npm packages. They default-export a Code Discipline config object directly. The preset package does not need to import or depend on `@trebired/code-discipline`.
+Preset packages are ordinary npm packages. They default-export a Code Discipline config object directly with a top-level `forVersion`. The preset package does not need to import or depend on `@trebired/code-discipline`.
 
 ```ts
 export default {
+  forVersion: "6.0.3",
   logging: {
     warnings: false,
   },
@@ -440,7 +441,7 @@ export default {
 };
 ```
 
-Nested `presets` inside a preset package are rejected. Multiple project presets merge left to right, then the project config merges last.
+Code Discipline rejects preset packages whose `forVersion` does not exactly match the running package version. Nested `presets` inside a preset package are rejected. Multiple project presets merge left to right, then the project config merges last.
 
 ### Helpers
 

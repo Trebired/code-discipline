@@ -10,6 +10,7 @@ import type {
   CodeDisciplinePresets,
 } from "#uqbg4indzud7";
 import { isPlainRecord, normalizeRelativePath, uniqueStrings } from "#ntve5i5a0mol";
+import { CODE_DISCIPLINE_PACKAGE_VERSION } from "#ik5y0pee4ah1";
 import { createNodeProcessBoundaryConfig } from "./node-process-boundary.js";
 import { normalizeAllowedFiles } from "./path-lists.js";
 
@@ -79,6 +80,24 @@ function readPresetPackageConfig(packageName: string, imported: unknown): CodeDi
     });
   }
 
+  if (typeof exported.forVersion !== "string" || !exported.forVersion.trim()) {
+    throw new InvalidCodeDisciplineConfigError(`Preset ${packageName} must declare forVersion`, {
+        preset: packageName,
+    });
+  }
+
+  if (exported.forVersion !== CODE_DISCIPLINE_PACKAGE_VERSION) {
+    const message = [
+      `Preset ${packageName} targets Code Discipline ${exported.forVersion},`,
+      `but the running version is ${CODE_DISCIPLINE_PACKAGE_VERSION}`,
+    ].join(" ");
+    throw new InvalidCodeDisciplineConfigError(message, {
+        preset: packageName,
+        expected: CODE_DISCIPLINE_PACKAGE_VERSION,
+        actual: exported.forVersion,
+    });
+  }
+
   if ("presets"in exported) {
     throw new InvalidCodeDisciplineConfigError(`Preset ${packageName} config cannot declare nested presets`, {
         preset: packageName,
@@ -86,7 +105,9 @@ function readPresetPackageConfig(packageName: string, imported: unknown): CodeDi
     });
   }
 
-  return exported as CodeDisciplineConfig;
+  const config = { ...exported };
+  delete config.forVersion;
+  return config as CodeDisciplineConfig;
 }
 
 async function loadPresetPackageConfig(packageName: string, context: PresetResolutionContext): Promise<CodeDisciplineConfig> {

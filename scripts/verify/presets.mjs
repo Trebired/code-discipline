@@ -5,6 +5,8 @@ import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
+const packageJson = JSON.parse(await fs.readFile(path.join(repoRoot, "package.json"), "utf8"));
+const packageVersion = packageJson.version;
 const { run } = await import(pathToFileURL(path.join(repoRoot, "dist/index.js")).href);
 const { runCli } = await import(pathToFileURL(path.join(repoRoot, "dist/cli/run.js")).href);
 
@@ -47,6 +49,7 @@ async function writePresetPackage(root, packageNameInput, preset, packageJsonExt
 
 function strictPresetConfig(extra = {}) {
   return {
+    forVersion: packageVersion,
     logging: { warnings: false },
     ignore: { use_gitignore: false },
     rules: {
@@ -185,10 +188,34 @@ async function verifyOldBuiltInPresetFailsClearly() {
   );
 }
 
+async function verifyMissingVersionFailsClearly() {
+  const projectRoot = await createProject("missing-version");
+  const { forVersion, ...config } = strictPresetConfig();
+  await writePresetPackage(projectRoot, "@fixture/strict-preset", config);
+
+  await assert.rejects(
+    () => run(presetOptions(projectRoot)),
+    /must declare forVersion/,
+  );
+}
+
+async function verifyVersionMismatchFailsClearly() {
+  const projectRoot = await createProject("version-mismatch");
+  await writePresetPackage(projectRoot, "@fixture/strict-preset", {
+      ...strictPresetConfig(),
+      forVersion: "0.0.0",
+  });
+
+  await assert.rejects(
+    () => run(presetOptions(projectRoot)),
+    /targets Code Discipline 0\.0\.0/,
+  );
+}
+
 async function verifyWrappedPresetFailsClearly() {
   const projectRoot = await createProject("wrapped");
   await writePresetPackage(projectRoot, "@fixture/strict-preset", {
-      codeDisciplineVersion: "6.0.1",
+      codeDisciplineVersion: packageVersion,
       config: strictPresetConfig(),
   });
 
@@ -242,6 +269,8 @@ await verifyMultiplePresetsMergeLeftToRight();
 await verifyBannedPatternsMergeDuplicateAllowlists();
 await verifyNodeProcessBoundaryStillMerges();
 await verifyOldBuiltInPresetFailsClearly();
+await verifyMissingVersionFailsClearly();
+await verifyVersionMismatchFailsClearly();
 await verifyWrappedPresetFailsClearly();
 await verifyNestedPresetFailsClearly();
 await verifyCliUsesPresetLoggingConfig();

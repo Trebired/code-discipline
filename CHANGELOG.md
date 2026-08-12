@@ -6,9 +6,13 @@ This project follows semantic versioning once published.
 
 ## Unreleased
 
+## 6.0.3
+
+- Added mandatory top-level `forVersion` metadata to external preset package exports and validate it against the running Code Discipline version.
+
 ## 6.0.2
 
-- Changed external preset packages to default-export the Code Discipline config object directly, with no required Code Discipline import, wrapper object, version field, or peer dependency.
+- Changed external preset packages to default-export the Code Discipline config object directly, with no required Code Discipline import, wrapper object, or peer dependency.
 - Removed the obsolete `definePreset()` helper and `CodeDisciplinePresetPackage` type.
 
 ## 6.0.1
