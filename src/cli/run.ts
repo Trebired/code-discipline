@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 
+import path from "node:path";
+
 import { run } from "#9epcrzq92bsw";
 import type { CodeDisciplineRuleSlug, FixableRuleSlug } from "#uqbg4indzud7";
 import { loadResolvedConfig } from "#rqu2hcvfcs4c";
 import { runGatedCommand } from "#arhoe19ayg60";
 import { isDirectExecution, isPlainRecord } from "#ntve5i5a0mol";
+import { CODE_DISCIPLINE_LOG_GROUP } from "#ik5y0pee4ah1";
 import { createDefaultCliLogger, type CliLogContext, writeLogText } from "./logging.js";
 import { writeCheckOutput, writeFixOutput, writeSavedReport } from "./output.js";
 import { createCliScanObserver, formatDuration, timeTask } from "./progress.js";
@@ -28,6 +31,9 @@ type CliWriters = {
   warn: CliWriter;
 };
 
+const CLI_LOG_GROUP = `${CODE_DISCIPLINE_LOG_GROUP}.cli`;
+const CONFIG_LOG_GROUP = `${CODE_DISCIPLINE_LOG_GROUP}.config`;
+
 function shouldShowWarnings(config: Record<string, unknown>): boolean {
   const logging = config.logging;
   return !isPlainRecord(logging) || logging.warnings !== false;
@@ -37,10 +43,10 @@ function createCliWriters(options: CliRunOptions): CliWriters {
   const useDefaultLogger = !options.stdout && !options.stderr;
   const logger = useDefaultLogger ? createDefaultCliLogger() : null;
   const stdout = options.stdout ?? (useDefaultLogger
-    ? ((text: string) => writeLogText(logger!, "info", text))
+    ? ((text: string, context?: CliLogContext) => writeLogText(logger!, "info", text, context))
     : ((text: string) => process.stdout.write(text)));
   const stderr = options.stderr ?? (useDefaultLogger
-    ? ((text: string) => writeLogText(logger!, "info", text))
+    ? ((text: string, context?: CliLogContext) => writeLogText(logger!, "info", text, context))
     : ((text: string) => process.stderr.write(text)));
   const reportFail = options.stdout ?? (useDefaultLogger
     ? ((text: string, context?: CliLogContext) => writeLogText(logger!, "fail", text, context))
@@ -59,6 +65,21 @@ function createCliWriters(options: CliRunOptions): CliWriters {
       ? ((text: string, context?: CliLogContext) => writeLogText(logger!, "warn", text, context))
       : ((text: string) => process.stdout.write(text))),
   };
+}
+
+function formatConfigPath(cwd: string, configPath: string): string {
+  return path.relative(cwd, configPath) || ".";
+}
+
+async function loadCliConfig(cwd: string, configPath: string | undefined, stderr: CliWriter) {
+  stderr("Config loading.\n", { event: "cli-config-loading", group: CONFIG_LOG_GROUP });
+  const loadedConfig = await timeTask(() => loadResolvedConfig(cwd, configPath));
+  const loaded = loadedConfig.result;
+  stderr(
+    `Config loaded: ${formatConfigPath(cwd, loaded.configPath)} in ${formatDuration(loadedConfig.elapsedMs)}.\n`,
+    { event: "cli-config-loaded", group: CONFIG_LOG_GROUP },
+  );
+  return loaded;
 }
 
 function renderHelp(): string {
@@ -143,6 +164,7 @@ async function runCheckCommand(args: {
   if (args.parsed.commandArgs.length > 0) {
     throw new Error("Command separator -- is only supported with gate");
   }
+  args.stderr("Check started.\n", { event: "discipline-check-started", group: CLI_LOG_GROUP });
   const timed = await timeTask(() => {
       const progressObserver = createCliScanObserver(args.stderr);
       return run({
@@ -186,6 +208,7 @@ async function runFixCommand(args: {
   if (args.parsed.commandArgs.length > 0) {
     throw new Error("Command separator -- is only supported with gate");
   }
+  args.stderr("Fix started.\n", { event: "discipline-fix-started", group: CLI_LOG_GROUP });
   const timed = await timeTask(() => {
       const progressObserver = createCliScanObserver(args.stderr);
       return run({
@@ -234,6 +257,7 @@ async function runGateCommand(args: {
   if (args.parsed.commandArgs.length === 0) {
     throw new Error("Missing child command after --");
   }
+  args.stderr("Gate check started.\n", { event: "discipline-gate-started", group: CLI_LOG_GROUP });
   const timed = await timeTask(() => {
       const progressObserver = createCliScanObserver(args.stderr);
       return run({
@@ -277,7 +301,7 @@ async function runCli(argv: string[], options: CliRunOptions = {}): Promise<CliR
   }
   try {
     const parsed = parseArgs(rest);
-    const { config, configPath } = await loadResolvedConfig(cwd, parsed.configPath);
+    const { config, configPath } = await loadCliConfig(cwd, parsed.configPath, stderr);
     const commandArgs = {
       config,
       configPath,

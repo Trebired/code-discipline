@@ -31,7 +31,7 @@ function createRuleProgress(args: {
     stage?: string;
     totalItems: number;
 }): RuleProgressState {
-  return {
+  const state = {
     chunkSize: args.chunkSize ?? DEFAULT_RULE_PROGRESS_CHUNK_SIZE,
     observer: args.observer,
     rule: args.rule,
@@ -39,6 +39,18 @@ function createRuleProgress(args: {
     startedAt: performance.now(),
     totalItems: args.totalItems,
   };
+  emitRuleStarted(state);
+  return state;
+}
+
+function emitRuleStarted(state: RuleProgressState): void {
+  state.observer?.({
+      phase: "rule-started",
+      rule: state.rule,
+      stage: state.stage,
+      totalItems: state.totalItems,
+      elapsedMs: 0,
+  });
 }
 
 function emitRuleChunk(
@@ -78,4 +90,4 @@ function emitRuleCompleted(
   });
 }
 
-export { createRuleProgress, emitRuleChunk, emitRuleCompleted };
+export { createRuleProgress, emitRuleChunk, emitRuleCompleted, emitRuleStarted };

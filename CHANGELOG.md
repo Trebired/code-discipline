@@ -6,6 +6,11 @@ This project follows semantic versioning once published.
 
 ## Unreleased
 
+## 6.0.10
+
+- Added immediate CLI progress output for config loading, command start, scan start, scan result parsing, and rule start events so large check runs never appear stalled before the first completed scan or rule.
+- Restored chunked native progress for file-local check rules while keeping the Rust runner path.
+
 ## 6.0.9
 
 - Restored check-mode rule progress logging for the native Rust runner by emitting progress after each native rule instead of only after the whole aggregate native check returns.

@@ -5,6 +5,8 @@ import type {
   ScannedSourceFile,
   SourceScanBackend,
   SourceScanCompletedEvent,
+  SourceScanStageEvent,
+  SourceScanStartedEvent,
   SourceScanOptions,
 } from "./types.js";
 import { requireNativeBinding } from "#q6u4pcd984qa";
@@ -89,6 +91,30 @@ function emitScanCompleted(
   });
 }
 
+function emitScanStarted(
+  options: SourceScanOptions,
+  backend: SourceScanBackend,
+  metrics: Omit<SourceScanStartedEvent, "backend"|"phase">,
+): void {
+  options.scanObserver?.({
+      phase: "scan-started",
+      backend,
+      ...metrics,
+  });
+}
+
+function emitScanStage(
+  options: SourceScanOptions,
+  backend: SourceScanBackend,
+  metrics: Omit<SourceScanStageEvent, "backend"|"phase">,
+): void {
+  options.scanObserver?.({
+      phase: "scan-stage",
+      backend,
+      ...metrics,
+  });
+}
+
 function parseNativeScanResult(result: NativeScanResult): {
   metrics?: Omit<SourceScanCompletedEvent, "backend"|"phase">;
   rows: ScannedSourceFile[];
@@ -103,14 +129,31 @@ function parseNativeScanResult(result: NativeScanResult): {
 }
 
 async function scanSourceFiles(options: SourceScanOptions): Promise<ScannedSourceFile[]> {
+  emitScanStarted(options, "native", {
+      projectRoot: options.projectRoot,
+      sourceRoot: options.sourceRoot,
+      sourceExtensionCount: options.sourceExtensions.length,
+      excludePatternCount: options.excludeDirs.length,
+      concurrency: 1,
+  });
   const native = requireNativeBinding();
   const startedAt = performance.now();
-  const parsed = parseNativeScanResult(JSON.parse(native.scanSourceFiles(JSON.stringify({
-            projectRoot: options.projectRoot,
-            sourceRoot: options.sourceRoot,
-            sourceExtensions: options.sourceExtensions,
-            excludeDirs: options.excludeDirs.filter((entry) => entry.type === "folder").map((entry) => entry.pattern),
-    }))) as NativeScanResult);
+  const rawResult = native.scanSourceFiles(JSON.stringify({
+        projectRoot: options.projectRoot,
+        sourceRoot: options.sourceRoot,
+        sourceExtensions: options.sourceExtensions,
+        excludeDirs: options.excludeDirs.filter((entry) => entry.type === "folder").map((entry) => entry.pattern),
+  }));
+  emitScanStage(options, "native", {
+      stage: "native-result",
+      elapsedMs: performance.now() - startedAt,
+  });
+  const parsed = parseNativeScanResult(JSON.parse(rawResult) as NativeScanResult);
+  emitScanStage(options, "native", {
+      stage: "parse-result",
+      fileCount: parsed.rows.length,
+      elapsedMs: performance.now() - startedAt,
+  });
   const rows = filterExcludedFiles(parsed.rows.filter((file) => !createExcludeMatcher(options.excludeDirs, "folder").shouldExcludeDirectory(
         path.dirname(file.relativeFromSourceRoot),
         path.dirname(file.relativeFromProjectRoot),

@@ -7,10 +7,23 @@ import { filterSourceFilesForRule } from "#jizekc8duh4i";
 import type { NormalizedImportsOptions, ScannedSourceFile } from "#pkb9x3eo56l7";
 import { supportsImports } from "#87jyjzn68rrk";
 import { requireNativeBinding } from "#q6u4pcd984qa";
-import { createRuleProgress, emitRuleCompleted } from "./progress.js";
+import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "./progress.js";
 import { shouldRunRule } from "./rule-slugs.js";
 import { buildNormalizedSyncOptions } from "./sync-options.js";
 import type { NormalizedCheckCodeDisciplineOptions } from "./types.js";
+
+const NATIVE_RULE_CHUNK_SIZE = 1000;
+const CHUNKABLE_NATIVE_RULES = new Set<NativeCheckRuleKey>([
+    "bannedPatterns",
+    "bannedFiles",
+    "minFileLines",
+    "minDeclarationName",
+    "maxFileLines",
+    "maxCharactersPerLine",
+    "maxFunctionLines",
+    "removeComments",
+    "structuralBlankLines",
+]);
 
 type NativeCheckRulesResponse = {
   violations: CodeDisciplineViolation[];
@@ -153,14 +166,30 @@ function selectNativeRules(
   };
 }
 
-function runNativeCheckRule(entry: NativeCheckRuleEntry): CodeDisciplineViolation[] {
+function runNativeCheckRule(entry: NativeCheckRuleEntry, sourceFiles = entry.sourceFiles): CodeDisciplineViolation[] {
   const response = JSON.parse(requireNativeBinding().runCheckRules(JSON.stringify({
-          sourceFiles: entry.sourceFiles,
+          sourceFiles,
           rules: {
             [entry.key]: entry.ruleConfig,
           },
   }))) as NativeCheckRulesResponse;
   return Array.isArray(response.violations) ? response.violations : [];
+}
+
+function canChunkNativeCheckRule(entry: NativeCheckRuleEntry): boolean {
+  return CHUNKABLE_NATIVE_RULES.has(entry.key) && entry.sourceFiles.length > NATIVE_RULE_CHUNK_SIZE;
+}
+
+function runChunkedNativeCheckRule(entry: NativeCheckRuleEntry, progress: ReturnType<typeof createRuleProgress>): CodeDisciplineViolation[] {
+  const violations: CodeDisciplineViolation[] = [];
+
+  for (let start = 0; start < entry.sourceFiles.length; start += NATIVE_RULE_CHUNK_SIZE) {
+    const end = Math.min(start + NATIVE_RULE_CHUNK_SIZE, entry.sourceFiles.length);
+    violations.push(...runNativeCheckRule(entry, entry.sourceFiles.slice(start, end)));
+    emitRuleChunk(progress, end, violations.length);
+  }
+
+  return violations;
 }
 
 function pushNativeCheckRule(
@@ -215,11 +244,14 @@ async function collectNativeCheckViolations(
   const violations: CodeDisciplineViolation[] = [];
   for (const entry of ruleEntries) {
     const progress = createRuleProgress({
+        chunkSize: NATIVE_RULE_CHUNK_SIZE,
         observer: options.progressObserver,
         rule: entry.rule,
         totalItems: entry.sourceFiles.length,
     });
-    const ruleViolations = runNativeCheckRule(entry);
+    const ruleViolations = canChunkNativeCheckRule(entry)
+    ? runChunkedNativeCheckRule(entry, progress)
+    : runNativeCheckRule(entry);
     violations.push(...(entry.syncViolations ?? []), ...ruleViolations);
     emitRuleCompleted(progress, (entry.syncViolations?.length ?? 0) + ruleViolations.length);
   }

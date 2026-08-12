@@ -3,6 +3,24 @@ import type { CodeDisciplineViolation } from "#bsmch74up4fm";
 
 type SourceScanBackend = "native" | "ts";
 
+type SourceScanStartedEvent = {
+  phase: "scan-started";
+  backend: SourceScanBackend;
+  projectRoot: string;
+  sourceRoot: string;
+  sourceExtensionCount: number;
+  excludePatternCount: number;
+  concurrency: number;
+};
+
+type SourceScanStageEvent = {
+  phase: "scan-stage";
+  backend: SourceScanBackend;
+  stage: string;
+  elapsedMs: number;
+  fileCount?: number;
+};
+
 type SourceScanChunkEvent = {
   phase: "chunk";
   backend: SourceScanBackend;
@@ -45,6 +63,14 @@ type SourceRuleProgressEvent = {
   rewrittenImports?: number;
 };
 
+type SourceRuleStartedEvent = {
+  phase: "rule-started";
+  rule: string;
+  stage: string;
+  totalItems: number;
+  elapsedMs: number;
+};
+
 type SourceRuleCompletedEvent = {
   phase: "rule-completed";
   rule: string;
@@ -62,8 +88,8 @@ type SourceRuleCompletedEvent = {
   rewrittenImports?: number;
 };
 
-type SourceScanProgressEvent = SourceScanChunkEvent | SourceScanCompletedEvent;
-type SourceProgressEvent = SourceScanProgressEvent | SourceRuleProgressEvent | SourceRuleCompletedEvent;
+type SourceScanProgressEvent = SourceScanStartedEvent | SourceScanStageEvent | SourceScanChunkEvent | SourceScanCompletedEvent;
+type SourceProgressEvent = SourceScanProgressEvent | SourceRuleStartedEvent | SourceRuleProgressEvent | SourceRuleCompletedEvent;
 type SourceScanObserver = (event: SourceScanProgressEvent) => void;
 type SourceProgressObserver = (event: SourceProgressEvent) => void;
 
@@ -276,10 +302,13 @@ export type {
   SourceScanObserver,
   SourceScanOptions,
   SourceScanProgressEvent,
+  SourceScanStageEvent,
+  SourceScanStartedEvent,
   SourceProgressEvent,
   SourceProgressObserver,
   SourceRuleCompletedEvent,
   SourceRuleProgressEvent,
+  SourceRuleStartedEvent,
   NormalizedImportsOutput,
   PackageJsonImportsSyncOptions,
   SyncAliasesResult,
