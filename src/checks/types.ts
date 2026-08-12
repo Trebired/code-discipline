@@ -49,10 +49,6 @@ type CodeDisciplinePresets = {
 type CodeDisciplineHelpers = {
   nodeProcessBoundary?: NodeProcessBoundaryPresetOptions;
 };
-type CodeDisciplinePresetPackage = {
-  codeDisciplineVersion: string;
-  config: CodeDisciplineConfig;
-};
 type BannedFileRuleEntry = string | {
   glob: string;
 };
@@ -287,7 +283,6 @@ export type {
   CodeDisciplineLifecycleHookResult,
   CodeDisciplineLifecycleHooks,
   CodeDisciplineMode,
-  CodeDisciplinePresetPackage,
   CodeDisciplinePresets,
   CodeDisciplineHelpers,
   CodeDisciplineRuleSlug,

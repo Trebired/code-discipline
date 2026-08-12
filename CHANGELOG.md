@@ -6,6 +6,11 @@ This project follows semantic versioning once published.
 
 ## Unreleased
 
+## 6.0.2
+
+- Changed external preset packages to default-export the Code Discipline config object directly, with no required Code Discipline import, wrapper object, version field, or peer dependency.
+- Removed the obsolete `definePreset()` helper and `CodeDisciplinePresetPackage` type.
+
 ## 6.0.1
 
 - Renamed the public callable API to package-local names: `defineConfig`, `definePreset`, `run`, `createRunner`, `check`, `fix`, `findConfigModule`, `loadConfigModule`, and `loadResolvedConfig`.

@@ -5,9 +5,6 @@ import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
-const packageJson = JSON.parse(await fs.readFile(path.join(repoRoot, "package.json"), "utf8"));
-const packageName = packageJson.name;
-const packageVersion = packageJson.version;
 const { run } = await import(pathToFileURL(path.join(repoRoot, "dist/index.js")).href);
 const { runCli } = await import(pathToFileURL(path.join(repoRoot, "dist/cli/run.js")).href);
 
@@ -39,9 +36,6 @@ async function writePresetPackage(root, packageNameInput, preset, packageJsonExt
     name: packageNameInput,
     type: "module",
     main: "index.mjs",
-    peerDependencies: {
-    [packageName]: packageVersion,
-    },
     ...packageJsonExtra,
     }, null, 2)}\n`, "utf8");
   await fs.writeFile(path.join(packageRoot, "index.mjs"), [
@@ -53,18 +47,15 @@ async function writePresetPackage(root, packageNameInput, preset, packageJsonExt
 
 function strictPresetConfig(extra = {}) {
   return {
-    codeDisciplineVersion: packageVersion,
-    config: {
-      logging: { warnings: false },
-      ignore: { use_gitignore: false },
-      rules: {
-        maxFileLines: { max: 350 },
-        bannedPatterns: {
-          patterns: [{ value: "preset-token", allowedFiles: ["src/allowed.ts"] }],
-        },
+    logging: { warnings: false },
+    ignore: { use_gitignore: false },
+    rules: {
+      maxFileLines: { max: 350 },
+      bannedPatterns: {
+        patterns: [{ value: "preset-token", allowedFiles: ["src/allowed.ts"] }],
       },
-      ...extra,
     },
+    ...extra,
   };
 }
 
@@ -194,30 +185,16 @@ async function verifyOldBuiltInPresetFailsClearly() {
   );
 }
 
-async function verifyVersionMismatchFailsClearly() {
-  const projectRoot = await createProject("version-mismatch");
+async function verifyWrappedPresetFailsClearly() {
+  const projectRoot = await createProject("wrapped");
   await writePresetPackage(projectRoot, "@fixture/strict-preset", {
-      ...strictPresetConfig(),
-      codeDisciplineVersion: "0.0.0",
+      codeDisciplineVersion: "6.0.1",
+      config: strictPresetConfig(),
   });
 
   await assert.rejects(
     () => run(presetOptions(projectRoot)),
-    /requires @trebired\/code-discipline@0\.0\.0/,
-  );
-}
-
-async function verifyPeerMismatchFailsClearly() {
-  const projectRoot = await createProject("peer-mismatch");
-  await writePresetPackage(projectRoot, "@fixture/strict-preset", strictPresetConfig(), {
-      peerDependencies: {
-        [packageName]: `^${packageVersion}`,
-      },
-  });
-
-  await assert.rejects(
-    () => run(presetOptions(projectRoot)),
-    /must declare peerDependencies\.\@trebired\/code-discipline exactly as/,
+    /default-export the config object directly/,
   );
 }
 
@@ -265,8 +242,7 @@ await verifyMultiplePresetsMergeLeftToRight();
 await verifyBannedPatternsMergeDuplicateAllowlists();
 await verifyNodeProcessBoundaryStillMerges();
 await verifyOldBuiltInPresetFailsClearly();
-await verifyVersionMismatchFailsClearly();
-await verifyPeerMismatchFailsClearly();
+await verifyWrappedPresetFailsClearly();
 await verifyNestedPresetFailsClearly();
 await verifyCliUsesPresetLoggingConfig();
 

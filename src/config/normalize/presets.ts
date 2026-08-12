@@ -1,4 +1,3 @@
-import fs from "node:fs/promises";
 import path from "node:path";
 import { createRequire } from "node:module";
 import { pathToFileURL } from "node:url";
@@ -8,27 +7,17 @@ import type {
   BannedFileRuleEntry,
   BannedPatternRuleEntry,
   CodeDisciplineConfig,
-  CodeDisciplinePresetPackage,
   CodeDisciplinePresets,
 } from "#uqbg4indzud7";
 import { isPlainRecord, normalizeRelativePath, uniqueStrings } from "#ntve5i5a0mol";
-import { CODE_DISCIPLINE_PACKAGE_NAME, CODE_DISCIPLINE_PACKAGE_VERSION } from "#ik5y0pee4ah1";
 import { createNodeProcessBoundaryConfig } from "./node-process-boundary.js";
 import { normalizeAllowedFiles } from "./path-lists.js";
 
-type PackageJson = {
-  name?: string;
-  peerDependencies?: Record<string, string>;
-};
 type PresetResolutionContext = {
   projectRoot: string;
 };
 
 const PACKAGE_NAME_PATTERN = /^(?:@[a-z0-9][a-z0-9._-]*\/)?[a-z0-9][a-z0-9._-]*$/iu;
-
-function definePreset(preset: CodeDisciplinePresetPackage): CodeDisciplinePresetPackage {
-  return preset;
-}
 
 function assertKnownPresetKeys(presets: CodeDisciplinePresets | undefined): void {
   if (!presets) return;
@@ -74,90 +63,30 @@ function createProjectRequire(projectRoot: string): NodeRequire {
   return createRequire(path.join(projectRoot, "package.json"));
 }
 
-async function readJsonFile<T>(filePath: string): Promise<T> {
-  return JSON.parse(await fs.readFile(filePath, "utf8")) as T;
-}
-
-async function findPackageJsonPath(modulePath: string): Promise<string> {
-  let current = path.dirname(modulePath);
-
-  while (true) {
-    const candidate = path.join(current, "package.json");
-    try {
-      await fs.access(candidate);
-      return candidate;
-    } catch {
-    }
-
-    const parent = path.dirname(current);
-    if (parent === current) break;
-    current = parent;
-  }
-
-  throw new InvalidCodeDisciplineConfigError("Preset package package.json was not found", {
-      modulePath,
-  });
-}
-
-function assertExactCodeDisciplineVersion(packageName: string, packageJson: PackageJson, preset: CodeDisciplinePresetPackage): void {
-  if (preset.codeDisciplineVersion !== CODE_DISCIPLINE_PACKAGE_VERSION) {
-    const message = [
-      `Preset ${packageName} requires ${CODE_DISCIPLINE_PACKAGE_NAME}@${preset.codeDisciplineVersion},`,
-      `but the running version is ${CODE_DISCIPLINE_PACKAGE_VERSION}`,
-    ].join(" ");
-    throw new InvalidCodeDisciplineConfigError(
-      message,
-      {
-        preset: packageName,
-        expected: CODE_DISCIPLINE_PACKAGE_VERSION,
-        actual: preset.codeDisciplineVersion,
-      },
-    );
-  }
-
-  const peerVersion = packageJson.peerDependencies?.[CODE_DISCIPLINE_PACKAGE_NAME];
-  if (peerVersion !== CODE_DISCIPLINE_PACKAGE_VERSION) {
-    throw new InvalidCodeDisciplineConfigError(
-      `Preset ${packageName} must declare peerDependencies.${CODE_DISCIPLINE_PACKAGE_NAME} exactly as ${CODE_DISCIPLINE_PACKAGE_VERSION}`,
-      {
-        preset: packageName,
-        expected: CODE_DISCIPLINE_PACKAGE_VERSION,
-        actual: peerVersion,
-      },
-    );
-  }
-}
-
-function readPresetPackageExport(packageName: string, imported: unknown): CodeDisciplinePresetPackage {
+function readPresetPackageConfig(packageName: string, imported: unknown): CodeDisciplineConfig {
   const exported = isPlainRecord(imported) && "default"in imported
   ? imported.default
   : imported;
   if (!isPlainRecord(exported)) {
-    throw new InvalidCodeDisciplineConfigError(`Preset ${packageName} must default-export a preset object`, {
+    throw new InvalidCodeDisciplineConfigError(`Preset ${packageName} must default-export a config object`, {
         preset: packageName,
     });
   }
 
-  if (typeof exported.codeDisciplineVersion !== "string" || !exported.codeDisciplineVersion.trim()) {
-    throw new InvalidCodeDisciplineConfigError(`Preset ${packageName} must declare codeDisciplineVersion`, {
+  if ("codeDisciplineVersion"in exported || "config"in exported) {
+    throw new InvalidCodeDisciplineConfigError(`Preset ${packageName} must default-export the config object directly`, {
         preset: packageName,
     });
   }
 
-  if (!isPlainRecord(exported.config)) {
-    throw new InvalidCodeDisciplineConfigError(`Preset ${packageName} must declare a config object`, {
-        preset: packageName,
-    });
-  }
-
-  if ("presets"in exported.config) {
+  if ("presets"in exported) {
     throw new InvalidCodeDisciplineConfigError(`Preset ${packageName} config cannot declare nested presets`, {
         preset: packageName,
-        key: "config.presets",
+        key: "presets",
     });
   }
 
-  return exported as CodeDisciplinePresetPackage;
+  return exported as CodeDisciplineConfig;
 }
 
 async function loadPresetPackageConfig(packageName: string, context: PresetResolutionContext): Promise<CodeDisciplineConfig> {
@@ -173,11 +102,7 @@ async function loadPresetPackageConfig(packageName: string, context: PresetResol
     });
   }
 
-  const packageJsonPath = await findPackageJsonPath(modulePath);
-  const packageJson = await readJsonFile<PackageJson>(packageJsonPath);
-  const preset = readPresetPackageExport(packageName, await import(pathToFileURL(modulePath).href));
-  assertExactCodeDisciplineVersion(packageName, packageJson, preset);
-  return preset.config;
+  return readPresetPackageConfig(packageName, await import(pathToFileURL(modulePath).href));
 }
 
 function readBannedPatternEntry(entry: BannedPatternRuleEntry): { value: string; allowedFiles: string[] } | undefined {
@@ -336,6 +261,5 @@ const applyPresets = resolvePresetConfig;
 
 export {
   applyPresets,
-  definePreset,
   resolvePresetConfig,
 };

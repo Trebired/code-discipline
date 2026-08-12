@@ -10,10 +10,7 @@ import { applyTextReplacements, collectModuleSpecifiers } from "#27pccnhol1ci";
 import { resolveFileCandidate } from "#ay5rr8vjr5fh";
 import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
 import { pathExists } from "#ntve5i5a0mol";
-import {
-  definePreset,
-  resolvePresetConfig,
-} from "./normalize/presets.js";
+import { resolvePresetConfig } from "./normalize/presets.js";
 
 const DEFAULT_CONFIG_FILENAMES = [".trebired/code-discipline/config.ts"];
 
@@ -231,7 +228,6 @@ async function loadResolvedConfig(projectRoot: string, configPath?: string): Pro
 
 export {
   DEFAULT_CONFIG_FILENAMES,
-  definePreset,
   defineConfig,
   findConfigModule,
   loadConfigModule,

@@ -13,7 +13,6 @@ export {
 export { check, fix } from "./checks/index.js";
 export {
   DEFAULT_CONFIG_FILENAMES,
-  definePreset,
   defineConfig,
   findConfigModule,
   loadResolvedConfig,
@@ -127,7 +126,6 @@ export type {
   CodeDisciplineLifecycleHooks,
   CodeDisciplineCheckSelectorSlug,
   CodeDisciplineHelpers,
-  CodeDisciplinePresetPackage,
   CodeDisciplinePresets,
   CodeDisciplineRuleSlug,
   CodeDisciplineRuntimeMode as SharedCodeDisciplineRuntimeMode,

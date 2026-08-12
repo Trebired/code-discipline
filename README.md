@@ -418,31 +418,26 @@ export default defineConfig({
 
 ### Presets
 
-Preset packages are ordinary npm packages. They must default-export a preset object and declare an exact peer dependency on the same `@trebired/code-discipline` version that will load them.
+Preset packages are ordinary npm packages. They default-export a Code Discipline config object directly. The preset package does not need to import or depend on `@trebired/code-discipline`.
 
 ```ts
-import { definePreset } from "@trebired/code-discipline";
-
-export default definePreset({
-  codeDisciplineVersion: "6.0.1",
-  config: {
-    logging: {
-      warnings: false,
+export default {
+  logging: {
+    warnings: false,
+  },
+  ignore: {
+    use_gitignore: true,
+  },
+  rules: {
+    formatting: {},
+    maxFileLines: {
+      max: 350,
     },
-    ignore: {
-      use_gitignore: true,
-    },
-    rules: {
-      formatting: {},
-      maxFileLines: {
-        max: 350,
-      },
-      maxFunctionLines: {
-        max: 50,
-      },
+    maxFunctionLines: {
+      max: 50,
     },
   },
-});
+};
 ```
 
 Nested `presets` inside a preset package are rejected. Multiple project presets merge left to right, then the project config merges last.
