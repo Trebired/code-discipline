@@ -128,7 +128,7 @@ fn check_collect_imported_names_from_statement(statement: &str) -> Vec<String> {
     .trim();
     if let Some(rest) = clause.strip_prefix("{") {
         names.extend(check_collect_named_imports(rest));
-    } else if let Some(rest) = clause.strip_prefix("* as ") {
+    } else if let Some(rest) = check_strip_namespace_import_clause(clause) {
         names.push(rest.trim().to_string());
     } else if !clause.is_empty() {
         let default = clause.split(',').next().unwrap_or("").trim();
@@ -140,6 +140,12 @@ fn check_collect_imported_names_from_statement(statement: &str) -> Vec<String> {
         }
     }
     names
+}
+
+fn check_strip_namespace_import_clause(clause: &str) -> Option<&str> {
+    clause
+    .strip_prefix("* as ")
+    .or_else(|| clause.strip_prefix("*as "))
 }
 
 fn check_collect_named_imports(value: &str) -> Vec<String> {

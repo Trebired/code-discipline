@@ -98,6 +98,7 @@
   "#rv3slybxi6wc": "./src/checks/rules/blank-lines/types.ts",
   "#rv6x2jl41o3a": "./src/checks/native-runner.ts",
   "#stk5e1hvpp7o": "./src/config/normalize/presets.ts",
+  "#swagr0hc6gzr": "./scripts/verify/imports/dead.mjs",
   "#t7940ar28d6y": "./src/config/normalize/source-options.ts",
   "#tndpraw7eu3w": "./src/checks/rules/comments/quoted.ts",
   "#to4c9s3qr330": "./src/imports/rewrite.ts",
