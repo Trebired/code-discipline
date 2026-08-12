@@ -13,9 +13,11 @@ async function createProject() {
   await fs.writeFile(path.join(root, "package.json"), "{\"type\":\"module\"}\n", "utf8");
   await fs.writeFile(path.join(root, "tsconfig.json"), "{\"compilerOptions\":{\"paths\":{}}}\n", "utf8");
   await fs.writeFile(path.join(root, "src/main.ts"), [
+      "import \"side-effect-package\";",
       "import *as compactNamespace from \"compact-namespace\";",
       "import * as spacedNamespace from \"spaced-namespace\";",
       "import unusedDefault from \"unused-default\";",
+      "import \"other-side-effect-package\";",
       "import { usedNamed, unusedNamed as unusedAlias } from \"named\";",
       "",
       "const compactValue = compactNamespace.normalize(\"value\");",

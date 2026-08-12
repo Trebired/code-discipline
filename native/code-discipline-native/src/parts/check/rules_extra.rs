@@ -103,6 +103,9 @@ fn check_collect_imported_names(text: &str) -> Vec<String> {
             continue;
         }
         if pending.is_empty() {
+            if check_side_effect_import_statement(trimmed) {
+                continue;
+            }
             pending.push_str(trimmed);
         } else {
             pending.push(' ');
@@ -115,6 +118,11 @@ fn check_collect_imported_names(text: &str) -> Vec<String> {
         pending.clear();
     }
     names
+}
+
+fn check_side_effect_import_statement(statement: &str) -> bool {
+    let clause = statement["import ".len()..].trim_start();
+    clause.starts_with('"') || clause.starts_with('\'')
 }
 
 fn check_collect_imported_names_from_statement(statement: &str) -> Vec<String> {

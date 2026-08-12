@@ -6,6 +6,10 @@ This project follows semantic versioning once published.
 
 ## Unreleased
 
+## 6.0.7
+
+- Fixed native dead-import detection so side-effect imports are not glued to the following import or export statement.
+
 ## 6.0.6
 
 - Relaxed external preset `forVersion` matching so only the Code Discipline major and minor versions must match.
