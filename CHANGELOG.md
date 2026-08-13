@@ -6,6 +6,10 @@ This project follows semantic versioning once published.
 
 ## Unreleased
 
+## 6.0.13
+
+- Updated the internal logger alias dependency to `@trebired/logger@^2.5.22` so package logger configs load correctly under Node runtimes.
+
 ## 6.0.11
 
 - Moved source-scan ignore filtering into the native backend and carried file byte sizes through scan results so chunked rules can report file and byte progress.
