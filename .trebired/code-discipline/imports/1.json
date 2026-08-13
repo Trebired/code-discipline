@@ -92,6 +92,7 @@
   "#p9niklnw4hlg": "./scripts/build/generated/tsconfig.mjs",
   "#pkb9x3eo56l7": "./src/imports/types.ts",
   "#pzy12rn6douq": "./src/config/normalize/formatter-options.ts",
+  "#q1m0vz6gcrfw": "./.trebired/logger/config.ts",
   "#q6u4pcd984qa": "./src/native/native.ts",
   "#qsmgwga53vic": "./src/checks/rules/blank-lines/generic.ts",
   "#r4k0t5wqgwq6": "./src/imports/format.ts",
