@@ -81,8 +81,16 @@ function collectTypeScriptFunctionDescriptors(sourceFile: ts.SourceFile): Functi
   return descriptors;
 }
 
-function countBraceDelta(value: string): number {
-  const normalized = stripCommentsAndStrings(value);
+function stripRustLifetimeTokens(value: string): string {
+  return value.replace(/'[A-Za-z_]\w*/gu, (match) => " ".repeat(match.length));
+}
+
+function stripCommentsAndStringsForExtension(value: string, extension: string): string {
+  return stripCommentsAndStrings(isRustExtension(extension) ? stripRustLifetimeTokens(value) : value);
+}
+
+function countBraceDelta(value: string, extension: string): number {
+  const normalized = stripCommentsAndStringsForExtension(value, extension);
   let delta = 0;
 
   for (const character of normalized) {
@@ -116,6 +124,79 @@ function extractCFamilyFunctionName(header: string): string {
   return /[A-Za-z_]\w*$/u.exec(stripped.slice(0, parenIndex))?.[0] ?? "anonymous";
 }
 
+function stripRustKeyword(value: string, keyword: string): string | null {
+  if (!value.startsWith(keyword)) return null;
+  const next = value[keyword.length] ?? "";
+  return next && /[A-Za-z0-9_]/u.test(next) ? null : value.slice(keyword.length);
+}
+
+function stripRustVisibility(value: string): string | null {
+  if (value.startsWith("pub(")) {
+    const rest = value.slice(4);
+    const end = rest.indexOf(")");
+    return end === -1 ? null : rest.slice(end + 1);
+  }
+  return stripRustKeyword(value, "pub");
+}
+
+function stripRustAbi(value: string): string {
+  if (!value.startsWith("\"")) return value;
+  let escaped = false;
+  for (let index = 1; index < value.length; index += 1) {
+    const character = value[index] ?? "";
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (character === "\\") {
+      escaped = true;
+      continue;
+    }
+    if (character === "\"") return value.slice(index + 1);
+  }
+  return value;
+}
+
+function isRustFunctionHeaderStart(line: string): boolean {
+  let rest = stripCommentsAndStringsForExtension(line, ".rs").trimStart();
+  if (!rest || rest.startsWith("#")) return false;
+
+  rest = stripRustVisibility(rest)?.trimStart() ?? rest;
+
+  while (true) {
+    const asyncRest = stripRustKeyword(rest, "async");
+    if (asyncRest != null) {
+      rest = asyncRest.trimStart();
+      continue;
+    }
+    const unsafeRest = stripRustKeyword(rest, "unsafe");
+    if (unsafeRest != null) {
+      rest = unsafeRest.trimStart();
+      continue;
+    }
+    const constRest = stripRustKeyword(rest, "const");
+    if (constRest != null) {
+      rest = constRest.trimStart();
+      continue;
+    }
+    const externRest = stripRustKeyword(rest, "extern");
+    if (externRest != null) {
+      rest = stripRustAbi(externRest.trimStart()).trimStart();
+      continue;
+    }
+    break;
+  }
+
+  return stripRustKeyword(rest, "fn") != null;
+}
+
+function pendingRustHeaderEndedWithoutBody(header: string, extension: string): boolean {
+  if (!isRustExtension(extension)) return false;
+  const normalized = stripCommentsAndStringsForExtension(header, extension);
+  const beforeBody = normalized.split("{", 1)[0] ?? normalized;
+  return !normalized.includes("{") && beforeBody.trimEnd().endsWith(";");
+}
+
 function createPendingBlockFunction(): PendingBlockFunction {
   return {
     braceDepth: 0,
@@ -141,6 +222,7 @@ function collectBlockFunctionDescriptors(text: string, extension: string): Funct
   const lines = text.split(/\r?\n/);
   const isGo = isGoExtension(extension);
   const isCFamily = isCppExtension(extension) || isCsharpExtension(extension);
+  const isRust = isRustExtension(extension);
   const headerStartPattern = isGo
   ? /^\s*func(?:\s*\([^)]*\))?\s+/u
   : /^\s*(?:pub(?:\([^)]*\))?\s+)?(?:async\s+)?(?:const\s+)?(?:unsafe\s+)?fn\s+/u;
@@ -153,7 +235,7 @@ function collectBlockFunctionDescriptors(text: string, extension: string): Funct
     const line = lines[index] ?? "";
 
     if (!pending.header) {
-      const isHeaderStart = isCFamily ? isCFamilyHeaderStart(line) : headerStartPattern.test(line);
+      const isHeaderStart = isCFamily ? isCFamilyHeaderStart(line) : isRust ? isRustFunctionHeaderStart(line) : headerStartPattern.test(line);
       if (!isHeaderStart) continue;
       pending.header = line;
       pending.startLine = index + 1;
@@ -168,11 +250,16 @@ function collectBlockFunctionDescriptors(text: string, extension: string): Funct
       }
     }
 
-    if (pending.braceDepth === 0 && !stripCommentsAndStrings(pending.header).includes("{")) {
+    if (pendingRustHeaderEndedWithoutBody(pending.header, extension)) {
+      pending = createPendingBlockFunction();
       continue;
     }
 
-    pending.braceDepth += countBraceDelta(line);
+    if (pending.braceDepth === 0 && !stripCommentsAndStringsForExtension(pending.header, extension).includes("{")) {
+      continue;
+    }
+
+    pending.braceDepth += countBraceDelta(line, extension);
     if (pending.braceDepth > 0) continue;
 
     descriptors.push(createBlockFunctionDescriptor(pending, index + 1));

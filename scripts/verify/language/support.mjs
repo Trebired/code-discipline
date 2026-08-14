@@ -80,6 +80,21 @@ function declarationNameOptions(projectRoot) {
   };
 }
 
+function emptyFoldersOptions(projectRoot, mode) {
+  return {
+    projectRoot,
+    ignore: {
+      use_gitignore: false,
+      entries: [{ type: "folder", pattern: "src/excluded" }],
+    },
+    mode,
+    onlyRules: ["empty-folders"],
+    rules: {
+      emptyFolders: {},
+    },
+  };
+}
+
 async function verifyLanguageCheck(projectRoot) {
   const result = await run(options(projectRoot, "check", ["max-function-lines", "remove-comments"]));
   const files = result.violations.map((violation) => violation.filePath).sort();
@@ -166,6 +181,49 @@ async function verifyBannedPatternImportSpecifierExclusion(projectRoot) {
   });
   const files = result.violations.map((violation) => violation.filePath).sort();
   assert.deepEqual(files, ["src/banned-literal.ts"]);
+}
+
+async function verifyEmptyFoldersRule() {
+  const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cd-empty-folders-"));
+  await fs.mkdir(path.join(projectRoot, "src/a/b"), { recursive: true });
+  await fs.mkdir(path.join(projectRoot, "src/direct"), { recursive: true });
+  await fs.mkdir(path.join(projectRoot, "src/excluded/empty"), { recursive: true });
+  await fs.writeFile(path.join(projectRoot, "src/anchor.ts"), "export const anchor = true;\n", "utf8");
+
+  const check = await run(emptyFoldersOptions(projectRoot, "check"));
+  assert.equal(check.ok, false);
+  assert.deepEqual(check.violations.map((violation) => violation.filePath).sort(), ["src/a/b", "src/direct"]);
+
+  const fix = await run(emptyFoldersOptions(projectRoot, "fix"));
+  assert.equal(fix.ok, true, JSON.stringify(fix.violations, null, 2));
+  assert.equal(fix.deleted_files, 3);
+
+  const clean = await run(emptyFoldersOptions(projectRoot, "check"));
+  assert.equal(clean.ok, true, JSON.stringify(clean.violations, null, 2));
+}
+
+async function verifyTypeScriptRustFunctionCollectorFallback() {
+  const { collectLanguageFunctionDescriptors } = await import(pathToFileURL(path.join(repoRoot, "dist/checks/rules/max/function-lines.js")).href);
+  const descriptors = collectLanguageFunctionDescriptors([
+      "trait Runner {",
+      "    fn trait_only(",
+      "        value: String,",
+      "    ) -> String;",
+      "}",
+      "pub(crate) async fn build_payload(",
+      "    value: String,",
+      ") -> String",
+      "where",
+      "    String: Clone,",
+      "{",
+      "    value",
+      "}",
+      "",
+    ].join("\n"), ".rs", "src/lib.rs");
+
+  assert.equal(descriptors.length, 1);
+  assert.equal(descriptors[0].name, "build_payload");
+  assert.equal(descriptors[0].startLine, 6);
 }
 
 async function verifyLanguageFix(projectRoot) {
@@ -266,6 +324,8 @@ await verifyLanguageCheck(projectRoot);
 await verifyDeclarationNameAcrossLanguages(projectRoot);
 await verifyPackageStateExclusion(projectRoot);
 await verifyBannedPatternImportSpecifierExclusion(projectRoot);
+await verifyEmptyFoldersRule();
+await verifyTypeScriptRustFunctionCollectorFallback();
 await verifyLanguageFix(projectRoot);
 await verifyStructuralBlankLines(projectRoot);
 await verifyRedundantPathSegmentsAcrossLanguages();

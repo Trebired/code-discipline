@@ -21,6 +21,7 @@ type FixableRuleSlug =
 |"min-file-lines"
 |"max-characters-per-line"
 |"redundant-path-segments"
+|"empty-folders"
 |"imports"
 |"remove-comments"
 |"structural-blank-lines"
@@ -80,6 +81,9 @@ type RedundantPathSegmentsRuleOptions = RuleExclusionOptions& {
   separators?: string[];
   severity?: CodeDisciplineRuleSeverity;
 };
+type EmptyFoldersRuleOptions = RuleExclusionOptions& {
+  severity?: CodeDisciplineRuleSeverity;
+};
 type RemoveCommentsRuleOptions = RuleExclusionOptions& {
   severity?: CodeDisciplineRuleSeverity;
   exclude?: string[];
@@ -106,6 +110,7 @@ type CodeDisciplineRules = {
   maxCharactersPerLine?: MaxCharactersPerLineRuleOptions;
   maxFunctionLines?: MaxFunctionLinesRuleOptions;
   redundantPathSegments?: RedundantPathSegmentsRuleOptions;
+  emptyFolders?: EmptyFoldersRuleOptions;
   imports?: CodeDisciplineImportsRuleOptions;
   removeComments?: RemoveCommentsRuleOptions;
   structuralBlankLines?: StructuralBlankLinesRuleOptions;
@@ -194,6 +199,10 @@ type NormalizedRedundantPathSegmentsRule = {
   separators: string[];
   severity: CodeDisciplineRuleSeverity;
 };
+type NormalizedEmptyFoldersRule = {
+  excludeDirs: ExcludeDirEntry[];
+  severity: CodeDisciplineRuleSeverity;
+};
 type NormalizedDryRule = {
   excludeDirs: ExcludeDirEntry[];
   minDuplicateCharacters: number;
@@ -236,6 +245,7 @@ type NormalizedCheckCodeDisciplineOptions = SourceScanOptions& {
     maxCharactersPerLine?: NormalizedMaxCharactersPerLineRule;
     maxFunctionLines?: NormalizedMaxFunctionLinesRule;
     redundantPathSegments?: NormalizedRedundantPathSegmentsRule;
+    emptyFolders?: NormalizedEmptyFoldersRule;
     imports?: CodeDisciplineImportsRuleOptions;
     removeComments?: NormalizedRemoveCommentsRule;
     structuralBlankLines?: NormalizedStructuralBlankLinesRule;
@@ -292,6 +302,7 @@ export type {
   CodeDisciplineRules,
   CodeDisciplineImportsRuleOptions,
   DryRuleOptions,
+  EmptyFoldersRuleOptions,
   FixableRuleSlug,
   FixCodeDisciplineOptions,
   FixCodeDisciplineResult,
@@ -313,6 +324,7 @@ export type {
   RuleExclusionOptions,
   NormalizedCheckCodeDisciplineOptions,
   NormalizedDryRule,
+  NormalizedEmptyFoldersRule,
   NormalizedRedundantPathSegmentsRule,
   NormalizedMaxCharactersPerLineRule,
   NormalizedMaxFileLinesRule,

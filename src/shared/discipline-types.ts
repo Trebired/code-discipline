@@ -9,6 +9,7 @@ type CodeDisciplineRuleName =
 |"max-characters-per-line"
 |"max-function-lines"
 |"redundant-path-segments"
+|"empty-folders"
 |"imports"
 |"remove-comments"
 |"structural-blank-lines"

@@ -9,6 +9,7 @@ import { applyCodeFormatterFix } from "./format.js";
 import { shouldRunRule } from "./rule-slugs.js";
 import { fixBannedFilesRule } from "./rules/banned/files.js";
 import { fixStructuralBlankLinesRule } from "./rules/blank-lines/index.js";
+import { fixEmptyFoldersRule } from "./rules/empty-folders.js";
 import { fixMaxCharactersPerLineRule } from "./rules/max/characters-per-line/fix.js";
 import { fixMinFileLinesRule } from "./rules/min/file/lines/fix.js";
 import { fixRemoveCommentsRule } from "./rules/remove-comments.js";
@@ -189,9 +190,20 @@ async function applyCodeFormatFix(state: FixState, normalized: NormalizedCheckCo
   state.rewrittenFiles += result.rewrittenFiles;
 }
 
+async function applyEmptyFoldersFix(state: FixState, normalized: NormalizedCheckCodeDisciplineOptions): Promise<void> {
+  if (!normalized.rules.emptyFolders || !shouldRunFixRule("empty-folders", normalized)) return;
+
+  const result = fixEmptyFoldersRule(normalized);
+  const violations = applyConfiguredSeverity(result.violations, normalized);
+  state.ruleResults["empty-folders"] = mapFixRuleResult({ ...result, violations });
+  state.violations.push(...violations);
+  state.deletedFiles += result.deleted_files ?? 0;
+}
+
 export {
   applyBannedFilesFix,
   applyCodeFormatFix as applyCodeFormatterFix,
+  applyEmptyFoldersFix,
   applyRedundantPathSegmentsFix,
   applyMaxCharactersPerLineFix,
   applyMinFileLinesFix,

@@ -78,6 +78,7 @@ async function scanSourceFiles(options: SourceScanOptions): Promise<ScannedSourc
         sourceRoot: options.sourceRoot,
         sourceExtensions: options.sourceExtensions,
         excludeDirs: options.excludeDirs,
+        ignorePatterns: options.ignore?.gitignorePatterns ?? [],
   }));
   emitScanStage(options, "native", {
       stage: "native-result",

@@ -38,6 +38,7 @@
   "#9sccgd75qe7n": "./src/config/normalize/imports-options.ts",
   "#9tcp2jgf8qlj": "./src/checks/rules/max/function-lines.ts",
   "#9tvptmmpteoj": "./src/formatters/files.ts",
+  "#a3bujxta0pzg": "./src/checks/rules/empty-folders.ts",
   "#arhoe19ayg60": "./src/runtime/gate-command.ts",
   "#ay5rr8vjr5fh": "./src/imports/resolve.ts",
   "#azin2l86pnk4": "./src/checks/rules/max/strip.ts",

@@ -30,6 +30,48 @@ mod tests {
     }
 
     #[test]
+    fn ignores_rust_bodyless_function_signatures() {
+        let source = [
+            "trait Runner {",
+            "    fn trait_only(",
+            "        value: String,",
+            "    ) -> String;",
+            "}",
+            "",
+            "extern \"C\" {",
+            "    fn foreign_call(",
+            "        value: i32,",
+            "    );",
+            "}",
+            "",
+            "pub(crate) async fn build_payload(",
+            "    value: String,",
+            ") -> String",
+            "where",
+            "    String: Clone,",
+            "{",
+            "    let one = value.clone();",
+            "    let two = value;",
+            "    format!(\"{one}{two}\")",
+            "}",
+            "",
+        ]
+        .join("\n");
+        let file = file("src/lib.rs", ".rs");
+
+        let violations = collect_block_function_reports(
+            &file,
+            &source,
+            4,
+            FunctionLineReportKind::Violation,
+        );
+
+        assert_eq!(violations.len(), 1);
+        assert_eq!(violations[0].details["functionName"].as_str(), Some("build_payload"));
+        assert_eq!(violations[0].details["startLine"].as_u64(), Some(13));
+    }
+
+    #[test]
     fn detects_simple_typescript_arrow_function_line_violations() {
         let source = [
             "export const buildPayload = () => {",

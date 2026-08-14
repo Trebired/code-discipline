@@ -13,7 +13,9 @@ type NativeBinding = {
   finishDryDescriptorSession(requestJson: string): string;
   formatSourceFiles(requestJson: string): string;
   formatSourceText(requestJson: string): string;
+  fixEmptyFoldersRule(requestJson: string): string;
   fixRemoveCommentsRule(requestJson: string): string;
+  runEmptyFoldersRule(requestJson: string): string;
   runCheckRules(requestJson: string): string;
   runRedundantPathSegmentsRule(requestJson: string): string;
   runMaxBlockFunctionLinesRule(requestJson: string): string;

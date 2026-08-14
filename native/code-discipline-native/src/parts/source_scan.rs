@@ -6,6 +6,8 @@ struct SourceScanRequest {
     source_extensions: Vec<String>,
     #[serde(default)]
     exclude_dirs: Vec<SourceScanExcludeInput>,
+    #[serde(default)]
+    ignore_patterns: Vec<String>,
 }
 
 #[derive(Clone, Deserialize)]
@@ -67,6 +69,7 @@ struct DirectoryScanContext {
     exclude_folder_patterns: Vec<String>,
     exclude_folder_paths: Vec<(String, String)>,
     excluded_directory_names: HashSet<String>,
+    ignore_patterns: Vec<String>,
 }
 
 struct DirectoryScanResult {
@@ -133,6 +136,12 @@ fn create_directory_scan_context(options: &SourceScanRequest) -> DirectoryScanCo
         .collect::<Vec<_>>(),
         exclude_folder_patterns,
         excluded_directory_names,
+        ignore_patterns: options
+        .ignore_patterns
+        .iter()
+        .map(|entry| normalize_relative_path(entry.trim_end_matches('/')))
+        .filter(|entry| !entry.is_empty())
+        .collect(),
     }
 }
 
@@ -161,6 +170,7 @@ fn should_exclude_directory(
     exclude_folder_patterns: &[String],
     exclude_folder_paths: &[(String, String)],
     excluded_directory_names: &HashSet<String>,
+    ignore_patterns: &[String],
 ) -> bool {
     let normalized_relative_dir = normalize_relative_path(relative_dir);
     let normalized_project_relative_dir = normalize_relative_path(project_relative_dir);
@@ -183,6 +193,28 @@ fn should_exclude_directory(
             || normalized_project_relative_dir == *exact
             || normalized_project_relative_dir.starts_with(prefix)
     })
+    || ignore_patterns
+    .iter()
+    .any(|entry| should_exclude_directory_by_ignore_pattern(&normalized_project_relative_dir, directory_name, entry))
+}
+
+fn should_exclude_directory_by_ignore_pattern(
+    project_relative_dir: &str,
+    directory_name: &str,
+    pattern: &str,
+) -> bool {
+    let normalized = normalize_relative_path(pattern).trim_end_matches('/').to_string();
+    if normalized.is_empty() {
+        return false;
+    }
+    if !normalized.contains('/') {
+        return check_matches_glob(directory_name, &normalized)
+        || check_matches_glob(project_relative_dir, &normalized)
+        || check_matches_glob(project_relative_dir, &format!("**/{normalized}"));
+    }
+    let children = format!("{normalized}/**");
+    check_matches_glob(project_relative_dir, &normalized)
+    || check_matches_glob(project_relative_dir, &children)
 }
 
 fn should_exclude_file(file: &ScannedSourceFile, context: &DirectoryScanContext) -> bool {
@@ -245,6 +277,7 @@ fn push_scanned_directory(
         &context.exclude_folder_patterns,
         &context.exclude_folder_paths,
         &context.excluded_directory_names,
+        &context.ignore_patterns,
     ) {
         return;
     }

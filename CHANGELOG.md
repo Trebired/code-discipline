@@ -6,6 +6,11 @@ This project follows semantic versioning once published.
 
 ## Unreleased
 
+## 6.1.0
+
+- Fixed Rust `maxFunctionLines` scanning so trait methods, extern declarations, and other bodyless `fn` signatures ending in `;` are ignored instead of absorbing a later real function body.
+- Added the fixable `emptyFolders` / `empty-folders` rule, backed by the required native Rust backend, to report and remove empty directories while respecting global ignore/gitignore and rule exclusions.
+
 ## 6.0.15
 
 - Updated the shared Trebired config dependency to `@trebired/configs@^0.1.2`.

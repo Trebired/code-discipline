@@ -106,15 +106,83 @@ fn header_start_matches(line: &str, extension: &str) -> bool {
         return is_c_family_header_start(line);
     }
 
-    trimmed.starts_with("fn ")
-    || trimmed.starts_with("pub fn ")
-    || trimmed.starts_with("pub(crate) fn ")
-    || trimmed.starts_with("async fn ")
-    || trimmed.starts_with("unsafe fn ")
-    || trimmed.starts_with("const fn ")
-    || trimmed.starts_with("pub async fn ")
-    || trimmed.starts_with("pub unsafe fn ")
-    || trimmed.starts_with("pub const fn ")
+    is_rust_function_header_start(line)
+}
+
+fn is_rust_function_header_start(line: &str) -> bool {
+    let normalized = strip_line_comments_and_strings(line, ".rs");
+    let mut rest = normalized.trim_start();
+
+    if rest.starts_with('#') {
+        return false;
+    }
+
+    if let Some(value) = strip_rust_visibility(rest) {
+        rest = value.trim_start();
+    }
+
+    loop {
+        if let Some(value) = strip_rust_keyword(rest, "async") {
+            rest = value.trim_start();
+            continue;
+        }
+        if let Some(value) = strip_rust_keyword(rest, "unsafe") {
+            rest = value.trim_start();
+            continue;
+        }
+        if let Some(value) = strip_rust_keyword(rest, "const") {
+            rest = value.trim_start();
+            continue;
+        }
+        if let Some(value) = strip_rust_keyword(rest, "extern") {
+            rest = strip_rust_abi(value.trim_start()).trim_start();
+            continue;
+        }
+        break;
+    }
+
+    strip_rust_keyword(rest, "fn").is_some()
+}
+
+fn strip_rust_visibility(value: &str) -> Option<&str> {
+    if let Some(rest) = value.strip_prefix("pub(") {
+        let end = rest.find(')')?;
+        return Some(&rest[end + 1..]);
+    }
+    strip_rust_keyword(value, "pub")
+}
+
+fn strip_rust_keyword<'a>(value: &'a str, keyword: &str) -> Option<&'a str> {
+    let rest = value.strip_prefix(keyword)?;
+    if rest
+    .chars()
+    .next()
+    .is_some_and(|character| character.is_ascii_alphanumeric() || character == '_')
+    {
+        return None;
+    }
+    Some(rest)
+}
+
+fn strip_rust_abi(value: &str) -> &str {
+    let Some(rest) = value.strip_prefix('"') else {
+        return value;
+    };
+    let mut escaped = false;
+    for (index, character) in rest.char_indices() {
+        if escaped {
+            escaped = false;
+            continue;
+        }
+        if character == '\\' {
+            escaped = true;
+            continue;
+        }
+        if character == '"' {
+            return &rest[index + character.len_utf8()..];
+        }
+    }
+    value
 }
 
 fn extract_c_family_function_name(header: &str) -> String {

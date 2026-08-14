@@ -8,6 +8,7 @@ import type {
   BannedFilesRuleOptions,
   CodeDisciplineImportsRuleOptions,
   DryRuleOptions,
+  EmptyFoldersRuleOptions,
   RedundantPathSegmentsRuleOptions,
   MaxCharactersPerLineRuleOptions,
   MaxFileLinesRuleOptions,
@@ -17,6 +18,7 @@ import type {
   NormalizedBannedPatternsRule,
   NormalizedBannedFilesRule,
   NormalizedDryRule,
+  NormalizedEmptyFoldersRule,
   RemoveCommentsRuleOptions,
   StructuralBlankLinesRuleOptions,
 } from "#uqbg4indzud7";
@@ -187,6 +189,23 @@ function normalizeRedundantPathSegmentsRule(rule: RedundantPathSegmentsRuleOptio
   };
 }
 
+function normalizeEmptyFoldersRule(rule: EmptyFoldersRuleOptions | undefined): NormalizedEmptyFoldersRule | undefined {
+  if (!rule) return undefined;
+  const source = rule as Record<string, unknown>;
+  assertRemovedKeys("emptyFolders", source, ["enabled", "stop", "fix"]);
+  const unsupportedKeys = Object.keys(source).filter((key) => !["severity", "excludeDirs", "excludeFiles", "excludeFolders"].includes(key));
+  if (unsupportedKeys.length > 0) {
+    throw new InvalidCodeDisciplineConfigError("emptyFolders does not accept rule options", {
+        rule: "emptyFolders",
+        keys: unsupportedKeys,
+    });
+  }
+  return {
+    ...normalizeRuleExclusions("emptyFolders", source),
+    severity: normalizeSeverity(rule.severity, "emptyFolders"),
+  };
+}
+
 function normalizeImportsOutput(output: CodeDisciplineImportsRuleOptions["output"]): CodeDisciplineImportsRuleOptions["output"] {
   if (output === undefined) return undefined;
   if (!output || typeof output !== "object" || Array.isArray(output)) {
@@ -315,6 +334,7 @@ export {
   normalizeBannedPatternsRule,
   normalizeBannedFilesRule,
   normalizeDryRule,
+  normalizeEmptyFoldersRule,
   normalizeRedundantPathSegmentsRule,
   normalizeSeverity,
   normalizeMaxCharactersPerLineRule,

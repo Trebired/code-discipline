@@ -29,6 +29,7 @@ include!("parts/function/lines/shared.rs");
 include!("parts/function/lines/typescript.rs");
 include!("parts/check/types.rs");
 include!("parts/check/common.rs");
+include!("parts/check/empty_folders.rs");
 include!("parts/check/functions.rs");
 include!("parts/check/imports.rs");
 include!("parts/check/declarations.rs");

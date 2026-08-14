@@ -22,8 +22,10 @@ const RULE_SLUGS = new Set([
     "max-characters-per-line",
     "max-function-lines",
     "redundant-path-segments",
+    "empty-folders",
     "imports",
     "remove-comments",
+    "structural-blank-lines",
     "dry",
     "format",
 ]);
