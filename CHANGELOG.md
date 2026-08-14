@@ -6,6 +6,10 @@ This project follows semantic versioning once published.
 
 ## Unreleased
 
+## 6.0.15
+
+- Updated the shared Trebired config dependency to `@trebired/configs@^0.1.2`.
+
 ## 6.0.13
 
 - Updated the internal logger alias dependency to `@trebired/logger@^2.5.22` so package logger configs load correctly under Node runtimes.
