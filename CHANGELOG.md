@@ -6,6 +6,11 @@ This project follows semantic versioning once published.
 
 ## Unreleased
 
+## 6.1.1
+
+- Updated shared utilities to `@trebired/utils@^0.4.3`.
+- Replaced copied package metadata parsing with the shared package identity helper.
+
 ## 6.1.0
 
 - Fixed Rust `maxFunctionLines` scanning so trait methods, extern declarations, and other bodyless `fn` signatures ending in `;` are ignored instead of absorbing a later real function body.

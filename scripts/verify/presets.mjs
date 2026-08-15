@@ -263,7 +263,7 @@ async function verifyVersionMismatchFailsClearly() {
 
   await assert.rejects(
     () => run(presetOptions(projectRoot)),
-    /targets Code Discipline 0\.0\.0/,
+    /targets 0\.0\.0 but package is/,
   );
 }
 

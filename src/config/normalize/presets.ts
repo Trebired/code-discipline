@@ -12,6 +12,7 @@ import type {
 import { isPlainRecord, normalizeRelativePath, pathExists, uniqueStrings } from "#ntve5i5a0mol";
 import { CODE_DISCIPLINE_PACKAGE_VERSION } from "#ik5y0pee4ah1";
 import { importConfigModule } from "#rpaq8jfzp0xk";
+import { assertCompatibleForVersion } from "@trebired/utils";
 import { createNodeProcessBoundaryConfig } from "./node-process-boundary.js";
 import { normalizeAllowedFiles } from "./path-lists.js";
 
@@ -159,18 +160,22 @@ function readPresetPackageConfig(packageName: string, imported: unknown): CodeDi
     });
   }
 
-  const targetVersion = readVersionCompatibility(exported.forVersion);
-  const runningVersion = readVersionCompatibility(CODE_DISCIPLINE_PACKAGE_VERSION);
-  if (targetVersion.compatibilityKey !== runningVersion.compatibilityKey) {
-    const message = [
-      `Preset ${packageName} targets Code Discipline ${exported.forVersion},`,
-      `but the running version is ${CODE_DISCIPLINE_PACKAGE_VERSION}`,
-    ].join(" ");
-    throw new InvalidCodeDisciplineConfigError(message, {
-        preset: packageName,
-        expected: runningVersion.compatibilityKey,
-        actual: exported.forVersion,
+  try {
+    assertCompatibleForVersion({
+        configPath: packageName,
+        forVersion: exported.forVersion,
+        label: `preset ${packageName}`,
+        packageVersion: CODE_DISCIPLINE_PACKAGE_VERSION,
     });
+  } catch (error) {
+    throw new InvalidCodeDisciplineConfigError(
+      error instanceof Error ? error.message : String(error),
+      {
+        actual: exported.forVersion,
+        expected: CODE_DISCIPLINE_PACKAGE_VERSION,
+        preset: packageName,
+      },
+    );
   }
 
   if ("presets"in exported) {
@@ -183,13 +188,6 @@ function readPresetPackageConfig(packageName: string, imported: unknown): CodeDi
   const config = { ...exported };
   delete config.forVersion;
   return config as CodeDisciplineConfig;
-}
-
-function readVersionCompatibility(version: string): { compatibilityKey: string } {
-  const [major = "", minor = ""] = version.split(".");
-  return {
-    compatibilityKey: `${major}.${minor}`,
-  };
 }
 
 async function loadPresetPackageConfig(packageName: string, context: PresetResolutionContext): Promise<CodeDisciplineConfig> {
