@@ -1,5 +1,10 @@
 # Changelog
 
+## 6.1.2
+
+- Updated shared utilities to `@trebired/utils@^0.4.4`.
+- Updated direct logger dependency to `@trebired/logger@^2.5.28`.
+
 All notable changes to `@trebired/code-discipline` will be documented here.
 
 This project follows semantic versioning once published.
