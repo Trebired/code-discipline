@@ -71,8 +71,11 @@ function declarationNameOptions(projectRoot) {
     projectRoot,
     ignore: { use_gitignore: false },
     mode: "check",
-    onlyRules: ["min-declaration-name"],
+    onlyRules: ["min-declaration-name", "max-declaration-name"],
     rules: {
+      maxDeclarationName: {
+        max: 20,
+      },
       minDeclarationName: {
         min: 2,
       },
@@ -80,7 +83,7 @@ function declarationNameOptions(projectRoot) {
   };
 }
 
-function emptyFoldersOptions(projectRoot, mode) {
+function removeEmptyFoldersOptions(projectRoot, mode) {
   return {
     projectRoot,
     ignore: {
@@ -88,9 +91,9 @@ function emptyFoldersOptions(projectRoot, mode) {
       entries: [{ type: "folder", pattern: "src/excluded" }],
     },
     mode,
-    onlyRules: ["empty-folders"],
+    onlyRules: ["remove-empty-folders"],
     rules: {
-      emptyFolders: {},
+      removeEmptyFolders: {},
     },
   };
 }
@@ -127,6 +130,7 @@ async function verifyDeclarationNameAcrossLanguages(projectRoot) {
   assert.ok(files.includes("src/declarations.ts"));
   assert.ok(files.includes("src/declarations.cpp"));
   assert.ok(files.includes("src/declarations.cs"));
+  assert.ok(result.violations.some((violation) => violation.rule === "max-declaration-name"));
 }
 
 async function verifyPackageStateExclusion(projectRoot) {
@@ -183,22 +187,22 @@ async function verifyBannedPatternImportSpecifierExclusion(projectRoot) {
   assert.deepEqual(files, ["src/banned-literal.ts"]);
 }
 
-async function verifyEmptyFoldersRule() {
+async function verifyRemoveEmptyFoldersRule() {
   const projectRoot = await fs.mkdtemp(path.join(os.tmpdir(), "cd-empty-folders-"));
   await fs.mkdir(path.join(projectRoot, "src/a/b"), { recursive: true });
   await fs.mkdir(path.join(projectRoot, "src/direct"), { recursive: true });
   await fs.mkdir(path.join(projectRoot, "src/excluded/empty"), { recursive: true });
   await fs.writeFile(path.join(projectRoot, "src/anchor.ts"), "export const anchor = true;\n", "utf8");
 
-  const check = await run(emptyFoldersOptions(projectRoot, "check"));
+  const check = await run(removeEmptyFoldersOptions(projectRoot, "check"));
   assert.equal(check.ok, false);
   assert.deepEqual(check.violations.map((violation) => violation.filePath).sort(), ["src/a/b", "src/direct"]);
 
-  const fix = await run(emptyFoldersOptions(projectRoot, "fix"));
+  const fix = await run(removeEmptyFoldersOptions(projectRoot, "fix"));
   assert.equal(fix.ok, true, JSON.stringify(fix.violations, null, 2));
   assert.equal(fix.deleted_files, 3);
 
-  const clean = await run(emptyFoldersOptions(projectRoot, "check"));
+  const clean = await run(removeEmptyFoldersOptions(projectRoot, "check"));
   assert.equal(clean.ok, true, JSON.stringify(clean.violations, null, 2));
 }
 
@@ -324,7 +328,7 @@ await verifyLanguageCheck(projectRoot);
 await verifyDeclarationNameAcrossLanguages(projectRoot);
 await verifyPackageStateExclusion(projectRoot);
 await verifyBannedPatternImportSpecifierExclusion(projectRoot);
-await verifyEmptyFoldersRule();
+await verifyRemoveEmptyFoldersRule();
 await verifyTypeScriptRustFunctionCollectorFallback();
 await verifyLanguageFix(projectRoot);
 await verifyStructuralBlankLines(projectRoot);

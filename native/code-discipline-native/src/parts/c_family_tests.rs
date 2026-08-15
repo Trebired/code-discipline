@@ -4,7 +4,7 @@ mod c_family_tests {
     use super::test_source_file as file;
 
     #[test]
-    fn preserves_cpp_raw_strings_while_stripping_nested_comments() {
+    fn preserves_cpp_raw_strings_with_nested_comments() {
         let source = [
             "std::string build() {",
             "    auto raw = R\"(// keep /* here */)\";",
@@ -76,7 +76,7 @@ mod c_family_tests {
     }
 
     #[test]
-    fn detects_csharp_allman_brace_function_line_violations() {
+    fn detects_csharp_allman_function_line_violations() {
         let source = [
             "public class Payload",
             "{",

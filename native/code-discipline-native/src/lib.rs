@@ -33,6 +33,7 @@ include!("parts/check/empty_folders.rs");
 include!("parts/check/functions.rs");
 include!("parts/check/imports.rs");
 include!("parts/check/declarations.rs");
+include!("parts/check/declaration_names.rs");
 include!("parts/check/structural.rs");
 include!("parts/check/dry.rs");
 include!("parts/check/rules.rs");

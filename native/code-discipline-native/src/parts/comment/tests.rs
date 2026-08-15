@@ -3,7 +3,7 @@ mod comment_tests {
     use super::*;
 
     #[test]
-    fn strips_comment_only_lines_without_touching_literals() {
+    fn strips_comment_only_lines_and_keeps_literals() {
         let source = [
             "const url = \"https://example.com\";",
             "const regex = /https?:\\/\\/example\\.com/;",
@@ -31,7 +31,7 @@ mod comment_tests {
     }
 
     #[test]
-    fn keeps_code_after_regex_literals_that_contain_quotes() {
+    fn keeps_code_after_quoted_regex_literals() {
         let source = [
             "function startsRawString(data: StripState): boolean {",
             "  const pattern = /^r(#{0,16})\"/.exec(data.text.slice(data.index));",
@@ -89,7 +89,7 @@ mod comment_tests {
     }
 
     #[test]
-    fn preserves_rust_raw_strings_while_stripping_nested_comments() {
+    fn preserves_rust_raw_strings_with_nested_comments() {
         let source = [
             "pub fn build<'a>() -> &'a str {",
             "    let raw = r#\"// keep /* here */\"#;",
@@ -111,7 +111,7 @@ mod comment_tests {
     }
 
     #[test]
-    fn preserves_python_strings_shebang_and_encoding_comments() {
+    fn preserves_python_strings_and_header_comments() {
         let source = [
             "#!/usr/bin/env python3",
             "# coding: utf-8",

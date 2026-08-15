@@ -1,5 +1,10 @@
 # Changelog
 
+## 7.0.0
+
+- Added `maxDeclarationName` / `max-declaration-name`, defaulting to `max: 50`, to report overly long declaration names through the native declaration scanner.
+- Renamed `emptyFolders` / `empty-folders` to `removeEmptyFolders` / `remove-empty-folders` with no compatibility alias.
+
 ## 6.1.2
 
 - Updated shared utilities to `@trebired/utils@^0.4.4`.

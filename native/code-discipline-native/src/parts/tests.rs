@@ -72,7 +72,7 @@ mod tests {
     }
 
     #[test]
-    fn detects_simple_typescript_arrow_function_line_violations() {
+    fn detects_typescript_arrow_function_line_violations() {
         let source = [
             "export const buildPayload = () => {",
             "  const user = \"sam\";",

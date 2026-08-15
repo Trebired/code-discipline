@@ -14,14 +14,15 @@ import {
   normalizeBannedFilesRule,
   normalizeBannedPatternsRule,
   normalizeDryRule,
-  normalizeEmptyFoldersRule,
   normalizeImportsRule,
   normalizeMaxCharactersPerLineRule,
+  normalizeMaxDeclarationNameRule,
   normalizeMaxFileLinesRule,
   normalizeMaxFunctionLinesRule,
   normalizeMinDeclarationNameRule,
   normalizeMinFileLinesRule,
   normalizeRedundantPathSegmentsRule,
+  normalizeRemoveEmptyFoldersRule,
   normalizeRemoveCommentsRule,
   normalizeStructuralBlankLinesRule,
 } from "./rule/options.js";
@@ -68,6 +69,12 @@ function assertRemovedRuleKeys(rules: CodeDisciplineRules | undefined): void {
         key: "rules.sourceFileStructure",
     });
   }
+
+  if ("emptyFolders"in source) {
+    throw new InvalidCodeDisciplineConfigError("rules.emptyFolders is no longer supported; use rules.removeEmptyFolders instead", {
+        key: "rules.emptyFolders",
+    });
+  }
 }
 
 async function normalizeCheckOptions(
@@ -87,11 +94,12 @@ async function normalizeCheckOptions(
     dry: normalizeDryRule(rules?.dry),
     minFileLines: normalizeMinFileLinesRule(rules?.minFileLines),
     minDeclarationName: normalizeMinDeclarationNameRule(rules?.minDeclarationName),
+    maxDeclarationName: normalizeMaxDeclarationNameRule(rules?.maxDeclarationName),
     maxFileLines: normalizeMaxFileLinesRule(rules?.maxFileLines),
     maxCharactersPerLine: normalizeMaxCharactersPerLineRule(rules?.maxCharactersPerLine),
     maxFunctionLines: normalizeMaxFunctionLinesRule(rules?.maxFunctionLines),
     redundantPathSegments: normalizeRedundantPathSegmentsRule(rules?.redundantPathSegments),
-    emptyFolders: normalizeEmptyFoldersRule(rules?.emptyFolders),
+    removeEmptyFolders: normalizeRemoveEmptyFoldersRule(rules?.removeEmptyFolders),
     imports: normalizeImportsRule(rules?.imports),
     removeComments: normalizeRemoveCommentsRule(rules?.removeComments),
     structuralBlankLines: normalizeStructuralBlankLinesRule(rules?.structuralBlankLines),

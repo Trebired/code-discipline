@@ -9,10 +9,10 @@ import { applyCodeFormatterFix } from "./format.js";
 import { shouldRunRule } from "./rule-slugs.js";
 import { fixBannedFilesRule } from "./rules/banned/files.js";
 import { fixStructuralBlankLinesRule } from "./rules/blank-lines/index.js";
-import { fixEmptyFoldersRule } from "./rules/empty-folders.js";
 import { fixMaxCharactersPerLineRule } from "./rules/max/characters-per-line/fix.js";
 import { fixMinFileLinesRule } from "./rules/min/file/lines/fix.js";
-import { fixRemoveCommentsRule } from "./rules/remove-comments.js";
+import { fixRemoveCommentsRule } from "./rules/remove/comments.js";
+import { fixRemoveEmptyFoldersRule } from "./rules/remove/empty-folders.js";
 import { applyConfiguredSeverity } from "./severity.js";
 import { buildNormalizedSyncOptions } from "./sync-options.js";
 import type { FixableRuleSlug, FixCodeDisciplineRuleResult, NormalizedCheckCodeDisciplineOptions } from "./types.js";
@@ -190,12 +190,12 @@ async function applyCodeFormatFix(state: FixState, normalized: NormalizedCheckCo
   state.rewrittenFiles += result.rewrittenFiles;
 }
 
-async function applyEmptyFoldersFix(state: FixState, normalized: NormalizedCheckCodeDisciplineOptions): Promise<void> {
-  if (!normalized.rules.emptyFolders || !shouldRunFixRule("empty-folders", normalized)) return;
+async function applyRemoveEmptyFoldersFix(state: FixState, normalized: NormalizedCheckCodeDisciplineOptions): Promise<void> {
+  if (!normalized.rules.removeEmptyFolders || !shouldRunFixRule("remove-empty-folders", normalized)) return;
 
-  const result = fixEmptyFoldersRule(normalized);
+  const result = fixRemoveEmptyFoldersRule(normalized);
   const violations = applyConfiguredSeverity(result.violations, normalized);
-  state.ruleResults["empty-folders"] = mapFixRuleResult({ ...result, violations });
+  state.ruleResults["remove-empty-folders"] = mapFixRuleResult({ ...result, violations });
   state.violations.push(...violations);
   state.deletedFiles += result.deleted_files ?? 0;
 }
@@ -203,10 +203,10 @@ async function applyEmptyFoldersFix(state: FixState, normalized: NormalizedCheck
 export {
   applyBannedFilesFix,
   applyCodeFormatFix as applyCodeFormatterFix,
-  applyEmptyFoldersFix,
   applyRedundantPathSegmentsFix,
   applyMaxCharactersPerLineFix,
   applyMinFileLinesFix,
+  applyRemoveEmptyFoldersFix,
   applyRemoveCommentsFix,
   applyStructuralBlankLinesFix,
   applyImportsFix,

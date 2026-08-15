@@ -18,6 +18,7 @@ const CHUNKABLE_NATIVE_RULES = new Set<NativeCheckRuleKey>([
     "bannedFiles",
     "minFileLines",
     "minDeclarationName",
+    "maxDeclarationName",
     "maxFileLines",
     "maxCharactersPerLine",
     "maxFunctionLines",
@@ -32,6 +33,7 @@ const HEAVY_NATIVE_RULE_CHUNK_LIMITS: Partial<Record<NativeCheckRuleKey, NativeR
   bannedPatterns: { maxBytes: 256 * 1024, maxFiles: 64 },
   dry: { maxBytes: 1024 * 1024, maxFiles: 256 },
   minDeclarationName: { maxBytes: 128 * 1024, maxFiles: 64 },
+  maxDeclarationName: { maxBytes: 128 * 1024, maxFiles: 64 },
   maxFunctionLines: { maxBytes: 128 * 1024, maxFiles: 64 },
   removeComments: { maxBytes: 256 * 1024, maxFiles: 64 },
   structuralBlankLines: { maxBytes: 256 * 1024, maxFiles: 64 },
@@ -197,6 +199,7 @@ function selectNativeRules(
     bannedFiles: shouldRunRule("banned-files", options.onlyRules) ? options.rules.bannedFiles : undefined,
     minFileLines: shouldRunRule("min-file-lines", options.onlyRules) ? options.rules.minFileLines : undefined,
     minDeclarationName: shouldRunRule("min-declaration-name", options.onlyRules) ? options.rules.minDeclarationName : undefined,
+    maxDeclarationName: shouldRunRule("max-declaration-name", options.onlyRules) ? options.rules.maxDeclarationName : undefined,
     maxFileLines: shouldRunRule("max-file-lines", options.onlyRules) ? options.rules.maxFileLines : undefined,
     maxCharactersPerLine: shouldRunRule("max-characters-per-line", options.onlyRules) ? options.rules.maxCharactersPerLine : undefined,
     maxFunctionLines: shouldRunRule("max-function-lines", options.onlyRules) ? options.rules.maxFunctionLines : undefined,
@@ -306,6 +309,7 @@ function createNativeCheckRuleEntries(
   pushNativeCheckRule(entries, sourceFiles, "bannedFiles", "banned-files", rules.bannedFiles);
   pushNativeCheckRule(entries, sourceFiles, "minFileLines", "min-file-lines", rules.minFileLines);
   pushNativeCheckRule(entries, sourceFiles, "minDeclarationName", "min-declaration-name", rules.minDeclarationName);
+  pushNativeCheckRule(entries, sourceFiles, "maxDeclarationName", "max-declaration-name", rules.maxDeclarationName);
   pushNativeCheckRule(entries, sourceFiles, "maxFileLines", "max-file-lines", rules.maxFileLines);
   pushNativeCheckRule(entries, sourceFiles, "maxCharactersPerLine", "max-characters-per-line", rules.maxCharactersPerLine);
   pushNativeCheckRule(entries, sourceFiles, "maxFunctionLines", "max-function-lines", rules.maxFunctionLines);

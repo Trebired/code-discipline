@@ -85,6 +85,7 @@ const languageFixtures = {
   ].join("\n"),
   "declarations.ts": [
     "export const x = 1;",
+    "export const deliberatelyLongDeclarationName = 1;",
     "export function y() { return x; }",
     "",
   ].join("\n"),

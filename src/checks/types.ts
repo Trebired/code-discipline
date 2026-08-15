@@ -21,7 +21,7 @@ type FixableRuleSlug =
 |"min-file-lines"
 |"max-characters-per-line"
 |"redundant-path-segments"
-|"empty-folders"
+|"remove-empty-folders"
 |"imports"
 |"remove-comments"
 |"structural-blank-lines"
@@ -65,6 +65,10 @@ type MinDeclarationNameRuleOptions = RuleExclusionOptions& {
   min?: number;
   severity?: CodeDisciplineRuleSeverity;
 };
+type MaxDeclarationNameRuleOptions = RuleExclusionOptions& {
+  max?: number;
+  severity?: CodeDisciplineRuleSeverity;
+};
 type MaxFileLinesRuleOptions = RuleExclusionOptions& {
   max?: number;
   severity?: CodeDisciplineRuleSeverity;
@@ -81,7 +85,7 @@ type RedundantPathSegmentsRuleOptions = RuleExclusionOptions& {
   separators?: string[];
   severity?: CodeDisciplineRuleSeverity;
 };
-type EmptyFoldersRuleOptions = RuleExclusionOptions& {
+type RemoveEmptyFoldersRuleOptions = RuleExclusionOptions& {
   severity?: CodeDisciplineRuleSeverity;
 };
 type RemoveCommentsRuleOptions = RuleExclusionOptions& {
@@ -106,11 +110,12 @@ type CodeDisciplineRules = {
   bannedPatterns?: BannedPatternsRuleOptions;
   minFileLines?: MinFileLinesRuleOptions;
   minDeclarationName?: MinDeclarationNameRuleOptions;
+  maxDeclarationName?: MaxDeclarationNameRuleOptions;
   maxFileLines?: MaxFileLinesRuleOptions;
   maxCharactersPerLine?: MaxCharactersPerLineRuleOptions;
   maxFunctionLines?: MaxFunctionLinesRuleOptions;
   redundantPathSegments?: RedundantPathSegmentsRuleOptions;
-  emptyFolders?: EmptyFoldersRuleOptions;
+  removeEmptyFolders?: RemoveEmptyFoldersRuleOptions;
   imports?: CodeDisciplineImportsRuleOptions;
   removeComments?: RemoveCommentsRuleOptions;
   structuralBlankLines?: StructuralBlankLinesRuleOptions;
@@ -179,6 +184,11 @@ type NormalizedMinDeclarationNameRule = {
   min: number;
   severity: CodeDisciplineRuleSeverity;
 };
+type NormalizedMaxDeclarationNameRule = {
+  excludeDirs: ExcludeDirEntry[];
+  max: number;
+  severity: CodeDisciplineRuleSeverity;
+};
 type NormalizedMaxFileLinesRule = {
   excludeDirs: ExcludeDirEntry[];
   max: number;
@@ -199,7 +209,7 @@ type NormalizedRedundantPathSegmentsRule = {
   separators: string[];
   severity: CodeDisciplineRuleSeverity;
 };
-type NormalizedEmptyFoldersRule = {
+type NormalizedRemoveEmptyFoldersRule = {
   excludeDirs: ExcludeDirEntry[];
   severity: CodeDisciplineRuleSeverity;
 };
@@ -241,11 +251,12 @@ type NormalizedCheckCodeDisciplineOptions = SourceScanOptions& {
     bannedPatterns?: NormalizedBannedPatternsRule;
     minFileLines?: NormalizedMinFileLinesRule;
     minDeclarationName?: NormalizedMinDeclarationNameRule;
+    maxDeclarationName?: NormalizedMaxDeclarationNameRule;
     maxFileLines?: NormalizedMaxFileLinesRule;
     maxCharactersPerLine?: NormalizedMaxCharactersPerLineRule;
     maxFunctionLines?: NormalizedMaxFunctionLinesRule;
     redundantPathSegments?: NormalizedRedundantPathSegmentsRule;
-    emptyFolders?: NormalizedEmptyFoldersRule;
+    removeEmptyFolders?: NormalizedRemoveEmptyFoldersRule;
     imports?: CodeDisciplineImportsRuleOptions;
     removeComments?: NormalizedRemoveCommentsRule;
     structuralBlankLines?: NormalizedStructuralBlankLinesRule;
@@ -302,7 +313,6 @@ export type {
   CodeDisciplineRules,
   CodeDisciplineImportsRuleOptions,
   DryRuleOptions,
-  EmptyFoldersRuleOptions,
   FixableRuleSlug,
   FixCodeDisciplineOptions,
   FixCodeDisciplineResult,
@@ -310,10 +320,12 @@ export type {
   RedundantPathSegmentsRuleOptions,
   FormattingRuleOptions,
   MaxCharactersPerLineRuleOptions,
+  MaxDeclarationNameRuleOptions,
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
   MinDeclarationNameRuleOptions,
   MinFileLinesRuleOptions,
+  RemoveEmptyFoldersRuleOptions,
   NormalizedCodeFormatter,
   NormalizedFormattingRule,
   NormalizedBannedFileRuleEntry,
@@ -324,7 +336,8 @@ export type {
   RuleExclusionOptions,
   NormalizedCheckCodeDisciplineOptions,
   NormalizedDryRule,
-  NormalizedEmptyFoldersRule,
+  NormalizedMaxDeclarationNameRule,
+  NormalizedRemoveEmptyFoldersRule,
   NormalizedRedundantPathSegmentsRule,
   NormalizedMaxCharactersPerLineRule,
   NormalizedMaxFileLinesRule,

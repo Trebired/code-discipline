@@ -5,12 +5,12 @@ import { createRuleProgress, emitRuleChunkAt, emitRuleCompleted } from "#efe33sl
 import { shouldRunRule } from "#ydyygm5y7vgb";
 import type { NormalizedCheckCodeDisciplineOptions } from "#uqbg4indzud7";
 
-type EmptyFoldersNativeResponse = {
+type RemoveEmptyFoldersNativeResponse = {
   violations: CodeDisciplineViolation[];
   directory_count?: number;
 };
 
-type EmptyFoldersNativeFixResponse = {
+type RemoveEmptyFoldersNativeFixResponse = {
   ok: boolean;
   violationCount: number;
   violations: CodeDisciplineViolation[];
@@ -18,24 +18,26 @@ type EmptyFoldersNativeFixResponse = {
   directory_count?: number;
 };
 
-function createEmptyFoldersRequest(options: NormalizedCheckCodeDisciplineOptions): string {
+function createRemoveEmptyFoldersRequest(options: NormalizedCheckCodeDisciplineOptions): string {
   return JSON.stringify({
       projectRoot: options.projectRoot,
       sourceRoot: options.sourceRoot,
-      excludeDirs: mergeExcludeDirEntries(options.excludeDirs, options.rules.emptyFolders?.excludeDirs ?? []),
+      excludeDirs: mergeExcludeDirEntries(options.excludeDirs, options.rules.removeEmptyFolders?.excludeDirs ?? []),
       ignorePatterns: options.ignore?.gitignorePatterns ?? [],
   });
 }
 
-function collectEmptyFolderViolations(options: NormalizedCheckCodeDisciplineOptions): CodeDisciplineViolation[] {
-  if (!options.rules.emptyFolders || !shouldRunRule("empty-folders", options.onlyRules)) return [];
+function collectRemoveEmptyFolderViolations(options: NormalizedCheckCodeDisciplineOptions): CodeDisciplineViolation[] {
+  if (!options.rules.removeEmptyFolders || !shouldRunRule("remove-empty-folders", options.onlyRules)) return [];
   const progress = createRuleProgress({
       chunkSize: 1,
       observer: options.progressObserver,
-      rule: "empty-folders",
+      rule: "remove-empty-folders",
       totalItems: 1,
   });
-  const result = JSON.parse(requireNativeBinding().runEmptyFoldersRule(createEmptyFoldersRequest(options))) as EmptyFoldersNativeResponse;
+  const result = JSON.parse(
+    requireNativeBinding().runRemoveEmptyFoldersRule(createRemoveEmptyFoldersRequest(options)),
+  ) as RemoveEmptyFoldersNativeResponse;
   const violations = Array.isArray(result.violations) ? result.violations : [];
   emitRuleChunkAt(progress, 1, 1, violations.length, {
       chunkItems: result.directory_count ?? 0,
@@ -44,15 +46,17 @@ function collectEmptyFolderViolations(options: NormalizedCheckCodeDisciplineOpti
   return violations;
 }
 
-function fixEmptyFoldersRule(options: NormalizedCheckCodeDisciplineOptions): EmptyFoldersNativeFixResponse {
+function fixRemoveEmptyFoldersRule(options: NormalizedCheckCodeDisciplineOptions): RemoveEmptyFoldersNativeFixResponse {
   const progress = createRuleProgress({
       chunkSize: 1,
       observer: options.progressObserver,
-      rule: "empty-folders",
+      rule: "remove-empty-folders",
       stage: "fix",
       totalItems: 1,
   });
-  const result = JSON.parse(requireNativeBinding().fixEmptyFoldersRule(createEmptyFoldersRequest(options))) as EmptyFoldersNativeFixResponse;
+  const result = JSON.parse(
+    requireNativeBinding().fixRemoveEmptyFoldersRule(createRemoveEmptyFoldersRequest(options)),
+  ) as RemoveEmptyFoldersNativeFixResponse;
   emitRuleChunkAt(progress, 1, 1, result.violationCount, {
       chunkItems: result.directory_count ?? 0,
       deletedFiles: result.deleted_files ?? 0,
@@ -63,4 +67,4 @@ function fixEmptyFoldersRule(options: NormalizedCheckCodeDisciplineOptions): Emp
   return result;
 }
 
-export { collectEmptyFolderViolations, fixEmptyFoldersRule };
+export { collectRemoveEmptyFolderViolations, fixRemoveEmptyFoldersRule };

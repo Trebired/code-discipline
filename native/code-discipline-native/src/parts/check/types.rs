@@ -59,6 +59,14 @@ struct NativeMinDeclarationNameRule {
 
 #[derive(Clone, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
+struct NativeMaxDeclarationNameRule {
+    #[serde(default)]
+    exclude_dirs: Vec<NativeExcludeDirEntry>,
+    max: usize,
+}
+
+#[derive(Clone, Deserialize, Default)]
+#[serde(rename_all = "camelCase")]
 struct NativeMaxFileLinesRule {
     #[serde(default)]
     exclude_dirs: Vec<NativeExcludeDirEntry>,
@@ -142,6 +150,8 @@ struct NativeCheckRules {
     min_file_lines: Option<NativeMinFileLinesRule>,
     #[serde(default)]
     min_declaration_name: Option<NativeMinDeclarationNameRule>,
+    #[serde(default)]
+    max_declaration_name: Option<NativeMaxDeclarationNameRule>,
     #[serde(default)]
     max_file_lines: Option<NativeMaxFileLinesRule>,
     #[serde(default)]

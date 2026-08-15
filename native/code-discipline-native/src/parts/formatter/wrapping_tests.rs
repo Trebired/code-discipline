@@ -85,7 +85,7 @@ mod formatter_wrapping_tests {
     }
 
     #[test]
-    fn wraps_markup_attributes_without_splitting_text_content() {
+    fn wraps_markup_attributes_without_splitting_text() {
         let source = [
             "fn render() -> String {",
             "format!(",

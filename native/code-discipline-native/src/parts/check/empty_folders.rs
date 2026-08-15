@@ -1,6 +1,6 @@
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct NativeEmptyFoldersRequest {
+struct NativeRemoveEmptyFoldersRequest {
     project_root: String,
     source_root: String,
     #[serde(default)]
@@ -10,13 +10,13 @@ struct NativeEmptyFoldersRequest {
 }
 
 #[derive(Serialize)]
-struct NativeEmptyFoldersResponse {
+struct NativeRemoveEmptyFoldersResponse {
     violations: Vec<CodeDisciplineViolation>,
     directory_count: usize,
 }
 
 #[derive(Serialize)]
-struct NativeEmptyFoldersFixResponse {
+struct NativeRemoveEmptyFoldersFixResponse {
     ok: bool,
     #[serde(rename = "violationCount")]
     violation_count: usize,
@@ -37,8 +37,8 @@ struct EmptyFolderScanResult {
 }
 
 #[napi]
-pub fn run_empty_folders_rule(request_json: String) -> Result<String> {
-    let request: NativeEmptyFoldersRequest =
+pub fn run_remove_empty_folders_rule(request_json: String) -> Result<String> {
+    let request: NativeRemoveEmptyFoldersRequest =
     serde_json::from_str(&request_json).map_err(|error| err(error.to_string()))?;
     let scan = collect_empty_folders(&request)?;
     let violations = scan
@@ -47,7 +47,7 @@ pub fn run_empty_folders_rule(request_json: String) -> Result<String> {
     .map(create_empty_folder_violation)
     .collect::<Vec<_>>();
 
-    serde_json::to_string(&NativeEmptyFoldersResponse {
+    serde_json::to_string(&NativeRemoveEmptyFoldersResponse {
             violations,
             directory_count: scan.directory_count,
     })
@@ -55,8 +55,8 @@ pub fn run_empty_folders_rule(request_json: String) -> Result<String> {
 }
 
 #[napi]
-pub fn fix_empty_folders_rule(request_json: String) -> Result<String> {
-    let request: NativeEmptyFoldersRequest =
+pub fn fix_remove_empty_folders_rule(request_json: String) -> Result<String> {
+    let request: NativeRemoveEmptyFoldersRequest =
     serde_json::from_str(&request_json).map_err(|error| err(error.to_string()))?;
     let mut deleted_files = 0_usize;
     let mut directory_count = 0_usize;
@@ -87,7 +87,7 @@ pub fn fix_empty_folders_rule(request_json: String) -> Result<String> {
         }
     }
 
-    serde_json::to_string(&NativeEmptyFoldersFixResponse {
+    serde_json::to_string(&NativeRemoveEmptyFoldersFixResponse {
             ok: true,
             violation_count: 0,
             violations: Vec::new(),
@@ -97,7 +97,7 @@ pub fn fix_empty_folders_rule(request_json: String) -> Result<String> {
     .map_err(|error| err(error.to_string()))
 }
 
-fn collect_empty_folders(request: &NativeEmptyFoldersRequest) -> Result<EmptyFolderScanResult> {
+fn collect_empty_folders(request: &NativeRemoveEmptyFoldersRequest) -> Result<EmptyFolderScanResult> {
     let context = create_empty_folder_scan_context(request);
     let source_root = check_clean_path(PathBuf::from(&request.source_root));
     let mut queue = vec![DirectoryTask {
@@ -142,7 +142,7 @@ fn collect_empty_folders(request: &NativeEmptyFoldersRequest) -> Result<EmptyFol
     })
 }
 
-fn create_empty_folder_scan_context(request: &NativeEmptyFoldersRequest) -> DirectoryScanContext {
+fn create_empty_folder_scan_context(request: &NativeRemoveEmptyFoldersRequest) -> DirectoryScanContext {
     create_directory_scan_context(&SourceScanRequest {
             project_root: request.project_root.clone(),
             source_root: request.source_root.clone(),
@@ -161,7 +161,7 @@ fn create_empty_folder_scan_context(request: &NativeEmptyFoldersRequest) -> Dire
 
 fn create_empty_folder_violation(entry: &EmptyFolderEntry) -> CodeDisciplineViolation {
     check_violation(
-        "empty-folders",
+        "remove-empty-folders",
         true,
         entry.relative_from_project_root.clone(),
         "empty folder should be removed".to_string(),

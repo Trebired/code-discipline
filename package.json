@@ -1,6 +1,6 @@
 {
   "name": "@trebired/code-discipline",
-  "version": "6.1.2",
+  "version": "7.0.0",
   "description": "Configurable codebase discipline checks and rule-driven fixes for Bun projects.",
   "type": "module",
   "private": false,
@@ -63,7 +63,7 @@
   },
   "devDependencies": {
     "@trebired/code-discipline": "file:.",
-    "@trebired/configs": "^0.1.5",
+    "@trebired/configs": "^0.2.0",
     "@types/bun": "^1.3.14",
     "@types/node": "^24.13.3"
   },

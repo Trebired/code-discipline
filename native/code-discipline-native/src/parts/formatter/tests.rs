@@ -59,7 +59,7 @@ mod formatter_tests {
     }
 
     #[test]
-    fn spacing_separates_closing_brackets_from_following_words() {
+    fn spacing_separates_closers_from_words() {
         let source = [
             "const ok = check(list.some((part) => match(part)))return;",
             "for (const [key, slug]of Object.entries(map)as Array<[string, string]>) {",
@@ -92,7 +92,7 @@ mod formatter_tests {
     }
 
     #[test]
-    fn normalizes_single_quotes_and_inserts_statement_semicolons() {
+    fn normalizes_quotes_and_statement_semicolons() {
         let source = [
             "const name = 'one'",
             "const other = 'has \"quote\" inside'",
@@ -146,7 +146,7 @@ mod formatter_tests {
     }
 
     #[test]
-    fn keeps_template_literals_holding_regex_and_nested_templates_intact() {
+    fn keeps_templates_with_regex_and_nested_templates() {
         let source = [
             "function shellEscape(value) {",
             "  return `'${String(value).replace(/'/gu, `'\\''`)}'`;",
@@ -246,7 +246,7 @@ mod formatter_tests {
     }
 
     #[test]
-    fn indents_consistently_after_a_regex_literal_containing_a_quote() {
+    fn indents_after_regex_literal_with_quote() {
         let source = [
             "function outer(): void {",
             "  const pattern = /^r(#{0,16})\"/;",

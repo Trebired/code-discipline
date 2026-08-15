@@ -8,6 +8,7 @@ pub fn run_check_rules(request_json: String) -> Result<String> {
     check_push_banned_file_violations(&mut violations, &text_files, &request.rules);
     check_push_min_file_line_violations(&mut violations, &text_files, &request.rules);
     check_push_min_declaration_name_violations(&mut violations, &text_files, &request.rules);
+    check_push_max_declaration_name_violations(&mut violations, &text_files, &request.rules);
     check_push_max_file_line_violations(&mut violations, &text_files, &request.rules);
     check_push_max_character_line_violations(&mut violations, &text_files, &request.rules);
     check_push_max_function_line_violations(&mut violations, &text_files, &request.rules);
@@ -160,47 +161,6 @@ fn check_push_min_file_line_violations(
                     format!("file has {line_count} {} and is at or below the banned minimum of {}", check_line_label(line_count), rule.min),
                     json!({ "lineCount": line_count, "min": rule.min }),
             ))
-    })
-    .collect::<Vec<_>>();
-    violations.append(&mut rows);
-}
-
-fn check_push_min_declaration_name_violations(
-    violations: &mut Vec<CodeDisciplineViolation>,
-    text_files: &[CheckTextFile],
-    rules: &NativeCheckRules,
-) {
-    let Some(rule) = &rules.min_declaration_name else {
-        return;
-    };
-    let mut rows = check_files_for_rule(text_files, &rule.exclude_dirs)
-    .par_iter()
-    .flat_map(|entry| {
-            check_collect_declarations(&entry.file, &entry.text)
-            .into_iter()
-            .filter_map(|declaration| {
-                    let length = check_measure_declaration_name(&declaration.name);
-                    (length < rule.min).then(|| check_violation(
-                            "min-declaration-name",
-                            false,
-                            entry.file.relative_from_project_root.clone(),
-                            format!(
-                                "{} {} has {length} {} and is below the minimum name length of {}",
-                                declaration.kind,
-                                declaration.name,
-                                if length == 1 { "character" } else { "characters" },
-                                rule.min,
-                            ),
-                            json!({
-                                    "declarationKind": declaration.kind,
-                                    "declarationName": declaration.name,
-                                    "line": declaration.line,
-                                    "length": length,
-                                    "min": rule.min,
-                            }),
-                    ))
-            })
-            .collect::<Vec<_>>()
     })
     .collect::<Vec<_>>();
     violations.append(&mut rows);

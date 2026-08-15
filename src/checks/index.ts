@@ -10,7 +10,7 @@ import {
   applyMaxCharactersPerLineFix,
   applyMinFileLinesFix,
   applyCodeFormatterFix,
-  applyEmptyFoldersFix,
+  applyRemoveEmptyFoldersFix,
   applyRemoveCommentsFix,
   applyStructuralBlankLinesFix,
   applyImportsFix,
@@ -18,7 +18,7 @@ import {
 import type { FixState } from "./apply-fixes.js";
 import { collectFormatViolations } from "./format.js";
 import { collectNativeCheckViolations } from "./native/runner.js";
-import { collectEmptyFolderViolations } from "./rules/empty-folders.js";
+import { collectRemoveEmptyFolderViolations } from "./rules/remove/empty-folders.js";
 import { applyConfiguredSeverity } from "./severity.js";
 import { buildNormalizedSyncOptions } from "./sync-options.js";
 import type {
@@ -95,7 +95,7 @@ function attachDisciplineResult<T extends CodeDisciplineResult>(
 async function collectViolations(options: NormalizedCheckCodeDisciplineOptions): Promise<CodeDisciplineViolation[]> {
   const sourceFiles = await scanSourceFiles(options);
   const violations = await collectNativeCheckViolations(sourceFiles, options);
-  violations.push(...collectEmptyFolderViolations(options));
+  violations.push(...collectRemoveEmptyFolderViolations(options));
   violations.push(...await collectFormatViolations(options, sourceFiles));
   return sortViolations(applyConfiguredSeverity(violations, options));
 }
@@ -164,7 +164,7 @@ async function fix(options: FixCodeDisciplineOptions): Promise<FixCodeDiscipline
   await applyStructuralBlankLinesFix(state, normalized);
   await applyCodeFormatterFix(state, normalized);
   await applyMaxCharactersPerLineFix(state, normalized);
-  await applyEmptyFoldersFix(state, normalized);
+  await applyRemoveEmptyFoldersFix(state, normalized);
   const result = attachDisciplineResult("fix", createFixResult(state));
   logFixResult(result, logger);
   return result;

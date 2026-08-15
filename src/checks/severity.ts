@@ -10,11 +10,12 @@ function resolveConfiguredSeverity(
     case "banned-files": return options.rules.bannedFiles?.severity ?? "fail";
     case "min-file-lines": return options.rules.minFileLines?.severity ?? "fail";
     case "min-declaration-name": return options.rules.minDeclarationName?.severity ?? "fail";
+    case "max-declaration-name": return options.rules.maxDeclarationName?.severity ?? "fail";
     case "max-file-lines": return options.rules.maxFileLines?.severity ?? "fail";
     case "max-characters-per-line": return options.rules.maxCharactersPerLine?.severity ?? "fail";
     case "max-function-lines": return options.rules.maxFunctionLines?.severity ?? "fail";
     case "redundant-path-segments": return options.rules.redundantPathSegments?.severity ?? "fail";
-    case "empty-folders": return options.rules.emptyFolders?.severity ?? "fail";
+    case "remove-empty-folders": return options.rules.removeEmptyFolders?.severity ?? "fail";
     case "imports": return options.rules.imports?.severity ?? "fail";
     case "remove-comments": return options.rules.removeComments?.severity ?? "fail";
     case "structural-blank-lines": return options.rules.structuralBlankLines?.severity ?? "fail";

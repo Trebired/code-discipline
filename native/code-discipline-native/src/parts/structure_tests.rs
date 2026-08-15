@@ -8,7 +8,7 @@ mod structure_tests {
     }
 
     #[test]
-    fn scans_redundant_path_segments_candidates_with_suggested_paths() {
+    fn scans_redundant_segments_with_suggested_paths() {
         let files = vec![
             file("src/user_route.ts", ".ts"),
             file("src/user_model.ts", ".ts"),
@@ -24,7 +24,7 @@ mod structure_tests {
     }
 
     #[test]
-    fn scans_redundant_path_segments_candidates_across_supported_languages() {
+    fn scans_redundant_segments_across_languages() {
         let files = vec![
             file("src/view_logic.qml", ".qml"),
             file("src/view_model.qml", ".qml"),

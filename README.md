@@ -28,9 +28,9 @@ bun i @trebired/code-discipline
 ```sh
 code-discipline check
 code-discipline check save
-code-discipline check max-function-lines empty-folders dry format
+code-discipline check max-function-lines remove-empty-folders dry format
 code-discipline fix
-code-discipline fix banned-files min-file-lines max-characters-per-line redundant-path-segments empty-folders imports remove-comments structural-blank-lines format
+code-discipline fix banned-files min-file-lines max-characters-per-line redundant-path-segments remove-empty-folders imports remove-comments structural-blank-lines format
 code-discipline gate -- bun run dev
 ```
 
@@ -100,6 +100,12 @@ Reports named declarations whose names are shorter than `min`, defaulting to `2`
 
 JavaScript and TypeScript use the TypeScript AST for `function` declarations and simple `const` identifiers. Go, Rust, C++, C#, Python, QML, shell, SCSS, and CSS use language-aware declaration scanners for functions, declarations, properties, variables, and custom properties where those concepts exist.
 
+#### `maxDeclarationName`
+
+Reports named declarations whose names are longer than `max`, defaulting to `50` when the rule is configured.
+
+It uses the same language-aware declaration scanners as `minDeclarationName`.
+
 #### `maxCharactersPerLine`
 
 Reports physical lines whose character count exceeds `max`, defaulting to `150` when the rule is configured.
@@ -142,11 +148,11 @@ The rule config describes compound-name separators. Whether it mutates is decide
 
 Redundant path segment scans and moves supported source files across JavaScript, TypeScript, Go, Rust, C++, C#, Python, QML, shell, SCSS, and CSS. Move-aware import repair is applied for languages whose import syntax is package-supported.
 
-#### `emptyFolders`
+#### `removeEmptyFolders`
 
 Reports physically empty directories under the project source root.
 
-`code-discipline fix empty-folders` deletes empty directories deepest-first and repeats until no newly emptied child directories remain. It never deletes the project/source root, and it respects global ignore/gitignore exclusions plus rule-local `excludeDirs`.
+`code-discipline fix remove-empty-folders` deletes empty directories deepest-first and repeats until no newly emptied child directories remain. It never deletes the project/source root, and it respects global ignore/gitignore exclusions plus rule-local `excludeDirs`.
 
 #### `imports`
 
@@ -475,7 +481,7 @@ Manual `rules.bannedPatterns` entries still work normally. If both are configure
 
 ```sh
 code-discipline check max-file-lines max-function-lines
-code-discipline fix banned-files min-file-lines max-characters-per-line redundant-path-segments empty-folders imports remove-comments structural-blank-lines format
+code-discipline fix banned-files min-file-lines max-characters-per-line redundant-path-segments remove-empty-folders imports remove-comments structural-blank-lines format
 code-discipline check format
 code-discipline fix format
 ```
@@ -486,11 +492,12 @@ Rules use kebab-case public slugs:
 - `banned-files`
 - `min-file-lines`
 - `min-declaration-name`
+- `max-declaration-name`
 - `max-file-lines`
 - `max-characters-per-line`
 - `max-function-lines`
 - `redundant-path-segments`
-- `empty-folders`
+- `remove-empty-folders`
 - `imports`
 - `remove-comments`
 - `structural-blank-lines`

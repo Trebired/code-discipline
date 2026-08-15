@@ -8,9 +8,9 @@ import type {
   BannedFilesRuleOptions,
   CodeDisciplineImportsRuleOptions,
   DryRuleOptions,
-  EmptyFoldersRuleOptions,
   RedundantPathSegmentsRuleOptions,
   MaxCharactersPerLineRuleOptions,
+  MaxDeclarationNameRuleOptions,
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
   MinDeclarationNameRuleOptions,
@@ -18,7 +18,9 @@ import type {
   NormalizedBannedPatternsRule,
   NormalizedBannedFilesRule,
   NormalizedDryRule,
-  NormalizedEmptyFoldersRule,
+  NormalizedRemoveEmptyFoldersRule,
+  NormalizedMaxDeclarationNameRule,
+  RemoveEmptyFoldersRuleOptions,
   RemoveCommentsRuleOptions,
   StructuralBlankLinesRuleOptions,
 } from "#uqbg4indzud7";
@@ -34,6 +36,7 @@ import {
 
 const DEFAULT_MIN_FILE_LINES = 1;
 const DEFAULT_MIN_DECLARATION_NAME = 2;
+const DEFAULT_MAX_DECLARATION_NAME = 50;
 const DEFAULT_MAX_CHARACTERS_PER_LINE = 150;
 
 function normalizeMinFileLinesRule(rule: MinFileLinesRuleOptions | undefined) {
@@ -55,6 +58,19 @@ function normalizeMinDeclarationNameRule(rule: MinDeclarationNameRuleOptions | u
     ...normalizeRuleExclusions("minDeclarationName", source),
     min: normalizeThreshold(rule.min, DEFAULT_MIN_DECLARATION_NAME, "minDeclarationName.min"),
     severity: normalizeSeverity(rule.severity, "minDeclarationName"),
+  };
+}
+
+function normalizeMaxDeclarationNameRule(
+  rule: MaxDeclarationNameRuleOptions | undefined,
+): NormalizedMaxDeclarationNameRule | undefined {
+  if (!rule) return undefined;
+  const source = rule as Record<string, unknown>;
+  assertRemovedKeys("maxDeclarationName", source, ["enabled", "stop", "fix"]);
+  return {
+    ...normalizeRuleExclusions("maxDeclarationName", source),
+    max: normalizeThreshold(rule.max, DEFAULT_MAX_DECLARATION_NAME, "maxDeclarationName.max"),
+    severity: normalizeSeverity(rule.severity, "maxDeclarationName"),
   };
 }
 
@@ -189,20 +205,22 @@ function normalizeRedundantPathSegmentsRule(rule: RedundantPathSegmentsRuleOptio
   };
 }
 
-function normalizeEmptyFoldersRule(rule: EmptyFoldersRuleOptions | undefined): NormalizedEmptyFoldersRule | undefined {
+function normalizeRemoveEmptyFoldersRule(
+  rule: RemoveEmptyFoldersRuleOptions | undefined,
+): NormalizedRemoveEmptyFoldersRule | undefined {
   if (!rule) return undefined;
   const source = rule as Record<string, unknown>;
-  assertRemovedKeys("emptyFolders", source, ["enabled", "stop", "fix"]);
+  assertRemovedKeys("removeEmptyFolders", source, ["enabled", "stop", "fix"]);
   const unsupportedKeys = Object.keys(source).filter((key) => !["severity", "excludeDirs", "excludeFiles", "excludeFolders"].includes(key));
   if (unsupportedKeys.length > 0) {
-    throw new InvalidCodeDisciplineConfigError("emptyFolders does not accept rule options", {
-        rule: "emptyFolders",
+    throw new InvalidCodeDisciplineConfigError("removeEmptyFolders does not accept rule options", {
+        rule: "removeEmptyFolders",
         keys: unsupportedKeys,
     });
   }
   return {
-    ...normalizeRuleExclusions("emptyFolders", source),
-    severity: normalizeSeverity(rule.severity, "emptyFolders"),
+    ...normalizeRuleExclusions("removeEmptyFolders", source),
+    severity: normalizeSeverity(rule.severity, "removeEmptyFolders"),
   };
 }
 
@@ -334,14 +352,15 @@ export {
   normalizeBannedPatternsRule,
   normalizeBannedFilesRule,
   normalizeDryRule,
-  normalizeEmptyFoldersRule,
   normalizeRedundantPathSegmentsRule,
   normalizeSeverity,
   normalizeMaxCharactersPerLineRule,
+  normalizeMaxDeclarationNameRule,
   normalizeMaxFileLinesRule,
   normalizeMaxFunctionLinesRule,
   normalizeMinDeclarationNameRule,
   normalizeMinFileLinesRule,
+  normalizeRemoveEmptyFoldersRule,
   normalizeRemoveCommentsRule,
   normalizeStructuralBlankLinesRule,
   normalizeImportsRule,
