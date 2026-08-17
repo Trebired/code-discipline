@@ -5,13 +5,10 @@
       "displayName": "Trebired",
       "name": "trebired",
       "website": "https://trebired.com"
-    },
-    "creator": {
-      "name": "Miroslav Machynka"
     }
   },
   "name": "@trebired/code-discipline",
-  "version": "7.0.1",
+  "version": "7.0.2",
   "description": "Configurable codebase discipline checks and rule-driven fixes for Bun projects.",
   "type": "module",
   "private": false,
@@ -63,7 +60,7 @@
   "dependencies": {
     "@package/logger": "npm:@trebired/logger@^2.5.28",
     "@package/result": "npm:@trebired/result@^1.1.6",
-    "@trebired/utils": "^0.4.5",
+    "@trebired/utils": "^0.6.0",
     "typescript": "^6.0.3"
   },
   "devDependencies": {

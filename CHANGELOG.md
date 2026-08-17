@@ -1,5 +1,10 @@
 # Changelog
 
+## 7.0.2
+
+- Removed dead `config.creator` from `package.json`.
+- Updated shared utilities to `@trebired/utils@^0.6.0` and replaced the removed `readPackageIdentity()` with `readPackageJsonUrl()` + `readOrganizationIdentity()` + `packageSlug()`/`joinLogGroup()`. No change to exported metadata values.
+
 ## 7.0.0
 
 - Added `maxDeclarationName` / `max-declaration-name`, defaulting to `max: 50`, to report overly long declaration names through the native declaration scanner.
