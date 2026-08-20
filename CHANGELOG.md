@@ -1,5 +1,9 @@
 # Changelog
 
+## 7.0.3
+
+- Updated logger and result dependency ranges to the current package releases so consumers do not retain older nested logger-adapter installs.
+
 ## 7.0.2
 
 - Removed dead `config.creator` from `package.json`.
