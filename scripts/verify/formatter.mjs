@@ -220,10 +220,9 @@ function assertInitialCheck(check) {
   const violatedFiles = check.violations.map((violation) => violation.filePath).sort();
 
   assert.equal(check.ok, false);
-  // machine-written state stays excluded; the tool's own config is not exempt
   assert.equal(
     violatedFiles.some((filePath) => filePath.startsWith(".trebired/code-discipline/generated/")
-      || filePath.startsWith(".trebired/code-discipline/imports/")),
+      ||filePath.startsWith(".trebired/code-discipline/imports/")),
     false,
   );
   assert.ok(violatedFiles.includes("src/app.ts"));
@@ -307,7 +306,6 @@ async function verifyFormatter() {
   const fix = await run(formatterOptions(projectRoot, "fix"));
   assert.equal(fix.ok, true);
   assert.ok(fix.formatted_files >= 4);
-  // the tool's own config is formatted like any other file
   const stateAfter = await fs.readFile(statePath, "utf8");
   assert.notEqual(stateAfter, stateBefore);
   assert.equal(stateAfter, 'const value = "state";\n');
