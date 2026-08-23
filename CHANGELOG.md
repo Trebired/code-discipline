@@ -1,5 +1,11 @@
 # Changelog
 
+## 7.1.1
+
+### Fixed
+
+- The include-coverage violation added in 7.1.0 is now fixable. It reported that a directory was aliased but not covered by the root tsconfig's `include` and then stopped, leaving the repair manual. `fix` now appends the missing scan roots as `<root>/**/*.ts` to the root `tsconfig.json#include`, alongside the `extends` and `paths` it already writes there. It stays in the root config rather than the generated one, because `include` is inherited from an extended config only when the extending config omits it. Re-running is idempotent, and a project whose `include` already covers its scan roots is untouched.
+
 ## 7.1.0
 
 ### Fixed

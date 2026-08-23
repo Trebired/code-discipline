@@ -11,6 +11,7 @@ import { collectImportViolations } from "./check.js";
 import { rewriteSourceImports } from "./rewrite.js";
 import { scanSourceFiles } from "./scan.js";
 import type { ImportsOptions, ImportsResult, NormalizedImportsOptions } from "./types.js";
+import { addMissingIncludeRoots } from "./include-coverage.js";
 
 function summarizeImportViolations(violations: CodeDisciplineViolation[]) {
   return {
@@ -70,6 +71,18 @@ async function applyImportFixes(
           gitignorePath: gitignore.path,
         }, { group: ruleLogGroup("imports") });
     }
+  }
+
+  const addedIncludeRoots = await addMissingIncludeRoots({
+      aliasedPaths: plannedAliases.aliasRecords.map((record) => record.absolutePath),
+      projectRoot: normalized.projectRoot,
+      tsconfigPath: normalized.tsconfigPath,
+  });
+  if (addedIncludeRoots.length) {
+    logger.success("include-roots-added", "tsconfig include updated for aliased scan roots", {
+        roots: addedIncludeRoots,
+        tsconfigPath: normalized.tsconfigPath,
+      }, { group: ruleLogGroup("imports") });
   }
 
   const aliasState = plannedAliases.aliasesChanged

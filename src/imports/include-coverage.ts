@@ -86,4 +86,33 @@ async function collectIncludeCoverageViolations(
   }));
 }
 
-export { collectIncludeCoverageViolations, readTsconfigInclude };
+async function addMissingIncludeRoots(args: IncludeCoverageArgs): Promise<string[]> {
+  const include = await readTsconfigInclude(args.tsconfigPath);
+  if (!include || !include.length) return [];
+
+  const missing: string[] = [];
+  for (const aliased of args.aliasedPaths) {
+    const relative = toPosix(path.relative(args.projectRoot, aliased));
+    if (!relative || relative.startsWith("..")) continue;
+    const root = scanRootOf(relative);
+    if (root && !includeCoversRoot(include, root) && !missing.includes(root)) {
+      missing.push(root);
+    }
+  }
+  if (!missing.length) return [];
+
+  const source = await fs.readFile(args.tsconfigPath, "utf8");
+  const parsed = parseTsconfigJson(source) as { include?: string[] };
+  parsed.include = [
+    ...include,
+    ...missing.sort().map((root) => `${root}/**/*.ts`),
+  ];
+  await fs.writeFile(args.tsconfigPath, `${JSON.stringify(parsed, null, 2)}\n`, "utf8");
+  return missing.sort();
+}
+
+export {
+  addMissingIncludeRoots,
+  collectIncludeCoverageViolations,
+  readTsconfigInclude,
+};
