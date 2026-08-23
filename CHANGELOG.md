@@ -1,5 +1,17 @@
 # Changelog
 
+## 7.1.0
+
+### Fixed
+
+- The generated artifacts ignore entry no longer hides `tsconfig.paths.json`. Sync wrote `.trebired/code-discipline/generated/` into the project's `.gitignore`, which ignored the one file that resolves `#xxxxxxxx` at runtime — producing a repository that builds locally and fails on a fresh checkout with `Cannot find package '#…'`. Only `generated/reports/` is ignored now, and a project carrying the old broad entry has it rewritten in place on the next sync.
+- The tool's own config is no longer exempt from every rule. `.trebired/code-discipline` was force-excluded in three places in the native scanner, unconditionally and with no way to override it from config, so the config file escaped file size, function size, comment removal, formatting, blank lines, and line length — rules it enforces on every other file. Exclusion now comes from configuration, and the two rules where self-reference is genuinely unavoidable exempt it themselves: banned-patterns (the config declares the patterns) and imports (the config must load before any alias map exists).
+- `check` and `fix` no longer disagree about import drift. Rule options reach the two paths through different normalizers, `normalizeImportsRule` for check and `normalizeImportsOptions` for fix, so an exclusion applied to one left the other planning a different alias set and reporting permanent drift. Both now apply the same exemption, and alias-map drift is decided by comparing the planned map against the stored one rather than by testing whether any alias exists at all.
+
+### Added
+
+- The imports rule verifies that every directory it aliases into is reachable from the root tsconfig's `include`, failing with `<root> is aliased but not covered by tsconfig.json#include`. An alias only resolves for files in the TypeScript program: a directory that is aliased but excluded from `include` is never typechecked, and the editor falls back to an inferred project, which does not apply `paths` — so every alias reads as an unresolved module while the build stays green. The check reads the root tsconfig rather than emitting `include` into the generated file, because `include` is inherited from an extended config only when the extending config omits it.
+
 ## 7.0.3
 
 - Updated logger and result dependency ranges to the current package releases so consumers do not retain older nested logger-adapter installs.

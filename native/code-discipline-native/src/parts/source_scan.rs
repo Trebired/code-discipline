@@ -77,8 +77,6 @@ struct DirectoryScanResult {
     files: Vec<ScannedSourceFile>,
 }
 
-const CODE_DISCIPLINE_STATE_DIR: &str = ".trebired/code-discipline";
-
 fn resolve_scan_concurrency() -> usize {
     if let Ok(value) = std::env::var("TB_CODE_DISCIPLINE_SCAN_CONCURRENCY") {
         if let Ok(parsed) = value.parse::<usize>() {
@@ -105,12 +103,6 @@ fn create_directory_scan_context(options: &SourceScanRequest) -> DirectoryScanCo
     .filter(|entry| entry.entry_type != "file")
     .map(|entry| entry.pattern.clone())
     .collect::<Vec<_>>();
-    if !exclude_folder_patterns
-    .iter()
-    .any(|entry| entry == CODE_DISCIPLINE_STATE_DIR)
-    {
-        exclude_folder_patterns.push(CODE_DISCIPLINE_STATE_DIR.to_string());
-    }
     let excluded_directory_names = exclude_folder_patterns
     .iter()
     .filter(|entry| !entry.contains('/'))
@@ -219,9 +211,6 @@ fn should_exclude_directory_by_ignore_pattern(
 
 fn should_exclude_file(file: &ScannedSourceFile, context: &DirectoryScanContext) -> bool {
     let relative_path = normalize_relative_path(&file.relative_from_project_root);
-    if check_is_state_path(&relative_path) {
-        return true;
-    }
     context
     .exclude_file_patterns
     .iter()

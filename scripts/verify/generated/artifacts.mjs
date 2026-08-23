@@ -89,7 +89,7 @@ async function verifyGeneratedGitignore() {
   const missingRoot = await createArtifactProject("generated-missing");
   await runSyncFix(missingRoot);
   const createdText = await fs.readFile(path.join(missingRoot, ".gitignore"), "utf8");
-  assert.equal(createdText, ".trebired/code-discipline/generated/\n");
+  assert.equal(createdText, ".trebired/code-discipline/generated/reports/\n");
 
   const existingRoot = await createArtifactProject("generated-existing", "dist/\n# local note\n");
   await runSyncFix(existingRoot);
@@ -98,9 +98,22 @@ async function verifyGeneratedGitignore() {
   const lines = existingText.split(/\r?\n/).filter(Boolean);
 
   assert.ok(lines.includes("dist/"));
-  assert.equal(lines.filter((line) => line === ".trebired/code-discipline/generated/").length, 1);
+  assert.equal(lines.filter((line) => line === ".trebired/code-discipline/generated/reports/").length, 1);
   assert.equal(lines.includes(".trebired/code-discipline/"), false);
+  assert.equal(lines.includes(".trebired/code-discipline/generated/"), false);
   assert.equal(lines.includes(".trebired/code-discipline/imports/"), false);
+
+  const legacyRoot = await createArtifactProject(
+    "generated-legacy",
+    "dist/\n.trebired/code-discipline/generated/\n",
+  );
+  await runSyncFix(legacyRoot);
+  const legacyLines = (await fs.readFile(path.join(legacyRoot, ".gitignore"), "utf8"))
+  .split(/\r?\n/)
+  .filter(Boolean);
+  assert.equal(legacyLines.includes(".trebired/code-discipline/generated/"), false);
+  assert.equal(legacyLines.includes(".trebired/code-discipline/generated/reports/"), true);
+  assert.ok(legacyLines.includes("dist/"));
 }
 
 async function verifyGeneratedTsconfigWiring() {

@@ -1,0 +1,414 @@
+{
+  "compilerOptions": {
+    "paths": {
+      "#0kr9612e2xqc": [
+        "../../../src/shared/package-metadata.ts"
+      ],
+      "#0nr05vmcrtql": [
+        "../../../src/shared/gitignore.ts"
+      ],
+      "#0pyancp5wp19": [
+        "../../../src/imports/dead.ts"
+      ],
+      "#1fb83ahqcio3": [
+        "../../../src/checks/format.ts"
+      ],
+      "#27pccnhol1ci": [
+        "../../../src/imports/module-specifiers.ts"
+      ],
+      "#28sf21fupcan": [
+        "../../../src/checks/rules/dry/candidates.ts"
+      ],
+      "#2gohqj1pb29e": [
+        "../../../src/shared/directories.ts"
+      ],
+      "#2n2o2y9otf5l": [
+        "../../../examples/dummy.ts"
+      ],
+      "#2ot1c4hhbgbs": [
+        "../../../scripts/build/native/targets.mjs"
+      ],
+      "#2t02wugxodzn": [
+        "../../../src/config/normalize/path-lists.ts"
+      ],
+      "#2z5qe6gxtgnl": [
+        "../../../src/config/normalize/logging-options.ts"
+      ],
+      "#3lwz5k2vshy1": [
+        "../../../src/checks/rules/banned/fold.ts"
+      ],
+      "#49ihfa399fpp": [
+        "../../../src/shared/globs.ts"
+      ],
+      "#4f8hale01wb4": [
+        "../../../src/shared/errors.ts"
+      ],
+      "#4n83bdsi6fxh": [
+        "../../../scripts/build/aliases.mjs"
+      ],
+      "#4w1gyhgesl1i": [
+        "../../../scripts/verify/language/fixtures.mjs"
+      ],
+      "#51kcncizdqcz": [
+        "../../../src/runtime/imports-sync.ts"
+      ],
+      "#53dmzh5fd2ue": [
+        "../../../src/config/normalize/rule/validation.ts"
+      ],
+      "#5433afgggxit": [
+        "../../../src/checks/rules/dry/fingerprint.ts"
+      ],
+      "#5j3lm9guj19q": [
+        "../../../src/checks/rules/comments/csharp.ts"
+      ],
+      "#5koja8ae2wwn": [
+        "../../../src/shared/logging.ts"
+      ],
+      "#5mxtmknktbwv": [
+        "../../../src/checks/rules/dry/generic.ts"
+      ],
+      "#5pk048q47s3q": [
+        "../../../src/imports/include-coverage.ts"
+      ],
+      "#5psaq7gip1rb": [
+        "../../../src/cli/output.ts"
+      ],
+      "#5xd7wrzcdwjb": [
+        "../../../src/checks/rules/dry/behavior/expressions.ts"
+      ],
+      "#6ik5b9zxir3a": [
+        "../../../src/checks/rules/dry/serialize/expressions.ts"
+      ],
+      "#6lypsu1nv13p": [
+        "../../../src/config/normalize/node-process-boundary.ts"
+      ],
+      "#6vx9xvxrvnwj": [
+        "../../../src/imports/imports.ts"
+      ],
+      "#6wirketkaktr": [
+        "../../../src/checks/rules/blank-lines/rewrite.ts"
+      ],
+      "#6yp73unwii53": [
+        "../../../src/imports/strategies.ts"
+      ],
+      "#6zi9u60xoahm": [
+        "../../../src/checks/rules/remove/empty-folders.ts"
+      ],
+      "#7vq5a5gjjchk": [
+        "../../../src/checks/rules/max/characters-per-line/fix.ts"
+      ],
+      "#81qf83olyj49": [
+        "../../../src/checks/rules/dry/index.ts"
+      ],
+      "#87jyjzn68rrk": [
+        "../../../src/shared/languages.ts"
+      ],
+      "#9al58tn2ibde": [
+        "../../../src/cli.ts"
+      ],
+      "#9cs5z6nffer3": [
+        "../../../src/checks/rules/comments/ranges.ts"
+      ],
+      "#9epcrzq92bsw": [
+        "../../../src/run.ts"
+      ],
+      "#9jbb4d7ijbcn": [
+        "../../../scripts/verify/generated/artifacts.mjs"
+      ],
+      "#9sccgd75qe7n": [
+        "../../../src/config/normalize/imports-options.ts"
+      ],
+      "#9tcp2jgf8qlj": [
+        "../../../src/checks/rules/max/function-lines.ts"
+      ],
+      "#9tvptmmpteoj": [
+        "../../../src/formatters/files.ts"
+      ],
+      "#arhoe19ayg60": [
+        "../../../src/runtime/gate-command.ts"
+      ],
+      "#ay5rr8vjr5fh": [
+        "../../../src/imports/resolve.ts"
+      ],
+      "#azin2l86pnk4": [
+        "../../../src/checks/rules/max/strip.ts"
+      ],
+      "#b4hfygxeeu1b": [
+        "../../../src/checks/rules/banned/files.ts"
+      ],
+      "#bkrnmyqyyloc": [
+        "../../../src/config/normalize/rule/options.ts"
+      ],
+      "#bsmch74up4fm": [
+        "../../../src/shared/discipline-types.ts"
+      ],
+      "#c2aq7z619tk5": [
+        "../../../src/checks/rules/comments/c-like.ts"
+      ],
+      "#cbb7jrf5wadz": [
+        "../../../src/checks/rules/dry/serialize/context.ts"
+      ],
+      "#co5e63fhc1wb": [
+        "../../../src/index.ts"
+      ],
+      "#d1ilpf8bdygo": [
+        "../../../src/checks/rules/min/file/lines/fix.ts"
+      ],
+      "#d8do6i46yvb5": [
+        "../../../src/checks/rules/dry/serialize/node.ts"
+      ],
+      "#deajldp9u80m": [
+        "../../../src/cli/logging.ts"
+      ],
+      "#dn50wqo8xh44": [
+        "../../../src/checks/rules/max/qml.ts"
+      ],
+      "#dyqndbdm2ryc": [
+        "../../../src/checks/rules/dry/serialize/bindings.ts"
+      ],
+      "#e7d7nr4kq7pb": [
+        "../../../src/checks/rules/redundant-path-segments/plan.ts"
+      ],
+      "#efe33sls019o": [
+        "../../../src/checks/progress.ts"
+      ],
+      "#ev3m10ezn5sg": [
+        "../../../src/checks/rules/dry/behavior/index.ts"
+      ],
+      "#fjxqx1txjvje": [
+        "../../../src/checks/rules/dry/serialize/statements.ts"
+      ],
+      "#foa3t3ao5irq": [
+        "../../../src/shared/log-groups.ts"
+      ],
+      "#fr9be3qxsdjh": [
+        "../../../src/checks/rules/max/python.ts"
+      ],
+      "#fufuac8036qd": [
+        "../../../scripts/build/native.mjs"
+      ],
+      "#g7jwa395o8k0": [
+        "../../../scripts/verify/presets.mjs"
+      ],
+      "#gbpelbsn3ne5": [
+        "../../../src/checks/rules/max/characters-per-line.ts"
+      ],
+      "#geu34s2941zd": [
+        "../../../scripts/verify/language/dry.mjs"
+      ],
+      "#gqxxrd6ye9fj": [
+        "../../../src/config/normalize/exclusions.ts"
+      ],
+      "#h414y4jhq4rg": [
+        "../../../src/checks/native/dry.ts"
+      ],
+      "#he4e32fcbx5j": [
+        "../../../src/checks/apply-fixes.ts"
+      ],
+      "#hrlcdim1gtmi": [
+        "../../../src/checks/rules/typescript-functions.ts"
+      ],
+      "#ik5y0pee4ah1": [
+        "../../../src/shared/constants.ts"
+      ],
+      "#j00y5takmzho": [
+        "../../../src/checks/rules/max/shell.ts"
+      ],
+      "#jgb3uhcipyc4": [
+        "../../../src/runtime/tsconfig-paths.ts"
+      ],
+      "#jizekc8duh4i": [
+        "../../../src/shared/rule-exclusions.ts"
+      ],
+      "#jnvdqdbcnk3f": [
+        "../../../src/formatters/code.ts"
+      ],
+      "#knhtiz6wfu0r": [
+        "../../../src/cli/run.ts"
+      ],
+      "#lcaqqs2n2uo6": [
+        "../../../src/checks/rules/comments/python.ts"
+      ],
+      "#lmz0029ga0t9": [
+        "../../../src/checks/fix-redundant-path-segments.ts"
+      ],
+      "#lt365tiokj8a": [
+        "../../../src/checks/rules/min/declaration/name.ts"
+      ],
+      "#lvwwpxtj6az5": [
+        "../../../src/checks/parse-failures.ts"
+      ],
+      "#mdobkhibb8sa": [
+        "../../../src/checks/rules/remove/comments.ts"
+      ],
+      "#mhsh7a6n2zpz": [
+        "../../../scripts/build/native/matrix.mjs"
+      ],
+      "#mnlreck6p7u3": [
+        "../../../src/checks/rules/redundant-path-segments/index.ts"
+      ],
+      "#mv1bbdtri77n": [
+        "../../../src/checks/rules/max/code-lines.ts"
+      ],
+      "#n3dq90fo2kyk": [
+        "../../../src/checks/rules/dry/behavior/conditions.ts"
+      ],
+      "#n4snuy1yfjwq": [
+        "../../../src/checks/rules/min/file/lines.ts"
+      ],
+      "#ncnkhnek2njq": [
+        "../../../src/checks/severity.ts"
+      ],
+      "#ni3zwhsdcu98": [
+        "../../../src/runtime/orchestrate.ts"
+      ],
+      "#ntve5i5a0mol": [
+        "../../../src/shared/utils.ts"
+      ],
+      "#nwpxjl4s2zib": [
+        "../../../src/checks/rules/min/declarations.ts"
+      ],
+      "#omdj4vkpylkb": [
+        "../../../src/checks/rules/min/declaration/shared.ts"
+      ],
+      "#ooy477uttjly": [
+        "../../../src/checks/rules/comments/shell.ts"
+      ],
+      "#p9ktdl3d4nf1": [
+        "../../../src/checks/index.ts"
+      ],
+      "#p9niklnw4hlg": [
+        "../../../scripts/build/generated/tsconfig.mjs"
+      ],
+      "#pkb9x3eo56l7": [
+        "../../../src/imports/types.ts"
+      ],
+      "#px9qxlobon9n": [
+        "../../../src/config/normalize/rule/banned-patterns.ts"
+      ],
+      "#pzy12rn6douq": [
+        "../../../src/config/normalize/formatter-options.ts"
+      ],
+      "#q1m0vz6gcrfw": [
+        "../../logger/config.ts"
+      ],
+      "#q6u4pcd984qa": [
+        "../../../src/native/native.ts"
+      ],
+      "#qsmgwga53vic": [
+        "../../../src/checks/rules/blank-lines/generic.ts"
+      ],
+      "#r4k0t5wqgwq6": [
+        "../../../src/imports/format.ts"
+      ],
+      "#rpaq8jfzp0xk": [
+        "../../../src/config/module-loader.ts"
+      ],
+      "#rqu2hcvfcs4c": [
+        "../../../src/config/index.ts"
+      ],
+      "#rv3slybxi6wc": [
+        "../../../src/checks/rules/blank-lines/types.ts"
+      ],
+      "#stk5e1hvpp7o": [
+        "../../../src/config/normalize/presets.ts"
+      ],
+      "#swagr0hc6gzr": [
+        "../../../scripts/verify/imports/dead.mjs"
+      ],
+      "#t7940ar28d6y": [
+        "../../../src/config/normalize/source-options.ts"
+      ],
+      "#tndpraw7eu3w": [
+        "../../../src/checks/rules/comments/quoted.ts"
+      ],
+      "#to4c9s3qr330": [
+        "../../../src/imports/rewrite.ts"
+      ],
+      "#ua9whqppp94v": [
+        "../../../src/imports/scan.ts"
+      ],
+      "#uaux9bh3my6b": [
+        "../../../src/checks/rules/max/file-lines.ts"
+      ],
+      "#ug46qontqfe9": [
+        "../../../src/checks/sync-options.ts"
+      ],
+      "#ul38etdfkkej": [
+        "../../../src/cli/progress.ts"
+      ],
+      "#uljkt8i26p4t": [
+        "../../../src/shared/logging-types.ts"
+      ],
+      "#uqbg4indzud7": [
+        "../../../src/checks/types.ts"
+      ],
+      "#usr2l2h45daq": [
+        "../../../src/checks/rules/banned/patterns.ts"
+      ],
+      "#v3w5gxjzmh9z": [
+        "../../../src/checks/rules/blank-lines/index.ts"
+      ],
+      "#vgknapauto04": [
+        "../../../src/imports/aliases.ts"
+      ],
+      "#w78tbxf3hewx": [
+        "../../../src/checks/rules/dry/matching.ts"
+      ],
+      "#wop0x4xwtrxj": [
+        "../../../scripts/verify/formatter.mjs"
+      ],
+      "#wqwzv4c1copg": [
+        "../../../src/checks/rules/dry/similarity.ts"
+      ],
+      "#wrl4xdfz9zg3": [
+        "../../../src/checks/rules/comments/stripping.ts"
+      ],
+      "#ws0c7e58zmtg": [
+        "../../../src/checks/rules/blank-lines/comments.ts"
+      ],
+      "#x458f9t6w4a6": [
+        "../../../src/config/normalize/check-options.ts"
+      ],
+      "#x5ecj35qfdf3": [
+        "../../../src/checks/rules/dry/behavior/statements.ts"
+      ],
+      "#x6956eahfhcm": [
+        "../../../src/checks/rules/comments/qml.ts"
+      ],
+      "#x6dn4can2fic": [
+        "../../../src/checks/rules/dry/behavior/model.ts"
+      ],
+      "#xhresemjp5z8": [
+        "../../../src/checks/native/runner.ts"
+      ],
+      "#xtc1vi4ape7f": [
+        "../../../scripts/verify/language/support.mjs"
+      ],
+      "#xwfxez0wzcew": [
+        "../../../src/imports/folder.ts"
+      ],
+      "#ydyygm5y7vgb": [
+        "../../../src/checks/rule-slugs.ts"
+      ],
+      "#yo087er72sh9": [
+        "../../../scripts/benchmark/platform.mjs"
+      ],
+      "#ypw9eb3ob06l": [
+        "../../../scripts/verify/max/line/fixer.mjs"
+      ],
+      "#zdmj0zb82kk1": [
+        "../../../src/imports/check.ts"
+      ],
+      "#zdq4d0mpbk55": [
+        "../../../src/checks/rules/blank-lines/classify.ts"
+      ],
+      "#zdy5k79iam8y": [
+        "../../../src/shared/generated-artifacts.ts"
+      ],
+      "#zqg5hww7g6g1": [
+        "../../../src/checks/rules/dry/model.ts"
+      ]
+    }
+  }
+}

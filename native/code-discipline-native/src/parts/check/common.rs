@@ -80,9 +80,6 @@ fn check_matches_excluded_folder(file_path: &str, folder_pattern: &str) -> bool 
 
 fn check_is_rule_excluded(file: &ScannedSourceFile, exclude_dirs: &[NativeExcludeDirEntry]) -> bool {
     let relative_path = normalize_relative_path(&file.relative_from_project_root);
-    if check_is_state_path(&relative_path) {
-        return true;
-    }
     exclude_dirs.iter().any(|entry| {
             if entry.entry_type == "file" {
                 check_matches_glob(&relative_path, &entry.pattern)

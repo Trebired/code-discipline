@@ -13,6 +13,7 @@ import { resolveRelativeImport } from "./resolve.js";
 import { isAllowedRelative } from "./rewrite.js";
 import type { NormalizedImportsOptions, ScannedSourceFile } from "./types.js";
 import { collectWithParseFailure } from "#lvwwpxtj6az5";
+import { collectIncludeCoverageViolations } from "./include-coverage.js";
 
 async function collectImportViolations(
   sourceFiles: ScannedSourceFile[],
@@ -28,6 +29,12 @@ async function collectImportViolations(
   const aliasPlan = await planTsconfigAliases(options, supportedSourceFiles, logger);
   const aliasIdsByFilePath = new Map(aliasPlan.aliasRecords.map((record) => [record.absolutePath, record.id]));
   const violations: CodeDisciplineViolation[] = [];
+
+  violations.push(...await collectIncludeCoverageViolations({
+        aliasedPaths: aliasPlan.aliasRecords.map((record) => record.absolutePath),
+        projectRoot: options.projectRoot,
+        tsconfigPath: options.tsconfigPath,
+  }));
 
   if (aliasPlan.aliasesChanged) {
     violations.push({

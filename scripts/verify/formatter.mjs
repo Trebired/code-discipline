@@ -220,7 +220,12 @@ function assertInitialCheck(check) {
   const violatedFiles = check.violations.map((violation) => violation.filePath).sort();
 
   assert.equal(check.ok, false);
-  assert.equal(violatedFiles.some((filePath) => filePath.startsWith(".trebired/code-discipline/")), false);
+  // machine-written state stays excluded; the tool's own config is not exempt
+  assert.equal(
+    violatedFiles.some((filePath) => filePath.startsWith(".trebired/code-discipline/generated/")
+      || filePath.startsWith(".trebired/code-discipline/imports/")),
+    false,
+  );
   assert.ok(violatedFiles.includes("src/app.ts"));
   assert.ok(violatedFiles.includes("src/View.qml"));
   assert.ok(violatedFiles.includes("src/styles.css"));
@@ -302,7 +307,10 @@ async function verifyFormatter() {
   const fix = await run(formatterOptions(projectRoot, "fix"));
   assert.equal(fix.ok, true);
   assert.ok(fix.formatted_files >= 4);
-  assert.equal(await fs.readFile(statePath, "utf8"), stateBefore);
+  // the tool's own config is formatted like any other file
+  const stateAfter = await fs.readFile(statePath, "utf8");
+  assert.notEqual(stateAfter, stateBefore);
+  assert.equal(stateAfter, 'const value = "state";\n');
 
   const clean = await run(formatterOptions(projectRoot, "check", ["format", "max-characters-per-line"]));
   assert.equal(clean.ok, true, JSON.stringify(clean.violations, null, 2));

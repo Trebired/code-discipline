@@ -8,7 +8,7 @@
     }
   },
   "name": "@trebired/code-discipline",
-  "version": "7.0.3",
+  "version": "7.1.0",
   "description": "Configurable codebase discipline checks and rule-driven fixes for Bun projects.",
   "type": "module",
   "private": false,

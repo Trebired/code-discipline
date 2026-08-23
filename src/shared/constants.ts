@@ -2,6 +2,9 @@ import { buildPackageLogGroup, PACKAGE_NAME, PACKAGE_VERSION } from "./package-m
 
 const DEFAULT_SOURCE_ROOT = ".";
 const CODE_DISCIPLINE_STATE_DIR = ".trebired/code-discipline";
+const CODE_DISCIPLINE_CONFIG_FILE = ".trebired/code-discipline/config.ts";
+const CODE_DISCIPLINE_GENERATED_DIR = ".trebired/code-discipline/generated";
+const CODE_DISCIPLINE_IMPORTS_DIR = ".trebired/code-discipline/imports";
 const DEFAULT_SOURCE_EXTENSIONS = [
   ".ts",
   ".tsx",
@@ -31,7 +34,14 @@ const DEFAULT_SOURCE_EXTENSIONS = [
   ".scss",
   ".css"
 ];
-const DEFAULT_EXCLUDE_DIRS = [".git", "node_modules", "dist", ".vite", CODE_DISCIPLINE_STATE_DIR];
+const DEFAULT_EXCLUDE_DIRS = [
+  ".git",
+  "node_modules",
+  "dist",
+  ".vite",
+  CODE_DISCIPLINE_GENERATED_DIR,
+  CODE_DISCIPLINE_IMPORTS_DIR,
+];
 const DEFAULT_ALIAS_PREFIX = "#";
 const DEFAULT_ALIAS_STRATEGY = "random";
 const DEFAULT_ALIAS_RANDOM_LENGTH = 12;
@@ -46,6 +56,9 @@ const RANDOM_ALIAS_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
 const HASH_ALIAS_LENGTH = 12;
 
 export {
+  CODE_DISCIPLINE_CONFIG_FILE,
+  CODE_DISCIPLINE_GENERATED_DIR,
+  CODE_DISCIPLINE_IMPORTS_DIR,
   CODE_DISCIPLINE_STATE_DIR,
   DEFAULT_ALIAS_PREFIX,
   DEFAULT_ALIAS_RANDOM_LENGTH,

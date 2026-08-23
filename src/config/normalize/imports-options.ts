@@ -13,6 +13,7 @@ import type { NormalizedImportsOptions, ImportsOptions } from "#pkb9x3eo56l7";
 import { isDirectory } from "#ntve5i5a0mol";
 import { normalizeLoggingOptions } from "./logging-options.js";
 import { normalizeSourceOptions } from "./source-options.js";
+import { CODE_DISCIPLINE_CONFIG_FILE } from "#ik5y0pee4ah1";
 
 const GENERATED_TSCONFIG_PATH = ".trebired/code-discipline/generated/tsconfig.paths.json";
 const IMPORTS_FOLDER_DIR = ".trebired/code-discipline/imports";
@@ -108,6 +109,10 @@ async function normalizeImportsOptions(options: ImportsOptions): Promise<Normali
 
   return {
     ...source,
+    excludeDirs: [
+      ...source.excludeDirs,
+      { type: "file"as const, pattern: CODE_DISCIPLINE_CONFIG_FILE },
+    ],
     configPath: options.configPath,
     tsconfigPath,
     fix: options.fix ?? DEFAULT_RULE_FIX,

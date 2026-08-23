@@ -13,7 +13,14 @@ import type { NormalizedCodeDisciplineLogger } from "#uljkt8i26p4t";
 import { resolveProjectPathTarget } from "./resolve.js";
 import { generateAliasId } from "./strategies.js";
 import { isInsideDirectory, parseTsconfigJson, pathExists, stableSerialize, toPosixPath, toStableJson, wait } from "#ntve5i5a0mol";
-import { planImportsFolderAliases, readAliasMapAliasPaths, removeAliasMapState, writeImportsFolderAliases } from "./folder.js";
+import {
+  normalizeDotPrefixedTarget,
+  planImportsFolderAliases,
+  readAliasMapAliasPaths,
+  removeAliasMapState,
+  sortStringRecord,
+  writeImportsFolderAliases,
+} from "./folder.js";
 import { collectPackageJsonAliasImports } from "#51kcncizdqcz";
 
 const TSCONFIG_READ_RETRY_ATTEMPTS = 20;
@@ -227,7 +234,14 @@ async function planTsconfigAliases(
     compilerOptions: nextCompilerOptions,
   };
 
-  const aliasMapStateChanged = Object.keys(aliasMapAliasPaths).length > 0;
+  const plannedAliasMap = sortStringRecord(
+    Object.fromEntries(aliasRecords.map((record) => [
+          record.id,
+          normalizeDotPrefixedTarget(toTsconfigPathTarget(record.relativeFromProjectRoot)),
+    ])),
+  );
+  const aliasMapStateChanged = stableSerialize(plannedAliasMap)
+  !== stableSerialize(sortStringRecord(aliasMapAliasPaths));
   const aliasesChanged = stableSerialize(originalConfig) !== stableSerialize(nextConfig) || aliasMapStateChanged;
 
   return {

@@ -3,30 +3,30 @@ import {
   DEFAULT_REDUNDANT_PATH_SEGMENTS_SEPARATORS,
 } from "#ik5y0pee4ah1";
 import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
-import type {
-  BannedPatternsRuleOptions,
+import {
   BannedFilesRuleOptions,
   CodeDisciplineImportsRuleOptions,
   DryRuleOptions,
-  RedundantPathSegmentsRuleOptions,
   MaxCharactersPerLineRuleOptions,
   MaxDeclarationNameRuleOptions,
   MaxFileLinesRuleOptions,
   MaxFunctionLinesRuleOptions,
   MinDeclarationNameRuleOptions,
   MinFileLinesRuleOptions,
-  NormalizedBannedPatternsRule,
   NormalizedBannedFilesRule,
   NormalizedDryRule,
-  NormalizedRemoveEmptyFoldersRule,
   NormalizedMaxDeclarationNameRule,
-  RemoveEmptyFoldersRuleOptions,
+  NormalizedRemoveEmptyFoldersRule,
+  RedundantPathSegmentsRuleOptions,
   RemoveCommentsRuleOptions,
+  RemoveEmptyFoldersRuleOptions,
   StructuralBlankLinesRuleOptions,
 } from "#uqbg4indzud7";
 import { normalizeRelativePath, uniqueStrings } from "#ntve5i5a0mol";
 import { normalizeRuleExclusions } from "#gqxxrd6ye9fj";
 import { normalizeLoggingOptions } from "#2z5qe6gxtgnl";
+import { normalizeBannedPatternsRule } from "./banned-patterns.js";
+import { CODE_DISCIPLINE_CONFIG_FILE } from "#ik5y0pee4ah1";
 import {
   assertRemovedKeys,
   normalizeMinDuplicateCharacters,
@@ -88,43 +88,6 @@ function normalizeMaxFileLinesRule(rule: MaxFileLinesRuleOptions | undefined) {
     ...normalizeRuleExclusions("maxFileLines", source),
     max: Math.max(1, Math.floor(rule!.max as number)),
     severity: normalizeSeverity(rule.severity, "maxFileLines"),
-  };
-}
-
-function normalizeBannedPatternsRule(rule: BannedPatternsRuleOptions | undefined): NormalizedBannedPatternsRule | undefined {
-  if (!rule) return undefined;
-  const source = rule as Record<string, unknown>;
-  assertRemovedKeys("bannedPatterns", source, ["enabled", "stop", "fix"]);
-  if (!Array.isArray(rule.patterns) || rule.patterns.length === 0) {
-    throw new InvalidCodeDisciplineConfigError("bannedPatterns.patterns must contain at least one pattern", {
-        rule: "bannedPatterns",
-    });
-  }
-  const patterns = rule.patterns.map((entry, index) => {
-      const value = typeof entry === "string"
-      ? entry.trim()
-      : typeof entry?.value === "string"
-      ? entry.value.trim()
-      : "";
-      if (!value) {
-        throw new InvalidCodeDisciplineConfigError("bannedPatterns.patterns[] entries must be non-empty strings or { value } objects", {
-            rule: "bannedPatterns",
-            index,
-        });
-      }
-      const allowedFiles = typeof entry === "string"
-      ? []
-      : uniqueStrings((entry.allowedFiles ?? []).map((filePath) => normalizeRelativePath(String(filePath).trim())).filter(Boolean));
-      return {
-        value,
-        normalizedValue: value.toLowerCase(),
-        allowedFiles,
-      };
-  });
-  return {
-    ...normalizeRuleExclusions("bannedPatterns", source),
-    patterns,
-    severity: normalizeSeverity(rule.severity, "bannedPatterns"),
   };
 }
 
@@ -250,6 +213,17 @@ function normalizeImportsOutput(output: CodeDisciplineImportsRuleOptions["output
   });
 }
 
+function importsRuleExclusions(source: Record<string, unknown>) {
+  const exclusions = normalizeRuleExclusions("imports", source);
+  return {
+    ...exclusions,
+    excludeDirs: [
+      ...(exclusions.excludeDirs ?? []),
+      { type: "file"as const, pattern: CODE_DISCIPLINE_CONFIG_FILE },
+    ],
+  };
+}
+
 function normalizeImportsRule(rule: CodeDisciplineImportsRuleOptions | undefined) {
   if (!rule) return undefined;
   const source = (rule ?? {}) as Record<string, unknown>;
@@ -281,7 +255,7 @@ function normalizeImportsRule(rule: CodeDisciplineImportsRuleOptions | undefined
     gitignorePath: rule?.gitignorePath,
     alias: rule?.alias,
     allowRelative: rule?.allowRelative ?? DEFAULT_ALLOW_RELATIVE,
-    ...normalizeRuleExclusions("imports", source),
+    ...importsRuleExclusions(source),
     output: normalizeImportsOutput(rule.output),
     runtime: rule.runtime,
     removeDeadImports: rule.removeDeadImports,

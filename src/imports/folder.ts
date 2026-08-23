@@ -345,4 +345,11 @@ async function planImportsFolderAliases(
   };
 }
 
-export { planImportsFolderAliases, readAliasMapAliasPaths, removeAliasMapState, writeImportsFolderAliases };
+export {
+  normalizeDotPrefixedTarget,
+  planImportsFolderAliases,
+  readAliasMapAliasPaths,
+  removeAliasMapState,
+  sortStringRecord,
+  writeImportsFolderAliases,
+};
