@@ -1,5 +1,22 @@
 # Changelog
 
+## 7.1.3
+
+### Fixed
+
+- Fresh installs were unrunnable: the package's own bundled `.trebired/logger/config.ts` pinned
+  `forVersion: "2.5.26"`, while `package.json` declared `@package/logger: npm:@trebired/logger@^2.5.32`
+  — a range wide enough to admit every `2.5.x` and `2.6.x` release. `@trebired/logger` requires
+  major-minor agreement between a config's `forVersion` and the actually-installed version, so the
+  moment `@trebired/logger` published `2.6.0`, any fresh install of this package (which resolves the
+  newest version the range allows) threw `logger config targets 2.5.26 but package is 2.6.2` before
+  running a single rule — this affected every version back to at least 6.1.2. There was no local
+  workaround: Bun does not apply `overrides`/`resolutions` to `npm:`-aliased dependency names, so
+  nothing a consumer could do in their own `package.json` reached this package's internal pin.
+  `forVersion` now tracks `2.6.2` and the dependency range moved to `^2.6.2`, so the range's own
+  lower bound can never resolve a version incompatible with the pin again. Nothing in `2.6.x` was
+  breaking for this package's usage.
+
 ## 7.1.2
 
 ### Changed
