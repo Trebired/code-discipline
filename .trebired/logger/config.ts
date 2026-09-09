@@ -1,4 +1,4 @@
 export default {
-  forVersion: "2.6.2",
+  forVersion: "2.7.0",
   prefix: "trebired.code-discipline",
 };

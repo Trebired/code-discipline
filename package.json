@@ -8,7 +8,7 @@
     }
   },
   "name": "@trebired/code-discipline",
-  "version": "7.1.3",
+  "version": "7.2.0",
   "description": "Configurable codebase discipline checks and rule-driven fixes for Bun projects.",
   "type": "module",
   "private": false,
@@ -58,14 +58,14 @@
     "verify:presets": "bun ./scripts/verify/presets.mjs"
   },
   "dependencies": {
-    "@package/logger": "npm:@trebired/logger@^2.6.2",
-    "@package/result": "npm:@trebired/result@^1.2.7",
-    "@trebired/utils": "^0.8.0",
+    "@package/logger": "npm:@trebired/logger@^2.7.0",
+    "@package/result": "npm:@trebired/result@^1.2.8",
+    "@trebired/utils": "^0.9.3",
     "typescript": "^6.0.3"
   },
   "devDependencies": {
     "@trebired/code-discipline": "file:.",
-    "@trebired/configs": "^0.3.0",
+    "@trebired/configs": "^0.3.1",
     "@types/bun": "^1.3.14",
     "@types/node": "^24.13.3"
   },

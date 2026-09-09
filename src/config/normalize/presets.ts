@@ -162,6 +162,7 @@ function readPresetPackageConfig(packageName: string, imported: unknown): CodeDi
 
   try {
     assertCompatibleForVersion({
+        config: exported,
         configPath: packageName,
         forVersion: exported.forVersion,
         label: `preset ${packageName}`,

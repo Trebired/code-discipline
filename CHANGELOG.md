@@ -1,5 +1,11 @@
 # Changelog
 
+## 7.2.0
+
+- Changed the `forVersion` check to pass the config object to `resolveForVersion()`, which `@trebired/utils` 0.9.0 requires. A config that does not declare `forVersion` as its first key now fails instead of loading.
+- Updated the shipped `.trebired/logger/config.ts` `forVersion` to `2.7.0`. It named 2.6.2, so under `@trebired/logger` 2.7 the version check threw and every consumer running the gate failed outright.
+- Updated the `@trebired/utils` dependency range to `^0.9.3`. Ranges admitting 0.9.0 through 0.9.2 must be avoided: those releases throw when a caller validates a version without passing the config object.
+
 ## 7.1.3
 
 ### Fixed
