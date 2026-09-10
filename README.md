@@ -343,12 +343,15 @@ Rules are enabled by presence. If a rule object exists under `rules`, it runs.
 
 Rule severity is optional and now supports only `severity: "warning" | "fail"`. If omitted, the default is `fail`.
 
+Declare `forVersion` as the first key. It names the Code Discipline version the config targets: a config whose major and minor differ from the running package, or that declares `forVersion` anywhere but first, fails to load. A config without it still loads.
+
 Example `.trebired/code-discipline/config.ts`:
 
 ```ts
 import { defineConfig } from "@trebired/code-discipline";
 
 export default defineConfig({
+  forVersion: "7.2.1",
   lifecycle: {
     async beforeRun(context) {
       context.state.started = true;
@@ -453,7 +456,7 @@ export default {
 };
 ```
 
-Code Discipline rejects preset packages whose `forVersion` does not exactly match the running package version. Nested `presets` inside a preset package are rejected. Multiple project presets merge left to right, then the project config merges last.
+Code Discipline rejects preset packages whose `forVersion` differs from the running package version in major or minor. Nested `presets` inside a preset package are rejected. Multiple project presets merge left to right, then the project config merges last.
 
 ### Helpers
 

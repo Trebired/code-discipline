@@ -3,6 +3,8 @@ import path from "node:path";
 import type { CodeDisciplineConfig } from "#uqbg4indzud7";
 import { InvalidCodeDisciplineConfigError } from "#4f8hale01wb4";
 import { pathExists } from "#ntve5i5a0mol";
+import { CODE_DISCIPLINE_PACKAGE_VERSION } from "#ik5y0pee4ah1";
+import { assertCompatibleForVersion } from "@trebired/utils";
 import { importConfigModule } from "./module-loader.js";
 import { resolvePresetConfig } from "./normalize/presets.js";
 
@@ -17,6 +19,24 @@ function defineConfig(config: CodeDisciplineConfig): CodeDisciplineConfig {
   return config;
 }
 
+function assertProjectForVersion(config: Record<string, unknown>, resolvedPath: string): void {
+  if (!("forVersion"in config)) return;
+  try {
+    assertCompatibleForVersion({
+        config,
+        configPath: resolvedPath,
+        forVersion: config.forVersion as string,
+        label: "code-discipline",
+        packageVersion: CODE_DISCIPLINE_PACKAGE_VERSION,
+    });
+  } catch (error) {
+    throw new InvalidCodeDisciplineConfigError(
+      error instanceof Error ? error.message : String(error),
+      { actual: config.forVersion, expected: CODE_DISCIPLINE_PACKAGE_VERSION, filePath: resolvedPath },
+    );
+  }
+}
+
 function validateLoadedConfig(
   config: unknown,
   resolvedPath: string,
@@ -27,8 +47,11 @@ function validateLoadedConfig(
     });
   }
 
+  assertProjectForVersion(config as Record<string, unknown>, resolvedPath);
+  const source = { ...(config as Record<string, unknown>) };
+  delete source.forVersion;
   return {
-    config: config as CodeDisciplineConfig,
+    config: source as CodeDisciplineConfig,
     configPath: resolvedPath,
   };
 }

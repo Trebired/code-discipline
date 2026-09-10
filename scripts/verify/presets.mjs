@@ -337,6 +337,37 @@ async function verifyCliUsesPresetLoggingConfig() {
   assert.doesNotMatch(rendered, /discipline warning/);
 }
 
+async function runProjectCheck(configLines) {
+  const projectRoot = await createProject("project-for-version");
+  await writeConfig(projectRoot, configLines.join("\n"));
+  await writeSource(projectRoot, "src/ok.ts", "export const ok = 1;\n");
+  const output = [];
+  try {
+    const result = await runCli(["check", "max-file-lines"], {
+        cwd: projectRoot,
+        stderr: (text) => output.push(text),
+        stdout: (text) => output.push(text),
+    });
+    return { exitCode: result.exitCode, rendered: output.join("") };
+  } catch (error) {
+    return { exitCode: 1, rendered: `${output.join("")}${error instanceof Error ? error.message : String(error)}` };
+  }
+}
+
+async function verifyProjectForVersionIsChecked() {
+  const rules = "  rules: { maxFileLines: { max: 350 } },";
+  const matching = await runProjectCheck(["export default {", `  forVersion: "${packageVersion}",`, rules, "};", ""]);
+  assert.equal(matching.exitCode, 0, matching.rendered);
+
+  const stale = await runProjectCheck(["export default {", "  forVersion: \"0.0.0\",", rules, "};", ""]);
+  assert.notEqual(stale.exitCode, 0, "a project config targeting another minor must fail");
+  assert.match(stale.rendered, /targets 0\.0\.0 but package is/);
+
+  const misplaced = await runProjectCheck(["export default {", rules, `  forVersion: "${packageVersion}",`, "};", ""]);
+  assert.notEqual(misplaced.exitCode, 0, "forVersion must be the first key");
+  assert.match(misplaced.rendered, /must declare forVersion first/);
+}
+
 await verifyExternalPresetEnablesStrictRules();
 await verifyImportOnlyPresetPackageLoads();
 await verifyTypeScriptPresetPackageLoadsFromNodeModules();
@@ -351,5 +382,6 @@ await verifyPresetPatchVersionCanDrift();
 await verifyWrappedPresetFailsClearly();
 await verifyNestedPresetFailsClearly();
 await verifyCliUsesPresetLoggingConfig();
+await verifyProjectForVersionIsChecked();
 
 console.log("code discipline presets verification passed");

@@ -134,5 +134,6 @@
   "#zdmj0zb82kk1": "./src/imports/check.ts",
   "#zdq4d0mpbk55": "./src/checks/rules/blank-lines/classify.ts",
   "#zdy5k79iam8y": "./src/shared/generated-artifacts.ts",
-  "#zqg5hww7g6g1": "./src/checks/rules/dry/model.ts"
+  "#zqg5hww7g6g1": "./src/checks/rules/dry/model.ts",
+  "#zroz6xyjc6ut": "./src/checks/normalized-rules.ts"
 }

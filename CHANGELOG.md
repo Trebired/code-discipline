@@ -1,5 +1,10 @@
 # Changelog
 
+## 7.2.1
+
+- Added `forVersion` to the project config. `.trebired/code-discipline/config.ts` could not declare it: `defineConfig()` rejected the key as unknown and nothing validated it, so the one Trebired package config without a version could drift silently. A declared `forVersion` must be the first key and match the running package in major and minor, checked the same way as preset packages; a config without it still loads.
+- Corrected the README: preset `forVersion` is checked by major and minor, not exact version.
+
 ## 7.2.0
 
 - Changed the `forVersion` check to pass the config object to `resolveForVersion()`, which `@trebired/utils` 0.9.0 requires. A config that does not declare `forVersion` as its first key now fails instead of loading.
