@@ -3,6 +3,9 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
+import { createLog } from "@package/logger";
+
+const log = createLog({ console: true, save: false });
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const packageJson = JSON.parse(await fs.readFile(path.join(repoRoot, "package.json"), "utf8"));
@@ -384,4 +387,4 @@ await verifyNestedPresetFailsClearly();
 await verifyCliUsesPresetLoggingConfig();
 await verifyProjectForVersionIsChecked();
 
-console.log("code discipline presets verification passed");
+log.info("verify.presets", "code discipline presets verification passed");

@@ -1,6 +1,9 @@
 import { performance } from "node:perf_hooks";
 import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
+import { createLog } from "@package/logger";
+
+const log = createLog({ console: true, save: false });
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const defaultTarget = "/home/mirmachynka/projects/tech/major/project_05/code/platform";
@@ -67,9 +70,9 @@ for (const rule of rules) {
 
 const width = Math.max(...rows.map((row) => row.label.length), "rule".length);
 
-console.log(`target ${targetRoot}`);
-console.log(`${"rule".padEnd(width)}  ms       ok     violations`);
+log.info("benchmark.platform", `target ${targetRoot}`);
+log.info("benchmark.platform", `${"rule".padEnd(width)}  ms       ok     violations`);
 for (const row of rows) {
   const ok = row.skipped ? "skip" : String(row.ok);
-  console.log(`${row.label.padEnd(width)}  ${String(row.milliseconds).padStart(7)}  ${ok.padEnd(5)}  ${row.violations}`);
+  log.info("benchmark.platform", `${row.label.padEnd(width)}  ${String(row.milliseconds).padStart(7)}  ${ok.padEnd(5)}  ${row.violations}`);
 }

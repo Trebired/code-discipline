@@ -5,6 +5,9 @@ import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 
 import ts from "typescript";
+import { createLog } from "@package/logger";
+
+const log = createLog({ console: true, save: false });
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const { run } = await import(pathToFileURL(path.join(repoRoot, "dist/index.js")).href);
@@ -164,4 +167,4 @@ await verifyExpressionPositions();
 await verifyUnsafeLiteralsStayReported();
 await verifyShortLinesUnchanged();
 
-console.log("max-characters-per-line fixer verification passed");
+log.info("verify.max.line.fixer", "max-characters-per-line fixer verification passed");

@@ -3,6 +3,9 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
+import { createLog } from "@package/logger";
+
+const log = createLog({ console: true, save: false });
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const { run } = await import(pathToFileURL(path.join(repoRoot, "dist/index.js")).href);
@@ -69,4 +72,4 @@ async function verifyDryAcrossLanguages() {
 
 await verifyDryAcrossLanguages();
 
-console.log("language dry verification passed");
+log.info("verify.language.dry", "language dry verification passed");

@@ -3,6 +3,9 @@ import os from "node:os";
 import path from "node:path";
 
 import { imports } from "#co5e63fhc1wb";
+import { createLog } from "@package/logger";
+
+const log = createLog({ console: true, save: false });
 
 function writeDemoFile(rootDir: string, relativePath: string, contents: string): void {
   const destination = path.resolve(rootDir, relativePath);
@@ -35,13 +38,15 @@ async function run(): Promise<void> {
       },
   });
 
-  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-  process.stdout.write(`${fs.readFileSync(path.join(projectRoot, "tsconfig.json"), "utf8")}\n`);
-  process.stdout.write(`${fs.readFileSync(path.join(projectRoot, "src/feature/app.ts"), "utf8")}\n`);
-  process.stdout.write(`demo project: ${projectRoot}\n`);
+  log.info("example.dummy", "imports result", {
+      result,
+      tsconfig: fs.readFileSync(path.join(projectRoot, "tsconfig.json"), "utf8"),
+      app: fs.readFileSync(path.join(projectRoot, "src/feature/app.ts"), "utf8"),
+  });
+  log.info("example.dummy", `demo project: ${projectRoot}`);
 }
 
 run().catch ((error) => {
-    process.stderr.write(`${error instanceof Error ? error.stack || error.message : String(error)}\n`);
+    log.error("example.dummy", error instanceof Error ? error.stack || error.message : String(error));
     process.exitCode = 1;
 });

@@ -4,6 +4,9 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { languageFixtures, redundantPathSegmentsFiles } from "./fixtures.mjs";
+import { createLog } from "@package/logger";
+
+const log = createLog({ console: true, save: false });
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const { run } = await import(pathToFileURL(path.join(repoRoot, "dist/index.js")).href);
@@ -334,4 +337,4 @@ await verifyLanguageFix(projectRoot);
 await verifyStructuralBlankLines(projectRoot);
 await verifyRedundantPathSegmentsAcrossLanguages();
 
-console.log("language support verification passed");
+log.info("verify.language.support", "language support verification passed");

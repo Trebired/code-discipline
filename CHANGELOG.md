@@ -1,5 +1,9 @@
 # Changelog
 
+## 7.2.2
+
+- Changed the verification scripts and examples to print through `@trebired/logger` instead of `console` and `process.stdout`.
+
 ## 7.2.1
 
 - Added `forVersion` to the project config. `.trebired/code-discipline/config.ts` could not declare it: `defineConfig()` rejected the key as unknown and nothing validated it, so the one Trebired package config without a version could drift silently. A declared `forVersion` must be the first key and match the running package in major and minor, checked the same way as preset packages; a config without it still loads.

@@ -3,6 +3,9 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
+import { createLog } from "@package/logger";
+
+const log = createLog({ console: true, save: false });
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
 const distUrl = pathToFileURL(path.join(repoRoot, "dist/index.js")).href;
@@ -188,4 +191,4 @@ await verifyGeneratedTsconfigWiring();
 await verifySavedReportPath();
 await verifyConfigDiscoveryPath();
 
-console.log("generated artifact verification passed");
+log.info("verify.generated.artifacts", "generated artifact verification passed");

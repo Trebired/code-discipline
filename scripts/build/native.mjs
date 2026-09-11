@@ -4,6 +4,9 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 import { nativeBinaryNameForTarget } from "./native/targets.mjs";
+import { createLog } from "@package/logger";
+
+const log = createLog({ console: true, save: false });
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const manifestPath = path.join(repoRoot, "native", "code-discipline-native", "Cargo.toml");
@@ -48,4 +51,4 @@ const targetFile = path.join(repoRoot, "native", binaryName);
 
 fs.mkdirSync(path.dirname(targetFile), { recursive: true });
 fs.copyFileSync(builtLibrary, targetFile);
-console.log(`native addon ready at ${targetFile}`);
+log.info("build.native", `native addon ready at ${targetFile}`);
