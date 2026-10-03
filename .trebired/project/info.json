@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "category": "package",
+  "subcategory": "tooling",
+  "status": "active",
+  "npm": "@trebired/code-discipline",
+  "description": {
+    "en": "The rules that keep our codebases consistent, checked on every commit.",
+    "cs": "Pravidla, která drží naše kódové základny jednotné, kontrolovaná při každém commitu."
+  }
+}
