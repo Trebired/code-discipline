@@ -32,7 +32,6 @@ function detectHostTarget() {
 }
 
 function sharedLibraryNameForTarget(target) {
-  if (target.includes("apple-darwin")) return "libcode_discipline_native.dylib";
   return "libcode_discipline_native.so";
 }
 

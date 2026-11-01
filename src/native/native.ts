@@ -43,12 +43,6 @@ function nativeBinaryBasenameForCurrentPlatform(): string | null {
     return null;
   }
 
-  if (process.platform === "darwin") {
-    if (process.arch === "x64") return "darwin-x64.node";
-    if (process.arch === "arm64") return "darwin-arm64.node";
-    return null;
-  }
-
   return null;
 }
 
