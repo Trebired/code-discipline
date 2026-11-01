@@ -1,5 +1,10 @@
 # Changelog
 
+## 8.0.0
+
+- Breaking: presets are named `<package>/code-discipline/<preset>` and resolve through `applyPresets` in `@trebired/utils`, shared with every Trebired tool. The preset is read from `.<organization>/code-discipline/<preset>/config.ts` in that package, never from its root export, and a bare package name is refused. Replace `presets: { use: ["@trebired/configs"] }` with `presets: { use: ["@trebired/configs/code-discipline/preset_01"] }` from `@trebired/configs` 0.6.0.
+- Raised the `@trebired/utils` range to `^0.9.7`.
+
 ## 7.2.3
 
 - Moved to `@trebired/logger` 3.0.0, which stores saved logs in SQLite and runs on Bun on the server. The `@package/logger` range is now `^3.0.0`.
