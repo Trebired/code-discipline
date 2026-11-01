@@ -12,7 +12,7 @@
       },
       "devDependencies": {
         "@trebired/code-discipline": "file:.",
-        "@trebired/configs": "^0.4.0",
+        "@trebired/configs": "^0.6.0",
         "@types/bun": "^1.3.14",
         "@types/node": "^24.13.3",
       },
@@ -27,7 +27,7 @@
 
     "@trebired/code-discipline": ["@trebired/code-discipline@root:", { "bin": { "code-discipline": "dist/cli.js" } }],
 
-    "@trebired/configs": ["@trebired/configs@0.4.0", "", {}, "sha512-y4GhZMVZqip2LcGqFzvm+ebVr0smuC1cYrU8uJvPlz9Lx7Qo4CJGRr9A5G+RYamlGA/WbBXjujw7mDZALBtwjQ=="],
+    "@trebired/configs": ["@trebired/configs@0.6.0", "", { "peerDependencies": { "@trebired/frontend": "^29.11.0" }, "optionalPeers": ["@trebired/frontend"] }, "sha512-/qQOLly4VYoyfMGzNOmUpl8L2hfPABJBfYLGvxeHYQmZz8nGxUOUpCjfLxWuPgz/CbKuNflFSWGa8Rm4JaB8AQ=="],
 
     "@trebired/utils": ["@trebired/utils@0.9.7", "", {}, "sha512-t1y3oJeBJmG5Lz74444XktAjUwiWEcw8T9sYKXrB+SS9BHCaITpdIoojH68+MRIHSPVLkAbvsJhzC45oKMvwoQ=="],
 
