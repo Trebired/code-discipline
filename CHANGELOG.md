@@ -1,5 +1,10 @@
 # Changelog
 
+## 8.0.1
+
+- The native binding ships for Linux GNU only, x64 and arm64. The darwin builds are gone from the release matrix, so on macOS the checks run on the TypeScript path unless `TB_CODE_DISCIPLINE_NATIVE_BINARY` points at a binary built locally.
+- 8.0.0 was tagged but never published: its macOS 14 build failed in a runner image brownout. This release carries all of 8.0.0.
+
 ## 8.0.0
 
 - Breaking: presets are named `<package>/code-discipline/<preset>` and resolve through `applyPresets` in `@trebired/utils`, shared with every Trebired tool. The preset is read from `.<organization>/code-discipline/<preset>/config.ts` in that package, never from its root export, and a bare package name is refused. Replace `presets: { use: ["@trebired/configs"] }` with `presets: { use: ["@trebired/configs/code-discipline/preset_01"] }` from `@trebired/configs` 0.6.0.
