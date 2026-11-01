@@ -34,36 +34,16 @@ async function writeConfig(root, text) {
   return configPath;
 }
 
-async function writePresetPackage(root, packageNameInput, preset, packageJsonExtra = {}) {
+async function writePresetPackage(root, packageNameInput, preset, presetName = "strict") {
   const packageRoot = path.join(root, "node_modules", packageNameInput);
-  await fs.mkdir(packageRoot, { recursive: true });
+  const configDir = path.join(packageRoot, ".fixture-org", "code-discipline", presetName);
+  await fs.mkdir(configDir, { recursive: true });
   await fs.writeFile(path.join(packageRoot, "package.json"), `${JSON.stringify({
+    config: { organization: { name: "fixture-org" } },
     name: packageNameInput,
     type: "module",
-    main: "index.mjs",
-    ...packageJsonExtra,
     }, null, 2)}\n`, "utf8");
-  await fs.writeFile(path.join(packageRoot, "index.mjs"), [
-      "export default ",
-      JSON.stringify(preset, null, 2),
-      ";\n",
-    ].join(""), "utf8");
-}
-
-async function writeTypeScriptPresetPackage(root, packageNameInput, preset) {
-  const packageRoot = path.join(root, "node_modules", packageNameInput);
-  await fs.mkdir(packageRoot, { recursive: true });
-  await fs.writeFile(path.join(packageRoot, "package.json"), `${JSON.stringify({
-    name: packageNameInput,
-    type: "module",
-    exports: {
-    ".": {
-    import: "./config.ts",
-    types: "./config.ts",
-    },
-    },
-    }, null, 2)}\n`, "utf8");
-  await fs.writeFile(path.join(packageRoot, "config.ts"), [
+  await fs.writeFile(path.join(configDir, "config.ts"), [
       "export default ",
       JSON.stringify(preset, null, 2),
       ";\n",
@@ -89,7 +69,7 @@ function presetOptions(projectRoot, extra = {}) {
   return {
     projectRoot,
     mode: "check",
-    presets: { use: ["@fixture/strict-preset"] },
+    presets: { use: ["@fixture/strict-preset/code-discipline/strict"] },
     ...extra,
   };
 }
@@ -109,20 +89,14 @@ async function verifyExternalPresetEnablesStrictRules() {
   assert.equal(result.violations[0].filePath, "src/large.ts");
 }
 
-async function verifyImportOnlyPresetPackageLoads() {
-  const projectRoot = await createProject("import-only");
-  await writePresetPackage(projectRoot, "@fixture/strict-preset", strictPresetConfig(), {
-      exports: {
-        ".": {
-          import: "./index.mjs",
-          types: "./index.d.ts",
-        },
-      },
-  });
+async function verifyNamedPresetLoads() {
+  const projectRoot = await createProject("named-preset");
+  await writePresetPackage(projectRoot, "@fixture/strict-preset", strictPresetConfig(), "named");
   await writeSource(projectRoot, "src/large.ts", Array.from({ length: 351 }, (_, index) => `export const value${index} = ${index};`).join("\n"));
 
   const result = await run(presetOptions(projectRoot, {
         onlyRules: ["max-file-lines"],
+        presets: { use: ["@fixture/strict-preset/code-discipline/named"] },
   }));
 
   assert.equal(result.ok, false);
@@ -132,7 +106,7 @@ async function verifyImportOnlyPresetPackageLoads() {
 
 async function verifyTypeScriptPresetPackageLoadsFromNodeModules() {
   const projectRoot = await createProject("typescript-preset-package");
-  await writeTypeScriptPresetPackage(projectRoot, "@fixture/strict-preset", strictPresetConfig());
+  await writePresetPackage(projectRoot, "@fixture/strict-preset", strictPresetConfig());
   await writeSource(projectRoot, "src/large.ts", Array.from({ length: 351 }, (_, index) => `export const value${index} = ${index};`).join("\n"));
 
   const result = await run(presetOptions(projectRoot, {
@@ -183,7 +157,7 @@ async function verifyMultiplePresetsMergeLeftToRight() {
       projectRoot,
       mode: "check",
       onlyRules: ["banned-patterns"],
-      presets: { use: ["@fixture/strict-preset", "@fixture/second-preset"] },
+      presets: { use: ["@fixture/strict-preset/code-discipline/strict", "@fixture/second-preset/code-discipline/strict"] },
   });
 
   assert.deepEqual(result.violations.map((violation) => violation.filePath).sort(), ["src/a.ts", "src/b.ts"]);
@@ -242,7 +216,7 @@ async function verifyOldBuiltInPresetFailsClearly() {
         mode: "check",
         presets: { use: ["trebired"] },
     }),
-    /Code discipline preset package was not found: trebired/,
+    /presets\.use must name <package>\/<tool>\/<preset>/,
   );
 }
 
@@ -253,7 +227,7 @@ async function verifyMissingVersionFailsClearly() {
 
   await assert.rejects(
     () => run(presetOptions(projectRoot)),
-    /must declare forVersion/,
+    /missing forVersion/,
   );
 }
 
@@ -298,7 +272,7 @@ async function verifyWrappedPresetFailsClearly() {
 
   await assert.rejects(
     () => run(presetOptions(projectRoot)),
-    /default-export the config object directly/,
+    /missing forVersion/,
   );
 }
 
@@ -310,7 +284,7 @@ async function verifyNestedPresetFailsClearly() {
 
   await assert.rejects(
     () => run(presetOptions(projectRoot)),
-    /cannot declare nested presets/,
+    /cannot declare presets/,
   );
 }
 
@@ -319,7 +293,7 @@ async function verifyCliUsesPresetLoggingConfig() {
   await writePresetPackage(projectRoot, "@fixture/strict-preset", strictPresetConfig());
   await writeConfig(projectRoot, [
       "export default {",
-      "  presets: { use: [\"@fixture/strict-preset\"] },",
+      "  presets: { use: [\"@fixture/strict-preset/code-discipline/strict\"] },",
       "  rules: { maxFileLines: { severity: \"warning\" } },",
       "};",
       "",
@@ -372,7 +346,7 @@ async function verifyProjectForVersionIsChecked() {
 }
 
 await verifyExternalPresetEnablesStrictRules();
-await verifyImportOnlyPresetPackageLoads();
+await verifyNamedPresetLoads();
 await verifyTypeScriptPresetPackageLoadsFromNodeModules();
 await verifyRepoConfigOverridesPresetScalars();
 await verifyMultiplePresetsMergeLeftToRight();

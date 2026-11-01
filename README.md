@@ -358,7 +358,7 @@ export default defineConfig({
     },
   },
   presets: {
-    use: ["@company/code-discipline-preset"],
+    use: ["@company/presets/code-discipline/strict"],
   },
   helpers: {
     nodeProcessBoundary: {
@@ -404,7 +404,7 @@ Example scan configuration:
 ```ts
 export default defineConfig({
   presets: {
-    use: ["@company/code-discipline-preset"],
+    use: ["@company/presets/code-discipline/strict"],
   },
 
   // Skip specific built-in file types when needed.
@@ -433,7 +433,7 @@ export default defineConfig({
 
 ### Presets
 
-Preset packages are ordinary npm packages. They default-export a Code Discipline config object directly with a top-level `forVersion`. The preset package does not need to import or depend on `@trebired/code-discipline`.
+Preset packages are ordinary npm packages, resolved by `applyPresets` in `@trebired/utils`, the preset system every Trebired tool shares. `presets.use` names each preset as `<package>/code-discipline/<preset>`, which reads `.<organization>/code-discipline/<preset>/config.ts` from that package, where `<organization>` is the preset package's `config.organization.name`. Every preset has a name, one package carries named presets for many tools, and a preset written for another tool is refused. The preset file default-exports a Code Discipline config object directly with a top-level `forVersion`, and the preset package does not need to import or depend on `@trebired/code-discipline`.
 
 ```ts
 export default {
