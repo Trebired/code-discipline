@@ -206,39 +206,6 @@ fn check_push_remove_comment_violations(
     violations.append(&mut rows);
 }
 
-fn check_push_structural_blank_line_violations(
-    violations: &mut Vec<CodeDisciplineViolation>,
-    text_files: &[CheckTextFile],
-    rules: &NativeCheckRules,
-) {
-    let Some(rule) = &rules.structural_blank_lines else {
-        return;
-    };
-    let mut rows = check_files_for_rule(text_files, &rule.exclude_dirs)
-    .par_iter()
-    .filter(|entry| supports_remove_comments(&entry.file.extension))
-    .filter_map(|entry| {
-            let result = check_rewrite_structural_blank_lines(&entry.file, &entry.text);
-            let boundary_label = if result.boundary_count == 1 { "boundary" } else { "boundaries" };
-            result.changed.then(|| check_violation(
-                    "structural-blank-lines",
-                    true,
-                    entry.file.relative_from_project_root.clone(),
-                    format!(
-                        "file has {} structural {boundary_label} with incorrect blank line spacing",
-                        result.boundary_count,
-                    ),
-                    json!({
-                            "boundaryCount": result.boundary_count,
-                            "insertedBlankLines": result.inserted_blank_lines,
-                            "removedBlankLines": result.removed_blank_lines,
-                    }),
-            ))
-    })
-    .collect::<Vec<_>>();
-    violations.append(&mut rows);
-}
-
 fn check_push_dry_violations(
     violations: &mut Vec<CodeDisciplineViolation>,
     text_files: &[CheckTextFile],

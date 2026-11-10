@@ -1,5 +1,16 @@
 # Changelog
 
+## 8.0.2
+
+- Fixed the CLI on systems without Node.js. `dist/cli.js` and `dist/cli/run.js` started with `#!/usr/bin/env node`, so running the bin outside `bun run`, for example under `sudo`, failed with `env: 'node': No such file or directory`. Both now start with `#!/usr/bin/env bun`.
+- Fixed the formatter changing the contents of multi-line literals. It re-indented, trimmed, collapsed, and wrapped every line, including lines inside strings, templates, raw strings, triple-quoted strings, and heredocs. Lines that start or end inside a literal are now copied byte for byte in every supported language, and code around them is still formatted.
+- Removed the rewrapping of markup lines inside multi-line Rust raw strings. It changed the string value; such a line now stays reported by `max-characters-per-line`.
+- Fixed `structural-blank-lines` reporting files that `fix` could not change, and missing files that `fix` did change. `check` used a separate native scan with a different idea of where a declaration starts. `check` and `fix` now run the same rule, so a fixed file always passes.
+- Fixed `structural-blank-lines` masking: a Rust lifetime such as `&'a str` was read as the start of a string and hid every declaration after it, and braces in raw strings and heredocs counted as code. Masking now comes from the native literal scanner. Files with lifetimes can now report missing blank lines that were previously hidden; `fix` adds them.
+- Fixed bodiless declarations such as `fn x();` and `struct A;` swallowing the next declaration in `structural-blank-lines`. They are no longer units.
+- Added `pub(...)`, `extern`, and `default` modifiers to the Rust declaration starts that `structural-blank-lines` recognizes.
+- Added `verify:structural`, which checks that `check` and `fix` agree and that a second `fix` changes nothing, and multi-line literal fixtures to `verify:formatter`.
+
 ## 8.0.1
 
 - The native binding ships for Linux GNU only, x64 and arm64. The darwin builds are gone from the release matrix, so on macOS the checks run on the TypeScript path unless `TB_CODE_DISCIPLINE_NATIVE_BINARY` points at a binary built locally.

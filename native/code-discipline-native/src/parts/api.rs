@@ -25,6 +25,13 @@ pub fn format_source_files(request_json: String) -> Result<String> {
 }
 
 #[napi]
+pub fn mask_source_text(request_json: String) -> Result<String> {
+    let request: MaskSourceRequest =
+    serde_json::from_str(&request_json).map_err(|error| err(error.to_string()))?;
+    Ok(mask_source_spans(&request.text, &request.extension))
+}
+
+#[napi]
 pub fn strip_comments(request_json: String) -> Result<String> {
     let request: StripCommentsRequest =
     serde_json::from_str(&request_json).map_err(|error| err(error.to_string()))?;

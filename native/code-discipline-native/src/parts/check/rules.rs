@@ -15,7 +15,6 @@ pub fn run_check_rules(request_json: String) -> Result<String> {
     check_push_redundant_path_segment_violations(&mut violations, &text_files, &request.rules);
     check_push_import_violations(&mut violations, &text_files, &request.rules);
     check_push_remove_comment_violations(&mut violations, &text_files, &request.rules);
-    check_push_structural_blank_line_violations(&mut violations, &text_files, &request.rules);
     check_push_dry_violations(&mut violations, &text_files, &request.rules);
     violations.sort_by(|left, right| left.file_path.cmp(&right.file_path).then(left.rule.cmp(&right.rule)));
     serde_json::to_string(&NativeCheckRulesResponse { violations }).map_err(|error| err(error.to_string()))

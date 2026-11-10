@@ -15,6 +15,7 @@ type NativeBinding = {
   formatSourceText(requestJson: string): string;
   fixRemoveEmptyFoldersRule(requestJson: string): string;
   fixRemoveCommentsRule(requestJson: string): string;
+  maskSourceText(requestJson: string): string;
   runRemoveEmptyFoldersRule(requestJson: string): string;
   runCheckRules(requestJson: string): string;
   runRedundantPathSegmentsRule(requestJson: string): string;
@@ -96,6 +97,10 @@ function requireNativeBinding(): NativeBinding {
   );
 }
 
+function maskSource(text: string, extension: string): string {
+  return requireNativeBinding().maskSourceText(JSON.stringify({ text, extension }));
+}
+
 function resetNativeBindingForTests(): void {
   cachedBinding = undefined;
 }
@@ -107,6 +112,7 @@ function activeNativeBackendNotice(): string {
 export {
   activeNativeBackendNotice,
   loadNativeBinding,
+  maskSource,
   requireNativeBinding,
   nativeAddonCandidatePathsForCurrentPlatform,
   nativeBinaryBasenameForCurrentPlatform,

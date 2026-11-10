@@ -144,6 +144,37 @@ async function writeQmlLongLineFixtures(root) {
       ].join("\n") });
 }
 
+const RENDERER_MARKUP_LINE = "        <text x=\"{text_x}\" y=\"{y}\" text-anchor=\"{anchor}\" "
++"font-family=\"{family}\" font-size=\"{font_size}\" font-weight=\"{weight}\" fill=\"black\">{escaped}</text>";
+
+const MULTILINE_LITERALS = {
+  "src/sql.rs": ["fn sql() -> &'static str {", "  r#\"select a,   ", "      from t", "", "", "    where x", "  \"#", "}"],
+  "src/page.ts": ["export function page() {", "return `", "    <p>   ", "", "", "  </p>`;", "}"],
+  "src/doc.py": ["def doc():", "    text = \"\"\"", "      keep   ", "", "", "   me", "\"\"\"", "    return text"],
+  "src/raw.go": ["package main", "func raw() string {", "return `", "      keep   ", "", "", "   me", "`", "}"],
+};
+
+const MULTILINE_LITERAL_BODIES = {
+  "src/sql.rs": ["  r#\"select a,   ", "      from t", "", "", "    where x", "  \"#"],
+  "src/page.ts": ["return `", "    <p>   ", "", "", "  </p>`;"],
+  "src/doc.py": ["    text = \"\"\"", "      keep   ", "", "", "   me", "\"\"\""],
+  "src/raw.go": ["return `", "      keep   ", "", "", "   me", "`"],
+};
+
+async function writeMultilineLiteralFixtures(root) {
+  for (const [relativePath, lines] of Object.entries(MULTILINE_LITERALS)) {
+    await writeFixtureFile({ root, relativePath, text: [...lines, ""].join("\n") });
+  }
+}
+
+async function assertMultilineLiteralsKept(projectRoot) {
+  for (const [relativePath, lines] of Object.entries(MULTILINE_LITERAL_BODIES)) {
+    const text = await fs.readFile(path.join(projectRoot, relativePath), "utf8");
+    const body = lines.slice(1).join("\n");
+    assert.ok(text.includes(body), `${relativePath} changed text inside a multi-line literal:\n${text}`);
+  }
+}
+
 async function writeRustLongLineFixtures(root) {
   await writeFixtureFile({ root, relativePath: "src/raw.rs", text: [
         "pub fn svg() -> &'static str {",
@@ -155,8 +186,7 @@ async function writeRustLongLineFixtures(root) {
         "fn render() {",
         "    svg.push_str(&format!(",
         "        r#\"",
-        "        <text x=\"{text_x}\" y=\"{y}\" text-anchor=\"{anchor}\" "
-        +"font-family=\"{family}\" font-size=\"{font_size}\" font-weight=\"{weight}\" fill=\"black\">{escaped}</text>",
+        RENDERER_MARKUP_LINE,
         "        \"#,",
         "    ));",
         "}",
@@ -187,6 +217,7 @@ async function createFormatterProject() {
   await writeBraceFixtures(root);
   await writeLongLineFixtures(root);
   await writeScriptFixtures(root);
+  await writeMultilineLiteralFixtures(root);
   await writeFixtureFile({
       root,
       relativePath: ".trebired/code-discipline/config.ts",
@@ -239,6 +270,7 @@ function assertInitialCheck(check) {
 async function assertFormattedOutput(projectRoot) {
   await assertFormattedScriptOutput(projectRoot);
   await assertFormattedNativeOutput(projectRoot);
+  await assertMultilineLiteralsKept(projectRoot);
 }
 
 async function assertFormattedScriptOutput(projectRoot) {
@@ -277,7 +309,8 @@ async function assertFormattedScriptOutput(projectRoot) {
 
 async function assertFormattedNativeOutput(projectRoot) {
   assertLinesFit(await fs.readFile(path.join(projectRoot, "src/raw.rs"), "utf8"), 44, "src/raw.rs");
-  assertLinesFit(await fs.readFile(path.join(projectRoot, "src/renderer.rs"), "utf8"), 44, "src/renderer.rs");
+  const renderer = await fs.readFile(path.join(projectRoot, "src/renderer.rs"), "utf8");
+  assert.ok(renderer.includes(`\n${RENDERER_MARKUP_LINE}\n        "#,\n`), "src/renderer.rs raw string content changed");
   assert.equal(await fs.readFile(path.join(projectRoot, "src/main.cpp"), "utf8"), [
       "int main() {",
       "  if (true) {",
@@ -314,8 +347,8 @@ async function verifyFormatter() {
   assert.equal(stateAfter, 'const value = "state";\n');
 
   const clean = await run(formatterOptions(projectRoot, "check", ["format", "max-characters-per-line"]));
-  assert.equal(clean.ok, true, JSON.stringify(clean.violations, null, 2));
-  assert.equal(clean.violationCount, 0);
+  const remaining = clean.violations.map((violation) => `${violation.rule} ${violation.filePath}`);
+  assert.deepEqual(remaining, ["max-characters-per-line src/renderer.rs"], JSON.stringify(clean.violations, null, 2));
 
   await assertFormattedOutput(projectRoot);
 }

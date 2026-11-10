@@ -125,13 +125,6 @@ struct NativeRemoveCommentsRule {
 
 #[derive(Clone, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
-struct NativeStructuralBlankLinesRule {
-    #[serde(default)]
-    exclude_dirs: Vec<NativeExcludeDirEntry>,
-}
-
-#[derive(Clone, Deserialize, Default)]
-#[serde(rename_all = "camelCase")]
 struct NativeDryRule {
     #[serde(default)]
     exclude_dirs: Vec<NativeExcludeDirEntry>,
@@ -164,8 +157,6 @@ struct NativeCheckRules {
     imports: Option<NativeImportsRule>,
     #[serde(default)]
     remove_comments: Option<NativeRemoveCommentsRule>,
-    #[serde(default)]
-    structural_blank_lines: Option<NativeStructuralBlankLinesRule>,
     #[serde(default)]
     dry: Option<NativeDryRule>,
 }
@@ -211,14 +202,6 @@ struct CheckDeclaration {
     kind: String,
     line: usize,
     name: String,
-}
-
-#[derive(Clone)]
-struct CheckBoundaryRewrite {
-    boundary_count: usize,
-    changed: bool,
-    inserted_blank_lines: usize,
-    removed_blank_lines: usize,
 }
 
 #[derive(Clone, Deserialize, Serialize)]

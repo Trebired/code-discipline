@@ -325,6 +325,9 @@
       "#to4c9s3qr330": [
         "../../../src/imports/rewrite.ts"
       ],
+      "#u2itjgxb6a6c": [
+        "../../../scripts/verify/structural.mjs"
+      ],
       "#ua9whqppp94v": [
         "../../../src/imports/scan.ts"
       ],

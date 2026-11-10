@@ -8,7 +8,7 @@
     }
   },
   "name": "@trebired/code-discipline",
-  "version": "8.0.1",
+  "version": "8.0.2",
   "description": "Configurable codebase discipline checks and rule-driven fixes for Bun projects.",
   "type": "module",
   "private": false,
@@ -44,7 +44,7 @@
     "demo": "bun run examples/dummy.ts",
     "discipline": "bun node_modules/@trebired/code-discipline/dist/cli.js check",
     "discipline:fix": "bun node_modules/@trebired/code-discipline/dist/cli.js fix",
-    "prepublishOnly": "bun run typecheck && bun run build && bun run build:native && bun run verify:max-line-fixer && bun run verify:language-support && bun run verify:language-dry && bun run verify:formatter && bun run verify:presets && bun run verify:generated-artifacts && bun run verify:imports-dead",
+    "prepublishOnly": "bun run typecheck && bun run build && bun run build:native && bun run verify:max-line-fixer && bun run verify:language-support && bun run verify:language-dry && bun run verify:formatter && bun run verify:structural && bun run verify:presets && bun run verify:generated-artifacts && bun run verify:imports-dead",
     "prepare:generated": "bun ./scripts/build/generated/tsconfig.mjs",
     "publish:package": "bun run build:native:matrix && bun publish",
     "publish:package:host": "bun run build:native && bun publish",
@@ -55,7 +55,8 @@
     "verify:language-dry": "bun ./scripts/verify/language/dry.mjs",
     "verify:language-support": "bun ./scripts/verify/language/support.mjs",
     "verify:max-line-fixer": "bun ./scripts/verify/max/line/fixer.mjs",
-    "verify:presets": "bun ./scripts/verify/presets.mjs"
+    "verify:presets": "bun ./scripts/verify/presets.mjs",
+    "verify:structural": "bun ./scripts/verify/structural.mjs"
   },
   "dependencies": {
     "@package/logger": "npm:@trebired/logger@^3.0.0",

@@ -85,52 +85,29 @@ mod formatter_wrapping_tests {
     }
 
     #[test]
-    fn wraps_markup_attributes_without_splitting_text() {
-        let source = [
-            "fn render() -> String {",
-            "format!(",
-            "r#\"",
-            concat!(
-                "<text x=\"10\" y=\"20\" text-anchor=\"middle\" font-family=\"Inter\" ",
-                "font-size=\"12\" font-weight=\"600\" fill=\"black\">{value}</text>",
-            ),
-            "\"#,",
-            "value = \"ok\",",
-            ")",
-            "}",
-            "",
-        ]
-        .join("\n");
+    fn keeps_markup_inside_multiline_raw_strings() {
+        let markup = concat!(
+            "<text x=\"10\" y=\"20\" text-anchor=\"middle\" font-family=\"Inter\" ",
+            "font-size=\"12\" font-weight=\"600\" fill=\"black\">{value}</text>",
+        );
+        let source = ["fn render() -> String {", "format!(", "r#\"", markup, "\"#,", "value = \"ok\",", ")", "}", ""].join("\n");
         let formatted = format_source_internal(&source, ".rs", &options(88));
 
-        assert!(formatted.contains("font-weight=\"600\" fill=\"black\">{value}</text>"));
-        assert!(!formatted.contains("fill=\"black\">\n"));
-        assert_lines_fit(&formatted, 88);
+        assert!(formatted.contains(&format!("\n{markup}\n\"#,\n")));
+        assert_eq!(format_source_internal(&formatted, ".rs", &options(88)), formatted);
     }
 
     #[test]
-    fn wraps_rust_raw_svg_element_attributes() {
-        let source = [
-            "fn render() {",
-            "    svg.push_str(&format!(",
-            "        r#\"",
-            concat!(
-                "        <text x=\"{text_x}\" y=\"{y}\" text-anchor=\"{anchor}\" ",
-                "font-family=\"{family}\" font-size=\"{font_size_mm}\" ",
-                "font-weight=\"{weight}\" fill=\"black\">{escaped}</text>",
-            ),
-            "        \"#,",
-            "    ));",
-            "}",
-            "",
-        ]
-        .join("\n");
+    fn keeps_indented_raw_svg_lines_untouched() {
+        let markup = concat!(
+            "        <text x=\"{text_x}\" y=\"{y}\" text-anchor=\"{anchor}\" ",
+            "font-family=\"{family}\" font-size=\"{font_size_mm}\" ",
+            "font-weight=\"{weight}\" fill=\"black\">{escaped}</text>",
+        );
+        let source = ["fn render() {", "    svg.push_str(&format!(", "            r#\"", markup, "        \"#,", "    ));", "}", ""].join("\n");
         let formatted = format_source_internal(&source, ".rs", &options(150));
 
-        assert!(formatted.contains("<text"));
-        assert!(formatted.contains("fill=\"black\">{escaped}</text>"));
-        assert_lines_fit(&formatted, 150);
-        assert_eq!(format_source_internal(&formatted, ".rs", &options(150)), formatted);
+        assert_eq!(formatted, source);
     }
 
     #[test]

@@ -1,6 +1,9 @@
 import { result as createResult } from "@package/result";
 import { normalizeCheckOptions } from "#x458f9t6w4a6";
 import { scanSourceFiles } from "#ua9whqppp94v";
+import { filterSourceFilesForRule } from "#jizekc8duh4i";
+import type { ScannedSourceFile } from "#pkb9x3eo56l7";
+import { shouldRunRule } from "#ydyygm5y7vgb";
 import { runLogGroup } from "#foa3t3ao5irq";
 import { resolveLogger } from "#5koja8ae2wwn";
 import type { CodeDisciplineResult, CodeDisciplineViolation } from "#bsmch74up4fm";
@@ -18,6 +21,7 @@ import {
 import type { FixState } from "./apply-fixes.js";
 import { collectFormatViolations } from "./format.js";
 import { collectNativeCheckViolations } from "./native/runner.js";
+import { collectStructuralBlankLinesViolations } from "./rules/blank-lines/index.js";
 import { collectRemoveEmptyFolderViolations } from "./rules/remove/empty-folders.js";
 import { applyConfiguredSeverity } from "./severity.js";
 import { buildNormalizedSyncOptions } from "./sync-options.js";
@@ -92,9 +96,19 @@ function attachDisciplineResult<T extends CodeDisciplineResult>(
   };
 }
 
+async function collectStructuralBlankLinesCheck(
+  sourceFiles: ScannedSourceFile[],
+  options: NormalizedCheckCodeDisciplineOptions,
+): Promise<CodeDisciplineViolation[]> {
+  const rule = options.rules.structuralBlankLines;
+  if (!rule || !shouldRunRule("structural-blank-lines", options.onlyRules)) return [];
+  return await collectStructuralBlankLinesViolations(filterSourceFilesForRule(sourceFiles, rule), options);
+}
+
 async function collectViolations(options: NormalizedCheckCodeDisciplineOptions): Promise<CodeDisciplineViolation[]> {
   const sourceFiles = await scanSourceFiles(options);
   const violations = await collectNativeCheckViolations(sourceFiles, options);
+  violations.push(...await collectStructuralBlankLinesCheck(sourceFiles, options));
   violations.push(...collectRemoveEmptyFolderViolations(options));
   violations.push(...await collectFormatViolations(options, sourceFiles));
   return sortViolations(applyConfiguredSeverity(violations, options));

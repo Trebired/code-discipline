@@ -8,14 +8,12 @@ import {
   isShellExtension,
   isStyleExtension,
 } from "#87jyjzn68rrk";
-import { maskQmlCommentsAndStrings } from "#x6956eahfhcm";
-import { stripCommentsAndStrings } from "#azin2l86pnk4";
+import { maskSource } from "#q6u4pcd984qa";
 import {
   measurePythonIndent,
   updatePythonTripleState,
   type PythonTripleState,
 } from "#fr9be3qxsdjh";
-import { stripShellStringsAndComments } from "#j00y5takmzho";
 import { applyBoundaryEdits, type ApplyBoundaryEditsResult } from "./rewrite.js";
 import type { BoundaryEdit } from "./types.js";
 
@@ -27,6 +25,7 @@ type GenericStructuralUnit = {
 
 type PendingBraceUnit = {
   braceDepth: number;
+  parenDepth: number;
   scopeKey: string;
   seenOpeningBrace: boolean;
   startLine: number;
@@ -78,49 +77,6 @@ function computeBoundaryEdits(lines: string[], units: GenericStructuralUnit[]): 
   return edits;
 }
 
-function maskRustRawStrings(text: string): string {
-  let output = "";
-  let index = 0;
-
-  while (index < text.length) {
-    if (text[index] !== "r") {
-      output += text[index] ?? "";
-      index += 1;
-      continue;
-    }
-
-    let cursor = index + 1;
-    while (text[cursor] === "#") cursor += 1;
-    if (text[cursor] !== "\"") {
-      output += text[index] ?? "";
-      index += 1;
-      continue;
-    }
-
-    const hashes = cursor - index - 1;
-    const close = `"${"#".repeat(hashes)}`;
-    const contentStart = cursor + 1;
-    const closeIndex = text.indexOf(close, contentStart);
-    if (closeIndex < 0) {
-      output += text[index] ?? "";
-      index += 1;
-      continue;
-    }
-
-    const end = closeIndex + close.length;
-    output += text.slice(index, end).replace(/[^\r\n]/gu, " ");
-    index = end;
-  }
-
-  return output;
-}
-
-function maskBraceLanguage(text: string, extension: string): string {
-  if (isQmlExtension(extension)) return maskQmlCommentsAndStrings(text);
-  if (isRustExtension(extension)) return stripCommentsAndStrings(maskRustRawStrings(text));
-  return stripCommentsAndStrings(text);
-}
-
 const C_FAMILY_BLANK_LINES_EXCLUDED_LEADING_WORDS = new Set([
     "if", "else", "for", "while", "do", "switch", "case", "catch", "try", "finally",
     "using", "lock", "foreach", "return", "throw", "new",
@@ -163,7 +119,7 @@ function isBraceUnitStart(line: string, extension: string): boolean {
   }
 
   if (isRustExtension(extension)) {
-    return /^(?:(?:pub(?:\([^)]*\))?|async|const|unsafe)\s+)*(?:fn|struct|enum|impl|trait)\b/u.test(trimmed);
+    return /^(?:(?:pub(?:\([^)]*\))?|async|const|unsafe|extern(?:\s+"[^"]*")?|default)\s+)*(?:fn|struct|enum|impl|trait)\b/u.test(trimmed);
   }
 
   if (isQmlExtension(extension)) {
@@ -183,39 +139,45 @@ function isBraceUnitStart(line: string, extension: string): boolean {
   return false;
 }
 
+function advancePendingBraceUnit(pending: PendingBraceUnit, maskedLine: string): "bodiless" | "pending" {
+  for (const character of maskedLine) {
+    if (character === "{") {
+      pending.seenOpeningBrace = true;
+      pending.braceDepth += 1;
+    } else if (character === "}") {
+      pending.braceDepth -= 1;
+    } else if (pending.seenOpeningBrace) {
+      continue;
+    } else if (character === "(" || character === "[") {
+      pending.parenDepth += 1;
+    } else if (character === ")" || character === "]") {
+      pending.parenDepth -= 1;
+    } else if (character === ";" && pending.parenDepth <= 0) {
+      return "bodiless";
+    }
+  }
+  return "pending";
+}
+
+function openBraceUnit(scopeKey: string, startLine: number): PendingBraceUnit {
+  return { braceDepth: 0, parenDepth: 0, scopeKey, seenOpeningBrace: false, startLine };
+}
+
 function collectBraceStructuralUnits(text: string, extension: string): GenericStructuralUnit[] {
   const lines = text.split(/\r?\n/u);
-  const maskedLines = maskBraceLanguage(text, extension).split(/\r?\n/u);
+  const maskedLines = maskSource(text, extension).split(/\r?\n/u);
   const units: GenericStructuralUnit[] = [];
   let depth = 0;
   let pending: PendingBraceUnit | null = null;
 
   for (let index = 0; index < lines.length; index += 1) {
     const maskedLine = maskedLines[index] ?? "";
-    const line = lines[index] ?? "";
-    const depthBefore = depth;
-
-    if (!pending && isBraceUnitStart(line, extension)) {
-      pending = {
-        braceDepth: 0,
-        scopeKey: `brace:${depthBefore}`,
-        seenOpeningBrace: false,
-        startLine: index + 1,
-      };
-    }
-
-    if (pending && maskedLine.includes("{")) pending.seenOpeningBrace = true;
-
-    const delta = countMaskedBraceDelta(maskedLine);
-    if (pending) pending.braceDepth += delta;
-    depth = Math.max(0, depth + delta);
+    if (!pending && isBraceUnitStart(lines[index] ?? "", extension)) pending = openBraceUnit(`brace:${depth}`, index + 1);
+    if (pending && advancePendingBraceUnit(pending, maskedLine) === "bodiless") pending = null;
+    depth = Math.max(0, depth + countMaskedBraceDelta(maskedLine));
 
     if (pending?.seenOpeningBrace && pending.braceDepth <= 0) {
-      units.push({
-          startLine: pending.startLine,
-          endLine: index + 1,
-          scopeKey: pending.scopeKey,
-      });
+      units.push({ startLine: pending.startLine, endLine: index + 1, scopeKey: pending.scopeKey });
       pending = null;
     }
   }
@@ -286,33 +248,20 @@ function collectPythonStructuralUnits(text: string): GenericStructuralUnit[] {
   return units;
 }
 
+const SHELL_FUNCTION_START = /^\s*(?:function\s+)?[A-Za-z_][\w-]*\s*(?:\(\s*\))?\s*\{/u;
+
 function collectShellStructuralUnits(text: string): GenericStructuralUnit[] {
   const units: GenericStructuralUnit[] = [];
-  const lines = text.split(/\r?\n/u);
+  const maskedLines = maskSource(text, ".sh").split(/\r?\n/u);
   let pending: PendingBraceUnit | null = null;
 
-  for (let index = 0; index < lines.length; index += 1) {
-    const maskedLine = stripShellStringsAndComments(lines[index] ?? "");
-
-    if (!pending && /^\s*(?:function\s+)?[A-Za-z_][\w-]*\s*(?:\(\s*\))?\s*\{/u.test(maskedLine)) {
-      pending = {
-        braceDepth: 0,
-        scopeKey: "shell:function",
-        seenOpeningBrace: false,
-        startLine: index + 1,
-      };
-    }
-
-    if (pending && maskedLine.includes("{")) pending.seenOpeningBrace = true;
-    const delta = countMaskedBraceDelta(maskedLine);
-    if (pending) pending.braceDepth += delta;
+  for (let index = 0; index < maskedLines.length; index += 1) {
+    const maskedLine = maskedLines[index] ?? "";
+    if (!pending && SHELL_FUNCTION_START.test(maskedLine)) pending = openBraceUnit("shell:function", index + 1);
+    if (pending && advancePendingBraceUnit(pending, maskedLine) === "bodiless") pending = null;
 
     if (pending?.seenOpeningBrace && pending.braceDepth <= 0) {
-      units.push({
-          startLine: pending.startLine,
-          endLine: index + 1,
-          scopeKey: pending.scopeKey,
-      });
+      units.push({ startLine: pending.startLine, endLine: index + 1, scopeKey: pending.scopeKey });
       pending = null;
     }
   }

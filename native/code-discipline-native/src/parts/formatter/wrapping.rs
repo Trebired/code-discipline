@@ -99,22 +99,30 @@ fn wrap_comment_line(line: &str, extension: &str, line_number: usize, max: usize
 }
 
 fn wrap_comment_lines(
-    lines: Vec<String>,
+    lines: Vec<FormattedLine>,
     extension: &str,
     options: &NativeFormatterOptions,
-) -> Vec<String> {
+) -> Vec<FormattedLine> {
     let max = options.max_characters_per_line.max(1);
     let mut wrapped_lines = Vec::with_capacity(lines.len());
 
     for (index, line) in lines.into_iter().enumerate() {
-        if let Some(replacements) = wrap_comment_line(&line, extension, index + 1, max) {
-            wrapped_lines.extend(replacements);
+        let replacements = if line.locked {
+            None
         } else {
-            wrapped_lines.push(line);
+            wrap_comment_line(&line.text, extension, index + 1, max)
+        };
+        match replacements {
+            Some(segments) => wrapped_lines.extend(segments.into_iter().map(unlocked_line)),
+            None => wrapped_lines.push(line),
         }
     }
 
     wrapped_lines
+}
+
+fn unlocked_line(text: String) -> FormattedLine {
+    FormattedLine { locked: false, text }
 }
 
 fn wrap_long_source_line(
@@ -157,10 +165,10 @@ fn expand_compact_source_line(line: &str, extension: &str) -> Option<Vec<String>
 }
 
 fn wrap_source_lines(
-    lines: Vec<String>,
+    lines: Vec<FormattedLine>,
     extension: &str,
     options: &NativeFormatterOptions,
-) -> Vec<String> {
+) -> Vec<FormattedLine> {
     let max = options.max_characters_per_line.max(1);
     let mut current = lines;
 
@@ -169,14 +177,18 @@ fn wrap_source_lines(
         let mut next = Vec::with_capacity(current.len());
 
         for (index, line) in current.into_iter().enumerate() {
-            if let Some(replacements) = expand_compact_source_line(&line, extension) {
-                changed = true;
-                next.extend(replacements);
-            } else if let Some(replacements) = wrap_long_source_line(&line, extension, index + 1, max) {
-                changed = true;
-                next.extend(replacements);
+            let replacements = if line.locked {
+                None
             } else {
-                next.push(line);
+                expand_compact_source_line(&line.text, extension)
+                .or_else(|| wrap_long_source_line(&line.text, extension, index + 1, max))
+            };
+            match replacements {
+                Some(segments) => {
+                    changed = true;
+                    next.extend(segments.into_iter().map(unlocked_line));
+                }
+                None => next.push(line),
             }
         }
 

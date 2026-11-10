@@ -124,26 +124,37 @@ fn trim_trailing_if_enabled(line: &str, options: &NativeFormatterOptions) -> Str
     }
 }
 
-fn push_formatted_line(lines: &mut Vec<String>, line: String, options: &NativeFormatterOptions) {
-    let is_blank = line.trim().is_empty();
+struct FormattedLine {
+    locked: bool,
+    text: String,
+}
 
-    if is_blank {
-        if options.collapse_blank_lines && (lines.is_empty() || lines.last().is_some_and(|item| item.trim().is_empty())) {
-            return;
-        }
-        lines.push(String::new());
+fn push_formatted_line(lines: &mut Vec<FormattedLine>, text: String, locked: bool, options: &NativeFormatterOptions) {
+    let is_blank = text.trim().is_empty();
+
+    if locked {
+        lines.push(FormattedLine { locked, text });
         return;
     }
 
-    lines.push(line);
+    if is_blank {
+        let after_blank = lines.last().is_some_and(|item| !item.locked && item.text.trim().is_empty());
+        if options.collapse_blank_lines && (lines.is_empty() || after_blank) {
+            return;
+        }
+        lines.push(FormattedLine { locked, text: String::new() });
+        return;
+    }
+
+    lines.push(FormattedLine { locked, text });
 }
 
-fn finalize_formatted_lines(mut lines: Vec<String>, options: &NativeFormatterOptions) -> String {
-    while lines.last().is_some_and(|line| line.trim().is_empty()) {
+fn finalize_formatted_lines(mut lines: Vec<FormattedLine>, options: &NativeFormatterOptions) -> String {
+    while lines.last().is_some_and(|line| !line.locked && line.text.trim().is_empty()) {
         lines.pop();
     }
 
-    let mut text = lines.join("\n");
+    let mut text = lines.into_iter().map(|line| line.text).collect::<Vec<_>>().join("\n");
     if options.final_newline && !text.is_empty() {
         text.push('\n');
     }
@@ -171,13 +182,22 @@ fn brace_balance(masked_line: &str) -> isize {
     balance
 }
 
+fn literal_safe_line(raw_line: &str, flags: LiteralLine, options: &NativeFormatterOptions) -> String {
+    if flags.ends_inside {
+        raw_line.to_string()
+    } else {
+        trim_trailing_if_enabled(raw_line, options)
+    }
+}
+
 fn format_brace_indented_text(
     text: &str,
     extension: &str,
     options: &NativeFormatterOptions,
-) -> Vec<String> {
+) -> Vec<FormattedLine> {
     let indent_width = indent_width_for_extension(extension, options);
-    let masked = strip_comments_and_strings_for_formatter(text, extension);
+    let masked = mask_source_spans(text, extension);
+    let literal_flags = literal_line_flags(text, extension);
     let raw_lines: Vec<&str> = text.split('\n').collect();
     let masked_lines: Vec<&str> = masked.split('\n').collect();
     let mut lines = Vec::with_capacity(raw_lines.len());
@@ -189,23 +209,25 @@ fn format_brace_indented_text(
             continue;
         }
 
-        let trimmed_line = trim_trailing_if_enabled(raw_line, options);
-        let content = trimmed_line.trim_start();
-        if content.is_empty() {
-            push_formatted_line(&mut lines, String::new(), options);
-            continue;
-        }
-
+        let flags = literal_flags.get(index).copied().unwrap_or_default();
+        let kept = literal_safe_line(raw_line, flags, options);
+        let content = kept.trim_start();
         let masked_line = masked_lines.get(index).copied().unwrap_or_default();
-        let masked_trimmed = masked_line.trim_start();
-        let leading_closers = count_leading_closers(masked_trimmed);
-        let line_indent = indent_level.saturating_sub(leading_closers) + continuation_level;
-        let indent = " ".repeat(line_indent * indent_width);
-        push_formatted_line(&mut lines, format!("{indent}{content}"), options);
+        if flags.starts_inside {
+            push_formatted_line(&mut lines, kept.clone(), true, options);
+        } else if content.is_empty() {
+            push_formatted_line(&mut lines, String::new(), false, options);
+            continue;
+        } else {
+            let leading_closers = count_leading_closers(masked_line.trim_start());
+            let line_indent = indent_level.saturating_sub(leading_closers) + continuation_level;
+            let indent = " ".repeat(line_indent * indent_width);
+            push_formatted_line(&mut lines, format!("{indent}{content}"), flags.ends_inside, options);
+        }
 
         let next_indent = indent_level as isize + brace_balance(masked_line);
         indent_level = next_indent.max(0) as usize;
-        continuation_level = usize::from(continues_formatter_expression(content));
+        continuation_level = usize::from(!flags.ends_inside && continues_formatter_expression(content));
     }
 
     lines
@@ -215,9 +237,10 @@ fn format_indentation_preserving_text(
     text: &str,
     extension: &str,
     options: &NativeFormatterOptions,
-) -> Vec<String> {
+) -> Vec<FormattedLine> {
     let indent_width = indent_width_for_extension(extension, options);
     let explicit_indent_width = options.indent_width.is_some();
+    let literal_flags = literal_line_flags(text, extension);
     let raw_lines: Vec<&str> = text.split('\n').collect();
     let mut lines = Vec::with_capacity(raw_lines.len());
 
@@ -226,20 +249,20 @@ fn format_indentation_preserving_text(
             continue;
         }
 
-        let trimmed_line = trim_trailing_if_enabled(raw_line, options);
-        let content = trimmed_line.trim_start();
-        if content.is_empty() {
-            push_formatted_line(&mut lines, String::new(), options);
-            continue;
-        }
-
-        if explicit_indent_width {
-            let columns = leading_columns(&trimmed_line, indent_width);
-            let level = columns / indent_width;
-            push_formatted_line(&mut lines, format!("{}{}", " ".repeat(level * indent_width), content), options);
+        let flags = literal_flags.get(index).copied().unwrap_or_default();
+        let kept = literal_safe_line(raw_line, flags, options);
+        let content = kept.trim_start();
+        if flags.starts_inside {
+            push_formatted_line(&mut lines, kept.clone(), true, options);
+        } else if content.is_empty() {
+            push_formatted_line(&mut lines, String::new(), false, options);
+        } else if explicit_indent_width {
+            let level = leading_columns(&kept, indent_width) / indent_width;
+            let line = format!("{}{}", " ".repeat(level * indent_width), content);
+            push_formatted_line(&mut lines, line, flags.ends_inside, options);
         } else {
-            let leading = leading_whitespace(&trimmed_line).replace('\t', &" ".repeat(indent_width));
-            push_formatted_line(&mut lines, format!("{leading}{content}"), options);
+            let leading = leading_whitespace(&kept).replace('\t', &" ".repeat(indent_width));
+            push_formatted_line(&mut lines, format!("{leading}{content}"), flags.ends_inside, options);
         }
     }
 

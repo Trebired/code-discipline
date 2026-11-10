@@ -23,7 +23,6 @@ const CHUNKABLE_NATIVE_RULES = new Set<NativeCheckRuleKey>([
     "maxCharactersPerLine",
     "maxFunctionLines",
     "removeComments",
-    "structuralBlankLines",
 ]);
 const DEFAULT_NATIVE_RULE_CHUNK_LIMITS = {
   maxBytes: 1024 * 1024,
@@ -36,7 +35,6 @@ const HEAVY_NATIVE_RULE_CHUNK_LIMITS: Partial<Record<NativeCheckRuleKey, NativeR
   maxDeclarationName: { maxBytes: 128 * 1024, maxFiles: 64 },
   maxFunctionLines: { maxBytes: 128 * 1024, maxFiles: 64 },
   removeComments: { maxBytes: 256 * 1024, maxFiles: 64 },
-  structuralBlankLines: { maxBytes: 256 * 1024, maxFiles: 64 },
 };
 
 type NativeCheckRulesResponse = {
@@ -206,7 +204,6 @@ function selectNativeRules(
     redundantPathSegments: shouldRunRule("redundant-path-segments", options.onlyRules) ? options.rules.redundantPathSegments : undefined,
     imports: importsRule,
     removeComments: shouldRunRule("remove-comments", options.onlyRules) ? options.rules.removeComments : undefined,
-    structuralBlankLines: shouldRunRule("structural-blank-lines", options.onlyRules) ? options.rules.structuralBlankLines : undefined,
     dry: shouldRunRule("dry", options.onlyRules) ? options.rules.dry : undefined,
   };
 }
@@ -316,7 +313,6 @@ function createNativeCheckRuleEntries(
   pushNativeCheckRule(entries, sourceFiles, "redundantPathSegments", "redundant-path-segments", rules.redundantPathSegments);
   pushNativeCheckRule(entries, sourceFiles, "imports", "imports", rules.imports, importState.syncViolations);
   pushNativeCheckRule(entries, sourceFiles, "removeComments", "remove-comments", rules.removeComments);
-  pushNativeCheckRule(entries, sourceFiles, "structuralBlankLines", "structural-blank-lines", rules.structuralBlankLines);
   pushNativeCheckRule(entries, sourceFiles, "dry", "dry", rules.dry);
   return entries;
 }

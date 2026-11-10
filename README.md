@@ -239,7 +239,9 @@ Reports supported source files where major structural sections aren't visually s
 
 JavaScript and TypeScript use the TypeScript AST: after the file header, between imports and the first non-import statement, between declaration groups (variables, types, functions, classes, enums, namespaces), and between class fields/methods/constructors. Compact groups  -  consecutive imports, variables, type declarations, re-exports, top-level executable statements, class fields, directive prologues, function overload chains, and getter/setter pairs  -  allow zero or one blank line and only collapse two or more down to one.
 
-Go, Rust, C++, C#, Python, QML, shell, SCSS, and CSS use language-aware structural scanning to normalize blank lines between adjacent top-level declarations, functions, handlers, or rules in the same scope.
+Go, Rust, C++, C#, Python, QML, shell, SCSS, and CSS use language-aware structural scanning to normalize blank lines between adjacent top-level declarations, functions, handlers, or rules in the same scope. Strings, raw strings, templates, heredocs, comments, and Rust lifetimes are masked before scanning, so braces inside them never open or close a unit. A declaration without a body, such as `fn x();` or `struct A;`, is not a unit.
+
+`check` and `fix` run the same implementation: a file that `fix` leaves unchanged never fails `check`, and a file that `check` reports is changed by `fix`.
 
 It never touches statements inside function or method bodies, `if`/loop/`try` bodies, object literals, array elements, interface members, type literal members, enum members, or JSX children  -  spacing choices inside those remain up to the developer.
 
@@ -520,6 +522,8 @@ The package-owned Rust formatter is enabled as a rule with `rules.formatting: {}
 `check format` validates formatting without modifying files, while `fix format` writes formatted files. Running `code-discipline fix` with no selectors runs configured formatting after structural, import, comment, and blank-line fixes, then rechecks `max-characters-per-line` when that rule is configured.
 
 The formatter supports JavaScript, TypeScript, Go, Rust, C++, C#, Python, QML, shell files with `.sh`, `.bash`, or `.zsh`, SCSS, and CSS. It normalizes line endings, trailing whitespace, final newline, repeated blank lines, brace-language indentation, indentation-sensitive language whitespace, compact QML blocks, and safe line wrapping against `rules.maxCharactersPerLine.max`.
+
+Text inside a multi-line literal is never changed. A line that starts or ends inside a string, template, raw string, C# verbatim or raw string, C++ raw string, Python triple-quoted string, shell quoted string, or heredoc keeps its indentation, trailing whitespace, and blank lines byte for byte, and it is never wrapped. A long line inside such a literal stays reported by `max-characters-per-line`; split the literal in the source to clear it.
 
 If `rules.maxCharactersPerLine.max` is configured, the formatter uses that width. Without that rule, formatter line width defaults to `100`.
 

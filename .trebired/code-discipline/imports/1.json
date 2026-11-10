@@ -107,6 +107,7 @@
   "#t7940ar28d6y": "./src/config/normalize/source-options.ts",
   "#tndpraw7eu3w": "./src/checks/rules/comments/quoted.ts",
   "#to4c9s3qr330": "./src/imports/rewrite.ts",
+  "#u2itjgxb6a6c": "./scripts/verify/structural.mjs",
   "#ua9whqppp94v": "./src/imports/scan.ts",
   "#uaux9bh3my6b": "./src/checks/rules/max/file-lines.ts",
   "#ug46qontqfe9": "./src/checks/sync-options.ts",
