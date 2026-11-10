@@ -100,4 +100,13 @@ mod literal_tests {
 
         assert!(flags.iter().all(|flag| !flag.starts_inside && !flag.ends_inside));
     }
+
+    #[test]
+    fn template_expression_regex_keeps_the_span() {
+        let source = "function a(p) {\n  const e = `x/${String(p).replace(/^\\.\\//u, \"\")}`;\n  return e;\n}\n";
+        let masked = mask_source_spans(source, ".mjs");
+
+        assert!(masked.contains("return e;"));
+        assert_eq!(format_source_internal(source, ".mjs", &options()), source);
+    }
 }

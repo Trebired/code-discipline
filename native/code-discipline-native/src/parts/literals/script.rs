@@ -96,6 +96,7 @@ fn scan_template_expression(text: &str, start: usize) -> usize {
             (b'`', _) => scan_template_literal(text, index),
             (b'/', Some(b'/')) => scan_line_comment(text, index),
             (b'/', Some(b'*')) => scan_block_comment(text, index, false),
+            (b'/', _) => scan_script_regex_literal(text, index).unwrap_or(index + 1),
             _ => index + 1,
         };
     }

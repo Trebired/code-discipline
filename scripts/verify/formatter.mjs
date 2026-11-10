@@ -152,6 +152,7 @@ const MULTILINE_LITERALS = {
   "src/page.ts": ["export function page() {", "return `", "    <p>   ", "", "", "  </p>`;", "}"],
   "src/doc.py": ["def doc():", "    text = \"\"\"", "      keep   ", "", "", "   me", "\"\"\"", "    return text"],
   "src/raw.go": ["package main", "func raw() string {", "return `", "      keep   ", "", "", "   me", "`", "}"],
+  "src/regex.mjs": ["function a(p) {", "  const e = `${p.replace(/\\//u, \"\")}`;", "  return e;", "}"],
 };
 
 const MULTILINE_LITERAL_BODIES = {
@@ -159,6 +160,7 @@ const MULTILINE_LITERAL_BODIES = {
   "src/page.ts": ["return `", "    <p>   ", "", "", "  </p>`;"],
   "src/doc.py": ["    text = \"\"\"", "      keep   ", "", "", "   me", "\"\"\""],
   "src/raw.go": ["return `", "      keep   ", "", "", "   me", "`"],
+  "src/regex.mjs": ["const e = `${p.replace(/\\//u, \"\")}`;", "  return e;", "}"],
 };
 
 async function writeMultilineLiteralFixtures(root) {

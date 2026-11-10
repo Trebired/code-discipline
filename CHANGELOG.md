@@ -1,5 +1,9 @@
 # Changelog
 
+## 8.0.3
+
+- Fixed the formatter and `structural-blank-lines` treating a regex literal inside a template expression as a line comment. In `` `${text.replace(/\//u, "")}` `` the `//` ended the template early, so the rest of the file was read as inside a literal: `fix format` removed indentation from the code that followed, and `check` reported files that were already formatted. Template expressions now read regex literals.
+
 ## 8.0.2
 
 - Fixed the CLI on systems without Node.js. `dist/cli.js` and `dist/cli/run.js` started with `#!/usr/bin/env node`, so running the bin outside `bun run`, for example under `sudo`, failed with `env: 'node': No such file or directory`. Both now start with `#!/usr/bin/env bun`.
