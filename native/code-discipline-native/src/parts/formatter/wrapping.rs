@@ -139,8 +139,10 @@ fn wrap_long_source_line(
         return Some(replacements);
     }
 
-    wrap_one_line_block(line, extension)
+    let code_wrap = wrap_one_line_block(line, extension)
     .or_else(|| wrap_array_or_call_line(line, extension, max))
+    .and_then(|output| keeping_literals(line, extension, output));
+    code_wrap
     .or_else(|| {
             is_rust_extension(extension)
             .then(|| wrap_rust_raw_string_line(line, max))
@@ -151,9 +153,17 @@ fn wrap_long_source_line(
             .then(|| wrap_python_string_line(line, max))
             .flatten()
     })
-    .or_else(|| wrap_js_like_concatenation_line(line, extension))
+    .or_else(|| wrap_js_like_concatenation_line(line, extension).and_then(|output| keeping_literals(line, extension, output)))
     .or_else(|| wrap_js_like_string_line(line, extension, max))
-    .or_else(|| wrap_markup_line(line, extension, max))
+    .or_else(|| wrap_markup_line(line, extension, max).and_then(|output| keeping_literals(line, extension, output)))
+}
+
+fn keeping_literals(line: &str, extension: &str, output: Vec<String>) -> Option<Vec<String>> {
+    let joined = output.join("\n");
+    literal_texts(line, extension)
+    .iter()
+    .all(|literal| joined.contains(literal))
+    .then_some(output)
 }
 
 fn expand_compact_source_line(line: &str, extension: &str) -> Option<Vec<String>> {
@@ -161,7 +171,7 @@ fn expand_compact_source_line(line: &str, extension: &str) -> Option<Vec<String>
         return None;
     }
 
-    wrap_one_line_block(line, extension)
+    wrap_one_line_block(line, extension).and_then(|output| keeping_literals(line, extension, output))
 }
 
 fn wrap_source_lines(

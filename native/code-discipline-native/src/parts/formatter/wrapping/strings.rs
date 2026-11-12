@@ -159,6 +159,10 @@ fn wrap_js_like_concatenation_line(line: &str, extension: &str) -> Option<Vec<St
         return None;
     }
 
+    let masked = mask_line_literals(trimmed, extension);
+    if masked.contains("+=") || masked.contains("++") {
+        return None;
+    }
     let terms = split_top_level_plus_terms(trimmed)?;
     let indent = leading_whitespace(line);
     let continuation_indent = format!("{indent}  ");
@@ -187,7 +191,7 @@ fn js_like_string_continuation_indent(prefix: &str, indent: &str) -> String {
 
 fn build_js_like_string_segments(
     prefix: &str,
-    suffix: &str,
+    (suffix, joiner): (&str, &str),
     quote: char,
     continuation_indent: &str,
     segments: &[String],
@@ -197,32 +201,40 @@ fn build_js_like_string_segments(
     .enumerate()
     .map(|(index, segment)| {
             let current_prefix = if index == 0 { prefix } else { continuation_indent };
-            let current_suffix = if index == segments.len() - 1 { suffix } else { " +" };
+            let current_suffix = if index == segments.len() - 1 { suffix } else { joiner };
             format!("{current_prefix}{quote}{segment}{quote}{current_suffix}")
     })
     .collect()
 }
 
+fn opens_string_value(prefix: &str) -> bool {
+    let trimmed = prefix.trim_end();
+    trimmed.ends_with(['=', '(', ',', '[', ':', '?']) || trimmed.ends_with("return") || trimmed.is_empty()
+}
+
 fn wrap_js_like_string_line(line: &str, extension: &str, max: usize) -> Option<Vec<String>> {
-    if !(is_ts_family_extension(extension)
-        || is_qml_extension(extension)
-        || is_cpp_extension(extension)
-        || is_csharp_extension(extension))
-    {
+    let quotes: &[char] = if is_qml_extension(extension) {
+        &['"', '\'']
+    } else if is_cpp_extension(extension) || is_csharp_extension(extension) {
+        &['"']
+    } else {
         return None;
-    }
+    };
 
     let trimmed = line.trim_start();
     if is_import_like_line(trimmed) {
         return None;
     }
 
-    let (start, end, quote) = find_simple_quoted_span(line, &['"', '\''])?;
+    let (start, end, quote) = find_simple_quoted_span(line, quotes)?;
     let prefix = &line[..start];
     let raw = &line[start..end];
     let suffix = &line[end..];
 
     if prefix.is_empty() && suffix.trim().is_empty() {
+        return None;
+    }
+    if !opens_string_value(prefix) || prefix.trim_end().ends_with(['@', '$']) {
         return None;
     }
     if raw[1..raw.len().saturating_sub(1)].contains('\\') || has_comment_marker(suffix) {
@@ -235,7 +247,8 @@ fn wrap_js_like_string_line(line: &str, extension: &str, max: usize) -> Option<V
     let first_capacity = max.saturating_sub(count_display_characters(prefix) + 4);
     let next_capacity = max.saturating_sub(count_display_characters(&continuation_indent) + 4);
     let segments = split_literal_for_width(value, first_capacity, next_capacity)?;
-    let output = build_js_like_string_segments(prefix, suffix, quote, &continuation_indent, &segments);
+    let joiner = if is_cpp_extension(extension) { "" } else { " +" };
+    let output = build_js_like_string_segments(prefix, (suffix, joiner), quote, &continuation_indent, &segments);
 
     output
     .iter()
@@ -248,6 +261,10 @@ fn wrap_python_string_line(line: &str, max: usize) -> Option<Vec<String>> {
     let prefix = &line[..start];
     let raw = &line[start..end];
     let suffix = &line[end..];
+
+    if !opens_string_value(prefix) {
+        return None;
+    }
 
     if raw[1..raw.len().saturating_sub(1)].contains('\\') || has_comment_marker(suffix) {
         return None;

@@ -1,5 +1,17 @@
 # Changelog
 
+## 8.0.4
+
+- Fixed the formatter breaking one-line strings as if they were code. Wrapping a long call or array looked for the first `(` or `[` on the line even inside a string, so help text such as `"Open the list (press Enter, then Tab)"` was split at its own brackets and commas, and a one-line raw JSON string got newlines and indentation in its value. Wrapping now reads brackets, commas and `+` only outside literals, and a code wrap that would split any literal is dropped. Such a line stays reported by `max-characters-per-line`.
+- The native formatter no longer splits string literals in TypeScript and JavaScript files. It split strings in types (`T["key"]`, `{ type: "x" }`), object keys, JSX attributes and inside template literals, where `"a" + "b"` is not valid. The `max-characters-per-line` fixer still splits them, only where the syntax tree allows it.
+- Fixed `+=` and `++` being split into `+` and `=` by concatenation wrapping.
+- C++ strings wrap as adjacent literals. `"a" + "b"` does not compile in C++.
+- Python strings wrap only in value positions. A prefixed string such as `f"..."` is left alone, because the prefix was cut off from its quote.
+- Fixed semicolons being added inside multi-line destructuring patterns such as `const {\n  a,\n  b\n} = require("./x")`.
+- Fixed JSX tag wrapping splitting an attribute such as `onChange={(event) => save(event)}` at its spaces, and reading the `>` of `=>` as the end of the tag.
+- One `fix` now settles. The formatter repeats until its output stops changing, so lines it wraps are indented in the same run, and the `max-characters-per-line` fixer formats the files it rewrites before it reports what is still too long. A second `fix` changes nothing.
+- Added an end-to-end `verify:formatter` fixture: a full `fix` on a Rust file keeps one-line help text whole and keeps the value of a long one-line raw JSON string, which may only be split into `concat!` pieces.
+
 ## 8.0.3
 
 - Fixed the formatter and `structural-blank-lines` treating a regex literal inside a template expression as a line comment. In `` `${text.replace(/\//u, "")}` `` the `//` ended the template early, so the rest of the file was read as inside a literal: `fix format` removed indentation from the code that followed, and `check` reported files that were already formatted. Template expressions now read regex literals.

@@ -50,7 +50,7 @@ fn opens_object_literal(tokens: &[OwnedIndexToken], open: usize) -> bool {
     match tokens[previous].kind {
         ScriptTokenKind::Keyword => matches!(
             tokens[previous].text.as_str(),
-            "return" | "typeof" | "export" | "import" | "default"
+            "return" | "typeof" | "export" | "import" | "default" | "const" | "let" | "var"
         ),
         ScriptTokenKind::Punctuator => matches!(
             tokens[previous].text.as_str(),

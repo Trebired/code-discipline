@@ -525,6 +525,8 @@ The formatter supports JavaScript, TypeScript, Go, Rust, C++, C#, Python, QML, s
 
 Text inside a multi-line literal is never changed. A line that starts or ends inside a string, template, raw string, C# verbatim or raw string, C++ raw string, Python triple-quoted string, shell quoted string, or heredoc keeps its indentation, trailing whitespace, and blank lines byte for byte, and it is never wrapped. A long line inside such a literal stays reported by `max-characters-per-line`; split the literal in the source to clear it.
 
+Wrapping never changes a one-line literal either. Brackets, commas, and `+` inside strings are not read as code, and a wrap that would split a literal is dropped. In JavaScript and TypeScript the formatter leaves strings to the `max-characters-per-line` fixer, which splits them only where the syntax tree allows it. QML and C# strings wrap as `"a" +` / `"b"`, C++ strings as adjacent literals, and Python strings in parentheses in value positions; a prefixed Python string such as `f"..."` is left alone. One `fix` settles: a second run changes nothing.
+
 If `rules.maxCharactersPerLine.max` is configured, the formatter uses that width. Without that rule, formatter line width defaults to `100`.
 
 The formatter uses the shared top-level `ignore` and root `.gitignore` patterns. `.trebired/code-discipline` is always package-owned state and is never formatted by generic formatter traversal.

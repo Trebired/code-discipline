@@ -2,6 +2,7 @@ fn split_markup_tag_tokens(text: &str) -> Vec<String> {
     let mut tokens = Vec::new();
     let mut current = String::new();
     let mut quote: Option<char> = None;
+    let mut depth = 0_usize;
 
     for ch in text.chars() {
         if let Some(active) = quote {
@@ -12,13 +13,19 @@ fn split_markup_tag_tokens(text: &str) -> Vec<String> {
             continue;
         }
 
-        if ch == '"' || ch == '\'' {
+        if ch == '"' || ch == '\'' || (depth > 0 && ch == '`') {
             quote = Some(ch);
             current.push(ch);
             continue;
         }
 
-        if ch.is_whitespace() {
+        match ch {
+            '{' => depth += 1,
+            '}' => depth = depth.saturating_sub(1),
+            _ => {}
+        }
+
+        if ch.is_whitespace() && depth == 0 {
             if !current.is_empty() {
                 tokens.push(current);
                 current = String::new();
@@ -38,6 +45,7 @@ fn split_markup_tag_tokens(text: &str) -> Vec<String> {
 
 fn find_markup_tag_end(text: &str) -> Option<usize> {
     let mut quote: Option<char> = None;
+    let mut depth = 0_usize;
 
     for (index, ch) in text.char_indices() {
         if let Some(active) = quote {
@@ -47,13 +55,13 @@ fn find_markup_tag_end(text: &str) -> Option<usize> {
             continue;
         }
 
-        if ch == '"' || ch == '\'' {
-            quote = Some(ch);
-            continue;
-        }
-
-        if ch == '>' {
-            return Some(index);
+        match ch {
+            '"' | '\'' => quote = Some(ch),
+            '`' if depth > 0 => quote = Some(ch),
+            '{' => depth += 1,
+            '}' => depth = depth.saturating_sub(1),
+            '>' if depth == 0 => return Some(index),
+            _ => {}
         }
     }
 
@@ -107,105 +115,65 @@ fn wrap_markup_line(line: &str, extension: &str, max: usize) -> Option<Vec<Strin
     .then_some(output)
 }
 
-fn split_top_level_items(content: &str, delimiter: char) -> Option<Vec<String>> {
-    let mut items = Vec::new();
-    let mut current = String::new();
-    let mut quote: Option<char> = None;
-    let mut escaped = false;
+fn masked_matching_close(masked: &str, open_index: usize, open: u8, close: u8) -> Option<usize> {
     let mut depth = 0_isize;
-    for ch in content.chars() {
-        if let Some(active) = quote {
-            current.push(ch);
-            if escaped {
-                escaped = false;
-            } else if ch == '\\' {
-                escaped = true;
-            } else if ch == active {
-                quote = None;
+    for (index, byte) in masked.bytes().enumerate().skip(open_index) {
+        if byte == open {
+            depth += 1;
+        } else if byte == close {
+            depth -= 1;
+            if depth == 0 {
+                return Some(index);
             }
-            continue;
         }
-        match ch {
-            '"' | '\'' | '`' => {
-                quote = Some(ch);
-                current.push(ch);
-            }
-            '(' | '[' | '{' => {
-                depth += 1;
-                current.push(ch);
-            }
-            ')' | ']' | '}' => {
-                depth -= 1;
-                current.push(ch);
-            }
-            _ if ch == delimiter && depth == 0 => {
-                let item = current.trim();
+    }
+    None
+}
+
+fn masked_top_level_items(line: &str, masked: &str, start: usize, end: usize) -> Option<Vec<String>> {
+    let mut items = Vec::new();
+    let mut depth = 0_isize;
+    let mut item_start = start;
+    for (index, byte) in masked.bytes().enumerate().take(end).skip(start) {
+        match byte {
+            b'(' | b'[' | b'{' => depth += 1,
+            b')' | b']' | b'}' => depth -= 1,
+            b',' if depth == 0 => {
+                let item = line[item_start..index].trim();
                 if item.is_empty() {
                     return None;
                 }
                 items.push(item.to_string());
-                current = String::new();
+                item_start = index + 1;
             }
-            _ => current.push(ch),
+            _ => {}
         }
     }
-    let item = current.trim();
+    let item = line[item_start..end].trim();
     if !item.is_empty() {
         items.push(item.to_string());
     }
     (items.len() > 1).then_some(items)
 }
 
-fn find_matching_delimiter(line: &str, open_index: usize, open: char, close: char) -> Option<usize> {
-    let mut quote: Option<char> = None;
-    let mut escaped = false;
-    let mut depth = 0_isize;
-
-    for (index, ch) in line.char_indices().filter(|(index, _)| *index >= open_index) {
-        if let Some(active) = quote {
-            if escaped {
-                escaped = false;
-            } else if ch == '\\' {
-                escaped = true;
-            } else if ch == active {
-                quote = None;
-            }
-            continue;
-        }
-
-        match ch {
-            '"' | '\'' | '`' => quote = Some(ch),
-            _ if ch == open => depth += 1,
-            _ if ch == close => {
-                depth -= 1;
-                if depth == 0 {
-                    return Some(index);
-                }
-            }
-            _ => {}
-        }
-    }
-
-    None
-}
-
-fn wrap_delimited_line(line: &str, max: usize, open: char, close: char) -> Option<Vec<String>> {
-    let open_index = line.find(open)?;
-    let close_index = find_matching_delimiter(line, open_index, open, close)?;
+fn wrap_delimited_line(line: &str, extension: &str, max: usize, delimiters: (u8, u8)) -> Option<Vec<String>> {
+    let (open, close) = delimiters;
+    let masked = mask_line_literals(line, extension);
+    let open_index = masked.bytes().position(|byte| byte == open)?;
+    let close_index = masked_matching_close(&masked, open_index, open, close)?;
     let prefix = &line[..open_index];
-    let content = &line[open_index + open.len_utf8()..close_index];
-    let suffix = &line[close_index + close.len_utf8()..];
-    let items = split_top_level_items(content, ',')?;
+    let suffix = &line[close_index + 1..];
+    let items = masked_top_level_items(line, &masked, open_index + 1, close_index)?;
     let indent = leading_whitespace(line);
     let continuation_indent = format!("{indent}  ");
     let mut output = Vec::with_capacity(items.len() + 2);
 
-    output.push(format!("{prefix}{open}"));
+    output.push(format!("{prefix}{}", open as char));
     for (index, item) in items.iter().enumerate() {
         let comma = if index == items.len() - 1 { "" } else { "," };
         output.push(format!("{continuation_indent}{item}{comma}"));
     }
-    output.push(format!("{indent}{close}{suffix}"));
+    output.push(format!("{indent}{}{suffix}", close as char));
 
     output
     .iter()
@@ -241,8 +209,8 @@ fn wrap_array_or_call_line(line: &str, extension: &str, max: usize) -> Option<Ve
         return None;
     }
 
-    wrap_delimited_line(line, max, '[', ']')
-    .or_else(|| wrap_delimited_line(line, max, '(', ')'))
+    wrap_delimited_line(line, extension, max, (b'[', b']'))
+    .or_else(|| wrap_delimited_line(line, extension, max, (b'(', b')')))
 }
 
 fn split_top_level_statements(content: &str) -> Option<Vec<String>> {

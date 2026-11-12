@@ -9,6 +9,8 @@ import { isTypeScriptFamilyExtension } from "#87jyjzn68rrk";
 import { createRuleProgress, emitRuleChunk, emitRuleCompleted } from "#efe33sls019o";
 import type { FixCodeDisciplineRuleResult, NormalizedCheckCodeDisciplineOptions } from "#uqbg4indzud7";
 import { countCharacters, runMaxCharactersPerLineRule } from "#gbpelbsn3ne5";
+import { runCodeFormatter } from "#jnvdqdbcnk3f";
+import { shouldRunRule } from "./../../../rule-slugs.js";
 
 type LiteralLineContext = {
   indent: string;
@@ -149,8 +151,26 @@ function renderReplacement(
   .join(`\n${continuationIndent}`);
 }
 
+function openBracketDepth(prefix: string): number {
+  let depth = 0;
+  let quote: string | null = null;
+  for (let index = 0; index < prefix.length; index += 1) {
+    const char = prefix[index]!;
+    if (quote) {
+      if (char === "\\") index += 1;
+      else if (char === quote) quote = null;
+      continue;
+    }
+    if (char === "\"" || char === "'" || char === "`") quote = char;
+    else if ("([{".includes(char)) depth += 1;
+    else if (")]}".includes(char)) depth = Math.max(0, depth - 1);
+  }
+  return depth;
+}
+
 function createStringLiteralReplacement(args: {
     context: LiteralLineContext;
+    continuation: string;
     max: number;
     rawLiteral: string;
 }): string | null {
@@ -164,8 +184,10 @@ function createStringLiteralReplacement(args: {
   const firstCapacity = args.max
   -countCharacters(args.context.prefix)
   -countCharacters(`${quote}${quote}${CONCATENATION_SUFFIX}`);
+  const levels = 1 + openBracketDepth(args.context.prefix);
+  const continuationIndent = `${args.context.indent}${args.continuation.repeat(levels)}`;
   const nextCapacity = args.max
-  -countCharacters(args.context.indent)
+  -countCharacters(continuationIndent)
   -countCharacters(`${quote}${quote}${CONCATENATION_SUFFIX}`);
   const segments = splitLiteralValue(value, firstCapacity, nextCapacity);
   if (!segments) return null;
@@ -173,18 +195,19 @@ function createStringLiteralReplacement(args: {
   const allLinesFit = segments.every((segment, index) => {
       const isFirst = index === 0;
       const isLast = index === segments.length - 1;
-      const indent = isFirst ? args.context.prefix : args.context.indent;
+      const indent = isFirst ? args.context.prefix : continuationIndent;
       const suffix = isLast ? "" : CONCATENATION_SUFFIX;
       return renderedLineLength({ content: segment, indent, quote, suffix }) <= args.max;
   });
-  return allLinesFit ? renderReplacement(segments, quote, args.context.indent) : null;
+  return allLinesFit ? renderReplacement(segments, quote, continuationIndent) : null;
 }
 
 function collectStringLiteralReplacements(
   text: string,
   file: ScannedSourceFile,
-  max: number,
+  limits: { continuation: string; max: number },
 ): TextReplacement[] {
+  const { continuation, max } = limits;
   const sourceFile = parseSource(text, file.absolutePath);
   const replacements: TextReplacement[] = [];
 
@@ -200,7 +223,7 @@ function collectStringLiteralReplacements(
         countCharacters(context.lineText) > max
         &&!hasCommentOutsideLiteral(context.lineText, nodeColumn, rawLiteral)
       ) {
-        const value = createStringLiteralReplacement({ context, max, rawLiteral });
+        const value = createStringLiteralReplacement({ context, continuation, max, rawLiteral });
         if (value) replacements.push({ start, end, value });
       }
     }
@@ -221,6 +244,7 @@ async function fixMaxCharactersPerLineRule(
     return { ok: true, violationCount: 0, violations: [], rewritten_files: 0, unchanged_files: 0 };
   }
 
+  const continuation = " ".repeat(options.rules.formatting?.indentWidth ?? 2);
   const progress = createRuleProgress({
       observer: options.progressObserver,
       rule: "max-characters-per-line",
@@ -229,6 +253,7 @@ async function fixMaxCharactersPerLineRule(
   });
   let rewrittenFiles = 0;
   let unchangedFiles = 0;
+  const rewritten: ScannedSourceFile[] = [];
 
   for (let index = 0; index < sourceFiles.length; index += 1) {
     const file = sourceFiles[index]!;
@@ -241,7 +266,7 @@ async function fixMaxCharactersPerLineRule(
     const text = await fs.readFile(file.absolutePath, "utf8");
     let replacements: TextReplacement[] = [];
     try {
-      replacements = collectStringLiteralReplacements(text, file, max);
+      replacements = collectStringLiteralReplacements(text, file, { continuation, max });
     } catch {
       unchangedFiles += 1;
       emitRuleChunk(progress, index + 1, 0, { rewrittenFiles });
@@ -256,11 +281,15 @@ async function fixMaxCharactersPerLineRule(
     }
 
     await fs.writeFile(file.absolutePath, next.text, "utf8");
+    rewritten.push(file);
     rewrittenFiles += 1;
     emitRuleChunk(progress, index + 1, 0, { rewrittenFiles });
   }
 
   emitRuleCompleted(progress, 0, { rewrittenFiles });
+  if (rewritten.length && options.rules.formatting && shouldRunRule("format", options.onlyRules)) {
+    await runCodeFormatter(options, "fix", rewritten);
+  }
   const violations = await runMaxCharactersPerLineRule(sourceFiles, options);
 
   return {

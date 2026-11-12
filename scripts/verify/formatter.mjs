@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL, fileURLToPath } from "node:url";
 import { createLog } from "@package/logger";
+import { verifyOneLineLiteralsThroughFix } from "./formatter/literals.mjs";
 
 const log = createLog({ console: true, save: false });
 
@@ -341,8 +342,9 @@ async function verifyFormatter() {
 
   assertInitialCheck(check);
 
-  const fix = await run(formatterOptions(projectRoot, "fix"));
-  assert.equal(fix.ok, true);
+  const fix = await run(formatterOptions(projectRoot, "fix", ["format", "max-characters-per-line"]));
+  const unfixed = (fix.violations ?? []).map((violation) => `${violation.rule} ${violation.filePath}`);
+  assert.deepEqual(unfixed, ["max-characters-per-line src/renderer.rs"], JSON.stringify(fix.violations, null, 2));
   assert.ok(fix.formatted_files >= 4);
   const stateAfter = await fs.readFile(statePath, "utf8");
   assert.notEqual(stateAfter, stateBefore);
@@ -374,5 +376,6 @@ async function verifyTopLevelFormatterIsRejected() {
 
 await verifyFormatter();
 await verifyTopLevelFormatterIsRejected();
+await verifyOneLineLiteralsThroughFix(run);
 
 log.info("verify.formatter", "formatter verification passed");

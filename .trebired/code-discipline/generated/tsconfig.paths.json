@@ -385,6 +385,9 @@
       "#xhresemjp5z8": [
         "../../../src/checks/native/runner.ts"
       ],
+      "#xjf1wnpial0g": [
+        "../../../scripts/verify/formatter/literals.mjs"
+      ],
       "#xtc1vi4ape7f": [
         "../../../scripts/verify/language/support.mjs"
       ],

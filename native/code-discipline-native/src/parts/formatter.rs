@@ -281,7 +281,25 @@ fn is_script_spacing_extension(extension: &str) -> bool {
     is_ts_family_extension(extension) || is_qml_extension(extension)
 }
 
+const FORMAT_SETTLE_ROUNDS: usize = 4;
+
 fn format_source_internal(
+    text: &str,
+    extension: &str,
+    options: &NativeFormatterOptions,
+) -> String {
+    let mut current = format_source_once(text, extension, options);
+    for _ in 1..FORMAT_SETTLE_ROUNDS {
+        let next = format_source_once(&current, extension, options);
+        if next == current {
+            break;
+        }
+        current = next;
+    }
+    current
+}
+
+fn format_source_once(
     text: &str,
     extension: &str,
     options: &NativeFormatterOptions,

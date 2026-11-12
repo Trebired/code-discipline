@@ -70,6 +70,22 @@ fn mask_source_spans(text: &str, extension: &str) -> String {
     result
 }
 
+fn mask_line_literals(line: &str, extension: &str) -> String {
+    let mut bytes = line.as_bytes().to_vec();
+    for span in collect_source_spans(line, extension) {
+        bytes[span.start..span.end].fill(b' ');
+    }
+    String::from_utf8(bytes).unwrap_or_else(|_| " ".repeat(line.len()))
+}
+
+fn literal_texts<'a>(line: &'a str, extension: &str) -> Vec<&'a str> {
+    collect_source_spans(line, extension)
+    .into_iter()
+    .filter(|span| !span.is_comment && span.end > span.start)
+    .map(|span| &line[span.start..span.end])
+    .collect()
+}
+
 fn literal_line_flags(text: &str, extension: &str) -> Vec<LiteralLine> {
     let line_starts = std::iter::once(0)
     .chain(text.match_indices('\n').map(|(index, _)| index + 1))

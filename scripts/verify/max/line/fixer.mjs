@@ -85,7 +85,7 @@ async function verifySafeLiteralSplitting() {
 
   assert.equal(result.ruleResults["remove-comments"], undefined);
   assert.equal(imported.default.repositoryActionsDescription, message);
-  assert.match(text, /" \+\n    "/);
+  assert.match(text, /" \+\n      "/);
   assertLinesWithin(text, 96);
 }
 

@@ -5,7 +5,7 @@ mod formatter_wrapping_tests {
     use super::formatter_test_options as options;
 
     #[test]
-    fn wraps_typescript_strings_and_call_arguments() {
+    fn leaves_typescript_strings_to_the_ast_fixer() {
         let source = [
             "export function run(){",
             "const message = \"The formatter keeps this TypeScript string value identical while splitting the expression over multiple lines.\"",
@@ -16,9 +16,8 @@ mod formatter_wrapping_tests {
         .join("\n");
         let formatted = format_source_internal(&source, ".ts", &options(72));
 
-        assert!(formatted.contains("\"The formatter keeps this TypeScript string value \" +"));
-        assert!(formatted.contains("return sendEvent("));
-        assert_lines_fit(&formatted, 72);
+        assert!(formatted.contains("\"The formatter keeps this TypeScript string value identical while splitting"));
+        assert!(formatted.contains("return sendEvent(\n"));
     }
 
     #[test]
@@ -149,5 +148,68 @@ mod formatter_wrapping_tests {
         assert!(formatted.contains("const step = gridStepMm(axisMm);"));
         assert!(formatted.contains("if (height > 10) {\n      height = 10;\n      width = height\n    }"));
         assert_lines_fit(&formatted, 150);
+    }
+
+    fn assert_literal_intact(formatted: &str, literal: &str) {
+        assert!(formatted.contains(literal), "literal changed:\n{formatted}");
+    }
+
+    #[test]
+    fn calls_inside_one_line_strings_are_not_wrapped() {
+        let help = "\"Open the list, pick an entry (press Enter, then Tab) and save it.\"";
+        let source = format!("fn help() -> Vec<&'static str> {{\n    vec![{help}, \"Two\"]\n}}\n");
+        assert_literal_intact(&format_source_internal(&source, ".rs", &options(60)), help);
+        let call = format!("fn help() {{\n    println!({help});\n}}\n");
+        assert_literal_intact(&format_source_internal(&call, ".rs", &options(60)), help);
+        let ts = format!("export const help = describe({help});\n");
+        let joined = format_source_internal(&ts, ".ts", &options(60)).replace("\" +\n  \"", "");
+        assert_literal_intact(&joined, help);
+    }
+
+    #[test]
+    fn one_line_raw_json_keeps_its_value() {
+        let json = "r#\"{\"blocks\": [{\"id\": 1, \"name\": \"stone\"}, {\"id\": 2, \"name\": \"dirt\"}]}\"#";
+        let source = format!("fn data() -> &'static str {{\n    load({json})\n}}\n");
+        let formatted = format_source_internal(&source, ".rs", &options(60));
+        assert!(!formatted.contains("\"blocks\": [\n"), "raw string value changed:\n{formatted}");
+    }
+
+    #[test]
+    fn compound_plus_operators_are_never_split() {
+        let source = "function a() {\n  for (let index = 0; index < size; index += 1) code += alphabet[bytes[index] % alphabet.length];\n}\n";
+        let formatted = format_source_internal(source, ".ts", &options(60));
+        assert!(formatted.contains("code += alphabet"), "operator split:\n{formatted}");
+    }
+
+    #[test]
+    fn cpp_strings_wrap_by_adjacent_literals() {
+        let source = "void a() {\n    const char* text = \"A long C++ message that needs to wrap over more than one line here.\";\n}\n";
+        let formatted = format_source_internal(source, ".cpp", &options(60));
+        assert!(!formatted.contains("\" +"), "C++ cannot add string literals:\n{formatted}");
+    }
+
+    #[test]
+    fn python_prefixed_strings_are_not_wrapped() {
+        let source = "def a(name):\n    text = f\"A long formatted message for {name} that has to stay exactly as it was\"\n    return text\n";
+        let formatted = format_source_internal(source, ".py", &options(60));
+        assert!(formatted.contains("text = f\"A long formatted"), "prefix moved:\n{formatted}");
+    }
+
+    #[test]
+    fn destructuring_patterns_get_no_semicolons() {
+        let source = "const {\n  readJSON, writeJSON,\n  listLangs\n} = require(\"./storage\");\nlet {\n  a,\n  b\n} = load();\n";
+        let formatted = format_source_internal(source, ".js", &options(150));
+        assert!(!formatted.contains("listLangs;") && !formatted.contains("b;"), "semicolon inserted:\n{formatted}");
+    }
+
+    #[test]
+    fn jsx_expression_attributes_stay_whole() {
+        let source = concat!(
+            "export function A() {\n  return (\n",
+            "    <input disabled={busy} multiple onChange={(event) => void upload(event)} type=\"file\" />\n",
+            "  );\n}\n",
+        );
+        let formatted = format_source_internal(source, ".tsx", &options(60));
+        assert!(formatted.contains("onChange={(event) => void upload(event)}"), "attribute split:\n{formatted}");
     }
 }
